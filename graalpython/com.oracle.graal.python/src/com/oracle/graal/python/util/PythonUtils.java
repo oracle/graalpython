@@ -159,7 +159,7 @@ public final class PythonUtils {
     @TruffleBoundary
     public static TruffleString tsLiteral(String s) {
         assert s != null;
-        return TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+        return TruffleString.fromConstant(s, TS_ENCODING);
     }
 
     /**

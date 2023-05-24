@@ -6,7 +6,6 @@
 package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -117,12 +116,14 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
                 TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING, len + (len >> 3) + 2);
-                appendString(createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode);
+                JSONUtils.appendString(string, createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
@@ -149,12 +150,15 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
                 TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING, len + (len >> 3) + 2);
-                appendString(createCodePointIteratorNode.execute(string, TS_ENCODING), builder, true, nextNode, appendCodePointNode);
+                JSONUtils.appendString(string, createCodePointIteratorNode.execute(string, TS_ENCODING), builder, true,
+                                nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
@@ -232,67 +236,5 @@ public class JSONModuleBuiltins extends PythonBuiltins {
             }
             return factory.createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
-    }
-
-    static void appendString(TruffleStringIterator it, TruffleStringBuilder builder, boolean asciiOnly, TruffleStringIterator.NextNode nextNode,
-                    TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
-        appendCodePointNode.execute(builder, '"', 1, true);
-
-        while (it.hasNext()) {
-            int c = nextNode.execute(it);
-            switch (c) {
-                case '\\':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    break;
-                case '"':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, '"', 1, true);
-                    break;
-                case '\b':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, 'b', 1, true);
-                    break;
-                case '\f':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, 'f', 1, true);
-                    break;
-                case '\n':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, 'n', 1, true);
-                    break;
-                case '\r':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, 'r', 1, true);
-                    break;
-                case '\t':
-                    appendCodePointNode.execute(builder, '\\', 1, true);
-                    appendCodePointNode.execute(builder, 't', 1, true);
-                    break;
-                default:
-                    if (c <= 0x1f || (asciiOnly && c > '~')) {
-                        if (c <= 0xffff) {
-                            appendEscapedUtf16((char) c, builder, appendCodePointNode);
-                        } else {
-                            // split SMP codepoint to surrogate pair
-                            appendEscapedUtf16((char) (0xD800 + ((c - 0x10000) >> 10)), builder, appendCodePointNode);
-                            appendEscapedUtf16((char) (0xDC00 + ((c - 0x10000) & 0x3FF)), builder, appendCodePointNode);
-                        }
-                    } else {
-                        appendCodePointNode.execute(builder, c, 1, true);
-                    }
-                    break;
-            }
-        }
-        appendCodePointNode.execute(builder, '"', 1, true);
-    }
-
-    private static void appendEscapedUtf16(char c, TruffleStringBuilder builder, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
-        appendCodePointNode.execute(builder, '\\', 1, true);
-        appendCodePointNode.execute(builder, 'u', 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 12) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 8) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 4) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[c & 0xf], 1, true);
     }
 }

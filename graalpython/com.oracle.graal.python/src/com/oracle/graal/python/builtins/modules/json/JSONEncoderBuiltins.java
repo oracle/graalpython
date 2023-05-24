@@ -16,13 +16,6 @@ import static com.oracle.graal.python.nodes.PGuards.isPFloat;
 import static com.oracle.graal.python.nodes.PGuards.isPInt;
 import static com.oracle.graal.python.nodes.PGuards.isString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DOUBLE_QUOTE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACES;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACKETS;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
-import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -71,23 +64,24 @@ import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONEncoder)
 public class JSONEncoderBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_NULL = tsLiteral("null");
-    private static final TruffleString T_JSON_TRUE = tsLiteral("true");
-    private static final TruffleString T_JSON_FALSE = tsLiteral("false");
+    private static final TruffleString T_TRUE = tsLiteral("true");
+    private static final TruffleString T_FALSE = tsLiteral("false");
     private static final TruffleString T_POSITIVE_INFINITY = tsLiteral("Infinity");
     private static final TruffleString T_NEGATIVE_INFINITY = tsLiteral("-Infinity");
     private static final TruffleString T_NAN = tsLiteral("NaN");
+    private static final TruffleString T_BRACES = tsLiteral("{}");
+    private static final TruffleString T_BRACKETS = tsLiteral("[]");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -102,7 +96,6 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callGetDictIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
         @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
         @Child private ListSortNode sortList = ListSortNode.create();
-        private static final TruffleStringBuilder.AppendStringNode appendStringNode = TruffleStringBuilder.AppendStringNode.getUncached();
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -110,38 +103,42 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
-            appendListObj(self, builder, obj);
-            return factory().createTuple(new Object[]{toStringNode.execute(builder)});
+        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent) {
+            return factory().createTuple(new Object[]{jsonEncode(self, obj)});
         }
 
-        private void appendConst(TruffleStringBuilder builder, Object obj) {
+        @TruffleBoundary
+        private TruffleString jsonEncode(PJSONEncoder encoder, Object obj) {
+            TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32();
+            appendListObj(encoder, builder, obj);
+            return TruffleStringBuilder.ToStringNode.getUncached().execute(builder);
+        }
+
+        private void appendConst(TruffleStringBuilderUTF32 builder, Object obj) {
             if (obj == PNone.NONE) {
-                appendStringNode.execute(builder, T_NULL);
+                builder.appendStringUncached(T_NULL);
             } else if (obj == Boolean.TRUE) {
-                appendStringNode.execute(builder, T_JSON_TRUE);
+                builder.appendStringUncached(T_TRUE);
             } else {
                 assert obj == Boolean.FALSE;
-                appendStringNode.execute(builder, T_JSON_FALSE);
+                builder.appendStringUncached(T_FALSE);
             }
         }
 
-        private void appendFloat(PJSONEncoder encoder, TruffleStringBuilder builder, double obj) {
+        private void appendFloat(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, double obj) {
             if (!Double.isFinite(obj)) {
                 if (!encoder.allowNan) {
                     throw raise(ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
                 }
                 if (obj > 0) {
-                    appendStringNode.execute(builder, T_POSITIVE_INFINITY);
+                    builder.appendStringUncached(T_POSITIVE_INFINITY);
                 } else if (obj < 0) {
-                    appendStringNode.execute(builder, T_NEGATIVE_INFINITY);
+                    builder.appendStringUncached(T_NEGATIVE_INFINITY);
                 } else {
-                    appendStringNode.execute(builder, T_NAN);
+                    builder.appendStringUncached(T_NAN);
                 }
             } else {
-                appendStringNode.execute(builder, formatDouble(obj));
+                builder.appendStringUncached(formatDouble(obj));
             }
         }
 
@@ -151,20 +148,20 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             return FloatBuiltins.StrNode.doFormat(obj, f);
         }
 
-        private void appendString(PJSONEncoder encoder, TruffleStringBuilder builder, TruffleString obj) {
+        private void appendString(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, TruffleString obj) {
             switch (encoder.fastEncode) {
                 case FastEncode:
-                    appendString(obj, builder, false);
+                    JSONUtils.appendStringUncached(obj, builder, false);
                     break;
                 case FastEncodeAscii:
-                    appendString(obj, builder, true);
+                    JSONUtils.appendStringUncached(obj, builder, true);
                     break;
                 case None:
                     Object result = CallUnaryMethodNode.getUncached().executeObject(encoder.encoder, obj);
                     if (!isString(result)) {
                         throw raise(TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
-                    appendStringNode.execute(builder, CastToTruffleStringNode.getUncached().execute(result));
+                    builder.appendStringUncached(CastToTruffleStringNode.getUncached().execute(result));
                     break;
                 default:
                     assert false;
@@ -172,16 +169,11 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private static void appendString(TruffleString obj, TruffleStringBuilder builder, boolean asciiOnly) {
-            JSONModuleBuiltins.appendString(TruffleString.CreateCodePointIteratorNode.getUncached().execute(obj, TS_ENCODING), builder, asciiOnly,
-                            TruffleStringIterator.NextNode.getUncached(), TruffleStringBuilder.AppendCodePointNode.getUncached());
-        }
-
         private static boolean isSimpleObj(Object obj) {
             return obj == PNone.NONE || obj == Boolean.TRUE || obj == Boolean.FALSE || isString(obj) || isInteger(obj) || isPInt(obj) || obj instanceof Float || isDouble(obj) || isPFloat(obj);
         }
 
-        private boolean appendSimpleObj(PJSONEncoder encoder, TruffleStringBuilder builder, Object obj) {
+        private boolean appendSimpleObj(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, Object obj) {
             if (obj == PNone.NONE || obj == Boolean.TRUE || obj == Boolean.FALSE) {
                 appendConst(builder, obj);
             } else if (isJavaString(obj)) {
@@ -191,11 +183,11 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             } else if (obj instanceof PString) {
                 appendString(encoder, builder, StringNodes.StringMaterializeNode.executeUncached((PString) obj));
             } else if (obj instanceof Integer) {
-                TruffleStringBuilder.AppendLongNumberNode.getUncached().execute(builder, (int) obj);
+                builder.appendIntNumberUncached((int) obj);
             } else if (obj instanceof Long) {
-                TruffleStringBuilder.AppendLongNumberNode.getUncached().execute(builder, (long) obj);
+                builder.appendLongNumberUncached((long) obj);
             } else if (obj instanceof PInt) {
-                appendStringNode.execute(builder, TruffleString.FromJavaStringNode.getUncached().execute(castExact(obj, PInt.class).toString(), TS_ENCODING));
+                builder.appendStringUncached(TruffleString.FromJavaStringNode.getUncached().execute(castExact(obj, PInt.class).toString(), TS_ENCODING));
             } else if (obj instanceof Float) {
                 appendFloat(encoder, builder, (float) obj);
             } else if (obj instanceof Double) {
@@ -208,8 +200,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @TruffleBoundary
-        private void appendListObj(PJSONEncoder encoder, TruffleStringBuilder builder, Object obj) {
+        private void appendListObj(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, Object obj) {
             if (appendSimpleObj(encoder, builder, obj)) {
                 // done
             } else if (obj instanceof PList || obj instanceof PTuple) {
@@ -238,14 +229,14 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private void appendDict(PJSONEncoder encoder, TruffleStringBuilder builder, PDict dict) {
+        private void appendDict(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, PDict dict) {
             HashingStorage storage = dict.getDictStorage();
 
             if (HashingStorageLen.executeUncached(storage) == 0) {
-                appendStringNode.execute(builder, T_EMPTY_BRACES);
+                builder.appendStringUncached(T_BRACES);
             } else {
                 startRecursion(encoder, dict);
-                appendStringNode.execute(builder, T_LBRACE);
+                builder.appendCodePointUncached('{');
 
                 if (!encoder.sortKeys && IsBuiltinObjectProfile.profileObjectUncached(dict, PDict)) {
                     HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
@@ -259,12 +250,12 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                     appendDictSlowPath(encoder, builder, dict);
                 }
 
-                appendStringNode.execute(builder, T_RBRACE);
+                builder.appendCodePointUncached('}');
                 endRecursion(encoder, dict);
             }
         }
 
-        private void appendDictSlowPath(PJSONEncoder encoder, TruffleStringBuilder builder, com.oracle.graal.python.builtins.objects.dict.PDict dict) {
+        private void appendDictSlowPath(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, com.oracle.graal.python.builtins.objects.dict.PDict dict) {
             PList items = ConstructListNode.getUncached().execute(null, callGetItems.executeObject(null, dict));
             if (encoder.sortKeys) {
                 sortList.execute(null, items);
@@ -289,9 +280,9 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean appendDictEntry(PJSONEncoder encoder, TruffleStringBuilder builder, boolean first, Object key, Object value) {
+        private boolean appendDictEntry(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, boolean first, Object key, Object value) {
             if (!first) {
-                appendStringNode.execute(builder, encoder.itemSeparator);
+                builder.appendStringUncached(encoder.itemSeparator);
             }
             if (isString(key)) {
                 appendSimpleObj(encoder, builder, key);
@@ -302,28 +293,28 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                     }
                     throw raise(TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
                 }
-                appendStringNode.execute(builder, T_DOUBLE_QUOTE);
+                builder.appendCodePointUncached('"');
                 appendSimpleObj(encoder, builder, key);
-                appendStringNode.execute(builder, T_DOUBLE_QUOTE);
+                builder.appendCodePointUncached('"');
             }
-            appendStringNode.execute(builder, encoder.keySeparator);
+            builder.appendStringUncached(encoder.keySeparator);
             appendListObj(encoder, builder, value);
             return false;
         }
 
-        private void appendList(PJSONEncoder encoder, TruffleStringBuilder builder, PSequence list) {
+        private void appendList(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, PSequence list) {
             SequenceStorage storage = list.getSequenceStorage();
 
             if (storage.length() == 0) {
-                appendStringNode.execute(builder, T_EMPTY_BRACKETS);
+                builder.appendStringUncached(T_BRACKETS);
             } else {
                 startRecursion(encoder, list);
-                appendStringNode.execute(builder, T_LBRACKET);
+                builder.appendCodePointUncached('[');
 
                 if (IsBuiltinObjectProfile.profileObjectUncached(list, PTuple) || IsBuiltinObjectProfile.profileObjectUncached(list, PList)) {
                     for (int i = 0; i < storage.length(); i++) {
                         if (i > 0) {
-                            appendStringNode.execute(builder, encoder.itemSeparator);
+                            builder.appendStringUncached(encoder.itemSeparator);
                         }
                         appendListObj(encoder, builder, storage.getItemNormalized(i));
                     }
@@ -331,12 +322,12 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                     appendListSlowPath(encoder, builder, list);
                 }
 
-                appendStringNode.execute(builder, T_RBRACKET);
+                builder.appendCodePointUncached(']');
                 endRecursion(encoder, list);
             }
         }
 
-        private void appendListSlowPath(PJSONEncoder encoder, TruffleStringBuilder builder, PSequence list) {
+        private void appendListSlowPath(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, PSequence list) {
             Object iter = callGetListIter.executeObject(null, list);
             boolean first = true;
             while (true) {
@@ -348,7 +339,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!first) {
-                    appendStringNode.execute(builder, encoder.itemSeparator);
+                    builder.appendStringUncached(encoder.itemSeparator);
                 }
                 first = false;
                 appendListObj(encoder, builder, item);
