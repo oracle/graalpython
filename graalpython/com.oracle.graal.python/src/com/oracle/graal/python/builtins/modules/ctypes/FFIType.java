@@ -313,7 +313,7 @@ public final class FFIType {
         Q('Q', FieldSet.Q_set, FieldGet.Q_get, ffi_type_uint64, FieldSet.Q_set_sw, FieldGet.Q_get_sw), // long long
         P('P', FieldSet.P_set, FieldGet.P_get, ffi_type_pointer), // Pointer
         z('z', FieldSet.z_set, FieldGet.z_get, ffi_type_pointer), // ASCII String
-        u('u', FieldSet.u_set, FieldGet.u_get, WCHAR_T_SIZE == 2? ffi_type_sint16: ffi_type_sint32), // wchar_t CTYPES_UNICODE
+        u('u', FieldSet.u_set, FieldGet.u_get, WCHAR_T_SIZE == 2 ? ffi_type_sint16 : ffi_type_sint32), // wchar_t CTYPES_UNICODE
         U('U', FieldSet.U_set, FieldGet.U_get, ffi_type_pointer), // Unicode String CTYPES_UNICODE
         Z('Z', FieldSet.Z_set, FieldGet.Z_get, ffi_type_pointer), // Unicode String wchar_t
         v('v', FieldSet.vBOOL_set, FieldGet.vBOOL_get, ffi_type_sshort), // short int
