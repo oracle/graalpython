@@ -1069,9 +1069,9 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                 alive[i] = t.is_alive()
 
         thread_errors = [t.result for t in threads if t.result != 0]
+        for t in threads:
+            mx.log("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
         if any(thread_errors):
-            for t in threads:
-                mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
             if nonZeroIsFatal:
                 mx.abort("At least one HPy testing thread failed.")
 
