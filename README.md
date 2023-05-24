@@ -1,82 +1,73 @@
 # GraalVM Implementation of Python
 
-This is GraalPy, an implementation of the Python language.
-A primary goal is to support SciPy and its constituent libraries.
-GraalPy can usually execute pure Python code faster than CPython (but not when C extensions are involved).
-GraalPy currently aims to be compatible with Python 3.10, but it is some way from there.
-While your specific workload may function, any Python program that uses external packages could hit something unsupported.
+GraalPy is an implementation of the Python language on top of GraalVM.
+A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+GraalPy can usually execute pure Python code faster than CPython, and nearly match CPython performance when C extensions are involved.
+GraalPy currently aims to be compatible with Python 3.10.
+While many workloads run fine, any Python program that uses external packages could hit something unsupported.
 At this point, the Python implementation is made available for experimentation and curious end-users.
+We welcome issue reports of all kinds and are working hard to close our compatibility gaps.
 
 ### Trying It
 
-The easiest option to try GraalPy is [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
+The easiest option to try GraalPy is [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
 It allows you to easily install different GraalPy releases.
-To get version 22.3.0, for example, just run `pyenv install graalpy-22.3.0`.
-
-To try GraalPy with a full GraalVM, including the support for Java embedding and interop with other languages, you can use the bundled releases from [www.graalvm.org](https://www.graalvm.org/downloads/).
+To install version 22.3.0, for example, just run `pyenv install graalpy-22.3.0`.
 
 Another option is to use [Conda-Forge](https://conda-forge.org/).
-To get an environment with the latest GraalPy, use `conda create -c conda-forge -n graalpy graalpy`.
+To get an environment with the latest version of GraalPy, use the following command:
+
+```bash
+conda create -c conda-forge -n graalpy graalpy
+```
+
+To try GraalPy with a full GraalVM, including the support for Java embedding and interoperability with other languages, you can use the bundled releases from [www.graalvm.org](https://www.graalvm.org/downloads/).
+
+>**Note:** There is currently no installer for Windows.
 
 ### Building from Source
 
 #### Requirements
 
-* [mx](https://github.com/graalvm/mx) - a separate Python tool co-developed for GraalVM development. This tool must be
-  downloaded and put onto your PATH:
-  ```
+* [mx](https://github.com/graalvm/mx)
+
+  There is a separate Python tool for GraalVM development. This tool must be downloaded and added to your PATH:
+  
+  ```shell
   git clone https://github.com/graalvm/mx.git
   export PATH=$PWD/mx:$PATH
   ```
 * LabsJDK
 
-The following command will download and install JDKs to built GraalVM upon. If successful, it will print the path to set into your JAVA_HOME. 
-```shell
-mx fetch-jdk
-```
+  The following command will download and install JDKs upon which to build GraalVM. If successful, it will print the path for the value of your `JAVA_HOME` environment variable. 
+  ```shell
+  mx fetch-jdk
+  ```
  
 #### Building
 
-Run `mx --dy /compiler python-gvm` in the `graalpython` repository root. If the build is fine, it will print the full
-path to the `graalpy` executable as the last line of output.
+Run `mx --dy /compiler python-gvm` in the root directory of the `graalpython` repository.
+If the build succeeds, it will print the full path to the `graalpy` executable as the last line of output.
+This builds a `bash` launcher that executes GraalPy on the JVM.
+To build a native launcher for lower footprint and better startup, run `mx python-svm` instead.
 
-For more information and some examples of what you can do with GraalPy,
-check out the [reference](https://www.graalvm.org/reference-manual/python/).
-
-### Create a Virtual Environment
-
-The best way of using the GraalVM implementation of Python is out of a virtual environment. To do so
-execute the following command in the project directory:
-```
-graalpy -m venv <dir-to-venv>
-```
-
-To activate the environment in your shell session call:
-```
-source <dir-to-venv>/bin/activate
-```
-
-In the venv, multiple executables are available, like `python`, `python3` and `graalpy`. 
-
-### Installing Packages
-
-You should be able to use the `pip` command from a GraalPy venv to install packages.
-Our `pip` ships some patches for packages that we test internally, these will be applied automatically where necessary.
-Support for as many extension modules as possible is a high priority for us.
-We are actively building out our support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
-This means that some might already work, but we're still actively working on compatibility especially with native extensions.
+For more information and some examples of what you can do with GraalPy, see the [reference documentation](https://www.graalvm.org/reference-manual/python/).
 
 ### Polyglot Usage
 
-We have a [document](docs/user/Interoperability.md) describing how we implement the
-cross-language interop. This will hopefully give you an idea how to use it.
+See the [documentation](docs/user/Interoperability.md) that describes how we implement
+cross-language interoperability. 
+This should give you an idea about how to use it.
 
 ### Jython Support
 
 We are working on a mode that is "mostly compatible" with some of Jython's
 features, minus of course that Jython implements Python 2.7 and we implement
-Python 3.10+. We describe the current status of the compatibility mode
-[here](docs/user/Jython.md).
+Python 3.10+. 
+We describe the current status of the compatibility mode [here](docs/user/Jython.md).
+
+We are working on a mode that is "mostly compatible" with some of Jython's features, considering the fact that Jython implements Python 2.7 and we implement Python 3.10+. 
+For more details about compatibility, see [here](docs/user/Jython.md).
 
 ### Contributing
 
