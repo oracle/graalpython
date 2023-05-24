@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -136,7 +135,11 @@ public final class PythonCextTupleBuiltins {
         int doManaged(PTuple tuple, long index, Object element,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
                         @Cached ConditionProfile generalizedProfile) {
-            assert GetItemScalarNodeGen.getUncached().execute(tuple.getSequenceStorage(), (int) index) == null;
+            // we cannot assume that there is nothing already in the tuple, because the API usage
+            // is valid if the tuple has never been visible to Python code so far, and it is up to
+            // the extension author to take care of correct decref's for the previously contained
+            // elements. c.f. _testcapi.c#test_k_code where a tuple's element 0 is set multiple
+            // times
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             checkBounds(sequenceStorage, index);
             SequenceStorage newStorage = setItemNode.execute(null, sequenceStorage, (int) index, element);
