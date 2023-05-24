@@ -97,12 +97,15 @@ DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 
 _COLLECTING_COVERAGE = False
 
-def is_collectiong_coverage():
-    return bool(mx_gate.get_jacoco_agent_args() or _COLLECTING_COVERAGE)
+CI = os.environ.get("CI") == "true"
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and sys.platform != "win32" # disable assertions on win32 until we properly support that platform
 
-
-if os.environ.get("CI") == "true" and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
+if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
+
+
+def is_collecting_coverage():
+    return bool(mx_gate.get_jacoco_agent_args() or _COLLECTING_COVERAGE)
 
 
 def wants_debug_build(flags=os.environ.get("CFLAGS", "")):
@@ -252,7 +255,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if extra_dists:
         dists += extra_dists
 
-    if not os.environ.get("CI"):
+    if not CI:
         # Try eagerly to include tools for convenience when running Python
         if not mx.suite("tools", fatalIfMissing=False):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
@@ -697,6 +700,9 @@ def _graalvm_home(*, envfile, extra_dy=""):
             mx_args = ["--dy", dy] + mx_args
         if mx._opts.verbose:
             mx.run_mx(mx_args + ["graalvm-show"])
+        if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
+            mx_args.append("--extra-image-builder-argument=-ea")
+            mx_args.append("--extra-image-builder-argument=--verbose")
         mx.run_mx(mx_args + ["build"])
         out = mx.OutputCapture()
         mx.run_mx(mx_args + ["graalvm-home"], out=out)
@@ -722,7 +728,7 @@ def python_gvm(_=None):
 
     if mx_gate.get_jacoco_agent_args():
         # patch our launchers created under jacoco to also run with jacoco.
-        # do not use is_collectiong_coverage() here, we only want to patch when
+        # do not use is_collecting_coverage() here, we only want to patch when
         # jacoco agent is requested.
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
@@ -918,7 +924,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             args += ["--report", reportfile]
 
     result = 0
-    if is_collectiong_coverage():
+    if is_collecting_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
         if mx_gate.get_jacoco_agent_args():
             with open(python_binary, "r") as f:
@@ -1021,7 +1027,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         mx.run([python_binary] + args + ["-m", "pip", "install", "--user", "pytest<=6.2.3", "pytest-xdist", "filelock"],
                nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
-        if not is_collectiong_coverage():
+        if not is_collecting_coverage():
             # parallelize
             import threading
             threads = []
@@ -1115,8 +1121,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
 
 
 def graalpython_gate_runner(args, tasks):
-    report = lambda: (not is_collectiong_coverage()) and task
-    nonZeroIsFatal = not is_collectiong_coverage()
+    report = lambda: (not is_collecting_coverage()) and task
+    nonZeroIsFatal = not is_collecting_coverage()
 
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
@@ -1173,7 +1179,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
-            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()), report=report())
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
