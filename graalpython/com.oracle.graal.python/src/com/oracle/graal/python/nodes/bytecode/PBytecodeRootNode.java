@@ -4653,8 +4653,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else if (exception instanceof AbstractTruffleException) {
             throw (AbstractTruffleException) exception;
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_EXCEPTION_ON_THE_STACK);
+            throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
         }
     }
 

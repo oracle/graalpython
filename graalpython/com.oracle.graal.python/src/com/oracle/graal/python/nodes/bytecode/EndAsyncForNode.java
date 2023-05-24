@@ -40,11 +40,8 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -90,8 +87,7 @@ public abstract class EndAsyncForNode extends PNodeWithContext {
             } else if (exception instanceof AbstractTruffleException) {
                 throw (AbstractTruffleException) exception;
             } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(SystemError, ErrorMessages.EXPECTED_EXCEPTION_ON_THE_STACK);
+                throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
             }
 
         }

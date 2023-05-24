@@ -296,7 +296,6 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
     public static final TruffleString EXPECTED_CHARACTER_BUT_STRING_FOUND = tsLiteral("%s expected a character, but string of length %d found");
     public static final TruffleString EXPECTED_CONVERSION = tsLiteral("expected conversion");
-    public static final TruffleString EXPECTED_EXCEPTION_ON_THE_STACK = tsLiteral("expected exception on the stack");
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_P_GOT_P = tsLiteral("expected object of type %p, got %p");
