@@ -6,48 +6,53 @@ permalink: /reference-manual/python/FAQ/
 ---
 # Frequently Asked Questions
 
-### Does module/package XYZ work on GraalVM's Python runtime?
+### Does module/package XYZ work on GraalPy?
 
-It depends, but is currently unlikely.
-The first goal with GraalVM's Python runtime was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
-The GraalVM team continues to improve the number of passing CPython unittests, and to track the compatibility with popular PyPI packages.
+It depends.
+The first goal with GraalPy was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
+The GraalVM team continues to improve the number of passing CPython unit tests, and to track the compatibility with popular PyPI packages.
+Of the top 500 PyPI packages, about 50% currently pass the majority of their tests on GraalPy.
 
-### Can the GraalVM Python runtime replace my Jython use case?
+### Can GraalPy replace my Jython use case?
 
-It can, but there are some caveats, like Python code subclassing Java classes or use through the `javax.script.ScriptEngine` not being supported.
+It can, but there are some caveats, such as Python code subclassing Java classes or use through the `javax.script.ScriptEngine` not being supported.
 See the [Jython Migration](Jython.md) guide for details.
 
-### Do I need to compile and run native modules as LLVM bitcode to use on GraalVM's Python runtime?
+### Do I need to compile and run native modules with LLVM to use GraalPy?
 
-On GraalVM, Python C extension modules run using the GraalVM LLVM runtime.
-To use such modules, you cannot use binary distributions, but instead you must install them from source using the GraalVM Python runtime, which will transparently produce LLVM bitcode during the build process.
-However, many of the core features of Python (including, e.g., large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
-So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases you can disallow native modules entirely.
+No.
+Python C extension modules must be built from source to run on GraalPy, but the process is largely automatic when using `pip` and uses the system's standard compilers.
+To extend the tooling and sandboxing features of GraalVM to Python C extension modules, they can be run using the GraalVM LLVM runtime.
 
-### Can I use the GraalVM sandboxing features with Python?
+### Can I use the GraalVM sandboxing features with GraalPy?
 
 Yes, you can.
-As an embedder, you can selectively disable features.
-For example, you can disable native code execution or filesystem access.
-Also, GraalVM's managed execution mode for LLVM fully works for running extensions such as NumPy in a safer manner.
+GraalPy provides two special launchers, `graalpy-lt` and `graalpy-managed`.
+The former allows C extension libraries to call out to native system libraries, whereas the latter requires all libraries to be available as bitcode.
+A `venv` environment created with these launchers will transparently produce such LLVM bitcode during the build process of native extensions when installed through `pip`.
+Extensions installed in this manner work with the GraalVM tools for debugging, CPU and memory sampling, as well as sandboxing.
+As an embedder, you can selectively disable system accesses, virtualize the filesystem even for the C extensions, or limit the amount of memory that is allocated.
+The price to pay is in increased warm-up and footprint and sometimes lower peak performance, since all code, including the code for native libraries, is subject to JIT compilation.
 
-### Do all the GraalVM polyglot features work with Python?
+### Do all the GraalVM polyglot features work with GraalPy?
 
 The team is continuously working to ensure all polyglot features of GraalVM work as a Python user would expect.
 There are still many cases where expectations are unclear or where multiple behaviors are imaginable.
-The team is actively looking at use cases and continuously evolving the GraalVM Python runtime to provide the most
-convenient and least surprising behaviour.
+The team is actively looking at use cases and continuously evolving GraalPy to provide the most convenient and least surprising behavior.
 
-### What performance can I expect from GraalVM's Python runtime?
+### What performance can I expect from GraalPy?
 
-For the pure Python code, performance after warm-up can be expected to be around 5-6 times faster than CPython 3.8 (or 6-7x faster than Jython).
-For native extensions running as LLVM bitcode, CPython is currently slower -- you can expect to see between 0.1x and 0.5x performance.
+For pure Python code, performance after warm-up can be expected to be around 3-4 times faster than CPython 3.10 (or 4-5x faster than Jython).
+Native extensions running in the default mode--with full native access--run at about the same speed as their CPython counterparts.
+For native extensions running as LLVM bitcode to take advantage of our sandboxing features, GraalPy is usually slower--you should expect to reach at most half of CPython's performance.
 
-### I heard languages with JIT compilers have slow startup. Is that true for GraalVM's Python runtime?
+### I heard languages with JIT compilers have slow startup. Is that true for GraalPy?
 
 It depends.
-When you use [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md) with Python, or the `graalpy` launcher of GraalVM, startup is competitive with CPython.
-In any case, both with Native Image or when running on the JVM, you first need to warm up to reach peak performance. This is a complicated story in itself, but, in general, it can take a while (a minute or two) after you have reached and are running your core workload.
+When you use [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md) with Python, or the `graalpy` launcher, startup is competitive with CPython.
+Both with a native executable created by Native Image or when running on the JVM, you first need to warm up to reach peak performance.
+For small workloads, GraalPy often surpasses CPython performance a few seconds after reaching the code loop.
+That being said, the actual startup behavior depends very much on the actual workload.
 
 ### Can I share warmed-up code between multiple Python contexts?
 

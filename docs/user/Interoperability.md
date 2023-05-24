@@ -10,7 +10,7 @@ permalink: /reference-manual/python/Interoperability/
 
 Since GraalVM supports several other programming languages including JavaScript, R,
 Ruby, and those that compile to LLVM bitcode, it also provides a Python API to interact with them.
-In fact, GraalVM uses this API internally to execute Python C extensions using the GraalVM LLVM runtime.
+In fact, GraalVM uses this API internally when executing Python native extensions using the GraalVM LLVM runtime.
 
 You can import the `polyglot` module to interact with other languages:
 ```python
@@ -96,12 +96,12 @@ Python reads the captured group from the JavaScript result and prints it.
 
 As a more complex example, see how you can read a file using R, process the data in Python, and use R again to display the resulting data image, using both the R and Python libraries in conjunction.
 To run this example, first install the required R library:
-```shell
+```bash
 R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 
 This example also uses [image_magix.py](https://www.graalvm.org/resources/img/python/image_magix.py) and works
-on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder that the script below is located in and executed from.
+on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same directory that the script below is located in and run from.
 ```python
 import polyglot
 import sys
@@ -175,10 +175,10 @@ True
 [1, 12]
 ```
 
-In addition to the `type` builtin method, the `java` module exposes the following
+In addition to the `type` built-in method, the `java` module exposes the following
 methods as well:
 
-Builtin                  | Specification
+Built-in                  | Specification
 ---                      | ---
 `instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
 `is_function(obj)`       | returns `True` if `obj` is a Java host language function wrapped using Truffle interop
@@ -202,17 +202,17 @@ True
 
 See [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) for more information about interoperability with other programming languages.
 
-## The Behaviour of Types
+## The Behavior of Types
 
 The interop protocol defines different "types" which can overlap in all kinds of
 ways and have restrictions on how they can interact with Python.
 
 ### Interop Types to Python
 
-Most importantly and upfront - all foreign objects passing into Python have the Python type `foreign`.
+Most importantly and upfront: all foreign objects passing into Python have the Python type `foreign`.
 There is no emulation of i.e., objects that are interop booleans to have the Python type `bool`.
-This is because interop types can overlap in ways that the Python builtin types cannot, and it would not be clear what should take precendence.
-Instead, the `foreign` type defines all of the Python special methods for type conversion that are used throughout the interpreter (methods like `__add__`, `__int__`, `__str__`, `__getitem__`, etc.) and these try to do the right thing based on the interop type (or raise an exception.)
+This is because interop types can overlap in ways that the Python built-in types cannot, and it would not be clear what should take precedence.
+Instead, the `foreign` type defines all of the Python special methods for type conversion that are used throughout the interpreter (methods such as `__add__`, `__int__`, `__str__`, `__getitem__`, etc.) and these try to do the right thing based on the interop type (or raise an exception.)
 
 Types not listed in the below table have no special interpretation in Python right now.
 
@@ -222,14 +222,14 @@ Types not listed in the below table have no special interpretation in Python rig
 | Boolean      | Behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively)                                                                                                                                                                           |
 | Number       | Behaves like Python numbers. Python only has one integral and one floating point type, but it cares about the ranges in some places such as typed arrays.                                                                                                                                                            |
 | String       | Behaves like Python strings.                                                                                                                                                                                                                                                                                         |
-| Buffer       | Buffers are also a concept in Python's native API (albeit a bit different). Interop buffers are treated like Python buffers in some places (like `memoryview`) to avoid copies of data.                                                                                                                              |
+| Buffer       | Buffers are also a concept in Python's native API (albeit a bit different). Interop buffers are treated like Python buffers in some places (such as `memoryview`) to avoid copies of data.                                                                                                                              |
 | Array        | Arrays can be used with subscript access like Python lists, with integers and slices as indices.                                                                                                                                                                                                                     |
 | Hash         | Hashes can be used with subscript access like Python dicts, with any hashable kind of object as key. "Hashable" follows Python semantics, generally all interop types with identity are deemed "hashable". Note that if an interop object is both Array and Hash, the behavior of the subscript access is undefined. |
-| Members      | Members can be read using normal Python ~.~ notation or the `getattr` etc functions.                                                                                                                                                                                                                                 |
+| Members      | Members can be read using normal Python ~.~ notation or the `getattr` etc. functions.                                                                                                                                                                                                                                 |
 | Iterable     | Iterables are treated like Python objects with an `__iter__` method, that is, they can be used in loops and other places that accept Python iterables.                                                                                                                                                               |
 | Iterator     | Iterators are treated like Python objects with a `__next__` method.                                                                                                                                                                                                                                                  |
-| Exception    | Interop exceptions can be caught in generic except clauses.                                                                                                                                                                                                                                                          |
-| MetaObject   | Interop meta objects can be used in subtype and isinstance checks                                                                                                                                                                                                                                                    |
+| Exception    | Interop exceptions can be caught in generic `except` clauses.                                                                                                                                                                                                                                                          |
+| MetaObject   | Interop meta objects can be used in subtype and `isinstance` checks                                                                                                                                                                                                                                                    |
 | Executable   | Executable objects can be executed as functions, but never with keyword arguments.                                                                                                                                                                                                                                   |
 | Instantiable | Instantiable objects behave like executable objects (similar to how Python treats this)                                                                                                                                                                                                                              |
 
