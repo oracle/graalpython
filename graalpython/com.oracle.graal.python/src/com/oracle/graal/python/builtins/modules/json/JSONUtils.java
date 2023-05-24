@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.SubstringNode;
@@ -54,13 +55,13 @@ public abstract class JSONUtils {
     private JSONUtils() {
     }
 
-    private static final TruffleString T_ESC_BACKSLASH = TruffleString.fromConstant("\\\\", TS_ENCODING);
-    private static final TruffleString T_ESC_QUOTE = TruffleString.fromConstant("\\\"", TS_ENCODING);
-    private static final TruffleString T_ESC_B = TruffleString.fromConstant("\\b", TS_ENCODING);
-    private static final TruffleString T_ESC_F = TruffleString.fromConstant("\\f", TS_ENCODING);
-    private static final TruffleString T_ESC_N = TruffleString.fromConstant("\\n", TS_ENCODING);
-    private static final TruffleString T_ESC_R = TruffleString.fromConstant("\\r", TS_ENCODING);
-    private static final TruffleString T_ESC_T = TruffleString.fromConstant("\\t", TS_ENCODING);
+    private static final TruffleString T_ESC_BACKSLASH = tsLiteral("\\\\");
+    private static final TruffleString T_ESC_QUOTE = tsLiteral("\\\"");
+    private static final TruffleString T_ESC_B = tsLiteral("\\b");
+    private static final TruffleString T_ESC_F = tsLiteral("\\f");
+    private static final TruffleString T_ESC_N = tsLiteral("\\n");
+    private static final TruffleString T_ESC_R = tsLiteral("\\r");
+    private static final TruffleString T_ESC_T = tsLiteral("\\t");
 
     static void appendStringUncached(TruffleString ts, TruffleStringBuilderUTF32 builder, boolean asciiOnly) {
         // Note: appending in chunks does not pay off in the uncached case
