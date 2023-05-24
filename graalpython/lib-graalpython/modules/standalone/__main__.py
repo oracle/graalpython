@@ -164,7 +164,7 @@ def bundle_python_resources(
 def write_folder_to_zipfile(zf, folder, prefix, path_filter=lambda file=None, dir=None: False):
     """
     Store a folder with Python modules. We do not store source code, instead,
-    we for each py file we create a pyc entry rightaway. Any other resources in the
+    for each py file we create a pyc entry rightaway. Any other resources in the
     folder are stored as-is. If data_only is given, neither .py nor .pyc files are
     added to the archive.
     """
@@ -225,6 +225,13 @@ def build_binary(targetdir, jc, java_file, ni, parsed_args):
     finally:
         os.chdir(cwd)
 
+def check_output_directory(parsed_args):
+    if os.path.abspath(parsed_args.output_directory).startswith(os.path.abspath(parsed_args.module)):
+        print(
+            "Output directory cannot be placed inside of module folder to run.",
+            sep="\n",
+        )
+        exit(1)
 
 def main(args):
     parser = argparse.ArgumentParser(prog=f"{sys.executable} -m standalone")
@@ -276,6 +283,10 @@ def main(args):
 
     parsed_args = parser.parse_args(args)
 
+    preparing_java_project = hasattr(parsed_args, "output_directory")
+    if preparing_java_project:
+        check_output_directory(parsed_args)
+        
     java_launcher_template = os.path.join(os.path.dirname(__file__), JAVA_LAUNCHER_FILE)
     (
         resource_zip,
@@ -284,8 +295,6 @@ def main(args):
         venv_prefix,
         proj_prefix,
     ) = parse_path_constants(java_launcher_template)
-
-    preparing_java_project = hasattr(parsed_args, "output_directory")
 
     if preparing_java_project:
         ni, jc = "", ""
