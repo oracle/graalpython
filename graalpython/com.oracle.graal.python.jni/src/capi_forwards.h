@@ -791,7 +791,10 @@ void unimplemented(const char* name) {
 #undef PyTruffle_True
 #undef PyTruffle_Type
 #undef PyTruffle_Type_Modified
-#undef PyTruffle_Unicode_AsUnicodeAndSize
+#undef PyTruffle_Unicode_AsUTF8AndSize_CharPtr
+#undef PyTruffle_Unicode_AsUTF8AndSize_Size
+#undef PyTruffle_Unicode_AsUnicodeAndSize_CharPtr
+#undef PyTruffle_Unicode_AsUnicodeAndSize_Size
 #undef PyTruffle_Unicode_AsWideChar
 #undef PyTruffle_Unicode_DecodeUTF32
 #undef PyTruffle_Unicode_FromFormat
@@ -3938,6 +3941,22 @@ PyAPI_FUNC(PyObject*) PyTruffle_SeqIter_New(PyObject* a) {
 }
 PyAPI_FUNC(int) PyTruffle_ToNative(void* a) {
     int result = (int) GraalPyTruffle_ToNative(a);
+    return result;
+}
+PyAPI_FUNC(const char*) PyTruffle_Unicode_AsUTF8AndSize_CharPtr(PyObject* a) {
+    const char* result = (const char*) GraalPyTruffle_Unicode_AsUTF8AndSize_CharPtr(a);
+    return result;
+}
+PyAPI_FUNC(Py_ssize_t) PyTruffle_Unicode_AsUTF8AndSize_Size(PyObject* a) {
+    Py_ssize_t result = (Py_ssize_t) GraalPyTruffle_Unicode_AsUTF8AndSize_Size(a);
+    return result;
+}
+PyAPI_FUNC(Py_UNICODE*) PyTruffle_Unicode_AsUnicodeAndSize_CharPtr(PyObject* a) {
+    Py_UNICODE* result = (Py_UNICODE*) GraalPyTruffle_Unicode_AsUnicodeAndSize_CharPtr(a);
+    return result;
+}
+PyAPI_FUNC(Py_ssize_t) PyTruffle_Unicode_AsUnicodeAndSize_Size(PyObject* a) {
+    Py_ssize_t result = (Py_ssize_t) GraalPyTruffle_Unicode_AsUnicodeAndSize_Size(a);
     return result;
 }
 PyAPI_FUNC(PyObject*) PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
