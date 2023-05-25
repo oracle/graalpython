@@ -41,12 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -57,58 +52,42 @@ import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 
-public abstract class GraalHPyArithmeticNode extends Node {
+public abstract class GraalHPyArithmeticNode {
 
-    // 1 HPy context + 1 operand
-    static final int EXPECTED_ARITY_UNARY = 2;
+    private GraalHPyArithmeticNode() {
+    }
 
-    // 1 HPy context + 2 operands
-    static final int EXPECTED_ARITY_BINARY = 3;
+    public abstract static class HPyUnaryArithmeticNode extends Node {
 
-    // 1 HPy context + 3 operands
-    static final int EXPECTED_ARITY_TERNARY = 4;
+        public abstract Object execute(Object object);
 
-    public abstract Object execute(Object[] arguments) throws ArityException;
+        @NeverDefault
+        public static HPyUnaryArithmeticNode create(UnaryArithmetic operator) {
+            return new HPyUnaryArithmeticCached(operator);
+        }
 
-    abstract static class GraalHPyArithmeticCachedNode extends GraalHPyArithmeticNode {
-        @Child HPyAsPythonObjectNode asPythonObjectNode;
-        @Child private HPyAsHandleNode asHandleNode;
-        @Child private HPyTransformExceptionToNativeNode transformExceptionToNativeNode;
+        public static HPyUnaryArithmeticNode getUncached(UnaryArithmetic operator) {
+            return HPyUnaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
+        }
+    }
 
-        protected GraalHPyArithmeticCachedNode() {
-            asPythonObjectNode = HPyAsPythonObjectNodeGen.create();
-            asHandleNode = HPyAsHandleNodeGen.create();
-            transformExceptionToNativeNode = HPyTransformExceptionToNativeNodeGen.create();
+    static final class HPyUnaryArithmeticCached extends HPyUnaryArithmeticNode {
+        @Child private UnaryOpNode opNode;
+
+        private HPyUnaryArithmeticCached(UnaryArithmetic operator) {
+            opNode = operator.create();
         }
 
         @Override
-        public final Object execute(Object[] arguments) throws ArityException {
-            /*
-             * We need to do argument checking at this position because our helper root node won't
-             * do it.
-             */
-            checkArity(arguments);
-            try {
-                Object result = doOperator(arguments);
-                return asHandleNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return GraalHPyHandle.NULL_HANDLE;
-            }
+        public Object execute(Object object) {
+            return opNode.execute(null, object);
         }
-
-        abstract void checkArity(Object[] arguments) throws ArityException;
-
-        abstract Object doOperator(Object[] arguments);
 
         @Override
         public NodeCost getCost() {
@@ -116,34 +95,21 @@ public abstract class GraalHPyArithmeticNode extends Node {
         }
     }
 
-    abstract static class GraalHPyArithmeticUncachedNode extends GraalHPyArithmeticNode {
+    private static final class HPyUnaryArithmeticUncached extends HPyUnaryArithmeticNode {
+        final UnaryArithmetic operator;
+
+        public HPyUnaryArithmeticUncached(UnaryArithmetic operator) {
+            this.operator = operator;
+        }
 
         @TruffleBoundary
         @Override
-        public final Object execute(Object[] arguments) throws ArityException {
-            /*
-             * We need to do argument checking at this position because our helper root node won't
-             * do it.
-             */
-            checkArity(arguments);
-
-            Object[] pythonArguments = PArguments.create(arguments.length - 1);
-            for (int i = 0; i < PArguments.getUserArgumentLength(pythonArguments); i++) {
-                PArguments.setArgument(pythonArguments, i, HPyAsPythonObjectNodeGen.getUncached().execute(arguments[i + 1]));
-            }
-
-            try {
-                Object result = GenericInvokeNode.invokeUncached(ensureCallTarget(), pythonArguments);
-                return HPyAsHandleNodeGen.getUncached().execute(result);
-            } catch (PException e) {
-                HPyTransformExceptionToNativeNodeGen.executeUncached(e);
-                return GraalHPyHandle.NULL_HANDLE;
-            }
+        public Object execute(Object object) {
+            Object[] pythonArguments = PArguments.create(1);
+            PArguments.setArgument(pythonArguments, 0, object);
+            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+            return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
         }
-
-        abstract void checkArity(Object[] arguments) throws ArityException;
-
-        abstract RootCallTarget ensureCallTarget();
 
         @Override
         public NodeCost getCost() {
@@ -154,235 +120,425 @@ public abstract class GraalHPyArithmeticNode extends Node {
         public boolean isAdoptable() {
             return false;
         }
-    }
 
-    @NeverDefault
-    public static GraalHPyArithmeticNode create(UnaryArithmetic operator) {
-        return new GraalHPyUnaryArithmeticCached(operator);
-    }
-
-    public static GraalHPyArithmeticNode getUncached(UnaryArithmetic operator) {
-        return GraalHPyUnaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
-    }
-
-    static final class GraalHPyUnaryArithmeticCached extends GraalHPyArithmeticCachedNode {
-        @Child private UnaryOpNode opNode;
-
-        GraalHPyUnaryArithmeticCached(UnaryArithmetic operator) {
-            opNode = operator.create();
-        }
-
-        @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_UNARY);
-        }
-
-        @Override
-        Object doOperator(Object[] arguments) {
-            return opNode.execute(null, asPythonObjectNode.execute(arguments[1]));
-        }
-    }
-
-    private static final class GraalHPyUnaryArithmeticUncached extends GraalHPyArithmeticUncachedNode {
-        final UnaryArithmetic operator;
-
-        public GraalHPyUnaryArithmeticUncached(UnaryArithmetic operator) {
-            this.operator = operator;
-        }
-
-        @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_UNARY);
-        }
-
-        @Override
-        RootCallTarget ensureCallTarget() {
-            return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
-        }
-
-        private static final GraalHPyUnaryArithmeticUncached[] UNCACHEDS;
+        private static final HPyUnaryArithmeticUncached[] UNCACHEDS;
         static {
             UnaryArithmetic[] values = UnaryArithmetic.values();
-            UNCACHEDS = new GraalHPyUnaryArithmeticUncached[values.length];
+            UNCACHEDS = new HPyUnaryArithmeticUncached[values.length];
             for (int i = 0; i < values.length; i++) {
-                UNCACHEDS[i] = new GraalHPyUnaryArithmeticUncached(values[i]);
+                UNCACHEDS[i] = new HPyUnaryArithmeticUncached(values[i]);
             }
         }
     }
 
-    @NeverDefault
-    public static GraalHPyBinaryArithmeticCached create(BinaryArithmetic operator) {
-        return new GraalHPyBinaryArithmeticCached(operator);
+    public abstract static class HPyBinaryArithmeticNode extends Node {
+
+        public abstract Object execute(Object arg0, Object arg1);
+
+        @NeverDefault
+        public static HPyBinaryArithmeticNode create(BinaryArithmetic operator) {
+            return new HPyBinaryArithmeticCached(operator);
+        }
+
+        public static HPyBinaryArithmeticNode getUncached(BinaryArithmetic operator) {
+            return HPyBinaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
+        }
     }
 
-    public static GraalHPyBinaryArithmeticUncached getUncached(BinaryArithmetic operator) {
-        return GraalHPyBinaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
-    }
-
-    static final class GraalHPyBinaryArithmeticCached extends GraalHPyArithmeticCachedNode {
+    private static final class HPyBinaryArithmeticCached extends HPyBinaryArithmeticNode {
         @Child private BinaryOpNode opNode;
 
-        GraalHPyBinaryArithmeticCached(BinaryArithmetic operator) {
+        private HPyBinaryArithmeticCached(BinaryArithmetic operator) {
             opNode = operator.create();
         }
 
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_BINARY);
+        public Object execute(Object arg0, Object arg1) {
+            return opNode.executeObject(null, arg0, arg1);
         }
 
         @Override
-        Object doOperator(Object[] arguments) {
-            return opNode.executeObject(null, asPythonObjectNode.execute(arguments[1]), asPythonObjectNode.execute(arguments[2]));
+        public NodeCost getCost() {
+            return NodeCost.NONE;
         }
     }
 
-    private static final class GraalHPyBinaryArithmeticUncached extends GraalHPyArithmeticUncachedNode {
+    private static final class HPyBinaryArithmeticUncached extends HPyBinaryArithmeticNode {
         final BinaryArithmetic operator;
 
-        public GraalHPyBinaryArithmeticUncached(BinaryArithmetic operator) {
+        public HPyBinaryArithmeticUncached(BinaryArithmetic operator) {
             this.operator = operator;
         }
 
+        @TruffleBoundary
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_BINARY);
+        public Object execute(Object arg0, Object arg1) {
+            Object[] pythonArguments = PArguments.create(2);
+            PArguments.setArgument(pythonArguments, 0, arg0);
+            PArguments.setArgument(pythonArguments, 1, arg1);
+            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+            return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
         }
 
         @Override
-        RootCallTarget ensureCallTarget() {
-            return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
         }
 
-        private static final GraalHPyBinaryArithmeticUncached[] UNCACHEDS;
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        private static final HPyBinaryArithmeticUncached[] UNCACHEDS;
         static {
             BinaryArithmetic[] values = BinaryArithmetic.values();
-            UNCACHEDS = new GraalHPyBinaryArithmeticUncached[values.length];
+            UNCACHEDS = new HPyBinaryArithmeticUncached[values.length];
             for (int i = 0; i < values.length; i++) {
-                UNCACHEDS[i] = new GraalHPyBinaryArithmeticUncached(values[i]);
+                UNCACHEDS[i] = new HPyBinaryArithmeticUncached(values[i]);
             }
         }
     }
 
-    @NeverDefault
-    public static GraalHPyTernaryArithmeticCached create(TernaryArithmetic operator) {
-        return new GraalHPyTernaryArithmeticCached(operator);
+    public abstract static class HPyTernaryArithmeticNode extends Node {
+
+        public abstract Object execute(Object arg0, Object arg1, Object arg2);
+
+        @NeverDefault
+        public static HPyTernaryArithmeticNode create(TernaryArithmetic operator) {
+            return new HPyTernaryArithmeticCached(operator);
+        }
+
+        public static HPyTernaryArithmeticNode getUncached(TernaryArithmetic operator) {
+            return HPyTernaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
+        }
     }
 
-    public static GraalHPyTernaryArithmeticUncached getUncached(TernaryArithmetic operator) {
-        return GraalHPyTernaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
-    }
-
-    static final class GraalHPyTernaryArithmeticCached extends GraalHPyArithmeticCachedNode {
+    private static final class HPyTernaryArithmeticCached extends HPyTernaryArithmeticNode {
         @Child private LookupAndCallTernaryNode opNode;
 
-        GraalHPyTernaryArithmeticCached(TernaryArithmetic operator) {
+        private HPyTernaryArithmeticCached(TernaryArithmetic operator) {
             opNode = operator.create();
         }
 
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_TERNARY);
+        public Object execute(Object arg0, Object arg1, Object arg2) {
+            return opNode.execute(null, arg0, arg1, arg2);
         }
 
         @Override
-        Object doOperator(Object[] arguments) {
-            return opNode.execute(null, asPythonObjectNode.execute(arguments[1]), asPythonObjectNode.execute(arguments[2]), asPythonObjectNode.execute(arguments[3]));
+        public NodeCost getCost() {
+            return NodeCost.NONE;
         }
     }
 
-    private static final class GraalHPyTernaryArithmeticUncached extends GraalHPyArithmeticUncachedNode {
+    private static final class HPyTernaryArithmeticUncached extends HPyTernaryArithmeticNode {
         final TernaryArithmetic operator;
 
-        public GraalHPyTernaryArithmeticUncached(TernaryArithmetic operator) {
+        public HPyTernaryArithmeticUncached(TernaryArithmetic operator) {
             this.operator = operator;
         }
 
+        @TruffleBoundary
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyContextFunctions.checkArity(arguments, EXPECTED_ARITY_TERNARY);
+        public Object execute(Object arg0, Object arg1, Object arg2) {
+            Object[] pythonArguments = PArguments.create(3);
+            PArguments.setArgument(pythonArguments, 0, arg0);
+            PArguments.setArgument(pythonArguments, 1, arg1);
+            PArguments.setArgument(pythonArguments, 2, arg2);
+            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+            return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
         }
 
         @Override
-        RootCallTarget ensureCallTarget() {
-            return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
         }
 
-        private static final GraalHPyTernaryArithmeticUncached[] UNCACHEDS;
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        private static final HPyTernaryArithmeticUncached[] UNCACHEDS;
         static {
             TernaryArithmetic[] values = TernaryArithmetic.values();
-            UNCACHEDS = new GraalHPyTernaryArithmeticUncached[values.length];
+            UNCACHEDS = new HPyTernaryArithmeticUncached[values.length];
             for (int i = 0; i < values.length; i++) {
-                UNCACHEDS[i] = new GraalHPyTernaryArithmeticUncached(values[i]);
+                UNCACHEDS[i] = new HPyTernaryArithmeticUncached(values[i]);
             }
         }
     }
 
-    @NeverDefault
-    public static GraalHPyInplaceArithmeticCached create(InplaceArithmetic operator) {
-        return new GraalHPyInplaceArithmeticCached(operator);
+    public abstract static class HPyInplaceArithmeticNode extends Node {
+
+        public abstract Object execute(Object arg0, Object arg1, Object arg2);
+
+        public final Object execute(Object arg0, Object arg1) {
+            return execute(arg0, arg1, PNone.NO_VALUE);
+        }
+
+        @NeverDefault
+        public static HPyInplaceArithmeticNode create(InplaceArithmetic operator) {
+            return new HPyInplaceArithmeticCached(operator);
+        }
+
+        public static HPyInplaceArithmeticNode getUncached(InplaceArithmetic operator) {
+            return HPyInplaceArithmeticUncached.UNCACHEDS[operator.ordinal()];
+        }
     }
 
-    public static GraalHPyInplaceArithmeticUncached getUncached(InplaceArithmetic operator) {
-        return GraalHPyInplaceArithmeticUncached.UNCACHEDS[operator.ordinal()];
-    }
-
-    static final class GraalHPyInplaceArithmeticCached extends GraalHPyArithmeticCachedNode {
+    private static final class HPyInplaceArithmeticCached extends HPyInplaceArithmeticNode {
         @Child private LookupAndCallInplaceNode opNode;
-        private final boolean ternary;
 
-        GraalHPyInplaceArithmeticCached(InplaceArithmetic operator) {
+        private final boolean isTernary;
+
+        private HPyInplaceArithmeticCached(InplaceArithmetic operator) {
             opNode = operator.create();
-            ternary = operator.isTernary();
+            this.isTernary = operator.isTernary();
         }
 
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyInplaceArithmeticCached.checkInplaceArity(arguments, ternary);
-        }
-
-        private static void checkInplaceArity(Object[] arguments, boolean ternary) throws ArityException {
-            // we also need to account for the HPy context
-            if (ternary && arguments.length != 4) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(EXPECTED_ARITY_TERNARY, EXPECTED_ARITY_TERNARY, arguments.length);
-            }
-            if (!ternary && arguments.length != 3) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(EXPECTED_ARITY_BINARY, EXPECTED_ARITY_BINARY, arguments.length);
+        public Object execute(Object arg0, Object arg1, Object arg2) {
+            if (isTernary) {
+                return opNode.executeTernary(null, arg0, arg1, arg2);
+            } else {
+                return opNode.execute(null, arg0, arg1);
             }
         }
 
         @Override
-        Object doOperator(Object[] arguments) {
-            return opNode.execute(null, asPythonObjectNode.execute(arguments[1]), asPythonObjectNode.execute(arguments[2]));
+        public NodeCost getCost() {
+            return NodeCost.NONE;
         }
     }
 
-    private static final class GraalHPyInplaceArithmeticUncached extends GraalHPyArithmeticUncachedNode {
+    private static final class HPyInplaceArithmeticUncached extends HPyInplaceArithmeticNode {
         final InplaceArithmetic operator;
 
-        public GraalHPyInplaceArithmeticUncached(InplaceArithmetic operator) {
+        public HPyInplaceArithmeticUncached(InplaceArithmetic operator) {
             this.operator = operator;
         }
 
+        @TruffleBoundary
         @Override
-        void checkArity(Object[] arguments) throws ArityException {
-            GraalHPyInplaceArithmeticCached.checkInplaceArity(arguments, operator.isTernary());
+        public Object execute(Object arg0, Object arg1, Object arg2) {
+            Object[] pythonArguments = PArguments.create(3);
+            PArguments.setArgument(pythonArguments, 0, arg0);
+            PArguments.setArgument(pythonArguments, 1, arg1);
+            PArguments.setArgument(pythonArguments, 2, arg2);
+            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+            return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
         }
 
         @Override
-        RootCallTarget ensureCallTarget() {
-            return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
         }
 
-        private static final GraalHPyInplaceArithmeticUncached[] UNCACHEDS;
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        private static final HPyInplaceArithmeticUncached[] UNCACHEDS;
         static {
             InplaceArithmetic[] values = InplaceArithmetic.values();
-            UNCACHEDS = new GraalHPyInplaceArithmeticUncached[values.length];
+            UNCACHEDS = new HPyInplaceArithmeticUncached[values.length];
             for (int i = 0; i < values.length; i++) {
-                UNCACHEDS[i] = new GraalHPyInplaceArithmeticUncached(values[i]);
+                UNCACHEDS[i] = new HPyInplaceArithmeticUncached(values[i]);
             }
         }
     }
+
+// @NeverDefault
+// public static GraalHPyBinaryArithmeticCached create(BinaryArithmetic operator) {
+// return new GraalHPyBinaryArithmeticCached(operator);
+// }
+//
+// public static GraalHPyBinaryArithmeticUncached getUncached(BinaryArithmetic operator) {
+// return GraalHPyBinaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
+// }
+//
+// static final class GraalHPyBinaryArithmeticCached extends GraalHPyArithmeticCachedNode {
+// @Child private BinaryOpNode opNode;
+//
+// GraalHPyBinaryArithmeticCached(BinaryArithmetic operator) {
+// opNode = operator.create();
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// checkArity(arguments, EXPECTED_ARITY_BINARY);
+// }
+//
+// @Override
+// Object doOperator(Object[] arguments) {
+// return opNode.executeObject(null, asPythonObjectNode.execute(arguments[1]),
+// asPythonObjectNode.execute(arguments[2]));
+// }
+// }
+//
+// private static final class GraalHPyBinaryArithmeticUncached extends
+// GraalHPyArithmeticUncachedNode {
+// final BinaryArithmetic operator;
+//
+// public GraalHPyBinaryArithmeticUncached(BinaryArithmetic operator) {
+// this.operator = operator;
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// checkArity(arguments, EXPECTED_ARITY_BINARY);
+// }
+//
+// @Override
+// RootCallTarget ensureCallTarget() {
+// return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+// }
+//
+// private static final GraalHPyBinaryArithmeticUncached[] UNCACHEDS;
+// static {
+// BinaryArithmetic[] values = BinaryArithmetic.values();
+// UNCACHEDS = new GraalHPyBinaryArithmeticUncached[values.length];
+// for (int i = 0; i < values.length; i++) {
+// UNCACHEDS[i] = new GraalHPyBinaryArithmeticUncached(values[i]);
+// }
+// }
+// }
+//
+// @NeverDefault
+// public static GraalHPyTernaryArithmeticCached create(TernaryArithmetic operator) {
+// return new GraalHPyTernaryArithmeticCached(operator);
+// }
+//
+// public static GraalHPyTernaryArithmeticUncached getUncached(TernaryArithmetic operator) {
+// return GraalHPyTernaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
+// }
+//
+// static final class GraalHPyTernaryArithmeticCached extends GraalHPyArithmeticCachedNode {
+// @Child private LookupAndCallTernaryNode opNode;
+//
+// GraalHPyTernaryArithmeticCached(TernaryArithmetic operator) {
+// opNode = operator.create();
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// checkArity(arguments, EXPECTED_ARITY_TERNARY);
+// }
+//
+// @Override
+// Object doOperator(Object[] arguments) {
+// return opNode.execute(null, asPythonObjectNode.execute(arguments[1]),
+// asPythonObjectNode.execute(arguments[2]), asPythonObjectNode.execute(arguments[3]));
+// }
+// }
+//
+// private static final class GraalHPyTernaryArithmeticUncached extends
+// GraalHPyArithmeticUncachedNode {
+// final TernaryArithmetic operator;
+//
+// public GraalHPyTernaryArithmeticUncached(TernaryArithmetic operator) {
+// this.operator = operator;
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// checkArity(arguments, EXPECTED_ARITY_TERNARY);
+// }
+//
+// @Override
+// RootCallTarget ensureCallTarget() {
+// return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+// }
+//
+// private static final GraalHPyTernaryArithmeticUncached[] UNCACHEDS;
+// static {
+// TernaryArithmetic[] values = TernaryArithmetic.values();
+// UNCACHEDS = new GraalHPyTernaryArithmeticUncached[values.length];
+// for (int i = 0; i < values.length; i++) {
+// UNCACHEDS[i] = new GraalHPyTernaryArithmeticUncached(values[i]);
+// }
+// }
+// }
+//
+// @NeverDefault
+// public static GraalHPyInplaceArithmeticCached create(InplaceArithmetic operator) {
+// return new GraalHPyInplaceArithmeticCached(operator);
+// }
+//
+// public static GraalHPyInplaceArithmeticUncached getUncached(InplaceArithmetic operator) {
+// return GraalHPyInplaceArithmeticUncached.UNCACHEDS[operator.ordinal()];
+// }
+//
+// static final class GraalHPyInplaceArithmeticCached extends GraalHPyArithmeticCachedNode {
+// @Child private LookupAndCallInplaceNode opNode;
+// private final boolean ternary;
+//
+// GraalHPyInplaceArithmeticCached(InplaceArithmetic operator) {
+// opNode = operator.create();
+// ternary = operator.isTernary();
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// GraalHPyInplaceArithmeticCached.checkInplaceArity(arguments, ternary);
+// }
+//
+// private static void checkInplaceArity(Object[] arguments, boolean ternary) throws ArityException
+// {
+// // we also need to account for the HPy context
+// if (ternary && arguments.length != 4) {
+// CompilerDirectives.transferToInterpreterAndInvalidate();
+// throw ArityException.create(EXPECTED_ARITY_TERNARY, EXPECTED_ARITY_TERNARY, arguments.length);
+// }
+// if (!ternary && arguments.length != 3) {
+// CompilerDirectives.transferToInterpreterAndInvalidate();
+// throw ArityException.create(EXPECTED_ARITY_BINARY, EXPECTED_ARITY_BINARY, arguments.length);
+// }
+// }
+//
+// @Override
+// Object doOperator(Object[] arguments) {
+// return opNode.execute(null, asPythonObjectNode.execute(arguments[1]),
+// asPythonObjectNode.execute(arguments[2]));
+// }
+// }
+//
+// private static final class GraalHPyInplaceArithmeticUncached extends
+// GraalHPyArithmeticUncachedNode {
+// final InplaceArithmetic operator;
+//
+// public GraalHPyInplaceArithmeticUncached(InplaceArithmetic operator) {
+// this.operator = operator;
+// }
+//
+// @Override
+// void checkArity(Object[] arguments) throws ArityException {
+// GraalHPyInplaceArithmeticCached.checkInplaceArity(arguments, operator.isTernary());
+// }
+//
+// @Override
+// RootCallTarget ensureCallTarget() {
+// return PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
+// }
+//
+// private static final GraalHPyInplaceArithmeticUncached[] UNCACHEDS;
+// static {
+// InplaceArithmetic[] values = InplaceArithmetic.values();
+// UNCACHEDS = new GraalHPyInplaceArithmeticUncached[values.length];
+// for (int i = 0; i < values.length; i++) {
+// UNCACHEDS[i] = new GraalHPyInplaceArithmeticUncached(values[i]);
+// }
+// }
+// }
+//
+// static void checkArity(Object[] arguments, int expectedArity) throws ArityException {
+// if (arguments.length != expectedArity) {
+// CompilerDirectives.transferToInterpreterAndInvalidate();
+// throw ArityException.create(expectedArity, expectedArity, arguments.length);
+// }
+// }
+
 }
