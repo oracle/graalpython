@@ -56,11 +56,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsule_IsValid;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -128,12 +128,12 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object createCodec(PyCapsule arg,
-                        @Cached PythonCextCapsuleBuiltins.NameMatchesNode nameMatchesNode) {
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             return createCodec(arg, nameMatchesNode, factory(), getRaiseNode());
         }
 
         static Object createCodec(PyCapsule arg,
-                        PythonCextCapsuleBuiltins.NameMatchesNode nameMatchesNode,
+                        PyCapsuleNameMatchesNode nameMatchesNode,
                         PythonObjectFactory factory,
                         PRaiseNode raiseNode) {
             if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, nameMatchesNode) == 0) {
