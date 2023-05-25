@@ -90,7 +90,27 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             super(handlerFactory);
         }
 
-        @Specialization
+        @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        Object addC(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node node,
+                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
+                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Cached InlinedGetClassNode getlClassNode,
+                        @Cached InlinedGetClassNode getrClassNode,
+                        @Cached InlinedConditionProfile p1,
+                        @Cached InlinedConditionProfile p2,
+                        @Cached InlinedConditionProfile p3,
+                        @Cached BinaryOp1Node binaryOp1Node,
+                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return add(frame, left, right, node, getClassNode, getattr, getMethodsFlagsNode,
+                            getlClassNode, getrClassNode, p1, p2, p3,
+                            binaryOp1Node, slot1BINFULLNode);
+        }
+
+        @Specialization(replaces = "addC")
         Object add(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node node,
                         @Cached InlinedGetClassNode getClassNode,
@@ -145,7 +165,26 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             super(handlerFactory);
         }
 
-        @Specialization
+        @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        Object mulC(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node node,
+                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
+                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Cached InlinedGetClassNode getlClassNode,
+                        @Cached InlinedGetClassNode getrClassNode,
+                        @Cached InlinedConditionProfile p1,
+                        @Cached InlinedConditionProfile p2,
+                        @Cached InlinedConditionProfile p3,
+                        @Cached BinaryOp1Node binaryOp1Node,
+                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return mul(frame, left, right, node, getClassNode, getattr, getMethodsFlagsNode, getlClassNode,
+                            getrClassNode, p1, p2, p3, binaryOp1Node, slot1BINFULLNode);
+        }
+
+        @Specialization(replaces = "mulC")
         Object mul(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node node,
                         @Cached InlinedGetClassNode getClassNode,
@@ -209,7 +248,23 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             this.rslot = rslot;
         }
 
-        @Specialization
+        @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        Object binaryOpC(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node node,
+                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Cached InlinedGetClassNode getlClassNode,
+                        @Cached InlinedGetClassNode getrClassNode,
+                        @Cached InlinedConditionProfile p1,
+                        @Cached InlinedConditionProfile p2,
+                        @Cached BinaryOp1Node binaryOp1Node,
+                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return binaryOp(frame, left, right, node, getMethodsFlagsNode, getlClassNode, getrClassNode, p1, p2,
+                            binaryOp1Node, slot1BINFULLNode);
+        }
+
+        @Specialization(replaces = "binaryOpC")
         Object binaryOp(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node node,
                         @Cached GetMethodsFlagsNode getMethodsFlagsNode,
