@@ -246,12 +246,11 @@ const char* PyUnicode_AsUTF8(PyObject *unicode) {
 }
 
 const char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
-    PyObject *result;
-    result = _PyUnicode_AsUTF8String(unicode, NULL);
-    if (psize) {
-        *psize = PyObject_Length(result);
+    const char* charptr = GraalPyTruffle_Unicode_AsUTF8AndSize_CharPtr(unicode);
+    if (charptr && psize) {
+        *psize = GraalPyTruffle_Unicode_AsUTF8AndSize_Size(unicode);
     }
-    return PyBytes_AsString(result);
+    return charptr;
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -295,13 +294,11 @@ Py_UNICODE* PyUnicode_AsUnicode(PyObject *unicode) {
 }
 
 Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
-    PyObject* bytes = GraalPyTruffle_Unicode_AsWideChar(unicode, Py_UNICODE_SIZE);
-    if (bytes != NULL) {
-        // exclude null terminator at the end
-        *size = PyBytes_Size(bytes) / Py_UNICODE_SIZE;
-        return (Py_UNICODE*) PyBytes_AsString(bytes);
+    Py_UNICODE* charptr = GraalPyTruffle_Unicode_AsUnicodeAndSize_CharPtr(unicode);
+    if (charptr && size) {
+        *size = GraalPyTruffle_Unicode_AsUnicodeAndSize_Size(unicode);
     }
-    return NULL;
+    return charptr;
 }
 
 int _PyUnicode_Ready(PyObject *unicode) {
