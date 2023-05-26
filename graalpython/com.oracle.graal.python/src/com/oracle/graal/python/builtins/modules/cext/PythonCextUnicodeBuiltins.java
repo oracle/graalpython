@@ -875,7 +875,7 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyTruffle_Unicode_AsUTF8AndSize_CharPtr extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object doUnicode(PString s,
+        static Object doUnicode(PString s,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @Cached _PyUnicode_AsUTF8String asUTF8String) {
@@ -884,6 +884,11 @@ public final class PythonCextUnicodeBuiltins {
                 s.setUtf8Bytes(bytes);
             }
             return new PySequenceArrayWrapper(s.getUtf8Bytes(), 1);
+        }
+
+        @Fallback
+        Object doError(@SuppressWarnings("unused") Object s) {
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
@@ -911,6 +916,11 @@ public final class PythonCextUnicodeBuiltins {
                 s.setWCharBytes(bytes);
             }
             return new PySequenceArrayWrapper(s.getWCharBytes(), 1);
+        }
+
+        @Fallback
+        Object doError(@SuppressWarnings("unused") Object s) {
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
