@@ -323,6 +323,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
+    public boolean setsUpCalleeContext() {
+        return true;
+    }
+
+    @Override
     public Object execute(VirtualFrame frame) {
         if (body == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
