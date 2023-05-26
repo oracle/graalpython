@@ -61,6 +61,7 @@
 #define DO_UPCALL_HPYLISTBUILDER(jni_ctx, name, ...) ((HPyListBuilder){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
+#define DO_UPCALL_INTPTR_T(jni_ctx, name, ...) (intptr_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_INT0(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
@@ -70,7 +71,7 @@
 #define DO_UPCALL_VOID0(jni_ctx, name) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_HPY_SSIZE_T DO_UPCALL_LONG
 #define DO_UPCALL_HPY_HASH_T DO_UPCALL_LONG
-#define DO_UPCALL_HPY_UCS4 DO_UPCALL_LONG
+#define DO_UPCALL_HPY_UCS4 DO_UPCALL_INT
 #define DO_UPCALL_UNSIGNED_LONG DO_UPCALL_LONG
 #define DO_UPCALL_LONG_LONG DO_UPCALL_LONG
 #define DO_UPCALL_UNSIGNED_LONG_LONG DO_UPCALL_LONG
@@ -161,7 +162,7 @@ _buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
     dest->internal = src->internal;
 }
 
-#define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
+#define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_backend))
 
 _HPy_HIDDEN extern JNIEnv* jniEnv;
 

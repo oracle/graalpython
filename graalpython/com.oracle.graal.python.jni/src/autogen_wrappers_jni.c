@@ -54,184 +54,337 @@
 #include "hpy_jni.h"
 #include "hpynative.h"
 #include "hpy_log.h"
+#include "com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNIContext.h"
 #include "autogen_ctx_init_jni.h"
 
-#define TRAMPOLINE(FUN_NAME) Java_GraalHPyJNIContext_ ## FUN_NAME
+#define TRAMPOLINE(FUN_NAME) Java_com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNIContext_ ## FUN_NAME
 
 static jmethodID jniMethod_ctx_Module_Create;
+static HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def);
 static jmethodID jniMethod_ctx_Dup;
+static HPy ctx_Dup_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Close;
+static void ctx_Close_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_FromLong;
+static HPy ctx_Long_FromLong_jni(HPyContext *ctx, long value);
 static jmethodID jniMethod_ctx_Long_FromUnsignedLong;
+static HPy ctx_Long_FromUnsignedLong_jni(HPyContext *ctx, unsigned long value);
 static jmethodID jniMethod_ctx_Long_FromLongLong;
+static HPy ctx_Long_FromLongLong_jni(HPyContext *ctx, long long v);
 static jmethodID jniMethod_ctx_Long_FromUnsignedLongLong;
+static HPy ctx_Long_FromUnsignedLongLong_jni(HPyContext *ctx, unsigned long long v);
 static jmethodID jniMethod_ctx_Long_FromSize_t;
+static HPy ctx_Long_FromSize_t_jni(HPyContext *ctx, size_t value);
 static jmethodID jniMethod_ctx_Long_FromSsize_t;
+static HPy ctx_Long_FromSsize_t_jni(HPyContext *ctx, HPy_ssize_t value);
 static jmethodID jniMethod_ctx_Long_AsLong;
+static long ctx_Long_AsLong_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsUnsignedLong;
+static unsigned long ctx_Long_AsUnsignedLong_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsUnsignedLongMask;
+static unsigned long ctx_Long_AsUnsignedLongMask_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsLongLong;
+static long long ctx_Long_AsLongLong_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsUnsignedLongLong;
+static unsigned long long ctx_Long_AsUnsignedLongLong_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsUnsignedLongLongMask;
+static unsigned long long ctx_Long_AsUnsignedLongLongMask_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsSize_t;
+static size_t ctx_Long_AsSize_t_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsSsize_t;
+static HPy_ssize_t ctx_Long_AsSsize_t_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsVoidPtr;
+static void *ctx_Long_AsVoidPtr_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsDouble;
+static double ctx_Long_AsDouble_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Float_FromDouble;
+static HPy ctx_Float_FromDouble_jni(HPyContext *ctx, double v);
 static jmethodID jniMethod_ctx_Float_AsDouble;
+static double ctx_Float_AsDouble_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bool_FromLong;
+static HPy ctx_Bool_FromLong_jni(HPyContext *ctx, long v);
 static jmethodID jniMethod_ctx_Length;
+static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Sequence_Check;
+static int ctx_Sequence_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Number_Check;
+static int ctx_Number_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Add;
+static HPy ctx_Add_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Subtract;
+static HPy ctx_Subtract_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Multiply;
+static HPy ctx_Multiply_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_MatrixMultiply;
+static HPy ctx_MatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_FloorDivide;
+static HPy ctx_FloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_TrueDivide;
+static HPy ctx_TrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Remainder;
+static HPy ctx_Remainder_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Divmod;
+static HPy ctx_Divmod_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Power;
+static HPy ctx_Power_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3);
 static jmethodID jniMethod_ctx_Negative;
+static HPy ctx_Negative_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Positive;
+static HPy ctx_Positive_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Absolute;
+static HPy ctx_Absolute_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Invert;
+static HPy ctx_Invert_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Lshift;
+static HPy ctx_Lshift_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Rshift;
+static HPy ctx_Rshift_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_And;
+static HPy ctx_And_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Xor;
+static HPy ctx_Xor_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Or;
+static HPy ctx_Or_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Index;
+static HPy ctx_Index_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Long;
+static HPy ctx_Long_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_Float;
+static HPy ctx_Float_jni(HPyContext *ctx, HPy h1);
 static jmethodID jniMethod_ctx_InPlaceAdd;
+static HPy ctx_InPlaceAdd_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceSubtract;
+static HPy ctx_InPlaceSubtract_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceMultiply;
+static HPy ctx_InPlaceMultiply_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceMatrixMultiply;
+static HPy ctx_InPlaceMatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceFloorDivide;
+static HPy ctx_InPlaceFloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceTrueDivide;
+static HPy ctx_InPlaceTrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceRemainder;
+static HPy ctx_InPlaceRemainder_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlacePower;
+static HPy ctx_InPlacePower_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3);
 static jmethodID jniMethod_ctx_InPlaceLshift;
+static HPy ctx_InPlaceLshift_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceRshift;
+static HPy ctx_InPlaceRshift_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceAnd;
+static HPy ctx_InPlaceAnd_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceXor;
+static HPy ctx_InPlaceXor_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_InPlaceOr;
+static HPy ctx_InPlaceOr_jni(HPyContext *ctx, HPy h1, HPy h2);
 static jmethodID jniMethod_ctx_Callable_Check;
+static int ctx_Callable_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_CallTupleDict;
+static HPy ctx_CallTupleDict_jni(HPyContext *ctx, HPy callable, HPy args, HPy kw);
 static jmethodID jniMethod_ctx_FatalError;
+static void ctx_FatalError_jni(HPyContext *ctx, const char *message);
 static jmethodID jniMethod_ctx_Err_SetString;
+static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *message);
 static jmethodID jniMethod_ctx_Err_SetObject;
+static void ctx_Err_SetObject_jni(HPyContext *ctx, HPy h_type, HPy h_value);
 static jmethodID jniMethod_ctx_Err_SetFromErrnoWithFilename;
+static HPy ctx_Err_SetFromErrnoWithFilename_jni(HPyContext *ctx, HPy h_type, const char *filename_fsencoded);
 static jmethodID jniMethod_ctx_Err_SetFromErrnoWithFilenameObjects;
+static void ctx_Err_SetFromErrnoWithFilenameObjects_jni(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2);
 static jmethodID jniMethod_ctx_Err_Occurred;
+static int ctx_Err_Occurred_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Err_ExceptionMatches;
+static int ctx_Err_ExceptionMatches_jni(HPyContext *ctx, HPy exc);
 static jmethodID jniMethod_ctx_Err_NoMemory;
+static void ctx_Err_NoMemory_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Err_Clear;
+static void ctx_Err_Clear_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Err_NewException;
+static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *name, HPy base, HPy dict);
 static jmethodID jniMethod_ctx_Err_NewExceptionWithDoc;
+static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict);
 static jmethodID jniMethod_ctx_Err_WarnEx;
+static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level);
 static jmethodID jniMethod_ctx_Err_WriteUnraisable;
+static void ctx_Err_WriteUnraisable_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_IsTrue;
+static int ctx_IsTrue_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Type_FromSpec;
+static HPy ctx_Type_FromSpec_jni(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params);
 static jmethodID jniMethod_ctx_Type_GenericNew;
+static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw);
 static jmethodID jniMethod_ctx_GetAttr;
-static jmethodID jniMethod_ctx_GetAttr_s;
+static HPy ctx_GetAttr_jni(HPyContext *ctx, HPy obj, HPy name);
 static jmethodID jniMethod_ctx_MaybeGetAttr_s;
+static HPy ctx_MaybeGetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name);
 static jmethodID jniMethod_ctx_HasAttr;
+static int ctx_HasAttr_jni(HPyContext *ctx, HPy obj, HPy name);
 static jmethodID jniMethod_ctx_HasAttr_s;
+static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *name);
 static jmethodID jniMethod_ctx_SetAttr;
+static int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value);
 static jmethodID jniMethod_ctx_SetAttr_s;
+static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name, HPy value);
 static jmethodID jniMethod_ctx_GetItem;
+static HPy ctx_GetItem_jni(HPyContext *ctx, HPy obj, HPy key);
 static jmethodID jniMethod_ctx_GetItem_i;
-static jmethodID jniMethod_ctx_GetItem_s;
+static HPy ctx_GetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx);
 static jmethodID jniMethod_ctx_Contains;
+static int ctx_Contains_jni(HPyContext *ctx, HPy container, HPy key);
 static jmethodID jniMethod_ctx_SetItem;
+static int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value);
 static jmethodID jniMethod_ctx_SetItem_i;
-static jmethodID jniMethod_ctx_SetItem_s;
+static int ctx_SetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value);
 static jmethodID jniMethod_ctx_Type;
+static HPy ctx_Type_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_TypeCheck;
+static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type);
 static jmethodID jniMethod_ctx_TypeCheck_g;
+static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type);
 static jmethodID jniMethod_ctx_SetType;
+static int ctx_SetType_jni(HPyContext *ctx, HPy obj, HPy type);
 static jmethodID jniMethod_ctx_Type_IsSubtype;
+static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type);
 static jmethodID jniMethod_ctx_Type_GetName;
+static const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type);
 static jmethodID jniMethod_ctx_Is;
+static int ctx_Is_jni(HPyContext *ctx, HPy obj, HPy other);
 static jmethodID jniMethod_ctx_Is_g;
+static int ctx_Is_g_jni(HPyContext *ctx, HPy obj, HPyGlobal other);
 static jmethodID jniMethod_ctx_AsStruct;
+static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_AsStructLegacy;
+static void *ctx_AsStructLegacy_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_New;
+static HPy ctx_New_jni(HPyContext *ctx, HPy h_type, void **data);
 static jmethodID jniMethod_ctx_Repr;
+static HPy ctx_Repr_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_Str;
+static HPy ctx_Str_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_ASCII;
+static HPy ctx_ASCII_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_Bytes;
+static HPy ctx_Bytes_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_RichCompare;
+static HPy ctx_RichCompare_jni(HPyContext *ctx, HPy v, HPy w, int op);
 static jmethodID jniMethod_ctx_RichCompareBool;
+static int ctx_RichCompareBool_jni(HPyContext *ctx, HPy v, HPy w, int op);
 static jmethodID jniMethod_ctx_Hash;
+static HPy_hash_t ctx_Hash_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_SeqIter_New;
+static HPy ctx_SeqIter_New_jni(HPyContext *ctx, HPy seq);
 static jmethodID jniMethod_ctx_Bytes_Check;
+static int ctx_Bytes_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_Size;
+static HPy_ssize_t ctx_Bytes_Size_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_GET_SIZE;
+static HPy_ssize_t ctx_Bytes_GET_SIZE_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_AsString;
+static char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_AS_STRING;
+static char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_FromString;
+static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *v);
 static jmethodID jniMethod_ctx_Bytes_FromStringAndSize;
+static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t len);
 static jmethodID jniMethod_ctx_Unicode_FromString;
+static HPy ctx_Unicode_FromString_jni(HPyContext *ctx, const char *utf8);
 static jmethodID jniMethod_ctx_Unicode_Check;
+static int ctx_Unicode_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_AsASCIIString;
+static HPy ctx_Unicode_AsASCIIString_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_AsLatin1String;
+static HPy ctx_Unicode_AsLatin1String_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_AsUTF8String;
+static HPy ctx_Unicode_AsUTF8String_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_AsUTF8AndSize;
-static jmethodID jniMethod_ctx_Unicode_FromWideChar;
+static const char *ctx_Unicode_AsUTF8AndSize_jni(HPyContext *ctx, HPy h, HPy_ssize_t *size);
+_HPy_HIDDEN jmethodID jniMethod_ctx_Unicode_FromWideChar;
 static jmethodID jniMethod_ctx_Unicode_DecodeFSDefault;
+static HPy ctx_Unicode_DecodeFSDefault_jni(HPyContext *ctx, const char *v);
 static jmethodID jniMethod_ctx_Unicode_DecodeFSDefaultAndSize;
+static HPy ctx_Unicode_DecodeFSDefaultAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t size);
 static jmethodID jniMethod_ctx_Unicode_EncodeFSDefault;
+static HPy ctx_Unicode_EncodeFSDefault_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_ReadChar;
+static HPy_UCS4 ctx_Unicode_ReadChar_jni(HPyContext *ctx, HPy h, HPy_ssize_t index);
 static jmethodID jniMethod_ctx_Unicode_DecodeASCII;
+static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
 static jmethodID jniMethod_ctx_Unicode_DecodeLatin1;
+static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
 static jmethodID jniMethod_ctx_Unicode_FromEncodedObject;
+static HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
 static jmethodID jniMethod_ctx_Unicode_InternFromString;
+static HPy ctx_Unicode_InternFromString_jni(HPyContext *ctx, const char *str);
 static jmethodID jniMethod_ctx_Unicode_Substring;
+static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end);
 static jmethodID jniMethod_ctx_List_Check;
+static int ctx_List_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_List_New;
+static HPy ctx_List_New_jni(HPyContext *ctx, HPy_ssize_t len);
 static jmethodID jniMethod_ctx_List_Append;
+static int ctx_List_Append_jni(HPyContext *ctx, HPy h_list, HPy h_item);
 static jmethodID jniMethod_ctx_Dict_Check;
+static int ctx_Dict_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Dict_New;
+static HPy ctx_Dict_New_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Dict_Keys;
+static HPy ctx_Dict_Keys_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Dict_GetItem;
+static HPy ctx_Dict_GetItem_jni(HPyContext *ctx, HPy op, HPy key);
 static jmethodID jniMethod_ctx_Tuple_Check;
-static jmethodID jniMethod_ctx_Tuple_FromArray;
+static int ctx_Tuple_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Slice_Unpack;
+static int ctx_Slice_Unpack_jni(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
 static jmethodID jniMethod_ctx_ContextVar_New;
-static jmethodID jniMethod_ctx_ContextVar_Get;
+static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value);
 static jmethodID jniMethod_ctx_ContextVar_Set;
+static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value);
 static jmethodID jniMethod_ctx_Import_ImportModule;
+static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *name);
 static jmethodID jniMethod_ctx_Capsule_New;
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor);
 static jmethodID jniMethod_ctx_Capsule_Get;
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name);
 static jmethodID jniMethod_ctx_Capsule_IsValid;
+static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *name);
 static jmethodID jniMethod_ctx_Capsule_Set;
+static int ctx_Capsule_Set_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value);
 static jmethodID jniMethod_ctx_FromPyObject;
+static HPy ctx_FromPyObject_jni(HPyContext *ctx, cpy_PyObject *obj);
 static jmethodID jniMethod_ctx_AsPyObject;
-static jmethodID jniMethod_ctx_CallRealFunctionFromTrampoline;
+static cpy_PyObject *ctx_AsPyObject_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_ListBuilder_New;
+static HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size);
 static jmethodID jniMethod_ctx_ListBuilder_Set;
+static void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item);
 static jmethodID jniMethod_ctx_ListBuilder_Build;
+static HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder);
 static jmethodID jniMethod_ctx_ListBuilder_Cancel;
-static jmethodID jniMethod_ctx_TupleBuilder_New;
-static jmethodID jniMethod_ctx_TupleBuilder_Set;
-static jmethodID jniMethod_ctx_TupleBuilder_Build;
-static jmethodID jniMethod_ctx_TupleBuilder_Cancel;
+static void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder);
+_HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_New;
+_HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Set;
+_HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Build;
+_HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Cancel;
 static jmethodID jniMethod_ctx_Tracker_New;
+static HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t size);
 static jmethodID jniMethod_ctx_Tracker_Add;
+static int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
 static jmethodID jniMethod_ctx_Tracker_ForgetAll;
+static void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
 static jmethodID jniMethod_ctx_Tracker_Close;
-static jmethodID jniMethod_ctx_Field_Store;
+static void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
 static jmethodID jniMethod_ctx_Field_Load;
+static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field);
 static jmethodID jniMethod_ctx_ReenterPythonExecution;
+static void ctx_ReenterPythonExecution_jni(HPyContext *ctx, HPyThreadState state);
 static jmethodID jniMethod_ctx_LeavePythonExecution;
-static jmethodID jniMethod_ctx_Global_Store;
-static jmethodID jniMethod_ctx_Global_Load;
+static HPyThreadState ctx_LeavePythonExecution_jni(HPyContext *ctx);
+_HPy_HIDDEN jmethodID jniMethod_ctx_Global_Load;
 static jmethodID jniMethod_ctx_Dump;
+static void ctx_Dump_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Type_CheckSlot;
+static int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value);
 
 _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx, jlongArray jctx_handles)
 {
@@ -343,7 +496,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Close = &ctx_Close_jni;
-    jniMethod_ctx_Long_FromLong = (*env)->GetMethodID(env, clazz, "ctxLongFromLong", "(L)J");
+    jniMethod_ctx_Long_FromLong = (*env)->GetMethodID(env, clazz, "ctxLongFromLong", "(J)J");
     if (jniMethod_ctx_Long_FromLong == NULL) {
         LOGS("ERROR: Java method ctxLongFromLong not found found !\n");
         return 1;
@@ -379,7 +532,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Long_FromSsize_t = &ctx_Long_FromSsize_t_jni;
-    jniMethod_ctx_Long_AsLong = (*env)->GetMethodID(env, clazz, "ctxLongAsLong", "(J)L");
+    jniMethod_ctx_Long_AsLong = (*env)->GetMethodID(env, clazz, "ctxLongAsLong", "(J)J");
     if (jniMethod_ctx_Long_AsLong == NULL) {
         LOGS("ERROR: Java method ctxLongAsLong not found found !\n");
         return 1;
@@ -451,7 +604,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Float_AsDouble = &ctx_Float_AsDouble_jni;
-    jniMethod_ctx_Bool_FromLong = (*env)->GetMethodID(env, clazz, "ctxBoolFromLong", "(L)J");
+    jniMethod_ctx_Bool_FromLong = (*env)->GetMethodID(env, clazz, "ctxBoolFromLong", "(J)J");
     if (jniMethod_ctx_Bool_FromLong == NULL) {
         LOGS("ERROR: Java method ctxBoolFromLong not found found !\n");
         return 1;
@@ -793,12 +946,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_GetAttr = &ctx_GetAttr_jni;
-    jniMethod_ctx_GetAttr_s = (*env)->GetMethodID(env, clazz, "ctxGetAttrs", "(JJ)J");
-    if (jniMethod_ctx_GetAttr_s == NULL) {
-        LOGS("ERROR: Java method ctxGetAttrs not found found !\n");
-        return 1;
-    }
-    ctx->ctx_GetAttr_s = &ctx_GetAttr_s_jni;
     jniMethod_ctx_MaybeGetAttr_s = (*env)->GetMethodID(env, clazz, "ctxMaybeGetAttrs", "(JJ)J");
     if (jniMethod_ctx_MaybeGetAttr_s == NULL) {
         LOGS("ERROR: Java method ctxMaybeGetAttrs not found found !\n");
@@ -841,12 +988,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_GetItem_i = &ctx_GetItem_i_jni;
-    jniMethod_ctx_GetItem_s = (*env)->GetMethodID(env, clazz, "ctxGetItems", "(JJ)J");
-    if (jniMethod_ctx_GetItem_s == NULL) {
-        LOGS("ERROR: Java method ctxGetItems not found found !\n");
-        return 1;
-    }
-    ctx->ctx_GetItem_s = &ctx_GetItem_s_jni;
     jniMethod_ctx_Contains = (*env)->GetMethodID(env, clazz, "ctxContains", "(JJ)I");
     if (jniMethod_ctx_Contains == NULL) {
         LOGS("ERROR: Java method ctxContains not found found !\n");
@@ -865,12 +1006,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_SetItem_i = &ctx_SetItem_i_jni;
-    jniMethod_ctx_SetItem_s = (*env)->GetMethodID(env, clazz, "ctxSetItems", "(JJJ)I");
-    if (jniMethod_ctx_SetItem_s == NULL) {
-        LOGS("ERROR: Java method ctxSetItems not found found !\n");
-        return 1;
-    }
-    ctx->ctx_SetItem_s = &ctx_SetItem_s_jni;
     jniMethod_ctx_Type = (*env)->GetMethodID(env, clazz, "ctxType", "(J)J");
     if (jniMethod_ctx_Type == NULL) {
         LOGS("ERROR: Java method ctxType not found found !\n");
@@ -1171,12 +1306,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Tuple_Check = &ctx_Tuple_Check_jni;
-    jniMethod_ctx_Tuple_FromArray = (*env)->GetMethodID(env, clazz, "ctxTupleFromArray", "(JJ)J");
-    if (jniMethod_ctx_Tuple_FromArray == NULL) {
-        LOGS("ERROR: Java method ctxTupleFromArray not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Tuple_FromArray = &ctx_Tuple_FromArray_jni;
     jniMethod_ctx_Slice_Unpack = (*env)->GetMethodID(env, clazz, "ctxSliceUnpack", "(JJJJ)I");
     if (jniMethod_ctx_Slice_Unpack == NULL) {
         LOGS("ERROR: Java method ctxSliceUnpack not found found !\n");
@@ -1189,12 +1318,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_ContextVar_New = &ctx_ContextVar_New_jni;
-    jniMethod_ctx_ContextVar_Get = (*env)->GetMethodID(env, clazz, "ctxContextVarGet", "(JJJ)I");
-    if (jniMethod_ctx_ContextVar_Get == NULL) {
-        LOGS("ERROR: Java method ctxContextVarGet not found found !\n");
-        return 1;
-    }
-    ctx->ctx_ContextVar_Get = &ctx_ContextVar_Get_jni;
     jniMethod_ctx_ContextVar_Set = (*env)->GetMethodID(env, clazz, "ctxContextVarSet", "(JJ)J");
     if (jniMethod_ctx_ContextVar_Set == NULL) {
         LOGS("ERROR: Java method ctxContextVarSet not found found !\n");
@@ -1315,12 +1438,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Tracker_Close = &ctx_Tracker_Close_jni;
-    jniMethod_ctx_Field_Store = (*env)->GetMethodID(env, clazz, "ctxFieldStore", "(JJJ)V");
-    if (jniMethod_ctx_Field_Store == NULL) {
-        LOGS("ERROR: Java method ctxFieldStore not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Field_Store = &ctx_Field_Store_jni;
     jniMethod_ctx_Field_Load = (*env)->GetMethodID(env, clazz, "ctxFieldLoad", "(JJ)J");
     if (jniMethod_ctx_Field_Load == NULL) {
         LOGS("ERROR: Java method ctxFieldLoad not found found !\n");
@@ -1339,12 +1456,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_LeavePythonExecution = &ctx_LeavePythonExecution_jni;
-    jniMethod_ctx_Global_Store = (*env)->GetMethodID(env, clazz, "ctxGlobalStore", "(JJ)V");
-    if (jniMethod_ctx_Global_Store == NULL) {
-        LOGS("ERROR: Java method ctxGlobalStore not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Global_Store = &ctx_Global_Store_jni;
     jniMethod_ctx_Global_Load = (*env)->GetMethodID(env, clazz, "ctxGlobalLoad", "(J)J");
     if (jniMethod_ctx_Global_Load == NULL) {
         LOGS("ERROR: Java method ctxGlobalLoad not found found !\n");
@@ -1366,847 +1477,802 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
     return 0;
 }
 
-HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def)
+static HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Module_Create, PTR_UP(def));
 }
 
-HPy ctx_Dup_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Dup_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dup, HPY_UP(h));
 }
 
-void ctx_Close_jni(HPyContext *ctx, HPy h)
+static void ctx_Close_jni(HPyContext *ctx, HPy h)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Close, HPY_UP(h));
 }
 
-HPy ctx_Long_FromLong_jni(HPyContext *ctx, long value)
+static HPy ctx_Long_FromLong_jni(HPyContext *ctx, long value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromLong, LONG_UP(value));
 }
 
-HPy ctx_Long_FromUnsignedLong_jni(HPyContext *ctx, unsigned long value)
+static HPy ctx_Long_FromUnsignedLong_jni(HPyContext *ctx, unsigned long value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUnsignedLong, LONG_UP(value));
 }
 
-HPy ctx_Long_FromLongLong_jni(HPyContext *ctx, long long v)
+static HPy ctx_Long_FromLongLong_jni(HPyContext *ctx, long long v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromLongLong, LONG_UP(v));
 }
 
-HPy ctx_Long_FromUnsignedLongLong_jni(HPyContext *ctx, unsigned long long v)
+static HPy ctx_Long_FromUnsignedLongLong_jni(HPyContext *ctx, unsigned long long v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUnsignedLongLong, LONG_UP(v));
 }
 
-HPy ctx_Long_FromSize_t_jni(HPyContext *ctx, size_t value)
+static HPy ctx_Long_FromSize_t_jni(HPyContext *ctx, size_t value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromSize_t, LONG_UP(value));
 }
 
-HPy ctx_Long_FromSsize_t_jni(HPyContext *ctx, HPy_ssize_t value)
+static HPy ctx_Long_FromSsize_t_jni(HPyContext *ctx, HPy_ssize_t value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromSsize_t, SIZE_T_UP(value));
 }
 
-long ctx_Long_AsLong_jni(HPyContext *ctx, HPy h)
+static long ctx_Long_AsLong_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsLong, HPY_UP(h));
 }
 
-unsigned long ctx_Long_AsUnsignedLong_jni(HPyContext *ctx, HPy h)
+static unsigned long ctx_Long_AsUnsignedLong_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_UNSIGNED_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLong, HPY_UP(h));
 }
 
-unsigned long ctx_Long_AsUnsignedLongMask_jni(HPyContext *ctx, HPy h)
+static unsigned long ctx_Long_AsUnsignedLongMask_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_UNSIGNED_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongMask, HPY_UP(h));
 }
 
-long long ctx_Long_AsLongLong_jni(HPyContext *ctx, HPy h)
+static long long ctx_Long_AsLongLong_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsLongLong, HPY_UP(h));
 }
 
-unsigned long long ctx_Long_AsUnsignedLongLong_jni(HPyContext *ctx, HPy h)
+static unsigned long long ctx_Long_AsUnsignedLongLong_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_UNSIGNED_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongLong, HPY_UP(h));
 }
 
-unsigned long long ctx_Long_AsUnsignedLongLongMask_jni(HPyContext *ctx, HPy h)
+static unsigned long long ctx_Long_AsUnsignedLongLongMask_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_UNSIGNED_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongLongMask, HPY_UP(h));
 }
 
-size_t ctx_Long_AsSize_t_jni(HPyContext *ctx, HPy h)
+static size_t ctx_Long_AsSize_t_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsSize_t, HPY_UP(h));
 }
 
-HPy_ssize_t ctx_Long_AsSsize_t_jni(HPyContext *ctx, HPy h)
+static HPy_ssize_t ctx_Long_AsSsize_t_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsSsize_t, HPY_UP(h));
 }
 
-void *ctx_Long_AsVoidPtr_jni(HPyContext *ctx, HPy h)
+static void *ctx_Long_AsVoidPtr_jni(HPyContext *ctx, HPy h)
 {
     return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Long_AsVoidPtr, HPY_UP(h));
 }
 
-double ctx_Long_AsDouble_jni(HPyContext *ctx, HPy h)
+static double ctx_Long_AsDouble_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), ctx_Long_AsDouble, HPY_UP(h));
 }
 
-HPy ctx_Float_FromDouble_jni(HPyContext *ctx, double v)
+static HPy ctx_Float_FromDouble_jni(HPyContext *ctx, double v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Float_FromDouble, DOUBLE_UP(v));
 }
 
-double ctx_Float_AsDouble_jni(HPyContext *ctx, HPy h)
+static double ctx_Float_AsDouble_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), ctx_Float_AsDouble, HPY_UP(h));
 }
 
-HPy ctx_Bool_FromLong_jni(HPyContext *ctx, long v)
+static HPy ctx_Bool_FromLong_jni(HPyContext *ctx, long v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bool_FromLong, LONG_UP(v));
 }
 
-HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy h)
+static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Length, HPY_UP(h));
 }
 
-int ctx_Sequence_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Sequence_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Sequence_Check, HPY_UP(h));
 }
 
-int ctx_Number_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Number_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Number_Check, HPY_UP(h));
 }
 
-HPy ctx_Add_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Add_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Add, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Subtract_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Subtract_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Subtract, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Multiply_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Multiply_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Multiply, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_MatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_MatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_MatrixMultiply, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_FloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_FloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_FloorDivide, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_TrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_TrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_TrueDivide, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Remainder_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Remainder_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Remainder, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Divmod_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Divmod_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Divmod, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Power_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3)
+static HPy ctx_Power_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Power, HPY_UP(h1), HPY_UP(h2), HPY_UP(h3));
 }
 
-HPy ctx_Negative_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Negative_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Negative, HPY_UP(h1));
 }
 
-HPy ctx_Positive_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Positive_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Positive, HPY_UP(h1));
 }
 
-HPy ctx_Absolute_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Absolute_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Absolute, HPY_UP(h1));
 }
 
-HPy ctx_Invert_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Invert_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Invert, HPY_UP(h1));
 }
 
-HPy ctx_Lshift_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Lshift_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Lshift, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Rshift_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Rshift_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Rshift, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_And_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_And_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_And, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Xor_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Xor_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Xor, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Or_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_Or_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Or, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_Index_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Index_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Index, HPY_UP(h1));
 }
 
-HPy ctx_Long_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Long_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long, HPY_UP(h1));
 }
 
-HPy ctx_Float_jni(HPyContext *ctx, HPy h1)
+static HPy ctx_Float_jni(HPyContext *ctx, HPy h1)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Float, HPY_UP(h1));
 }
 
-HPy ctx_InPlaceAdd_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceAdd_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceAdd, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceSubtract_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceSubtract_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceSubtract, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceMultiply, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceMatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceMatrixMultiply_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceMatrixMultiply, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceFloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceFloorDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceFloorDivide, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceTrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceTrueDivide_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceTrueDivide, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceRemainder_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceRemainder_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceRemainder, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlacePower_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3)
+static HPy ctx_InPlacePower_jni(HPyContext *ctx, HPy h1, HPy h2, HPy h3)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlacePower, HPY_UP(h1), HPY_UP(h2), HPY_UP(h3));
 }
 
-HPy ctx_InPlaceLshift_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceLshift_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceLshift, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceRshift_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceRshift_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceRshift, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceAnd_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceAnd_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceAnd, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceXor_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceXor_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceXor, HPY_UP(h1), HPY_UP(h2));
 }
 
-HPy ctx_InPlaceOr_jni(HPyContext *ctx, HPy h1, HPy h2)
+static HPy ctx_InPlaceOr_jni(HPyContext *ctx, HPy h1, HPy h2)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_InPlaceOr, HPY_UP(h1), HPY_UP(h2));
 }
 
-int ctx_Callable_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Callable_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Callable_Check, HPY_UP(h));
 }
 
-HPy ctx_CallTupleDict_jni(HPyContext *ctx, HPy callable, HPy args, HPy kw)
+static HPy ctx_CallTupleDict_jni(HPyContext *ctx, HPy callable, HPy args, HPy kw)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_CallTupleDict, HPY_UP(callable), HPY_UP(args), HPY_UP(kw));
 }
 
-void ctx_FatalError_jni(HPyContext *ctx, const char *message)
+static void ctx_FatalError_jni(HPyContext *ctx, const char *message)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_FatalError, PTR_UP(message));
 }
 
-void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *message)
+static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *message)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_SetString, HPY_UP(h_type), PTR_UP(message));
 }
 
-void ctx_Err_SetObject_jni(HPyContext *ctx, HPy h_type, HPy h_value)
+static void ctx_Err_SetObject_jni(HPyContext *ctx, HPy h_type, HPy h_value)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_SetObject, HPY_UP(h_type), HPY_UP(h_value));
 }
 
-HPy ctx_Err_SetFromErrnoWithFilename_jni(HPyContext *ctx, HPy h_type, const char *filename_fsencoded)
+static HPy ctx_Err_SetFromErrnoWithFilename_jni(HPyContext *ctx, HPy h_type, const char *filename_fsencoded)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_SetFromErrnoWithFilename, HPY_UP(h_type), PTR_UP(filename_fsencoded));
 }
 
-void ctx_Err_SetFromErrnoWithFilenameObjects_jni(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2)
+static void ctx_Err_SetFromErrnoWithFilenameObjects_jni(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_SetFromErrnoWithFilenameObjects, HPY_UP(h_type), HPY_UP(filename1), HPY_UP(filename2));
 }
 
-int ctx_Err_Occurred_jni(HPyContext *ctx)
+static int ctx_Err_Occurred_jni(HPyContext *ctx)
 {
     return DO_UPCALL_INT0(CONTEXT_INSTANCE(ctx), ctx_Err_Occurred);
 }
 
-int ctx_Err_ExceptionMatches_jni(HPyContext *ctx, HPy exc)
+static int ctx_Err_ExceptionMatches_jni(HPyContext *ctx, HPy exc)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Err_ExceptionMatches, HPY_UP(exc));
 }
 
-void ctx_Err_NoMemory_jni(HPyContext *ctx)
+static void ctx_Err_NoMemory_jni(HPyContext *ctx)
 {
     DO_UPCALL_VOID0(CONTEXT_INSTANCE(ctx), ctx_Err_NoMemory);
 }
 
-void ctx_Err_Clear_jni(HPyContext *ctx)
+static void ctx_Err_Clear_jni(HPyContext *ctx)
 {
     DO_UPCALL_VOID0(CONTEXT_INSTANCE(ctx), ctx_Err_Clear);
 }
 
-HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *name, HPy base, HPy dict)
+static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *name, HPy base, HPy dict)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewException, PTR_UP(name), HPY_UP(base), HPY_UP(dict));
 }
 
-HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict)
+static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewExceptionWithDoc, PTR_UP(name), PTR_UP(doc), HPY_UP(base), HPY_UP(dict));
 }
 
-int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level)
+static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Err_WarnEx, HPY_UP(category), PTR_UP(message), SIZE_T_UP(stack_level));
 }
 
-void ctx_Err_WriteUnraisable_jni(HPyContext *ctx, HPy obj)
+static void ctx_Err_WriteUnraisable_jni(HPyContext *ctx, HPy obj)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_WriteUnraisable, HPY_UP(obj));
 }
 
-int ctx_IsTrue_jni(HPyContext *ctx, HPy h)
+static int ctx_IsTrue_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_IsTrue, HPY_UP(h));
 }
 
-HPy ctx_Type_FromSpec_jni(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params)
+static HPy ctx_Type_FromSpec_jni(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type_FromSpec, PTR_UP(spec), PTR_UP(params));
 }
 
-HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw)
+static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type_GenericNew, HPY_UP(type), PTR_UP(args), SIZE_T_UP(nargs), HPY_UP(kw));
 }
 
-HPy ctx_GetAttr_jni(HPyContext *ctx, HPy obj, HPy name)
+static HPy ctx_GetAttr_jni(HPyContext *ctx, HPy obj, HPy name)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetAttr, HPY_UP(obj), HPY_UP(name));
 }
 
-HPy ctx_GetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetAttr_s, HPY_UP(obj), PTR_UP(name));
-}
-
-HPy ctx_MaybeGetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
+static HPy ctx_MaybeGetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_MaybeGetAttr_s, HPY_UP(obj), PTR_UP(name));
 }
 
-int ctx_HasAttr_jni(HPyContext *ctx, HPy obj, HPy name)
+static int ctx_HasAttr_jni(HPyContext *ctx, HPy obj, HPy name)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_HasAttr, HPY_UP(obj), HPY_UP(name));
 }
 
-int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
+static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_HasAttr_s, HPY_UP(obj), PTR_UP(name));
 }
 
-int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value)
+static int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetAttr, HPY_UP(obj), HPY_UP(name), HPY_UP(value));
 }
 
-int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name, HPy value)
+static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name, HPy value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetAttr_s, HPY_UP(obj), PTR_UP(name), HPY_UP(value));
 }
 
-HPy ctx_GetItem_jni(HPyContext *ctx, HPy obj, HPy key)
+static HPy ctx_GetItem_jni(HPyContext *ctx, HPy obj, HPy key)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetItem, HPY_UP(obj), HPY_UP(key));
 }
 
-HPy ctx_GetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx)
+static HPy ctx_GetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetItem_i, HPY_UP(obj), SIZE_T_UP(idx));
 }
 
-HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy obj, const char *key)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetItem_s, HPY_UP(obj), PTR_UP(key));
-}
-
-int ctx_Contains_jni(HPyContext *ctx, HPy container, HPy key)
+static int ctx_Contains_jni(HPyContext *ctx, HPy container, HPy key)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Contains, HPY_UP(container), HPY_UP(key));
 }
 
-int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value)
+static int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetItem, HPY_UP(obj), HPY_UP(key), HPY_UP(value));
 }
 
-int ctx_SetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value)
+static int ctx_SetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetItem_i, HPY_UP(obj), SIZE_T_UP(idx), HPY_UP(value));
 }
 
-int ctx_SetItem_s_jni(HPyContext *ctx, HPy obj, const char *key, HPy value)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetItem_s, HPY_UP(obj), PTR_UP(key), HPY_UP(value));
-}
-
-HPy ctx_Type_jni(HPyContext *ctx, HPy obj)
+static HPy ctx_Type_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type, HPY_UP(obj));
 }
 
-int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type)
+static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_TypeCheck, HPY_UP(obj), HPY_UP(type));
 }
 
-int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type)
+static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_TypeCheck_g, HPY_UP(obj), HPY_GLOBAL_UP(type));
 }
 
-int ctx_SetType_jni(HPyContext *ctx, HPy obj, HPy type)
+static int ctx_SetType_jni(HPyContext *ctx, HPy obj, HPy type)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetType, HPY_UP(obj), HPY_UP(type));
 }
 
-int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type)
+static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Type_IsSubtype, HPY_UP(sub), HPY_UP(type));
 }
 
-const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type)
+static const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type)
 {
     return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Type_GetName, HPY_UP(type));
 }
 
-int ctx_Is_jni(HPyContext *ctx, HPy obj, HPy other)
+static int ctx_Is_jni(HPyContext *ctx, HPy obj, HPy other)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Is, HPY_UP(obj), HPY_UP(other));
 }
 
-int ctx_Is_g_jni(HPyContext *ctx, HPy obj, HPyGlobal other)
+static int ctx_Is_g_jni(HPyContext *ctx, HPy obj, HPyGlobal other)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Is_g, HPY_UP(obj), HPY_GLOBAL_UP(other));
 }
 
-void *ctx_AsStruct_jni(HPyContext *ctx, HPy h)
+static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h)
 {
     return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct, HPY_UP(h));
 }
 
-void *ctx_AsStructLegacy_jni(HPyContext *ctx, HPy h)
+static void *ctx_AsStructLegacy_jni(HPyContext *ctx, HPy h)
 {
     return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStructLegacy, HPY_UP(h));
 }
 
-HPy ctx_New_jni(HPyContext *ctx, HPy h_type, void **data)
+static HPy ctx_New_jni(HPyContext *ctx, HPy h_type, void **data)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_New, HPY_UP(h_type), PTR_UP(data));
 }
 
-HPy ctx_Repr_jni(HPyContext *ctx, HPy obj)
+static HPy ctx_Repr_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Repr, HPY_UP(obj));
 }
 
-HPy ctx_Str_jni(HPyContext *ctx, HPy obj)
+static HPy ctx_Str_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Str, HPY_UP(obj));
 }
 
-HPy ctx_ASCII_jni(HPyContext *ctx, HPy obj)
+static HPy ctx_ASCII_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ASCII, HPY_UP(obj));
 }
 
-HPy ctx_Bytes_jni(HPyContext *ctx, HPy obj)
+static HPy ctx_Bytes_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes, HPY_UP(obj));
 }
 
-HPy ctx_RichCompare_jni(HPyContext *ctx, HPy v, HPy w, int op)
+static HPy ctx_RichCompare_jni(HPyContext *ctx, HPy v, HPy w, int op)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_RichCompare, HPY_UP(v), HPY_UP(w), INT_UP(op));
 }
 
-int ctx_RichCompareBool_jni(HPyContext *ctx, HPy v, HPy w, int op)
+static int ctx_RichCompareBool_jni(HPyContext *ctx, HPy v, HPy w, int op)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_RichCompareBool, HPY_UP(v), HPY_UP(w), INT_UP(op));
 }
 
-HPy_hash_t ctx_Hash_jni(HPyContext *ctx, HPy obj)
+static HPy_hash_t ctx_Hash_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY_HASH_T(CONTEXT_INSTANCE(ctx), ctx_Hash, HPY_UP(obj));
 }
 
-HPy ctx_SeqIter_New_jni(HPyContext *ctx, HPy seq)
+static HPy ctx_SeqIter_New_jni(HPyContext *ctx, HPy seq)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_SeqIter_New, HPY_UP(seq));
 }
 
-int ctx_Bytes_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Bytes_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Bytes_Check, HPY_UP(h));
 }
 
-HPy_ssize_t ctx_Bytes_Size_jni(HPyContext *ctx, HPy h)
+static HPy_ssize_t ctx_Bytes_Size_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Bytes_Size, HPY_UP(h));
 }
 
-HPy_ssize_t ctx_Bytes_GET_SIZE_jni(HPyContext *ctx, HPy h)
+static HPy_ssize_t ctx_Bytes_GET_SIZE_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Bytes_GET_SIZE, HPY_UP(h));
 }
 
-char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h)
+static char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h)
 {
     return (char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AsString, HPY_UP(h));
 }
 
-char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h)
+static char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h)
 {
     return (char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AS_STRING, HPY_UP(h));
 }
 
-HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *v)
+static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromString, PTR_UP(v));
 }
 
-HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t len)
+static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t len)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromStringAndSize, PTR_UP(v), SIZE_T_UP(len));
 }
 
-HPy ctx_Unicode_FromString_jni(HPyContext *ctx, const char *utf8)
+static HPy ctx_Unicode_FromString_jni(HPyContext *ctx, const char *utf8)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_FromString, PTR_UP(utf8));
 }
 
-int ctx_Unicode_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Unicode_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Unicode_Check, HPY_UP(h));
 }
 
-HPy ctx_Unicode_AsASCIIString_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Unicode_AsASCIIString_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_AsASCIIString, HPY_UP(h));
 }
 
-HPy ctx_Unicode_AsLatin1String_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Unicode_AsLatin1String_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_AsLatin1String, HPY_UP(h));
 }
 
-HPy ctx_Unicode_AsUTF8String_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Unicode_AsUTF8String_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_AsUTF8String, HPY_UP(h));
 }
 
-const char *ctx_Unicode_AsUTF8AndSize_jni(HPyContext *ctx, HPy h, HPy_ssize_t *size)
+static const char *ctx_Unicode_AsUTF8AndSize_jni(HPyContext *ctx, HPy h, HPy_ssize_t *size)
 {
     return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Unicode_AsUTF8AndSize, HPY_UP(h), PTR_UP(size));
 }
 
-HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *w, HPy_ssize_t size)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_FromWideChar, PTR_UP(w), SIZE_T_UP(size));
-}
-
-HPy ctx_Unicode_DecodeFSDefault_jni(HPyContext *ctx, const char *v)
+static HPy ctx_Unicode_DecodeFSDefault_jni(HPyContext *ctx, const char *v)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeFSDefault, PTR_UP(v));
 }
 
-HPy ctx_Unicode_DecodeFSDefaultAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t size)
+static HPy ctx_Unicode_DecodeFSDefaultAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t size)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeFSDefaultAndSize, PTR_UP(v), SIZE_T_UP(size));
 }
 
-HPy ctx_Unicode_EncodeFSDefault_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Unicode_EncodeFSDefault_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_EncodeFSDefault, HPY_UP(h));
 }
 
-HPy_UCS4 ctx_Unicode_ReadChar_jni(HPyContext *ctx, HPy h, HPy_ssize_t index)
+static HPy_UCS4 ctx_Unicode_ReadChar_jni(HPyContext *ctx, HPy h, HPy_ssize_t index)
 {
     return DO_UPCALL_HPY_UCS4(CONTEXT_INSTANCE(ctx), ctx_Unicode_ReadChar, HPY_UP(h), SIZE_T_UP(index));
 }
 
-HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
+static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeASCII, PTR_UP(s), SIZE_T_UP(size), PTR_UP(errors));
 }
 
-HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
+static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeLatin1, PTR_UP(s), SIZE_T_UP(size), PTR_UP(errors));
 }
 
-HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const char *encoding, const char *errors)
+static HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const char *encoding, const char *errors)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_FromEncodedObject, HPY_UP(obj), PTR_UP(encoding), PTR_UP(errors));
 }
 
-HPy ctx_Unicode_InternFromString_jni(HPyContext *ctx, const char *str)
+static HPy ctx_Unicode_InternFromString_jni(HPyContext *ctx, const char *str)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_InternFromString, PTR_UP(str));
 }
 
-HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end)
+static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_Substring, HPY_UP(obj), SIZE_T_UP(start), SIZE_T_UP(end));
 }
 
-int ctx_List_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_List_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_List_Check, HPY_UP(h));
 }
 
-HPy ctx_List_New_jni(HPyContext *ctx, HPy_ssize_t len)
+static HPy ctx_List_New_jni(HPyContext *ctx, HPy_ssize_t len)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_List_New, SIZE_T_UP(len));
 }
 
-int ctx_List_Append_jni(HPyContext *ctx, HPy h_list, HPy h_item)
+static int ctx_List_Append_jni(HPyContext *ctx, HPy h_list, HPy h_item)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_List_Append, HPY_UP(h_list), HPY_UP(h_item));
 }
 
-int ctx_Dict_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Dict_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Dict_Check, HPY_UP(h));
 }
 
-HPy ctx_Dict_New_jni(HPyContext *ctx)
+static HPy ctx_Dict_New_jni(HPyContext *ctx)
 {
     return DO_UPCALL_HPY0(CONTEXT_INSTANCE(ctx), ctx_Dict_New);
 }
 
-HPy ctx_Dict_Keys_jni(HPyContext *ctx, HPy h)
+static HPy ctx_Dict_Keys_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dict_Keys, HPY_UP(h));
 }
 
-HPy ctx_Dict_GetItem_jni(HPyContext *ctx, HPy op, HPy key)
+static HPy ctx_Dict_GetItem_jni(HPyContext *ctx, HPy op, HPy key)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dict_GetItem, HPY_UP(op), HPY_UP(key));
 }
 
-int ctx_Tuple_Check_jni(HPyContext *ctx, HPy h)
+static int ctx_Tuple_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Tuple_Check, HPY_UP(h));
 }
 
-HPy ctx_Tuple_FromArray_jni(HPyContext *ctx, HPy items[], HPy_ssize_t n)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Tuple_FromArray, LONG_UP(items), SIZE_T_UP(n));
-}
-
-int ctx_Slice_Unpack_jni(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step)
+static int ctx_Slice_Unpack_jni(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Slice_Unpack, HPY_UP(slice), PTR_UP(start), PTR_UP(stop), PTR_UP(step));
 }
 
-HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value)
+static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_New, PTR_UP(name), HPY_UP(default_value));
 }
 
-int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy context_var, HPy default_value, HPy *result)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_ContextVar_Get, HPY_UP(context_var), HPY_UP(default_value), PTR_UP(result));
-}
-
-HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value)
+static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_Set, HPY_UP(context_var), HPY_UP(value));
 }
 
-HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *name)
+static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *name)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Import_ImportModule, PTR_UP(name));
 }
 
-HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor)
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Capsule_New, PTR_UP(pointer), PTR_UP(name), LONG_UP(destructor));
 }
 
-void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name)
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name)
 {
     return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Capsule_Get, HPY_UP(capsule), INT_UP(key), PTR_UP(name));
 }
 
-int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *name)
+static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *name)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Capsule_IsValid, HPY_UP(capsule), PTR_UP(name));
 }
 
-int ctx_Capsule_Set_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value)
+static int ctx_Capsule_Set_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Capsule_Set, HPY_UP(capsule), INT_UP(key), PTR_UP(value));
 }
 
-HPy ctx_FromPyObject_jni(HPyContext *ctx, cpy_PyObject *obj)
+static HPy ctx_FromPyObject_jni(HPyContext *ctx, cpy_PyObject *obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_FromPyObject, PTR_UP(obj));
 }
 
-cpy_PyObject *ctx_AsPyObject_jni(HPyContext *ctx, HPy h)
+static cpy_PyObject *ctx_AsPyObject_jni(HPyContext *ctx, HPy h)
 {
     return (cpy_PyObject *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsPyObject, HPY_UP(h));
 }
 
-HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size)
+static HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size)
 {
     return DO_UPCALL_HPYLISTBUILDER(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_New, SIZE_T_UP(initial_size));
 }
 
-void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item)
+static void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Set, HPY_LIST_BUILDER_UP(builder), SIZE_T_UP(index), HPY_UP(h_item));
 }
 
-HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder)
+static HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Build, HPY_LIST_BUILDER_UP(builder));
 }
 
-void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder)
+static void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Cancel, HPY_LIST_BUILDER_UP(builder));
 }
 
-HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t size)
+static HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t size)
 {
     return DO_UPCALL_HPYTRACKER(CONTEXT_INSTANCE(ctx), ctx_Tracker_New, SIZE_T_UP(size));
 }
 
-int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
+static int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Tracker_Add, HPY_TRACKER_UP(ht), HPY_UP(h));
 }
 
-void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
+static void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Tracker_ForgetAll, HPY_TRACKER_UP(ht));
 }
 
-void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
+static void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Tracker_Close, HPY_TRACKER_UP(ht));
 }
 
-void ctx_Field_Store_jni(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Field_Store, HPY_UP(target_object), PTR_UP(target_field), HPY_UP(h));
-}
-
-HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field)
+static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Field_Load, HPY_UP(source_object), HPY_FIELD_UP(source_field));
 }
 
-void ctx_ReenterPythonExecution_jni(HPyContext *ctx, HPyThreadState state)
+static void ctx_ReenterPythonExecution_jni(HPyContext *ctx, HPyThreadState state)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ReenterPythonExecution, HPY_THREAD_STATE_UP(state));
 }
 
-HPyThreadState ctx_LeavePythonExecution_jni(HPyContext *ctx)
+static HPyThreadState ctx_LeavePythonExecution_jni(HPyContext *ctx)
 {
     return DO_UPCALL_HPYTHREADSTATE0(CONTEXT_INSTANCE(ctx), ctx_LeavePythonExecution);
 }
 
-void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *global, HPy h)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Global_Store, PTR_UP(global), HPY_UP(h));
-}
-
-HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Global_Load, HPY_GLOBAL_UP(global));
-}
-
-void ctx_Dump_jni(HPyContext *ctx, HPy h)
+static void ctx_Dump_jni(HPyContext *ctx, HPy h)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Dump, HPY_UP(h));
 }
 
-int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value)
+static int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Type_CheckSlot, HPY_UP(type), PTR_UP(value));
 }

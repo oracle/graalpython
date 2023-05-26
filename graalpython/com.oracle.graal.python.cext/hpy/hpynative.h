@@ -47,6 +47,7 @@
 #include "hpy.h"
 
 typedef struct {
+    void *jni_backend;
     void *jni_context;
 
 	/* embed HPy context */

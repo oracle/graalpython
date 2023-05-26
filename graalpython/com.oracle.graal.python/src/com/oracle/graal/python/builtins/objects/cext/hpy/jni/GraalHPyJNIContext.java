@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -222,7 +223,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             loadJNIBackend();
-            nativePointer = initJNI(this, createContextHandleArray());
+            nativePointer = initJNI(this, context, createContextHandleArray());
             if (nativePointer == 0) {
                 throw CompilerDirectives.shouldNotReachHere("Could not initialize HPy JNI backend.");
             }
@@ -286,7 +287,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
          * an HPy extension module with the JNI backend and there is no way to run the JNI backend
          * without native resources.
          */
-        toNativeInternal();
+        toNative();
     }
 
     @Override
@@ -415,7 +416,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     /* HPY internal JNI trampoline declarations */
 
     @TruffleBoundary
-    private static native long initJNI(GraalHPyJNIContext backend, long[] ctxHandles);
+    private static native long initJNI(GraalHPyJNIContext backend, GraalHPyContext hpyContext, long[] ctxHandles);
 
     @TruffleBoundary
     private static native int finalizeJNIContext(long uctxPointer);
@@ -877,11 +878,11 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         increment(HPyJNIUpcall.HPyType);
         Object clazz;
         if (GraalHPyBoxing.isBoxedHandle(bits)) {
-            clazz = GetClassNode.getUncached().execute(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
+            clazz = InlinedGetClassNode.executeUncached(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
         } else if (GraalHPyBoxing.isBoxedInt(bits)) {
-            clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxInt(bits));
+            clazz = InlinedGetClassNode.executeUncached(GraalHPyBoxing.unboxInt(bits));
         } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
-            clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxDouble(bits));
+            clazz = InlinedGetClassNode.executeUncached(GraalHPyBoxing.unboxDouble(bits));
         } else {
             assert false;
             clazz = null;
@@ -1169,13 +1170,13 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(pythonObject));
     }
 
-    public long ctxTypeGenericNew(long typeHandle) {
+    @SuppressWarnings("unused")
+    public long ctxTypeGenericNew(long typeHandle, long args, long nargs, long kw) {
         increment(HPyJNIUpcall.HPyTypeGenericNew);
 
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
 
-        if (type instanceof PythonClass) {
-            PythonClass clazz = (PythonClass) type;
+        if (type instanceof PythonClass clazz) {
 
             PythonObject pythonObject;
             long basicSize = clazz.basicSize;
@@ -1718,13 +1719,13 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    public long ctxErrSetString(long h_type, long message) {
+    public void ctxErrSetString(long h_type, long message) {
         increment(HPyJNIUpcall.HPyErrSetString);
         // TODO implement
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    public long ctxErrSetObject(long h_type, long h_value) {
+    public void ctxErrSetObject(long h_type, long h_value) {
         increment(HPyJNIUpcall.HPyErrSetObject);
         // TODO implement
         throw CompilerDirectives.shouldNotReachHere();
@@ -1736,7 +1737,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    public long ctxErrSetFromErrnoWithFilenameObjects(long h_type, long filename1, long filename2) {
+    public void ctxErrSetFromErrnoWithFilenameObjects(long h_type, long filename1, long filename2) {
         increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilenameObjects);
         // TODO implement
         throw CompilerDirectives.shouldNotReachHere();
@@ -1754,7 +1755,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    public long ctxErrNoMemory() {
+    public void ctxErrNoMemory() {
         increment(HPyJNIUpcall.HPyErrNoMemory);
         // TODO implement
         throw CompilerDirectives.shouldNotReachHere();

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from .conf import RETURN_CONSTANT
 from .autogenfile import AutoGenFile
 from .parse import toC, find_typedecl, get_context_return_type, \
     maybe_make_void, make_void, get_return_constant
@@ -62,20 +63,27 @@ NO_WRAPPER = {
     '_HPy_CallRealFunctionFromTrampoline',
 }
 
-# If contained in this set, we won't generate a default upcall stub. But we
-# will still generate the function declaration and such. The common use case
-# for that is if you provide a custom upcall stub implementation.
-NO_DEFAULT_UPCALL_STUB = NO_WRAPPER.union({
-    #'HPyListBuilder_New', 'HPyListBuilder_Set','HPyListBuilder_Build','HPyListBuilder_Cancel',
-    'HPyTupleBuilder_New', 'HPyTupleBuilder_Set','HPyTupleBuilder_Build','HPyTupleBuilder_Cancel',
-})
-
 HPY_CONTEXT_PKG = 'com.oracle.graal.python.builtins.objects.cext.hpy.'
 HPY_CONTEXT_CLASS = 'GraalHPyNativeContext'
 
 ###############################################################################
 #                                 JNI BACKEND                                 #
 ###############################################################################
+
+# If contained in this set, we won't generate anything for the JNI backend.
+JNI_NO_WRAPPER = NO_WRAPPER.union({
+    'HPy_GetItem_s', 'HPy_SetItem_s', 'HPy_GetAttr_s', 'HPyTuple_FromArray', 'HPyContextVar_Get',
+    'HPyField_Store', 'HPyGlobal_Store'
+})
+
+# If contained in this set, we won't generate a default upcall stub. But we
+# will still generate the function declaration and such. The common use case
+# for that is if you provide a custom upcall stub implementation.
+JNI_NO_DEFAULT_UPCALL_STUB = JNI_NO_WRAPPER.union({
+    #'HPyListBuilder_New', 'HPyListBuilder_Set','HPyListBuilder_Build','HPyListBuilder_Cancel',
+    'HPyTupleBuilder_New', 'HPyTupleBuilder_Set','HPyTupleBuilder_Build','HPyTupleBuilder_Cancel',
+    'HPyUnicode_FromWideChar', 'HPyGlobal_Load'
+})
 
 JNI_HPY_CONTEXT_PKG = HPY_CONTEXT_PKG + 'jni.'
 
@@ -254,7 +262,7 @@ def get_jni_signature_type(type_name):
     if type_name in ('int', '_HPyCapsule_key'):
         return 'I'
     elif type_name == 'long':
-        return 'L'
+        return 'J'
     elif type_name == 'double':
         return 'D'
     elif type_name == 'void':
@@ -297,6 +305,9 @@ def get_trace_wrapper_node(func):
 def java_qname_to_path(java_class_qname):
     return java_class_qname.replace('.', '/') + '.java'
 
+def get_jni_class_header(java_class_qname):
+    return java_class_qname.replace('.', '_') + '.h'
+
 def get_jni_function_prefix(java_class_qname):
     return 'Java_' + java_class_qname.replace('.', '_') + '_'
 
@@ -311,8 +322,12 @@ class autogen_ctx_init_jni_h(GraalPyAutoGenFile):
         w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG}, jlongArray jctx_handles);')
         # emit the declarations for all the ctx_*_jni functions
         for func in self.api.functions:
-            if func.name not in NO_WRAPPER:
-                w(toC(get_trace_wrapper_node(func)) + ';')
+            fname = func.name
+            # since JNI_NO_DEFAULT_UPCALL_STUB contains JNI_NO_WRAPPER, we need to check JNI_NO_WRAPPER first
+            if fname not in JNI_NO_WRAPPER:
+                if fname in JNI_NO_DEFAULT_UPCALL_STUB:
+                    w(f'_HPy_HIDDEN extern jmethodID jniMethod_{func.ctx_name()};')
+                    w(f'_HPy_HIDDEN {toC(get_trace_wrapper_node(func))};')
         w('')
         return '\n'.join(lines)
 
@@ -326,14 +341,22 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
         w('#include "hpy_jni.h"')
         w('#include "hpynative.h"')
         w('#include "hpy_log.h"')
+        w(f'#include "{get_jni_class_header(JNI_HPY_CONTEXT_PKG + JNI_HPY_BACKEND_CLASS)}"')
         w(f'#include "{AUTOGEN_CTX_INIT_JNI_H_FILE}"')
         w('')
-        w(f'#define TRAMPOLINE(FUN_NAME) {get_jni_function_prefix(JNI_HPY_BACKEND_CLASS)} ## FUN_NAME')
+        w(f'#define TRAMPOLINE(FUN_NAME) {get_jni_function_prefix(JNI_HPY_CONTEXT_PKG + JNI_HPY_BACKEND_CLASS)} ## FUN_NAME')
         w('')
 
         # generate global variables for JNI method IDs
         for func in self.api.functions:
-            w(f'static jmethodID jniMethod_{func.ctx_name()};')
+            fname = func.name
+            # since JNI_NO_DEFAULT_UPCALL_STUB contains JNI_NO_WRAPPER, we need to check JNI_NO_WRAPPER first
+            if fname not in JNI_NO_WRAPPER:
+                if fname in JNI_NO_DEFAULT_UPCALL_STUB:
+                    w(f'_HPy_HIDDEN jmethodID jniMethod_{func.ctx_name()};')
+                else :
+                    w(f'static jmethodID jniMethod_{func.ctx_name()};')
+                    w(f'static {toC(get_trace_wrapper_node(func))};')
         w('')
 
         # start of 'init_autogen_jni_ctx'
@@ -370,7 +393,7 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
         return '\n'.join(lines)
 
     def gen_jni_method_init(self, w, func):
-        if func.name in NO_WRAPPER:
+        if func.name in JNI_NO_WRAPPER:
             return
         node = get_trace_wrapper_node(func)
         name = func.ctx_name()
@@ -395,7 +418,7 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
         w(f'    {UCTX_ARG}->{name} = &{name}_jni;')
 
     def gen_trace_wrapper(self, func):
-        if func.name in NO_DEFAULT_UPCALL_STUB:
+        if func.name in JNI_NO_DEFAULT_UPCALL_STUB:
             return
 
         assert not func.is_varargs()
@@ -418,13 +441,8 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
 
         lines = []
         w = lines.append
-        w(signature)
+        w(f'static {signature}')
         w('{')
-
-        #return_stmt = "return " if rettype != 'void' else ""
-        #w(f'    {return_stmt}DO_UPCALL_{rettype.upper()}(CONTEXT_INSTANCE({UCTX_ARG}, {func.ctx_name()}, {params});')
-
-        #print(f"######## rettype = {rettype}")
 
         suffix = '' if param_names else '0'
         all_params = [f'CONTEXT_INSTANCE({UCTX_ARG})', func.ctx_name()] + param_names
@@ -505,12 +523,14 @@ class autogen_svm_jni_upcall_config(AutoGenFilePart):
     INDENT = '        '
     PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/resources/jni-config.json'
     BEGIN_MARKER = '  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext",\n  "methods":[\n'
-    END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] }\n  ],'
+    END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] },'
 
     def generate(self, old):
         lines = []
         w = lines.append
         for func in self.api.functions:
+            if func.name in JNI_NO_WRAPPER:
+                continue
             node = func.node
             jname = func.ctx_name().replace('_', '')
             jni_params = []
@@ -536,7 +556,7 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
         lines = [old]
         w = lines.append
         for func in self.api.functions:
-            func_type = func.node.type
+            func_type = get_trace_wrapper_node(func).type
 
             # context function name w/o underscores, e.g., 'ctxGetItemi'
             jname = func.ctx_name().replace('_', '')

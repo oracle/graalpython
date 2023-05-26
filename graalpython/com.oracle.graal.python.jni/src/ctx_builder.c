@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,20 +100,20 @@ static inline void builder_cancel(HPyContext *ctx, _HPyBuilder_s *hb)
 }
 
 _HPy_HIDDEN HPyTupleBuilder
-ctx_TupleBuilder_New(HPyContext *ctx, HPy_ssize_t size)
+ctx_TupleBuilder_New_jni(HPyContext *ctx, HPy_ssize_t size)
 {
     return _hb2ht(builder_new(size));
 }
 
 _HPy_HIDDEN void
-ctx_TupleBuilder_Set(HPyContext *ctx, HPyTupleBuilder builder,
+ctx_TupleBuilder_Set_jni(HPyContext *ctx, HPyTupleBuilder builder,
                      HPy_ssize_t index, HPy h_item)
 {
     builder_set(ctx, _ht2hb(builder), index, h_item);
 }
 
 _HPy_HIDDEN HPy
-ctx_TupleBuilder_Build(HPyContext *ctx, HPyTupleBuilder builder)
+ctx_TupleBuilder_Build_jni(HPyContext *ctx, HPyTupleBuilder builder)
 {
     _HPyBuilder_s *hb = _ht2hb(builder);
     if (hb == NULL) {
@@ -126,7 +126,7 @@ ctx_TupleBuilder_Build(HPyContext *ctx, HPyTupleBuilder builder)
 }
 
 _HPy_HIDDEN void
-ctx_TupleBuilder_Cancel(HPyContext *ctx, HPyTupleBuilder builder)
+ctx_TupleBuilder_Cancel_jni(HPyContext *ctx, HPyTupleBuilder builder)
 {
     builder_cancel(ctx, _ht2hb(builder));
 }
