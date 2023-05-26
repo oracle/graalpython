@@ -342,9 +342,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     Object nativePointer;
 
-    public GraalHPyLLVMContext(GraalHPyContext context, @SuppressWarnings("unused") boolean useNativeFastPaths, boolean traceUpcalls) {
-        // TODO(fa): we currently don't use native fast paths with the LLVM backend
-        super(context, false, traceUpcalls);
+    public GraalHPyLLVMContext(GraalHPyContext context, boolean traceUpcalls) {
+        super(context, traceUpcalls);
         Object[] ctxMembers = createMembers(tsLiteral(J_NAME));
         if (traceUpcalls) {
             this.counts = new int[HPyContextMember.VALUES.length];
@@ -493,7 +492,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     @Override
     protected void setNativeCache(long cachePtr) {
-        assert useNativeCache();
+        assert useNativeFastPaths();
         try {
             InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, cachePtr);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {

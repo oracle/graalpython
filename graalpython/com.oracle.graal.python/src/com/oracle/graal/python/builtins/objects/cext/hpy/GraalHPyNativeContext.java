@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpca
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -58,15 +57,8 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected final GraalHPyContext context;
 
-    /**
-     * This field mirrors value of {@link PythonOptions#HPyEnableJNIFastPaths}. We store it in this
-     * final field because the value is also used in non-PE code paths.
-     */
-    protected final boolean useNativeFastPaths;
-
-    protected GraalHPyNativeContext(GraalHPyContext context, boolean useNativeFastPaths, boolean traceUpcalls) {
+    protected GraalHPyNativeContext(GraalHPyContext context, boolean traceUpcalls) {
         this.context = context;
-        this.useNativeFastPaths = useNativeFastPaths;
     }
 
     protected abstract String getName();
@@ -91,19 +83,19 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     public abstract PythonModule getHPyDebugModule() throws ImportException;
 
-    public final boolean useNativeCache() {
-        return useNativeFastPaths;
-    }
-
     protected abstract void setNativeCache(long cachePtr);
 
     protected abstract long getWcharSize();
+
+    protected final boolean useNativeFastPaths() {
+        return context.useNativeFastPaths;
+    }
 
     @ExportMessage
     public void toNative() {
         try {
             toNativeInternal();
-            if (useNativeFastPaths) {
+            if (context.useNativeFastPaths) {
                 initNativeFastPaths();
                 /*
                  * Allocate a native array for the native space pointers of HPy objects and

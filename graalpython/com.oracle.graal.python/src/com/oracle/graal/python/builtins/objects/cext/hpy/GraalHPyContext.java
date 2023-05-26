@@ -327,6 +327,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private final GraalHPyNativeContext backend;
 
     /**
+     * This field mirrors value of {@link PythonOptions#HPyEnableJNIFastPaths}. We store it in this
+     * final field because the value is also used in non-PE code paths.
+     */
+    final boolean useNativeFastPaths;
+
+    /**
      * This is set to {@code true} if an HPy extension is initialized (i.e. {@code HPyInit_*} is
      * called) in debug mode. The value is then used to create the right closures for down calls
      * during module ({@code HPyModule_Create}) and type creation ({@code HPyType_FromSpec}). We
@@ -380,16 +386,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
         HPyBackendMode backendMode = context.getOption(PythonOptions.HPyBackend);
-        LOGGER.config("Using HPy backend:" + backendMode.name());
-        if (backendMode == HPyBackendMode.JNI) {
-            backend = new GraalHPyJNIContext(this, useNativeFastPaths, traceUpcallsInterval > 0);
-        } else if (backendMode == HPyBackendMode.NFI) {
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-        } else if (backendMode == HPyBackendMode.LLVM) {
-            backend = new GraalHPyLLVMContext(this, useNativeFastPaths, traceUpcallsInterval > 0);
-        } else {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
+
         nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
         hpyHandleTable = new Object[IMMUTABLE_HANDLE_COUNT * 2];
 
@@ -398,6 +395,20 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         hpyHandleTable[SINGLETON_HANDLE_NONE] = PNone.NONE;
         hpyHandleTable[SINGLETON_HANDLE_NOT_IMPLEMENTED] = PNotImplemented.NOT_IMPLEMENTED;
         hpyHandleTable[SINGLETON_HANDLE_ELIPSIS] = PEllipsis.INSTANCE;
+
+        LOGGER.config("Using HPy backend:" + backendMode.name());
+        if (backendMode == HPyBackendMode.JNI) {
+            this.useNativeFastPaths = useNativeFastPaths;
+            backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
+        } else if (backendMode == HPyBackendMode.NFI) {
+            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+        } else if (backendMode == HPyBackendMode.LLVM) {
+            // TODO(fa): we currently don't use native fast paths with the LLVM backend
+            this.useNativeFastPaths = false;
+            backend = new GraalHPyLLVMContext(this, traceUpcallsInterval > 0);
+        } else {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
 
         // createMembers already assigns numeric handles to "singletons"
         nextHandle = IMMUTABLE_HANDLE_COUNT;
@@ -731,7 +742,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             newIdx = idx;
         }
         hpyGlobalsTable[newIdx] = delegate;
-        if (backend.useNativeCache()) {
+        if (useNativeFastPaths) {
             mirrorGlobalNativeSpacePointerToNative(delegate, newIdx);
         }
         if (LOGGER.isLoggable(Level.FINER)) {
@@ -759,12 +770,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             int newSize = endIdx + 1;
             LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
-            if (backend.useNativeCache()) {
+            if (useNativeFastPaths) {
                 reallocateNativeSpacePointersMirror(hpyHandleTable.length, gtLen);
             }
         }
         Arrays.fill(hpyGlobalsTable, startIdx, endIdx, GraalHPyHandle.NULL_HANDLE_DELEGATE);
-        if (backend.useNativeCache()) {
+        if (useNativeFastPaths) {
             GraalHPyNativeCache.initGlobalsNativeSpacePointer(nativeSpacePointers, hpyHandleTable.length, startIdx, nModuleGlobals);
         }
     }
@@ -784,7 +795,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             int newSize = Math.max(16, hpyGlobalsTable.length * 2);
             LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
-            if (backend.useNativeCache()) {
+            if (useNativeFastPaths) {
                 reallocateNativeSpacePointersMirror(hpyHandleTable.length, handle);
             }
         }
@@ -798,7 +809,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         int newSize = Math.max(16, hpyHandleTable.length * 2);
         LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
         hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
-        if (backend.useNativeCache()) {
+        if (useNativeFastPaths) {
             reallocateNativeSpacePointersMirror(oldSize, hpyGlobalsTable.length);
         }
         return nextHandle++;
@@ -837,7 +848,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         assert hpyHandleTable[handle] == null;
 
         hpyHandleTable[handle] = object;
-        if (backend.useNativeCache()) {
+        if (useNativeFastPaths) {
             mirrorNativeSpacePointerToNative(object, handle);
         }
         if (LOGGER.isLoggable(Level.FINER)) {
@@ -874,7 +885,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     private void mirrorNativeSpacePointerToNative(Object delegate, int handleID) {
-        assert backend.useNativeCache();
+        assert useNativeFastPaths;
         long l;
         if (delegate instanceof PythonObject) {
             Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
@@ -891,7 +902,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     private void mirrorGlobalNativeSpacePointerToNative(Object delegate, int globalID) {
-        assert backend.useNativeCache();
+        assert useNativeFastPaths;
         long l;
         if (delegate instanceof PythonObject) {
             Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
@@ -908,7 +919,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     private void reallocateNativeSpacePointersMirror(int oldHandleTabelSize, int oldGlobalsTableSize) {
-        assert backend.useNativeCache();
+        assert useNativeFastPaths;
         nativeSpacePointers = GraalHPyNativeCache.reallocateNativeCache(nativeSpacePointers, oldHandleTabelSize, hpyHandleTable.length, oldGlobalsTableSize, hpyGlobalsTable.length);
         backend.setNativeCache(nativeSpacePointers);
     }

@@ -168,8 +168,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private long nativeArgumentsStack = 0;
     private int nativeArgumentStackPos = 0;
 
-    public GraalHPyJNIContext(GraalHPyContext context, boolean useNativeFastPaths, boolean traceUpcalls) {
-        super(context, useNativeFastPaths, traceUpcalls);
+    public GraalHPyJNIContext(GraalHPyContext context, boolean traceUpcalls) {
+        super(context, traceUpcalls);
         this.slowPathFactory = context.getContext().factory();
         this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
     }
@@ -236,7 +236,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
          * because they rely on 'initJNI' being called. In future, we might also want to use the
          * native fast path functions for the NFI backend.
          */
-        if (useNativeFastPaths) {
+        if (useNativeFastPaths()) {
             initJNINativeFastPaths(nativePointer);
 // PythonContext context = getContext();
 // SignatureLibrary signatures = SignatureLibrary.getUncached();
@@ -397,7 +397,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @Override
     protected void setNativeCache(long cachePtr) {
-        assert useNativeCache();
+        assert useNativeFastPaths();
         setNativeSpaceFunction(nativePointer, cachePtr);
     }
 
