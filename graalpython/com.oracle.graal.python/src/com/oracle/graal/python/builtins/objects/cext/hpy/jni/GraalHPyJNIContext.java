@@ -2242,17 +2242,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     // {{end ctx funcs}}
 
     private long createConstant(Object value) {
-        assert GraalHPyContext.getHPyHandleForSingleton(value) == -1;
-        return context.getHPyHandleForNonSingleton(value);
+        return context.getHPyContextHandle(value);
     }
 
-    private long createSingletonConstant(Object value, int handle) {
+    private static long createSingletonConstant(Object value, int handle) {
         assert GraalHPyContext.getHPyHandleForSingleton(value) == handle;
         return handle;
     }
 
     private long createTypeConstant(PythonBuiltinClassType value) {
-        return context.getHPyHandleForObject(context.getContext().lookupType(value));
+        return context.getHPyContextHandle(context.getContext().lookupType(value));
     }
 
     /**

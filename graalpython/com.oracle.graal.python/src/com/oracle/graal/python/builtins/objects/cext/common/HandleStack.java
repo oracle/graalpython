@@ -63,4 +63,8 @@ public final class HandleStack {
         }
         return handles[--top];
     }
+
+    public int getTop() {
+        return top;
+    }
 }

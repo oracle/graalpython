@@ -298,6 +298,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -442,7 +443,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected void initNativeContext() throws Exception {
+    protected void initNativeContext() throws InteropException {
         Object hpyLibrary = context.getLLVMLibrary();
         InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
         interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this));

@@ -133,10 +133,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
              */
             CApiContext.ensureCapiWasLoaded(node, context, name, path);
 
-            Object hpyLibrary = GraalHPyLLVMContext.loadLLVMLibrary(context);
-            GraalHPyContext hPyContext = context.createHPyContext(hpyLibrary);
             try {
-                hPyContext.backend.initNativeContext();
+                GraalHPyContext hPyContext = context.createHPyContext(GraalHPyLLVMContext.loadLLVMLibrary(context));
+                assert hPyContext == context.getHPyContext();
+                return hPyContext;
             } catch (PException e) {
                 /*
                  * Python exceptions that occur during the HPy API initialization are just passed
@@ -380,8 +380,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private final ScheduledExecutorService scheduler;
 
-    public GraalHPyContext(PythonContext context, Object hpyLibrary) {
+    public GraalHPyContext(PythonContext context, Object hpyLibrary) throws Exception {
         super(context, hpyLibrary);
+        CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
@@ -409,6 +410,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             throw CompilerDirectives.shouldNotReachHere();
         }
+
+        backend.initNativeContext();
 
         // createMembers already assigns numeric handles to "singletons"
         nextHandle = IMMUTABLE_HANDLE_COUNT;
@@ -828,6 +831,33 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CompilerAsserts.neverPartOfCompilation();
         assert !(object instanceof GraalHPyHandle);
         return GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen.getUncached().execute(object);
+    }
+
+    /**
+     * Allocates a handle for the given object. This method is intended to be used by the
+     * appropriate backend to initialize the context handles (i.e. handles available in
+     * {@code HPyContext *}; e.g. {@code HPyContext.h_None}). Following properties/restrictions
+     * apply:
+     * <ul>
+     * <li>This method *MUST NOT* be called after the context initialization was finished.</li>
+     * <li>The handles are not mirrored to the native cache even if {@link #useNativeFastPaths}.
+     * This should be done in a bulk operation after all context handles have been allocated.</li>
+     * <li>{@code object} must not be a singleton handle (i.e.
+     * {@link #getHPyHandleForSingleton(Object)} must return {@code -1}).</li>
+     * </ul>
+     */
+    public int getHPyContextHandle(Object object) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert getHPyHandleForSingleton(object) == -1;
+        assert freeStack.getTop() == 0;
+        assert nextHandle < hpyHandleTable.length;
+        if (nextHandle >= IMMUTABLE_HANDLE_COUNT) {
+            throw CompilerDirectives.shouldNotReachHere("attempting to create context handle after initialization");
+        }
+        int i = nextHandle++;
+        assert hpyHandleTable[i] == null;
+        hpyHandleTable[i] = object;
+        return i;
     }
 
     public int getHPyHandleForNonSingleton(Object object) {
