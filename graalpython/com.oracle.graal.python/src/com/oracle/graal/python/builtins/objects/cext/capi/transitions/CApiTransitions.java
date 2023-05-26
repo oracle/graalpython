@@ -256,8 +256,8 @@ public class CApiTransitions {
                     if (entry instanceof PythonObjectReference reference) {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
 
-                        if (HandleTester.pointsToPyHandleSpace(reference.pointer)) {
-                            int index = (int) (reference.pointer - HandleFactory.HANDLE_BASE);
+                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
+                            int index = HandlePointerConverter.pointerToHandleIndex(reference.pointer);
                             assert context.nativeHandles.get(index) != null;
                             context.nativeHandles.set(index, null);
                             context.nativeHandlesFreeStack.push(index);
@@ -360,7 +360,7 @@ public class CApiTransitions {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            assert HandleTester.pointsToPyHandleSpace(pointer);
+            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
             release(pointer);
             return 0;
         }
@@ -402,11 +402,7 @@ public class CApiTransitions {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return pointsToPyHandleSpace(pointer) ? 1 : 0;
-        }
-
-        public static boolean pointsToPyHandleSpace(long pointer) {
-            return (pointer & HandleFactory.HANDLE_BASE) != 0;
+            return HandlePointerConverter.pointsToPyHandleSpace(pointer) ? 1 : 0;
         }
     }
 
@@ -427,7 +423,7 @@ public class CApiTransitions {
         }
 
         public static PythonNativeWrapper resolve(long pointer) {
-            PythonNativeWrapper wrapper = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE)).get();
+            PythonNativeWrapper wrapper = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer)).get();
             assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
             incRef(wrapper, 1);
             return wrapper;
@@ -451,15 +447,35 @@ public class CApiTransitions {
         }
 
         public static PythonNativeWrapper resolve(long pointer) {
-            PythonNativeWrapper wrapper = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE)).get();
+            PythonNativeWrapper wrapper = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer)).get();
             assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
             return wrapper;
         }
     }
 
-    public static final class HandleFactory {
+    public static final class HandlePointerConverter {
 
-        public static final long HANDLE_BASE = 0x8000_0000_0000_0000L;
+        private static final long HANDLE_BASE = 0x8000_0000_0000_0000L;
+
+        /**
+         * We need to shift the pointers because some libraries, notably cffi, do pointer tagging.
+         */
+        private static final int HANDLE_SHIFT = 3;
+
+        public static long handleIndexToPointer(int idx) {
+            return ((long) idx << HANDLE_SHIFT) | HANDLE_BASE;
+        }
+
+        public static int pointerToHandleIndex(long pointer) {
+            return (int) ((pointer & ~HANDLE_BASE) >>> HANDLE_SHIFT);
+        }
+
+        public static boolean pointsToPyHandleSpace(long pointer) {
+            return (pointer & HANDLE_BASE) != 0;
+        }
+    }
+
+    public static final class HandleFactory {
 
         public static long create(PythonNativeWrapper wrapper) {
             CompilerAsserts.neverPartOfCompilation();
@@ -470,11 +486,11 @@ public class CApiTransitions {
             int idx = handleContext.nativeHandlesFreeStack.pop();
             long pointer;
             if (idx == -1) {
-                pointer = HANDLE_BASE + handleContext.nativeHandles.size();
+                pointer = HandlePointerConverter.handleIndexToPointer(handleContext.nativeHandles.size());
                 handleContext.nativeHandles.add(new PythonObjectReference(wrapper, pointer));
             } else {
                 assert idx >= 0;
-                pointer = HANDLE_BASE + idx;
+                pointer = HandlePointerConverter.handleIndexToPointer(idx);
                 handleContext.nativeHandles.set(idx, new PythonObjectReference(wrapper, pointer));
             }
             return pointer;
@@ -661,7 +677,7 @@ public class CApiTransitions {
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
-                if (HandleTester.pointsToPyHandleSpace(pointer)) {
+                if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
                     PythonNativeWrapper obj = HandleResolver.resolve(pointer);
                     if (obj != null) {
                         return logResult(obj.getDelegate());
@@ -842,8 +858,8 @@ public class CApiTransitions {
                 return PNone.NO_VALUE;
             }
             assert pythonContext.ownsGil();
-            if (isHandleSpaceProfile.profile(inliningTarget, HandleTester.pointsToPyHandleSpace(pointer))) {
-                PythonObjectReference reference = nativeContext.nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));
+            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
+                PythonObjectReference reference = nativeContext.nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
@@ -1005,8 +1021,8 @@ public class CApiTransitions {
             }
             assert PythonContext.get(null).ownsGil();
             PythonNativeWrapper wrapper;
-            if (HandleTester.pointsToPyHandleSpace(pointer)) {
-                PythonObjectReference reference = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));
+            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
+                PythonObjectReference reference = getContext().nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
                 if (reference == null || (wrapper = reference.get()) == null) {
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
