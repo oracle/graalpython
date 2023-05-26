@@ -47,9 +47,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -97,8 +99,10 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
@@ -134,7 +138,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -147,6 +150,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromByteArrayNode;
@@ -861,22 +865,73 @@ public final class PythonCextUnicodeBuiltins {
         protected _PyUnicode_AsUTF8String() {
             super(StandardCharsets.UTF_8);
         }
+
+        public static _PyUnicode_AsUTF8String create() {
+            return PythonCextUnicodeBuiltinsFactory._PyUnicode_AsUTF8StringNodeGen.create();
+        }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
+    abstract static class PyTruffle_Unicode_AsUTF8AndSize_CharPtr extends CApiUnaryBuiltinNode {
+
         @Specialization
-        @TruffleBoundary
-        Object doUnicode(PString s,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            CompilerDirectives.shouldNotReachHere("TODO: can this be reached?");
-            char[] charArray = toJavaStringNode.execute(s.getValueUncached()).toCharArray();
-            // stuff into byte[]
-            ByteBuffer allocate = ByteBuffer.allocate(charArray.length * 2);
-            for (int i = 0; i < charArray.length; i++) {
-                allocate.putChar(charArray[i]);
+        static Object doUnicode(PString s,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached _PyUnicode_AsUTF8String asUTF8String) {
+            if (profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
+                PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
+                s.setUtf8Bytes(bytes);
             }
-            return getContext().getEnv().asGuestValue(allocate.array());
+            return new PySequenceArrayWrapper(s.getUtf8Bytes(), 1);
+        }
+
+        @Fallback
+        Object doError(@SuppressWarnings("unused") Object s) {
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
+    abstract static class PyTruffle_Unicode_AsUTF8AndSize_Size extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doUnicode(PString s) {
+            // PyTruffle_Unicode_AsUTF8AndSize_CharPtr must have been be called before
+            return s.getUtf8Bytes().getSequenceStorage().length();
+        }
+    }
+
+    @CApiBuiltin(ret = PY_UNICODE_PTR, args = {PyObject}, call = Direct)
+    abstract static class PyTruffle_Unicode_AsUnicodeAndSize_CharPtr extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doUnicode(PString s,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached CExtCommonNodes.SizeofWCharNode sizeofWcharNode,
+                        @Cached UnicodeAsWideCharNode asWideCharNode) {
+            if (profile.profile(inliningTarget, s.getWCharBytes() == null)) {
+                PBytes bytes = asWideCharNode.executeNativeOrder(s, sizeofWcharNode.execute(getCApiContext()));
+                s.setWCharBytes(bytes);
+            }
+            return new PySequenceArrayWrapper(s.getWCharBytes(), 1);
+        }
+
+        @Fallback
+        Object doError(@SuppressWarnings("unused") Object s) {
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
+    abstract static class PyTruffle_Unicode_AsUnicodeAndSize_Size extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doUnicode(PString s,
+                        @Cached CExtCommonNodes.SizeofWCharNode sizeofWcharNode) {
+            // PyTruffle_Unicode_AsUnicodeAndSize_CharPtr must have been be called before
+            return s.getWCharBytes().getSequenceStorage().length() / sizeofWcharNode.execute(getCApiContext());
         }
     }
 

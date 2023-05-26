@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -54,6 +55,13 @@ public final class PString extends PSequence {
 
     private TruffleString materializedValue;
     private NativeCharSequence nativeCharSequence;
+
+    /*
+     * We need to keep a reference to the encoded forms for functions that return char pointers to
+     * keep the underlying memory alive (NativeSequenceStorage frees memory in finalizer).
+     */
+    private PBytes utf8Bytes;
+    private PBytes wCharBytes;
 
     public PString(Object clazz, Shape instanceShape, NativeCharSequence value) {
         super(clazz, instanceShape);
@@ -102,6 +110,22 @@ public final class PString extends PSequence {
     @Override
     public String toString() {
         return isMaterialized() ? materializedValue.toJavaStringUncached() : nativeCharSequence.toString();
+    }
+
+    public PBytes getUtf8Bytes() {
+        return utf8Bytes;
+    }
+
+    public void setUtf8Bytes(PBytes bytes) {
+        this.utf8Bytes = bytes;
+    }
+
+    public PBytes getWCharBytes() {
+        return wCharBytes;
+    }
+
+    public void setWCharBytes(PBytes bytes) {
+        this.wCharBytes = bytes;
     }
 
     @Override

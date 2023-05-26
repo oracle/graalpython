@@ -356,7 +356,10 @@ typedef struct {
     BUILTIN(PyTruffle_True, PyObject*) \
     BUILTIN(PyTruffle_Type, PyTypeObject*, const char*) \
     BUILTIN(PyTruffle_Type_Modified, int, PyTypeObject*, const char*, PyObject*) \
-    BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize, PyObject*, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsUTF8AndSize_CharPtr, const char*, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsUTF8AndSize_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize_CharPtr, Py_UNICODE*, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyTruffle_Unicode_AsWideChar, PyObject*, PyObject*, int) \
     BUILTIN(PyTruffle_Unicode_DecodeUTF32, PyObject*, void*, Py_ssize_t, const char*, int) \
     BUILTIN(PyTruffle_Unicode_FromFormat, PyObject*, const char*, va_list*) \
