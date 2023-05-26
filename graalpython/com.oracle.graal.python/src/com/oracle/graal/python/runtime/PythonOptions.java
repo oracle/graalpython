@@ -252,6 +252,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks", usageSyntax = "true|false") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Eagerly initialize source sections.", usageSyntax = "true|false") //
+    public static final OptionKey<Boolean> ForceInitializeSourceSections = new OptionKey<>(false);
+
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
                     "    1   Print Java stacktrace for Java exceptions only." +
                     "    2   Print Java stacktrace for Python exceptions only (ATTENTION: this will have a notable performance impact)." +

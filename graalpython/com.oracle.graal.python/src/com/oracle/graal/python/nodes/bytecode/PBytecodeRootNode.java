@@ -697,6 +697,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
         this.selfIndex = selfIndexValue;
+        if (language.getEngineOption(PythonOptions.ForceInitializeSourceSections)) {
+            getSourceSection();
+        }
     }
 
     @Override
