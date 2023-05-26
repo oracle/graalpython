@@ -91,6 +91,10 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         return context.useNativeFastPaths;
     }
 
+    public final GraalHPyContext getHPyContext() {
+        return context;
+    }
+
     @ExportMessage
     public void toNative() {
         try {

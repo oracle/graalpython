@@ -374,7 +374,7 @@ public abstract class HPyExternalFunctionNodes {
             toSulongNode.executeInto(frame, arguments, 0, convertedArguments, 1);
 
             // first arg is always the HPyContext
-            convertedArguments[0] = hPyContext;
+            convertedArguments[0] = hPyContext.getBackend();
 
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext ctx = hPyContext.getContext();

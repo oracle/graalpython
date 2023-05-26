@@ -68,11 +68,15 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
 
     public abstract long execute(Object[] arguments, int i);
 
-    protected static GraalHPyContext getHPyContext(Object[] arguments) {
-        Object ctx = arguments[0];
-        if (ctx instanceof GraalHPyContext) {
-            return (GraalHPyContext) ctx;
+    protected static GraalHPyJNIContext getHPyContext(Object[] arguments) {
+        Object backend = arguments[0];
+        if (backend instanceof GraalHPyJNIContext jniBackend) {
+            return jniBackend;
         }
+        /*
+         * That's clearly an internal error because we cannot have a GraalHPyJNIConvertArgNode
+         * instance if we are not using the JNI backend.
+         */
         throw CompilerDirectives.shouldNotReachHere("first argument is expected to the HPy context");
     }
 
@@ -94,8 +98,7 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
             // seen per argument
             Object value = arguments[i];
 
-            if (value instanceof GraalHPyHandle) {
-                GraalHPyHandle handle = (GraalHPyHandle) value;
+            if (value instanceof GraalHPyHandle handle) {
                 Object delegate = handle.getDelegate();
                 if (GraalHPyBoxing.isBoxablePrimitive(delegate)) {
                     if (delegate instanceof Integer) {
@@ -104,7 +107,7 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
                     assert delegate instanceof Double;
                     return GraalHPyBoxing.boxDouble((Double) delegate);
                 } else {
-                    return handle.getId(getHPyContext(arguments), ensureProfile(), ensureHandleForSingletonNode());
+                    return handle.getId(getHPyContext(arguments).getHPyContext(), ensureProfile(), ensureHandleForSingletonNode());
                 }
             } else if (value instanceof Long) {
                 return (long) value;
@@ -146,8 +149,7 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
         @Override
         public long execute(Object[] arguments, int i) {
             Object value = arguments[i];
-            if (value instanceof GraalHPyHandle) {
-                GraalHPyHandle handle = (GraalHPyHandle) value;
+            if (value instanceof GraalHPyHandle handle) {
                 Object delegate = handle.getDelegate();
                 if (GraalHPyBoxing.isBoxablePrimitive(delegate)) {
                     if (delegate instanceof Integer) {
@@ -156,7 +158,7 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
                     assert delegate instanceof Double;
                     return GraalHPyBoxing.boxDouble((Double) delegate);
                 } else {
-                    return handle.getIdUncached(getHPyContext(arguments));
+                    return handle.getIdUncached(getHPyContext(arguments).getHPyContext());
                 }
             } else if (value instanceof Long) {
                 return (long) value;

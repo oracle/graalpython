@@ -1216,7 +1216,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
          * Optimization: the first argument *MUST* always be the context. If not, we can just set
          * 'this'.
          */
-        args[0] = this;
+        args[0] = context;
         return memberInvokeLib.execute(member, args);
     }
 

@@ -1007,13 +1007,14 @@ public class GraalHPyNodes {
     public abstract static class HPyAsContextNode extends CExtToJavaNode {
 
         @Specialization
-        static GraalHPyContext doHandle(GraalHPyContext hpyContext) {
-            return hpyContext;
+        static GraalHPyContext doHandle(GraalHPyNativeContext hpyContext) {
+            return hpyContext.context;
         }
 
-        // n.b. we could actually accept anything else, but we have specializations to be more
-        // strict
-        // about what we expect
+        /*
+         * n.b. we could actually accept anything else, but we have specializations to be more *
+         * strict about what we expect
+         */
 
         @Specialization
         GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {

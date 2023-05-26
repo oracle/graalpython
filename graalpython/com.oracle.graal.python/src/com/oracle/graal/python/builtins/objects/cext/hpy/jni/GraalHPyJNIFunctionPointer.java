@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -337,29 +336,18 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
         }
 
         private static long convertHPyContext(Object[] arguments) {
-            GraalHPyContext hPyContext = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
-            InteropLibrary lib = InteropLibrary.getUncached(hPyContext);
-            if (!lib.isPointer(hPyContext)) {
-                lib.toNative(hPyContext);
-            }
+            GraalHPyJNIContext jniBackend = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
             try {
-                return lib.asPointer(hPyContext);
+                return jniBackend.asPointer();
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         private static long convertHPyDebugContext(Object[] arguments) {
-            GraalHPyContext hPyContext = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
-            if (hPyContext.getBackend() instanceof GraalHPyJNIContext jniBackend) {
-                return jniBackend.getHPyDebugContext();
-            } else {
-                /*
-                 * That's clearly an internal error because that should already be handled when
-                 * loading a module in debug mode.
-                 */
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            GraalHPyJNIContext jniBackend = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
+            assert jniBackend.getHPyDebugContext() != 0;
+            return jniBackend.getHPyDebugContext();
         }
 
         private static long convertPointer(Object argument, InteropLibrary interopLibrary) {
