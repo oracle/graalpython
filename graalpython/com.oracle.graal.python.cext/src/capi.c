@@ -2157,6 +2157,22 @@ PyAPI_FUNC(void) PyTruffle_DebugTrace() {
 PyAPI_FUNC(int) PyTruffle_ToNative(void* a) {
     return GraalPyTruffle_ToNative(a);
 }
+#undef PyTruffle_Unicode_AsUTF8AndSize_CharPtr
+PyAPI_FUNC(const char*) PyTruffle_Unicode_AsUTF8AndSize_CharPtr(PyObject* a) {
+    return GraalPyTruffle_Unicode_AsUTF8AndSize_CharPtr(a);
+}
+#undef PyTruffle_Unicode_AsUTF8AndSize_Size
+PyAPI_FUNC(Py_ssize_t) PyTruffle_Unicode_AsUTF8AndSize_Size(PyObject* a) {
+    return GraalPyTruffle_Unicode_AsUTF8AndSize_Size(a);
+}
+#undef PyTruffle_Unicode_AsUnicodeAndSize_CharPtr
+PyAPI_FUNC(Py_UNICODE*) PyTruffle_Unicode_AsUnicodeAndSize_CharPtr(PyObject* a) {
+    return GraalPyTruffle_Unicode_AsUnicodeAndSize_CharPtr(a);
+}
+#undef PyTruffle_Unicode_AsUnicodeAndSize_Size
+PyAPI_FUNC(Py_ssize_t) PyTruffle_Unicode_AsUnicodeAndSize_Size(PyObject* a) {
+    return GraalPyTruffle_Unicode_AsUnicodeAndSize_Size(a);
+}
 #undef PyTuple_GetItem
 PyAPI_FUNC(PyObject*) PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
     return GraalPyTuple_GetItem(a, b);

@@ -112,10 +112,30 @@ index 202dea7..1e83e66 100644
      # integers. Silently reduce values larger than PY_SSIZE_T_MAX to
      # PY_SSIZE_T_MAX, silently boost the start and stop values less than
 diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
-index 474e6d2..e15f984 100644
+index 474e6d2..4aeb19c 100644
 --- a/Cython/Utility/Coroutine.c
 +++ b/Cython/Utility/Coroutine.c
-@@ -1299,7 +1299,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
+@@ -527,8 +527,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(CYTHON_UNUSED PyThreadState *$lo
+         }
+ #if PY_VERSION_HEX >= 0x030300A0
+         else if (Py_TYPE(ev) == (PyTypeObject*)PyExc_StopIteration) {
+-            value = ((PyStopIterationObject *)ev)->value;
+-            Py_INCREF(value);
++            value = PyObject_GetAttrString(ev, "value");
+             Py_DECREF(ev);
+         }
+ #endif
+@@ -573,8 +572,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(CYTHON_UNUSED PyThreadState *$lo
+     Py_XDECREF(tb);
+     Py_DECREF(et);
+ #if PY_VERSION_HEX >= 0x030300A0
+-    value = ((PyStopIterationObject *)ev)->value;
+-    Py_INCREF(value);
++    value = PyObject_GetAttrString(ev, "value");
+     Py_DECREF(ev);
+ #else
+     {
+@@ -1299,7 +1297,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
          _Py_NewReference(self);
          __Pyx_SET_REFCNT(self, refcnt);
      }
