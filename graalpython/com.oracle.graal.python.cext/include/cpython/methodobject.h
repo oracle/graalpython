@@ -32,3 +32,10 @@ typedef struct {
     PyCFunctionObject func;
     PyTypeObject *mm_class; /* Class that defines this method */
 } PyCMethodObject;
+
+/*
+ * XXX These functions are GraalPy-only. We need them to replace field access in our patches.
+ * Currently used by (at least) cffi patch.
+ */
+PyAPI_FUNC(PyObject*) _PyCFunction_GetModule(PyObject* a);
+PyAPI_FUNC(PyMethodDef*) _PyCFunction_GetMethodDef(PyObject* a);
