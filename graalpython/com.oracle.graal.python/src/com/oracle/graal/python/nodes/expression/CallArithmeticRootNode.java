@@ -83,4 +83,9 @@ abstract class CallArithmeticRootNode extends PRootNode {
     }
 
     protected abstract Object doCall(VirtualFrame frame);
+
+    @Override
+    public boolean setsUpCalleeContext() {
+        return true;
+    }
 }

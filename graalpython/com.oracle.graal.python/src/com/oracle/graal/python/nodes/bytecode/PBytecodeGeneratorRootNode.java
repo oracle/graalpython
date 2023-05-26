@@ -196,6 +196,11 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     }
 
     @Override
+    public boolean setsUpCalleeContext() {
+        return true;
+    }
+
+    @Override
     public Signature getSignature() {
         return rootNode.getSignature();
     }

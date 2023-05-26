@@ -5660,6 +5660,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @Override
+    public boolean setsUpCalleeContext() {
+        return true;
+    }
+
+    @Override
     protected byte[] extractCode() {
         /*
          * CPython exposes individual items of code objects, like constants, as different members of

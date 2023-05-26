@@ -302,8 +302,7 @@ public final class ReadCallerFrameNode extends Node {
                 RootNode rootNode = target.getRootNode();
                 Node callNode = frameInstance.getCallNode();
                 boolean didMark = IndirectCallNode.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
-                if (rootNode instanceof PRootNode && outputFrame[0] == null) {
-                    PRootNode pRootNode = (PRootNode) rootNode;
+                if (outputFrame[0] == null && rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
                     pRootNode.setNeedsCallerFrame();
                     if (i < 0 && startFrame != null) {
                         Frame roFrame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);

@@ -109,7 +109,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<generator function root" + originalName + ">";
+        return "<generator function root " + originalName + ">";
     }
 
     @Override
