@@ -45,7 +45,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -68,10 +68,10 @@ public abstract class DeleteAttributeNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "doIt")
-    @TruffleBoundary
-    protected void doItUncached(Object object, Object key) {
+    protected void doItUncached(VirtualFrame frame, Object object, Object key) {
+        PythonUtils.assertUncached();
         Object klass = GetClassNode.getUncached().execute(object);
         Object method = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.DelAttr).execute(klass);
-        CallBinaryMethodNode.getUncached().executeObject(null, method, object, key);
+        CallBinaryMethodNode.getUncached().executeObject(frame, method, object, key);
     }
 }
