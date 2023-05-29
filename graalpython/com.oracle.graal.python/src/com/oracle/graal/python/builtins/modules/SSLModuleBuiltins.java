@@ -231,6 +231,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("HAS_ECDH"), false);
         module.setAttribute(tsLiteral("HAS_NPN"), false);
         module.setAttribute(tsLiteral("HAS_ALPN"), true);
+        module.setAttribute(tsLiteral("HAS_NEVER_CHECK_COMMON_NAME"), false);
         module.setAttribute(tsLiteral("HAS_SSLv2"), false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute(tsLiteral("HAS_SSLv3"), hasSSLv3);
@@ -268,13 +269,15 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("SSL_ERROR_EOF"), SSLErrorCode.ERROR_EOF.getErrno());
         module.setAttribute(tsLiteral("SSL_ERROR_INVALID_ERROR_CODE"), 10);
 
-        module.setAttribute(tsLiteral("OP_ALL"), SSLOptions.DEFAULT_OPTIONS);
+        module.setAttribute(tsLiteral("OP_ALL"), SSLOptions.SSL_OP_ALL);
         module.setAttribute(tsLiteral("OP_NO_SSLv2"), SSLOptions.SSL_OP_NO_SSLv2);
         module.setAttribute(tsLiteral("OP_NO_SSLv3"), SSLOptions.SSL_OP_NO_SSLv3);
         module.setAttribute(tsLiteral("OP_NO_TLSv1"), SSLOptions.SSL_OP_NO_TLSv1);
         module.setAttribute(tsLiteral("OP_NO_TLSv1_1"), SSLOptions.SSL_OP_NO_TLSv1_1);
         module.setAttribute(tsLiteral("OP_NO_TLSv1_2"), SSLOptions.SSL_OP_NO_TLSv1_2);
         module.setAttribute(tsLiteral("OP_NO_TLSv1_3"), SSLOptions.SSL_OP_NO_TLSv1_3);
+        module.setAttribute(tsLiteral("OP_NO_COMPRESSION"), SSLOptions.SSL_OP_NO_COMPRESSION);
+        module.setAttribute(tsLiteral("OP_NO_TICKET"), SSLOptions.SSL_OP_NO_TICKET);
 
         module.setAttribute(tsLiteral("VERIFY_DEFAULT"), 0);
         module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_LEAF"), X509_V_FLAG_CRL_CHECK);

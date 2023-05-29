@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
@@ -171,6 +171,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                     @Cached PConstructAndRaiseNode constructAndRaiseNode,
                     @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert socket.getSocket() != null;
+        prepare(socket);
         TimeoutHelper timeoutHelper = null;
         if (socket.getSocket().getTimeoutNs() > 0) {
             timeoutHelper = new TimeoutHelper(socket.getSocket().getTimeoutNs());
@@ -272,6 +273,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     @Specialization(guards = "socket.getSocket() == null")
     void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+        prepare(socket);
         SSLOperationStatus status;
         try {
             status = loop(socket, appInput, targetBuffer, operation);
@@ -305,6 +307,17 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         } catch (OverflowException | OutOfMemoryError node) {
             throw raise(MemoryError);
         }
+    }
+
+    private static void prepare(PSSLSocket socket) {
+        if ((socket.getContext().getOptions() & SSLOptions.SSL_OP_NO_TICKET) != 0) {
+            invalidateSession(socket);
+        }
+    }
+
+    @TruffleBoundary
+    private static void invalidateSession(PSSLSocket socket) {
+        socket.getEngine().getSession().invalidate();
     }
 
     private static void putAsMuchAsPossible(ByteBuffer target, PMemoryBIO sourceBIO) {
