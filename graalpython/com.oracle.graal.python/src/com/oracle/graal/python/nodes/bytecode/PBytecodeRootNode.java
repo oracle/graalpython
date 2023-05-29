@@ -256,6 +256,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
     private static final ImportNode UNCACHED_IMPORT = ImportNode.getUncached();
+    private static final ReadNameNode UNCACHED_READ_NAME = ReadNameNodeGen.getUncached();
+    private static final WriteNameNode UNCACHED_WRITE_NAME = WriteNameNodeGen.getUncached();
     private static final NodeSupplier<ImportNode> NODE_IMPORT = ImportNode::create;
     private static final ImportStarNode UNCACHED_IMPORT_STAR = ImportStarNode.getUncached();
     private static final NodeSupplier<ImportStarNode> NODE_IMPORT_STAR = ImportStarNode::create;
@@ -337,6 +339,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
     private static final NodeSupplier<GetTPFlagsNode> NODE_TP_FLAGS = GetTPFlagsNode::create;
     private static final GetTPFlagsNode UNCACHED_TP_FLAGS = GetTPFlagsNode.getUncached();
+    private static final DeleteGlobalNode UNCACHED_DELETE_GLOBAL = DeleteGlobalNodeGen.getUncached();
     private static final NodeSupplier<MatchKeysNode> NODE_MATCH_KEYS = MatchKeysNode::create;
     private static final NodeSupplier<CopyDictWithoutKeysNode> NODE_COPY_DICT_WITHOUT_KEYS = CopyDictWithoutKeysNode::create;
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
@@ -551,6 +554,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
+    // TODO: make some of those lazy?
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private MaterializeFrameNode traceMaterializeFrameNode = null;
@@ -4628,7 +4632,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         TruffleString varname = localNames[oparg];
-        DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL);
+        DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, usingCachedNodes);
         deleteGlobalNode.executeWithGlobals(virtualFrame, globals, varname);
     }
 
@@ -4668,7 +4672,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             PyObjectDelItem delItemNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_DEL_ITEM, PyObjectDelItemNodeGen.class, NODE_OBJECT_DEL_ITEM, useCachedNodes);
             delItemNode.execute(virtualFrame, locals, varname);
         } else {
-            DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci + 1, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL);
+            DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci + 1, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, useCachedNodes);
             deleteGlobalNode.executeWithGlobals(virtualFrame, globals, varname);
         }
     }
@@ -4974,7 +4978,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeLoadName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         int stackTop = initialStackTop;
-        ReadNameNode readNameNode = insertChildNode(localNodes, bci, ReadNameNodeGen.class, NODE_READ_NAME);
+        ReadNameNode readNameNode = insertChildNode(localNodes, bci, UNCACHED_READ_NAME, ReadNameNodeGen.class, NODE_READ_NAME, usingCachedNodes);
         virtualFrame.setObject(++stackTop, readNameNode.execute(virtualFrame, localNames[oparg]));
         return stackTop;
     }
@@ -5209,7 +5213,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = initialStackTop;
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        WriteNameNode writeNameNode = insertChildNode(localNodes, bci, WriteNameNodeGen.class, NODE_WRITE_NAME);
+        WriteNameNode writeNameNode = insertChildNode(localNodes, bci, UNCACHED_WRITE_NAME, WriteNameNodeGen.class, NODE_WRITE_NAME, usingCachedNodes);
         writeNameNode.execute(virtualFrame, localNames[oparg], value);
         return stackTop;
     }

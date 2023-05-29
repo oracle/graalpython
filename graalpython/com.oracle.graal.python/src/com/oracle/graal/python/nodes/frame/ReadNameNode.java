@@ -52,10 +52,12 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateUncached
 public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
     public final Object execute(VirtualFrame frame, TruffleString attributeId) {
         CompilerAsserts.partialEvaluationConstant(attributeId);
