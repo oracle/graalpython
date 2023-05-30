@@ -165,8 +165,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached InlinedBranchProfile firstExecution,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PFunction cachedCallable) {
-
-        Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, callable, firstExecution);
+        Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, cachedCallable, firstExecution);
         Object[] defaults = cachedCallable.getDefaults();
         PKeyword[] kwdefaults = cachedCallable.getKwDefaults();
         return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
