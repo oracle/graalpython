@@ -558,16 +558,15 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends ObjectNodes.AbstractSetattrNode {
-        @Child WriteAttributeToObjectNode writeNode;
+    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
-        @Override
-        protected boolean writeAttribute(Object object, TruffleString key, Object value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.create());
-            }
-            return writeNode.execute(object, key, value);
+        @Specialization
+        Object set(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            return PNone.NONE;
         }
 
         @NeverDefault

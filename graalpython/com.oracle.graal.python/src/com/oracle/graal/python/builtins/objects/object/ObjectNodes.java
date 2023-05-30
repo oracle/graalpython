@@ -118,12 +118,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -147,6 +149,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -917,6 +921,85 @@ public abstract class ObjectNodes {
         @NeverDefault
         public static DefaultObjectReprNode create() {
             return ObjectNodesFactory.DefaultObjectReprNodeGen.create();
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class GenericSetAttrNode extends Node {
+        public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, Object key, Object value, WriteAttributeToObjectNode writeNode);
+
+        @Specialization
+        static void doStringKey(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode,
+                        @Shared @Cached InlinedGetClassNode getClassNode,
+                        @Shared @Cached CallSetHelper callSetHelper,
+                        @Shared @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            Object type = getClassNode.execute(inliningTarget, object);
+            Object descr = getExisting.execute(type, key);
+            boolean calledSet = callSetHelper.execute(inliningTarget, frame, descr, object, value);
+            if (calledSet) {
+                return;
+            }
+            boolean wroteAttr = writeNode.execute(object, key, value);
+            if (wroteAttr) {
+                return;
+            }
+            if (descr != PNone.NO_VALUE) {
+                throw raiseNode.raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+            } else {
+                throw raiseNode.raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+            }
+        }
+
+        @Specialization(replaces = "doStringKey")
+        static void doIt(Node inliningTarget, VirtualFrame frame, Object object, Object keyObject, Object value, WriteAttributeToObjectNode writeNode,
+                        @Shared @Cached InlinedGetClassNode getClassNode,
+                        @Shared @Cached CallSetHelper callSetHelper,
+                        @Shared @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+            TruffleString key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+            doStringKey(inliningTarget, frame, object, key, value, writeNode, getClassNode, callSetHelper, getExisting, raiseNode);
+        }
+
+        public static GenericSetAttrNode getUncached() {
+            return ObjectNodesFactory.GenericSetAttrNodeGen.getUncached();
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        @GenerateUncached
+        @ImportStatic({SpecialMethodSlot.class, PGuards.class})
+        abstract static class CallSetHelper extends Node {
+            abstract boolean execute(Node inliningTarget, VirtualFrame frame, Object descr, Object object, Object value);
+
+            @Specialization(guards = "isNoValue(descr)")
+            @SuppressWarnings("unused")
+            static boolean call(Node inliningTarget, VirtualFrame frame, Object descr, Object object, Object value) {
+                return false;
+            }
+
+            @Specialization(guards = "!isNoValue(descr)")
+            static boolean call(Node inliningTarget, VirtualFrame frame, Object descr, Object object, Object value,
+                            @Cached InlinedGetClassNode getClassNode,
+                            @Cached(parameters = "Set") LookupCallableSlotInMRONode lookup,
+                            @Cached CallTernaryMethodNode call) {
+                Object descrClass = getClassNode.execute(inliningTarget, descr);
+                Object setMethod = lookup.execute(descrClass);
+                if (setMethod == PNone.NO_VALUE) {
+                    return false;
+                } else {
+                    call.execute(frame, setMethod, descr, object, value);
+                    return true;
+                }
+            }
         }
     }
 

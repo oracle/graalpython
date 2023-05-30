@@ -111,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -131,11 +130,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -155,6 +156,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
@@ -165,6 +167,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
@@ -745,16 +748,30 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends AbstractSetattrNode {
-        @Child WriteAttributeToObjectNode writeNode;
+    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "!isImmutable(object)")
+        static Object set(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            return PNone.NONE;
+        }
 
-        @Override
-        protected boolean writeAttribute(Object object, TruffleString key, Object value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.createForceType());
+        @Specialization(guards = "isImmutable(object)")
+        @TruffleBoundary
+        Object setBuiltin(Object object, Object key, Object value) {
+            if (PythonContext.get(this).isInitialized()) {
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), object);
+            } else {
+                set(null, object, key, value, null, ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
+                return PNone.NONE;
             }
-            return writeNode.execute(object, key, value);
+        }
+
+        protected static boolean isImmutable(Object type) {
+            // TODO should also check Py_TPFLAGS_IMMUTABLETYPE
+            return type instanceof PythonBuiltinClass || type instanceof PythonBuiltinClassType;
         }
     }
 
