@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -175,6 +176,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1730,7 +1732,11 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName);
+        public final Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName) {
+            return execute(cls, nativeMemberName, managedMemberName, null);
+        }
+
+        public abstract Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName, Function<PythonBuiltinClassType, Object> builtinCallback);
 
         static boolean isSpecialHeapSlot(Object cls, HiddenKey key) {
             return cls instanceof PythonClass && (key == TypeBuiltins.TYPE_ALLOC || key == TypeBuiltins.TYPE_DEL);
@@ -1741,7 +1747,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "!isSpecialHeapSlot(cls, managedMemberName)")
-        static Object doSingleContext(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName,
+        static Object doSingleContext(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName, Function<PythonBuiltinClassType, Object> builtinCallback,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
@@ -1754,7 +1760,9 @@ public abstract class CExtNodes {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
 
                 Object result;
-                if (PGuards.isManagedClass(mroCls)) {
+                if (builtinCallback != null && mroCls instanceof PythonBuiltinClass builtinClass) {
+                    result = builtinCallback.apply(builtinClass.getType());
+                } else if (PGuards.isManagedClass(mroCls)) {
                     result = readAttrNode.execute(mroCls, managedMemberName);
                 } else {
                     assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
@@ -1787,6 +1795,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "isSpecialHeapSlot(cls, managedMemberName)")
         static Object doToAllocOrDelManaged(Object cls, @SuppressWarnings("unused") NativeMember nativeMemberName, HiddenKey managedMemberName,
+                        Function<PythonBuiltinClassType, Object> builtinCallback,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
             Object func = readAttrNode.execute(cls, managedMemberName);
             if (func == PNone.NO_VALUE) {

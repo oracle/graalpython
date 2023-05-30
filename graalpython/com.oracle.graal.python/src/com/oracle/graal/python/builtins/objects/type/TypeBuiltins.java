@@ -46,9 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNA
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
@@ -122,7 +120,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -132,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -164,7 +162,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltin
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -1237,21 +1234,10 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class DictoffsetNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
-        Object getDictoffsetType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            return getDictoffsetManaged(getCore().lookupType(cls), value, profile, getName);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getDictoffsetManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            // recursion anchor; since the metaclass of 'type' is 'type'
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                return getName.execute(cls, TYPE_DICTOFFSET);
-            }
-            return getName.execute(cls, T___DICTOFFSET__);
+        Object getDictoffsetType(Object cls, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetDictOffsetNode getDictOffsetNode) {
+            return getDictOffsetNode.execute(inliningTarget, cls);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1265,9 +1251,12 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setDictoffsetClass(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, T___DICTOFFSET__, value);
+        static Object setDictoffsetClass(VirtualFrame frame, PythonManagedClass cls, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            setDictOffsetNode.execute(inliningTarget, cls, asSizeNode.executeExact(frame, value));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -1286,21 +1275,10 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class ItemsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getItemsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
+        static long getItemsizeType(Object cls, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetItemSizeNode getItemsizeNode) {
+            return getItemsizeNode.execute(inliningTarget, cls);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1326,25 +1304,11 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class BasicsizeNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        Object getBasicsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            return getBasicsizeManaged(getCore().lookupType(cls), value, profile, getName);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getBasicsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            Object basicsize;
-            // recursion anchor; since the metaclass of 'type' is 'type'
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                basicsize = getName.execute(cls, TYPE_BASICSIZE);
-            } else {
-                basicsize = getName.execute(cls, T___BASICSIZE__);
-            }
-            return basicsize != PNone.NO_VALUE ? basicsize : 0;
+        @Specialization(guards = "isNoValue(none)")
+        Object getBasicsizeType(Object cls, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
+            return getBasicSizeNode.execute(inliningTarget, cls);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1358,15 +1322,12 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setBasicsize(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, T___BASICSIZE__, value);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMember.TP_BASICSIZE);
+        static Object setBasicsize(VirtualFrame frame, PythonClass cls, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached TypeNodes.SetBasicSizeNode setBasicSizeNode) {
+            setBasicSizeNode.execute(inliningTarget, cls, asSizeNode.executeExact(frame, value));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")

@@ -45,6 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_TRUFFLE_SET_TP_FLAGS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_DICTOFFSET;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
@@ -68,9 +70,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_F
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -148,7 +148,6 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemsizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
@@ -158,7 +157,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptab
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
-import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -169,7 +167,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -191,7 +188,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -1980,13 +1976,10 @@ public abstract class TypeNodes {
     protected abstract static class AllocateTypeWithMetaclassNode extends Node implements IndirectCallNode {
         private static final int SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
-        @Child private GetAnyAttributeNode getAttrNode;
         @Child private ReadAttributeFromObjectNode readAttr;
-        @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private GetMroNode getMroNode;
-        @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
 
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
@@ -2018,8 +2011,6 @@ public abstract class TypeNodes {
                         @Cached("create(T___DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
-                        @Cached GetItemsizeNode getItemSize,
-                        @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached IsIdentifierNode isIdentifier,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached PRaiseNode raise,
@@ -2029,7 +2020,11 @@ public abstract class TypeNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached GetBasicSizeNode getBasicSizeNode,
+                        @Cached SetBasicSizeNode setBasicSizeNode,
+                        @Cached GetItemSizeNode getItemSize,
+                        @Cached GetDictOffsetNode getDictOffsetNode) {
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
             Python3Core core = context.getCore();
@@ -2099,13 +2094,13 @@ public abstract class TypeNodes {
             // may_add_dict = base->tp_dictoffset == 0
             boolean mayAddDict = getDictAttrNode.execute(base) == PNone.NO_VALUE;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
-            boolean hasItemSize = getItemSize.execute(base) != 0;
+            boolean hasItemSize = getItemSize.execute(inliningTarget, base) != 0;
             boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE && !hasItemSize;
 
             PythonAbstractClass[] mro = getMro(pythonClass);
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
+                addDictIfNative(inliningTarget, pythonClass, mro, getBasicSizeNode, getItemSize, getDictOffsetNode);
                 addDictDescrAttribute(basesArray, pythonClass, factory);
                 if (mayAddWeakRef) {
                     addWeakrefDescrAttribute(pythonClass, factory);
@@ -2135,7 +2130,7 @@ public abstract class TypeNodes {
                 }
 
                 if (isAnyBaseWithoutSlots(pythonClass, mro)) {
-                    addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
+                    addDictIfNative(inliningTarget, pythonClass, mro, getBasicSizeNode, getItemSize, getDictOffsetNode);
                     addDictDescrAttribute(basesArray, pythonClass, factory);
                 }
                 for (int i = 0; i < slotlen; i++) {
@@ -2151,7 +2146,7 @@ public abstract class TypeNodes {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (equalNode.execute(slotName, T___DICT__, TS_ENCODING)) {
-                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize)) {
+                        if (!mayAddDict || addDict || addDictIfNative(inliningTarget, pythonClass, mro, getBasicSizeNode, getItemSize, getDictOffsetNode)) {
                             throw raise.raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
@@ -2192,7 +2187,7 @@ public abstract class TypeNodes {
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
-                        addNativeSlots(frame, language, pythonClass, mro, newSlots);
+                        addNativeSlots(inliningTarget, pythonClass, mro, newSlots, getBasicSizeNode, setBasicSizeNode);
                     }
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
@@ -2202,7 +2197,7 @@ public abstract class TypeNodes {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
             }
-            ensureBasicsize(frame, pythonClass, mro);
+            ensureBasicsize(inliningTarget, pythonClass, mro, getBasicSizeNode, setBasicSizeNode);
 
             return pythonClass;
         }
@@ -2307,16 +2302,17 @@ public abstract class TypeNodes {
          * <li>We need to install a member descriptor for each dynamic slot.</li>
          * </ol>
          */
-        private void addNativeSlots(VirtualFrame frame, PythonLanguage language, PythonManagedClass pythonClass, PythonAbstractClass[] mro, PTuple slots) {
+        private void addNativeSlots(Node inliningTarget, PythonManagedClass pythonClass, PythonAbstractClass[] mro, PTuple slots,
+                        GetBasicSizeNode getBasicSizeNode, SetBasicSizeNode setBasicSizeNode) {
             SequenceStorage slotsStorage = slots.getSequenceStorage();
             if (slotsStorage.length() != 0) {
                 // __basicsize__ may not have been inherited yet. Therefore, iterate over the MRO
                 // and/ look for the first native class.
-                int slotOffset = getBasicsize(frame, pythonClass);
+                long slotOffset = getBasicSizeNode.execute(inliningTarget, pythonClass);
                 if (slotOffset == 0) {
                     for (PythonAbstractClass cls : mro) {
                         if (PGuards.isNativeClass(cls)) {
-                            slotOffset = getBasicsize(frame, cls);
+                            slotOffset = getBasicSizeNode.execute(inliningTarget, cls);
                             break;
                         }
                     }
@@ -2324,14 +2320,14 @@ public abstract class TypeNodes {
                 if (slotOffset == 0) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
-                slotOffset = installMemberDescriptors(language, pythonClass, slotsStorage, slotOffset);
+                slotOffset = installMemberDescriptors(pythonClass, slotsStorage, slotOffset);
                 // commit new basicSize
-                ensureWriteAttrNode().execute(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__, slotOffset);
+                setBasicSizeNode.execute(inliningTarget, pythonClass, slotOffset);
             }
         }
 
         @TruffleBoundary
-        private static int installMemberDescriptors(PythonLanguage language, PythonManagedClass pythonClass, SequenceStorage slotsStorage, int slotOffset) {
+        private static long installMemberDescriptors(PythonManagedClass pythonClass, SequenceStorage slotsStorage, long slotOffset) {
             PDict typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
             for (int i = 0; i < slotsStorage.length(); i++) {
                 Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
@@ -2355,30 +2351,6 @@ public abstract class TypeNodes {
                 getMroNode = insert(GetMroNode.create());
             }
             return getMroNode.execute(pythonClass);
-        }
-
-        private GetAnyAttributeNode ensureGetAttributeNode() {
-            if (getAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = insert(GetAnyAttributeNode.create());
-            }
-            return getAttrNode;
-        }
-
-        private CastToJavaIntExactNode ensureCastToIntNode() {
-            if (castToInt == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToInt = insert(CastToJavaIntExactNode.create());
-            }
-            return castToInt;
-        }
-
-        private PyObjectSetAttr ensureWriteAttrNode() {
-            if (writeAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttrNode = insert(PyObjectSetAttr.create());
-            }
-            return writeAttrNode;
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -2517,15 +2489,16 @@ public abstract class TypeNodes {
         /**
          * check that the native base does not already have tp_dictoffset
          */
-        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+        private boolean addDictIfNative(Node inliningTarget, PythonManagedClass pythonClass, PythonAbstractClass[] mro, GetBasicSizeNode getBasicSizeNode,
+                        GetItemSizeNode getItemSizeNode, GetDictOffsetNode getDictOffsetNode) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
                 for (PythonAbstractClass cls : mro) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___DICTOFFSET__));
-                        long basicsize = getBasicsize(frame, cls);
-                        long itemsize = ensureCastToIntNode().execute(getItemSize.execute(cls));
+                        long dictoffset = getDictOffsetNode.execute(inliningTarget, cls);
+                        long basicsize = getBasicSizeNode.execute(inliningTarget, cls);
+                        long itemsize = getItemSizeNode.execute(inliningTarget, cls);
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2536,9 +2509,9 @@ public abstract class TypeNodes {
                                 basicsize += SIZEOF_PY_OBJECT_PTR;
                             }
                         }
-                        DynamicObjectLibrary.getUncached().putLong(pythonClass, T___DICTOFFSET__, dictoffset);
-                        DynamicObjectLibrary.getUncached().putLong(pythonClass, T___BASICSIZE__, basicsize);
-                        DynamicObjectLibrary.getUncached().putLong(pythonClass, TYPE_ITEMSIZE, itemsize);
+                        SetDictOffsetNode.executeUncached(pythonClass, dictoffset);
+                        SetBasicSizeNode.executeUncached(pythonClass, basicsize);
+                        SetItemSizeNode.executeUncached(pythonClass, itemsize);
                         break;
                     }
                 }
@@ -2549,12 +2522,12 @@ public abstract class TypeNodes {
         /**
          * check that the native base does not already have tp_dictoffset
          */
-        private void ensureBasicsize(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro) {
-            if (pythonClass.needsNativeAllocation() && getBasicsize(frame, pythonClass) == 0) {
+        private void ensureBasicsize(Node inliningTarget, PythonManagedClass pythonClass, PythonAbstractClass[] mro, GetBasicSizeNode getBasicSizeNode, SetBasicSizeNode setBasicSizeNode) {
+            if (pythonClass.needsNativeAllocation() && getBasicSizeNode.execute(inliningTarget, pythonClass) == 0) {
                 long basicsize = 0;
                 for (PythonAbstractClass cls : mro) {
                     if (PGuards.isNativeClass(cls)) {
-                        basicsize = getBasicsize(frame, cls);
+                        basicsize = getBasicSizeNode.execute(inliningTarget, cls);
                         break;
                     }
                 }
@@ -2562,129 +2535,127 @@ public abstract class TypeNodes {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere(String.format("class %s needs native allocation but has basicsize <= 0", pythonClass.getName()));
                 }
-                ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__, basicsize);
+                setBasicSizeNode.execute(inliningTarget, pythonClass, basicsize);
             }
         }
-
-        private int getBasicsize(VirtualFrame frame, PythonAbstractClass cls) {
-            return ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
-        }
-
     }
 
     @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    public abstract static class GetItemsizeNode extends Node {
-        // We avoid PythonOptions here because it would require language reference
-        static final int MAX_RECURSION_DEPTH = 4;
-
-        public final long execute(Object cls) {
-            return execute(cls, 0);
-        }
-
-        public abstract long execute(Object cls, int depth);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetBasicSizeNode extends Node {
+        public abstract long execute(Node inliningTarget, Object cls);
 
         @Specialization
-        static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") int depth) {
-            return getBuiltinTypeItemsize(cls);
-        }
-
-        @Specialization
-        static long getItemsizeManaged(PythonBuiltinClass cls, @SuppressWarnings("unused") int depth) {
-            return getItemsizeType(cls.getType(), depth);
-        }
-
-        @Specialization(guards = "depth < MAX_RECURSION_DEPTH")
-        static long getItemsizeManagedRecursiveNode(PythonClass cls, int depth,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("hasVal") @Cached InlinedConditionProfile hasValueProfile,
-                        @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
-                        @Shared("getBase") @Cached GetBaseClassNode getBaseNode,
-                        @Cached GetItemsizeNode baseItemsizeNode) {
-            CompilerAsserts.partialEvaluationConstant(depth);
-            Object itemsize = readNode.execute(cls, TYPE_ITEMSIZE);
-            if (hasValueProfile.profile(inliningTarget, itemsize != PNone.NO_VALUE)) {
-                return (long) itemsize;
+        long lookup(Object cls,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
+            Object value = lookup.execute(cls, NativeMember.TP_BASICSIZE, TYPE_BASICSIZE);
+            if (value != PNone.NO_VALUE) {
+                return (long) value;
             }
-
-            Object base = getBaseNode.execute(cls);
-            assert base != null;
-            itemsize = baseItemsizeNode.execute(base, depth + 1);
-            writeNode.execute(cls, TYPE_ITEMSIZE, itemsize);
-            return (long) itemsize;
+            return 0;
         }
+    }
 
-        @Specialization(guards = "depth >= MAX_RECURSION_DEPTH")
-        static long getItemsizeManagedRecursiveCall(PythonClass cls, int depth,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("hasVal") @Cached InlinedConditionProfile hasValueProfile,
-                        @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
-                        @Shared("getBase") @Cached GetBaseClassNode getBaseNode) {
-            return getItemsizeManagedRecursiveNode(cls, depth, inliningTarget, hasValueProfile, readNode, writeNode, getBaseNode, GetItemsizeNodeGen.getUncached());
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetBasicSizeNode extends Node {
+        public abstract void execute(Node inliningTarget, PythonManagedClass cls, long value);
+
+        public static void executeUncached(PythonManagedClass cls, long value) {
+            TypeNodesFactory.SetBasicSizeNodeGen.getUncached().execute(null, cls, value);
         }
 
         @Specialization
-        static long getNative(PythonNativeClass cls, @SuppressWarnings("unused") int depth,
-                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return (long) getTpDictoffsetNode.execute(cls, NativeMember.TP_ITEMSIZE);
+        void set(PythonManagedClass cls, long value,
+                        @Cached WriteAttributeToObjectNode write) {
+            write.execute(cls, TYPE_BASICSIZE, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetItemSizeNode extends Node {
+        public abstract long execute(Node inliningTarget, Object cls);
+
+        @Specialization
+        long lookup(Object cls,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
+            Object value = lookup.execute(cls, NativeMember.TP_ITEMSIZE, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
+            if (value != PNone.NO_VALUE) {
+                return (long) value;
+            }
+            return 0;
         }
 
         private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
-            switch (cls) {
-                case PBytes:
-                    return 1;
-                case PInt:
-                    return 4;
-                case PFrame:
-                case PMemoryView:
-                case PTuple:
-                case PStatResult:
-                case PTerminalSize:
-                case PUnameResult:
-                case PStructTime:
-                case PProfilerEntry:
-                case PProfilerSubentry:
-                case PStructPasswd:
-                case PStructRusage:
-                case PVersionInfo:
-                case PFlags:
-                case PFloatInfo:
-                case PIntInfo:
-                case PHashInfo:
-                case PThreadInfo:
-                case PUnraisableHookArgs:
-                    // io
-                case PIOBase:
-                case PFileIO:
-                case PBufferedIOBase:
-                case PBufferedReader:
-                case PBufferedWriter:
-                case PBufferedRWPair:
-                case PBufferedRandom:
-                case PIncrementalNewlineDecoder:
-                case PTextIOWrapper:
-                    // ctypes
-                case CArgObject:
-                case CThunkObject:
-                case StgDict:
-                case Structure:
-                case Union:
-                case PyCPointer:
-                case PyCArray:
-                case PyCData:
-                case SimpleCData:
-                case PyCFuncPtr:
-                case CField:
-                case DictRemover:
-                case StructParam:
-                    return 8;
-                case PythonClass:
-                    return 40;
-                default:
-                    return 0;
+            return switch (cls) {
+                case PBytes -> 1;
+                case PInt -> 4;
+                case PFrame, PMemoryView, PTuple, PStatResult, PTerminalSize, PUnameResult, PStructTime, PProfilerEntry,
+                                PProfilerSubentry, PStructPasswd, PStructRusage, PVersionInfo, PFlags, PFloatInfo,
+                                PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
+                                PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
+                                PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
+                                PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam ->
+                    8;
+                case PythonClass -> 40;
+                default -> 0;
+            };
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetItemSizeNode extends Node {
+        public abstract void execute(Node inliningTarget, PythonManagedClass cls, long value);
+
+        public static void executeUncached(PythonManagedClass cls, long value) {
+            TypeNodesFactory.SetItemSizeNodeGen.getUncached().execute(null, cls, value);
+        }
+
+        @Specialization
+        void set(PythonManagedClass cls, long value,
+                        @Cached WriteAttributeToObjectNode write) {
+            write.execute(cls, TYPE_ITEMSIZE, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetDictOffsetNode extends Node {
+        public abstract long execute(Node inliningTarget, Object cls);
+
+        @Specialization
+        long lookup(Object cls,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
+            // TODO properly implement 'tp_dictoffset' for builtin classes
+            Object value = lookup.execute(cls, NativeMember.TP_DICTOFFSET, TYPE_DICTOFFSET);
+            if (value != PNone.NO_VALUE) {
+                return (long) value;
             }
+            return 0;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetDictOffsetNode extends Node {
+        public abstract void execute(Node inliningTarget, PythonManagedClass cls, long value);
+
+        public static void executeUncached(PythonManagedClass cls, long value) {
+            TypeNodesFactory.SetDictOffsetNodeGen.getUncached().execute(null, cls, value);
+        }
+
+        @Specialization
+        void set(PythonManagedClass cls, long value,
+                        @Cached WriteAttributeToObjectNode write) {
+            write.execute(cls, TYPE_DICTOFFSET, value);
         }
     }
 }

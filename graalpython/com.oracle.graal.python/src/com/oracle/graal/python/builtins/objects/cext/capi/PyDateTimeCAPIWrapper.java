@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DELTA_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_TIME_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_IDS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
@@ -59,6 +58,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetBasicSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -195,20 +196,20 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         PyObjectSetAttr setAttr = PyObjectSetAttr.getUncached();
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
 
-        Object date = getAttr.execute(null, datetime, T_DATE);
-        setAttr.execute(null, date, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DATE_BASICSIZE, capiContext.getLLVMLibrary()));
+        PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetime, T_DATE);
+        SetBasicSizeNode.executeUncached(date, (long) callCapiFunction.call(FUN_GET_DATETIME_DATE_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.dateType = toSulongNode.execute(date);
 
-        Object dt = getAttr.execute(null, datetime, T_DATETIME);
-        setAttr.execute(null, dt, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DATETIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetime, T_DATETIME);
+        SetBasicSizeNode.executeUncached(dt, (long) callCapiFunction.call(FUN_GET_DATETIME_DATETIME_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.datetimeType = toSulongNode.execute(dt);
 
-        Object time = getAttr.execute(null, datetime, T_TIME);
-        setAttr.execute(null, time, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_TIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetime, T_TIME);
+        SetBasicSizeNode.executeUncached(time, (long) callCapiFunction.call(FUN_GET_DATETIME_TIME_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.timeType = toSulongNode.execute(time);
 
-        Object delta = getAttr.execute(null, datetime, T_TIMEDELTA);
-        setAttr.execute(null, delta, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DELTA_BASICSIZE, capiContext.getLLVMLibrary()));
+        PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetime, T_TIMEDELTA);
+        SetBasicSizeNode.executeUncached(delta, (long) callCapiFunction.call(FUN_GET_DATETIME_DELTA_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.deltaType = toSulongNode.execute(delta);
 
         wrapper.tzInfoType = toSulongNode.execute(getAttr.execute(null, datetime, T_TZINFO));

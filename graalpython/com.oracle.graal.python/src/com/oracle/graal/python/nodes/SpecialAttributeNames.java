@@ -129,7 +129,6 @@ public abstract class SpecialAttributeNames {
     public static final String J___SUPPRESS_CONTEXT__ = "__suppress_context__";
 
     public static final String J___BASICSIZE__ = "__basicsize__";
-    public static final TruffleString T___BASICSIZE__ = tsLiteral(J___BASICSIZE__);
 
     public static final TruffleString T___SLOTS__ = tsLiteral("__slots__");
 
@@ -139,7 +138,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___DICTOFFSET__ = tsLiteral(J___DICTOFFSET__);
 
     public static final String J___ITEMSIZE__ = "__itemsize__";
-    public static final TruffleString T___ITEMSIZE__ = tsLiteral(J___ITEMSIZE__);
 
     public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
 
@@ -148,7 +146,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___ALL__ = tsLiteral("__all__");
 
     public static final String J___FLAGS__ = "__flags__";
-    public static final TruffleString T___FLAGS__ = tsLiteral(J___FLAGS__);
 
     public static final String J___ABSTRACTMETHODS__ = "__abstractmethods__";
     public static final TruffleString T___ABSTRACTMETHODS__ = tsLiteral(J___ABSTRACTMETHODS__);
@@ -168,7 +165,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___ORIG_CLASS__ = tsLiteral(J___ORIG_CLASS__);
 
     public static final String J___WRAPPED__ = "__wrapped__";
-    public static final TruffleString T___WRAPPED__ = tsLiteral(J___WRAPPED__);
 
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";

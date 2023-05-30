@@ -674,7 +674,7 @@ public abstract class ObjectNodes {
                             @Bind("this") Node inliningTarget,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
-                            @Cached TypeNodes.GetItemsizeNode getItemsizeNode,
+                            @Cached TypeNodes.GetItemSizeNode getItemsizeNode,
                             @Cached CastToTruffleStringNode toStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached InlinedGetClassNode getClassNode,
@@ -684,7 +684,7 @@ public abstract class ObjectNodes {
                             @Cached CheckBasesizeForGetState checkBasesize) {
                 Object state;
                 Object type = getClassNode.execute(inliningTarget, obj);
-                if (required && getItemsizeNode.execute(type) != 0) {
+                if (required && getItemsizeNode.execute(inliningTarget, type) != 0) {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 

@@ -120,10 +120,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
@@ -141,7 +138,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -215,7 +211,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -241,13 +236,10 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1304,11 +1296,10 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_basicsize extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___BASICSIZE__);
-            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : 0L;
+        static long get(PythonManagedClass object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
+            return getBasicSizeNode.execute(inliningTarget, object);
         }
     }
 
@@ -1373,14 +1364,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            Object dictoffset = getAttrNode.execute(object, T___DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? asSizeNode.executeExact(null, dictoffset) : 0L;
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetDictOffsetNode getDictOffsetNode) {
+            return getDictOffsetNode.execute(inliningTarget, object);
         }
     }
 
@@ -1390,9 +1376,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(PythonManagedClass object,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
+                        @Cached LookupAttributeInMRONode.Dynamic lookup) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            Object docObj = getAttrNode.execute(object, SpecialAttributeNames.T___DOC__);
+            Object docObj = lookup.execute(object, T___DOC__);
             if (docObj instanceof TruffleString) {
                 return new CStringWrapper((TruffleString) docObj);
             } else if (docObj instanceof PString) {
@@ -1458,15 +1444,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___ITEMSIZE__);
-            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
-            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            if (val == PNone.NO_VALUE) {
-                return 0L;
-            }
-            return asSizeNode.executeExact(null, val);
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetItemSizeNode getItemSizeNode) {
+            return getItemSizeNode.execute(inliningTarget, object);
         }
     }
 
@@ -1742,20 +1722,11 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_basicsize extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "isPythonClass(object)")
-        static Object doTpBasicsize(Object object, long basicsize,
+        @Specialization
+        static Object doTpBasicsize(PythonManagedClass object, long basicsize,
                         @Bind("this") Node inliningTarget,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WriteAttributeToBuiltinTypeNode writeAttrToBuiltinNode,
-                        @Cached InlinedConditionProfile isBuiltinProfile,
-                        @Cached InlineIsBuiltinClassProfile profile) {
-            if (profile.profileClass(inliningTarget, object, PythonBuiltinClassType.PythonClass)) {
-                writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
-            } else if (isBuiltinProfile.profile(inliningTarget, object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
-                writeAttrToBuiltinNode.execute(object, T___BASICSIZE__, basicsize);
-            } else {
-                writeAttrNode.execute(object, T___BASICSIZE__, basicsize);
-            }
+                        @Cached TypeNodes.SetBasicSizeNode setBasicSizeNode) {
+            setBasicSizeNode.execute(inliningTarget, object, basicsize);
             return PNone.NO_VALUE;
         }
     }
@@ -1819,17 +1790,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpDictoffset(PythonManagedClass object, long value,
-                        @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (!(object instanceof PythonBuiltinClass)) {
-                try {
-                    setAttrNode.execute(object, T___DICTOFFSET__, value);
-                } catch (CannotCastException e) {
-                    throw CompilerDirectives.shouldNotReachHere("non-integer passed to tp_dictoffset assignment");
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode) {
+            setDictOffsetNode.execute(inliningTarget, object, value);
             return PNone.NO_VALUE;
         }
 
@@ -1875,14 +1838,11 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_itemsize extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "isPythonClass(object)")
-        static Object doTpItemsize(Object object, long itemsize,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached ConditionProfile profile) {
-            if (!profile.profile(object instanceof PythonBuiltinClass)) {
-                // not expected to happen ...
-                writeAttrNode.execute(object, T___ITEMSIZE__, itemsize);
-            }
+        @Specialization
+        static Object doTpItemsize(PythonManagedClass object, long itemsize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.SetItemSizeNode setItemSizeNode) {
+            setItemSizeNode.execute(inliningTarget, object, itemsize);
             return PNone.NO_VALUE;
         }
     }
