@@ -113,12 +113,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doMethodCached(@SuppressWarnings("unused") PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached InlinedBranchProfile wasFirst,
                     @Cached(value = "method", weak = true) PMethodBase cachedMethod) {
 
         CompilerAsserts.partialEvaluationConstant(getFunction(cachedMethod));
         // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getMethodSignatureSingleContext(cachedMethod, inliningTarget, wasFirst);
+        Signature signature = GetSignatureNode.getMethodSignatureSingleContext(cachedMethod, inliningTarget);
         Object[] defaults = GetDefaultsNode.getMethodDefaults(cachedMethod);
         PKeyword[] kwdefaults = GetKeywordDefaultsNode.getMethodKeywords(cachedMethod);
         Object self = cachedMethod.getSelf();
@@ -133,12 +132,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doMethodFunctionAndSelfCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached InlinedBranchProfile wasFirst,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction,
                     @Cached(value = "method.getSelf()", weak = true) Object cachedSelf,
                     @Cached(value = "getClassObject(method)", weak = true) Object cachedClassObject) {
         // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, wasFirst, cachedFunction);
+        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, cachedFunction);
         Object[] defaults = GetDefaultsNode.getFunctionDefaults(cachedFunction);
         PKeyword[] kwdefaults = GetKeywordDefaultsNode.getFunctionKeywords(cachedFunction);
         return createAndCheckArgumentsNode.execute(inliningTarget, method, userArguments, keywords, signature, cachedSelf, cachedClassObject, defaults, kwdefaults, isMethodCall(cachedSelf));
@@ -147,11 +145,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @Specialization(guards = {"isSingleContext()", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
     Object[] doMethodFunctionCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedBranchProfile wasFirst,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
         // Following getters should fold since getFunction(cachedMethod) is constant
-        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, wasFirst, cachedFunction);
+        Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, cachedFunction);
         Object[] defaults = GetDefaultsNode.getFunctionDefaults(cachedFunction);
         PKeyword[] kwdefaults = GetKeywordDefaultsNode.getFunctionKeywords(cachedFunction);
         Object self = method.getSelf();
@@ -163,9 +160,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doFunctionCached(PFunction callable, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached InlinedBranchProfile firstExecution,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PFunction cachedCallable) {
-        Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, cachedCallable, firstExecution);
+        Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, cachedCallable);
         Object[] defaults = cachedCallable.getDefaults();
         PKeyword[] kwdefaults = cachedCallable.getKwDefaults();
         return createAndCheckArgumentsNode.execute(inliningTarget, callable, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);

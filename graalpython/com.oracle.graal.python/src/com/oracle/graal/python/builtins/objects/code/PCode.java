@@ -76,6 +76,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,8 +86,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -109,7 +113,7 @@ public final class PCode extends PythonBuiltinObject {
     // set. Otherwise, these are lazily created from the supplier.
     private Supplier<CallTarget> callTargetSupplier;
     RootCallTarget callTarget;
-    Signature signature;
+    @CompilationFinal private Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -557,6 +561,23 @@ public final class PCode extends PythonBuiltinObject {
 
     public boolean takesVarKeywordArgs() {
         return PCode.takesVarKeywordArgs(getFlags());
+    }
+
+    public Signature getSignature() {
+        return getSignature(null, InlinedConditionProfile.getUncached());
+    }
+
+    public Signature getSignature(Node inliningTarget, InlinedConditionProfile signatureProfile) {
+        if (signatureProfile.profile(inliningTarget, signature == null)) {
+            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
+            if (callTarget == null) {
+                callTarget = initializeCallTarget();
+            }
+            signature = initializeSignature(callTarget);
+        }
+        return signature;
     }
 
     @TruffleBoundary

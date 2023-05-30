@@ -226,18 +226,18 @@ public abstract class FunctionNodes {
         /**
          * Fast-path if method is a partial evaluation constant, and we are in single context mode.
          */
-        public static Signature getMethodSignatureSingleContext(PMethodBase method, Node inliningTarget, InlinedBranchProfile wasFirst) {
+        public static Signature getMethodSignatureSingleContext(PMethodBase method, Node inliningTarget) {
             CompilerAsserts.partialEvaluationConstant(method);
-            return getFunctionSignatureSingleContext(inliningTarget, wasFirst, method.getFunction());
+            return getFunctionSignatureSingleContext(inliningTarget, method.getFunction());
         }
 
         /**
          * Fast-path if method is a partial evaluation constant, and we are in single context mode.
          */
-        public static Signature getFunctionSignatureSingleContext(Node inliningTarget, InlinedBranchProfile wasFirst, Object fun) {
+        public static Signature getFunctionSignatureSingleContext(Node inliningTarget, Object fun) {
             CompilerAsserts.partialEvaluationConstant(fun);
             if (fun instanceof PFunction f) {
-                return CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, f, wasFirst);
+                return CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, f);
             } else if (fun instanceof PBuiltinFunction f) {
                 return f.getSignature();
             }
