@@ -71,49 +71,13 @@ _HPy_HIDDEN JNIEnv* jniEnv;
 ALL_FIELDS
 #undef FIELD
 
-#define ALL_UPCALLS \
-    UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
-    UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
-    UPCALL(AsStruct, SIG_HPY, SIG_PTR) \
-    UPCALL(Close, SIG_HPY, SIG_VOID) \
+#define CUSTOM_UPCALLS \
     UPCALL(BulkClose, SIG_PTR SIG_INT, SIG_VOID)        \
-    UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
-    UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
-    UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
-    UPCALL(LongAsDouble, SIG_HPY, SIG_DOUBLE) \
-    UPCALL(LongFromLong, SIG_LONG, SIG_HPY) \
-    UPCALL(Dup, SIG_HPY, SIG_HPY) \
-    UPCALL(GetItemi, SIG_HPY SIG_SIZE_T, SIG_HPY) \
-    UPCALL(SetItemi, SIG_HPY SIG_SIZE_T SIG_HPY, SIG_INT) \
-    UPCALL(SetItem, SIG_HPY SIG_HPY SIG_HPY, SIG_INT) \
-    UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
-    UPCALL(TypeCheck, SIG_HPY SIG_HPY, SIG_INT) \
-    UPCALL(TypeCheckG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
-    UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
-    UPCALL(ListCheck, SIG_HPY, SIG_INT) \
-    UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
-    UPCALL(SetItems, SIG_HPY SIG_STRING SIG_HPY, SIG_INT) \
-    UPCALL(GetItems, SIG_HPY SIG_STRING, SIG_HPY) \
-    UPCALL(DictNew, , SIG_HPY) \
-    UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
-    UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
-    UPCALL(GlobalLoad, SIG_HPYGLOBAL, SIG_HPY) \
-    UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
-    UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
-    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
-    UPCALL(Type, SIG_HPY, SIG_HPY) \
-    UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
-    UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
-    UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT) \
-    UPCALL(IsG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
-    UPCALL(CapsuleNew, SIG_PTR SIG_PTR SIG_PTR, SIG_HPY) \
-    UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR) \
-    UPCALL(GetAttrs, SIG_HPY SIG_STRING, SIG_HPY)
 
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
-ALL_UPCALLS
+CUSTOM_UPCALLS
 #undef UPCALL
 
 static jmethodID jniMethod_hpy_debug_get_context;
@@ -235,7 +199,7 @@ static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *u, HPy_s
         (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
         return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromJCharArray, jCharArray);
     } else {
-        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, PTR_UP(u), SIZE_T_UP(size));
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_FromWideChar, PTR_UP(u), SIZE_T_UP(size));
     }
 }
 
@@ -254,7 +218,7 @@ static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
             load_global_native_data_pointer(ctx, bits, new_handle);
             return toPtr(new_handle);
         }
-        return DO_UPCALL_HPY(hpyContext, GlobalLoad, bits);
+        return DO_UPCALL_HPY(hpyContext, ctx_Global_Load, bits);
     } else {
         return toPtr(bits);
     }
@@ -307,12 +271,12 @@ static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
         return HPyErr_SetString(ctx, ctx->h_TypeError, message);
     }
     jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetItem_s, target, jname);
 }
 
 static HPy ctx_GetAttr_s_jni(HPyContext *ctx, HPy target, const char *name) {
     jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetAttrs, target, jname);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetAttr_s, target, jname);
 }
 
 static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result) {
@@ -352,7 +316,7 @@ void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
 }
 
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
-JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject jctx) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject jctx, jlongArray jctx_handles) {
     LOG("%s", "hpy_jni.c:initJNI\n");
     GraalHPyContext *graal_hpy_jni_context = (GraalHPyContext *) calloc(1, sizeof(GraalHPyContext));
     HPyContext *ctx = graal_native_context_get_hpy_context(graal_hpy_jni_context);
@@ -360,46 +324,37 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject j
     graal_hpy_jni_context->jni_context = (*env)->NewGlobalRef(env, jctx);
     jniEnv = env;
 
-    if (init_autogen_jni_ctx()) {
+    if (init_autogen_jni_ctx(env, clazz, ctx, jctx_handles)) {
         return PTR_UP(NULL);
     }
 
-    context->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
+    ctx->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
 
-    context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
-    context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;
-    context->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
-    context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
+    ctx->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
+    ctx->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;
+    ctx->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
+    ctx->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
 
-    context->ctx_Global_Load = ctx_Global_Load_jni;
-    // context->ctx_Global_Store = ctx_Global_Store_jni;
-    // context->ctx_Field_Load = ctx_Field_Load_jni;
-    // context->ctx_Field_Store = ctx_Field_Store_jni;
+    ctx->ctx_Global_Load = ctx_Global_Load_jni;
+    // ctx->ctx_Global_Store = ctx_Global_Store_jni;
+    // ctx->ctx_Field_Load = ctx_Field_Load_jni;
+    // ctx->ctx_Field_Store = ctx_Field_Store_jni;
 
-    context->ctx_SetItem_s = ctx_SetItem_s_jni;
-    context->ctx_GetItem_s = ctx_GetItem_s_jni;
+    ctx->ctx_SetItem_s = ctx_SetItem_s_jni;
+    ctx->ctx_GetItem_s = ctx_GetItem_s_jni;
 
-    context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
-    context->ctx_GetAttr_s = ctx_GetAttr_s_jni;
+    ctx->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
+    ctx->ctx_GetAttr_s = ctx_GetAttr_s_jni;
 
     assert(clazz != NULL);
 
 #define CLASS_HPYCONTEXT clazz
 
 #define SIG_HPY "J"
-#define SIG_HPYFIELD "J"
-#define SIG_HPYGLOBAL "J"
-#define SIG_SIZE_T "J"
 #define SIG_PTR "J"
 #define SIG_VOID "V"
-#define SIG_BOOL "Z"
 #define SIG_INT "I"
-#define SIG_LONG "J"
-#define SIG_DOUBLE "D"
-#define SIG_TRACKER "J"
 #define SIG_JCHARARRAY "[C"
-#define SIG_JLONGARRAY "[J"
-#define SIG_STRING "Ljava/lang/String;"
 #define SIG_JOBJECTARRAY "[Ljava/lang/Object;"
 
 #define FIELD(name, clazz, jniSig) \
@@ -419,16 +374,16 @@ ALL_FIELDS
         return PTR_UP(NULL); \
     }
 
-ALL_UPCALLS
+CUSTOM_UPCALLS
 #undef UPCALL
 
-    jniMethod_hpy_debug_get_context = (*env)->GetMethodID(env, clazz, "getHPyDebugContext", "()" SIG_LONG);
+    jniMethod_hpy_debug_get_context = (*env)->GetMethodID(env, clazz, "getHPyDebugContext", "()" SIG_PTR);
     if (jniMethod_hpy_debug_get_context == NULL) {
         LOGS("ERROR: jni method getHPyDebugContext not found found !\n");
         return PTR_UP(NULL);
     }
 
-    return PTR_UP(context);
+    return PTR_UP(ctx);
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIContext)(JNIEnv *env, jclass clazz, jlong ctx) {

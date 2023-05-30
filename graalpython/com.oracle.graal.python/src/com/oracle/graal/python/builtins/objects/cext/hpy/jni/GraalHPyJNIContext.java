@@ -45,6 +45,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.IMMUTABLE_HANDLE_COUNT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_ELIPSIS;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SIZEOF_LONG;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -57,6 +60,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
@@ -86,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -217,7 +222,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             loadJNIBackend();
-            nativePointer = initJNI(this);
+            nativePointer = initJNI(this, createContextHandleArray());
             if (nativePointer == 0) {
                 throw CompilerDirectives.shouldNotReachHere("Could not initialize HPy JNI backend.");
             }
@@ -410,7 +415,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     /* HPY internal JNI trampoline declarations */
 
     @TruffleBoundary
-    private static native long initJNI(GraalHPyJNIContext backend);
+    private static native long initJNI(GraalHPyJNIContext backend, long[] ctxHandles);
 
     @TruffleBoundary
     private static native int finalizeJNIContext(long uctxPointer);
@@ -2235,4 +2240,114 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         throw CompilerDirectives.shouldNotReachHere();
     }
     // {{end ctx funcs}}
+
+    private long createConstant(Object value) {
+        assert GraalHPyContext.getHPyHandleForSingleton(value) == -1;
+        return context.getHPyHandleForNonSingleton(value);
+    }
+
+    private long createSingletonConstant(Object value, int handle) {
+        assert GraalHPyContext.getHPyHandleForSingleton(value) == handle;
+        return handle;
+    }
+
+    private long createTypeConstant(PythonBuiltinClassType value) {
+        return context.getHPyHandleForObject(context.getContext().lookupType(value));
+    }
+
+    /**
+     * Creates the context handles, i.e., allocates a handle for each object that is available in
+     * {@code HPyContext} (e.g. {@code HPyContext.h_None}). This table is then intended to be used
+     * to initialize the native {@code HPyContext *}. The handles are stored in a {@code long} array
+     * and the index for each handle is the <it>context index</it> (i.e. the index as specified in
+     * HPy's {@code public_api.h}).
+     */
+    private long[] createContextHandleArray() {
+        // {{start ctx handles array}}
+        long[] ctxHandles = new long[234];
+        ctxHandles[0] = createSingletonConstant(PNone.NONE, SINGLETON_HANDLE_NONE);
+        ctxHandles[1] = createConstant(context.getContext().getTrue());
+        ctxHandles[2] = createConstant(context.getContext().getFalse());
+        ctxHandles[3] = createSingletonConstant(PNotImplemented.NOT_IMPLEMENTED, SINGLETON_HANDLE_NOT_IMPLEMENTED);
+        ctxHandles[4] = createSingletonConstant(PEllipsis.INSTANCE, SINGLETON_HANDLE_ELIPSIS);
+        ctxHandles[5] = createTypeConstant(PythonBuiltinClassType.PBaseException);
+        ctxHandles[6] = createTypeConstant(PythonBuiltinClassType.Exception);
+        ctxHandles[7] = createTypeConstant(PythonBuiltinClassType.StopAsyncIteration);
+        ctxHandles[8] = createTypeConstant(PythonBuiltinClassType.StopIteration);
+        ctxHandles[9] = createTypeConstant(PythonBuiltinClassType.GeneratorExit);
+        ctxHandles[10] = createTypeConstant(PythonBuiltinClassType.ArithmeticError);
+        ctxHandles[11] = createTypeConstant(PythonBuiltinClassType.LookupError);
+        ctxHandles[12] = createTypeConstant(PythonBuiltinClassType.AssertionError);
+        ctxHandles[13] = createTypeConstant(PythonBuiltinClassType.AttributeError);
+        ctxHandles[14] = createTypeConstant(PythonBuiltinClassType.BufferError);
+        ctxHandles[15] = createTypeConstant(PythonBuiltinClassType.EOFError);
+        ctxHandles[16] = createTypeConstant(PythonBuiltinClassType.FloatingPointError);
+        ctxHandles[17] = createTypeConstant(PythonBuiltinClassType.OSError);
+        ctxHandles[18] = createTypeConstant(PythonBuiltinClassType.ImportError);
+        ctxHandles[19] = createTypeConstant(PythonBuiltinClassType.ModuleNotFoundError);
+        ctxHandles[20] = createTypeConstant(PythonBuiltinClassType.IndexError);
+        ctxHandles[21] = createTypeConstant(PythonBuiltinClassType.KeyError);
+        ctxHandles[22] = createTypeConstant(PythonBuiltinClassType.KeyboardInterrupt);
+        ctxHandles[23] = createTypeConstant(PythonBuiltinClassType.MemoryError);
+        ctxHandles[24] = createTypeConstant(PythonBuiltinClassType.NameError);
+        ctxHandles[25] = createTypeConstant(PythonBuiltinClassType.OverflowError);
+        ctxHandles[26] = createTypeConstant(PythonBuiltinClassType.RuntimeError);
+        ctxHandles[27] = createTypeConstant(PythonBuiltinClassType.RecursionError);
+        ctxHandles[28] = createTypeConstant(PythonBuiltinClassType.NotImplementedError);
+        ctxHandles[29] = createTypeConstant(PythonBuiltinClassType.SyntaxError);
+        ctxHandles[30] = createTypeConstant(PythonBuiltinClassType.IndentationError);
+        ctxHandles[31] = createTypeConstant(PythonBuiltinClassType.TabError);
+        ctxHandles[32] = createTypeConstant(PythonBuiltinClassType.ReferenceError);
+        ctxHandles[33] = createTypeConstant(SystemError);
+        ctxHandles[34] = createTypeConstant(PythonBuiltinClassType.SystemExit);
+        ctxHandles[35] = createTypeConstant(PythonBuiltinClassType.TypeError);
+        ctxHandles[36] = createTypeConstant(PythonBuiltinClassType.UnboundLocalError);
+        ctxHandles[37] = createTypeConstant(PythonBuiltinClassType.UnicodeError);
+        ctxHandles[38] = createTypeConstant(PythonBuiltinClassType.UnicodeEncodeError);
+        ctxHandles[39] = createTypeConstant(PythonBuiltinClassType.UnicodeDecodeError);
+        ctxHandles[40] = createTypeConstant(PythonBuiltinClassType.UnicodeTranslateError);
+        ctxHandles[41] = createTypeConstant(PythonBuiltinClassType.ValueError);
+        ctxHandles[42] = createTypeConstant(PythonBuiltinClassType.ZeroDivisionError);
+        ctxHandles[43] = createTypeConstant(PythonBuiltinClassType.BlockingIOError);
+        ctxHandles[44] = createTypeConstant(PythonBuiltinClassType.BrokenPipeError);
+        ctxHandles[45] = createTypeConstant(PythonBuiltinClassType.ChildProcessError);
+        ctxHandles[46] = createTypeConstant(PythonBuiltinClassType.ConnectionError);
+        ctxHandles[47] = createTypeConstant(PythonBuiltinClassType.ConnectionAbortedError);
+        ctxHandles[48] = createTypeConstant(PythonBuiltinClassType.ConnectionRefusedError);
+        ctxHandles[49] = createTypeConstant(PythonBuiltinClassType.ConnectionResetError);
+        ctxHandles[50] = createTypeConstant(PythonBuiltinClassType.FileExistsError);
+        ctxHandles[51] = createTypeConstant(PythonBuiltinClassType.FileNotFoundError);
+        ctxHandles[52] = createTypeConstant(PythonBuiltinClassType.InterruptedError);
+        ctxHandles[53] = createTypeConstant(PythonBuiltinClassType.IsADirectoryError);
+        ctxHandles[54] = createTypeConstant(PythonBuiltinClassType.NotADirectoryError);
+        ctxHandles[55] = createTypeConstant(PythonBuiltinClassType.PermissionError);
+        ctxHandles[56] = createTypeConstant(PythonBuiltinClassType.ProcessLookupError);
+        ctxHandles[57] = createTypeConstant(PythonBuiltinClassType.TimeoutError);
+        ctxHandles[58] = createTypeConstant(PythonBuiltinClassType.Warning);
+        ctxHandles[59] = createTypeConstant(PythonBuiltinClassType.UserWarning);
+        ctxHandles[60] = createTypeConstant(PythonBuiltinClassType.DeprecationWarning);
+        ctxHandles[61] = createTypeConstant(PythonBuiltinClassType.PendingDeprecationWarning);
+        ctxHandles[62] = createTypeConstant(PythonBuiltinClassType.SyntaxWarning);
+        ctxHandles[63] = createTypeConstant(PythonBuiltinClassType.RuntimeWarning);
+        ctxHandles[64] = createTypeConstant(PythonBuiltinClassType.FutureWarning);
+        ctxHandles[65] = createTypeConstant(PythonBuiltinClassType.ImportWarning);
+        ctxHandles[66] = createTypeConstant(PythonBuiltinClassType.UnicodeWarning);
+        ctxHandles[67] = createTypeConstant(PythonBuiltinClassType.BytesWarning);
+        ctxHandles[68] = createTypeConstant(PythonBuiltinClassType.ResourceWarning);
+        ctxHandles[69] = createTypeConstant(PythonBuiltinClassType.PythonObject);
+        ctxHandles[70] = createTypeConstant(PythonBuiltinClassType.PythonClass);
+        ctxHandles[71] = createTypeConstant(PythonBuiltinClassType.Boolean);
+        ctxHandles[72] = createTypeConstant(PythonBuiltinClassType.PInt);
+        ctxHandles[73] = createTypeConstant(PythonBuiltinClassType.PFloat);
+        ctxHandles[74] = createTypeConstant(PythonBuiltinClassType.PString);
+        ctxHandles[75] = createTypeConstant(PythonBuiltinClassType.PTuple);
+        ctxHandles[76] = createTypeConstant(PythonBuiltinClassType.PList);
+        ctxHandles[229] = createTypeConstant(PythonBuiltinClassType.PComplex);
+        ctxHandles[230] = createTypeConstant(PythonBuiltinClassType.PBytes);
+        ctxHandles[231] = createTypeConstant(PythonBuiltinClassType.PMemoryView);
+        ctxHandles[232] = createTypeConstant(PythonBuiltinClassType.Capsule);
+        ctxHandles[233] = createTypeConstant(PythonBuiltinClassType.PSlice);
+        return ctxHandles;
+        // {{end ctx handles array}}
+    }
 }

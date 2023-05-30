@@ -130,6 +130,97 @@ JNI_UPCALL_ARG_CASTS = {
     '_HPyCapsule_key': 'INT_UP'
 }
 
+# The following table maps HPy context handles to Java objects (and a construct with additional arguments).
+# This table unfortunately needs to be maintained manually because there is no uniform pattern on how to
+# map HPy context member names to Java objects.
+# The table is later used to generate the initialization code for 'HPyContext *'.
+#
+# {ctx_name: (jobject, jctor, jctor_arg)}
+CTX_HANDLES = {
+    "h_None": ("PNone.NONE", "createSingletonConstant", ["SINGLETON_HANDLE_NONE"]),
+    "h_True": ("context.getContext().getTrue()", "createConstant", []),
+    "h_False": ("context.getContext().getFalse()", "createConstant", []),
+    "h_NotImplemented": ("PNotImplemented.NOT_IMPLEMENTED", "createSingletonConstant", ["SINGLETON_HANDLE_NOT_IMPLEMENTED"]),
+    "h_Ellipsis": ("PEllipsis.INSTANCE", "createSingletonConstant", ["SINGLETON_HANDLE_ELIPSIS"]),
+    "h_BaseException": ("PythonBuiltinClassType.PBaseException", "createTypeConstant", []),
+    "h_Exception": ("PythonBuiltinClassType.Exception", "createTypeConstant", []),
+    "h_StopAsyncIteration": ("PythonBuiltinClassType.StopAsyncIteration", "createTypeConstant", []),
+    "h_StopIteration": ("PythonBuiltinClassType.StopIteration", "createTypeConstant", []),
+    "h_GeneratorExit": ("PythonBuiltinClassType.GeneratorExit", "createTypeConstant", []),
+    "h_ArithmeticError": ("PythonBuiltinClassType.ArithmeticError", "createTypeConstant", []),
+    "h_LookupError": ("PythonBuiltinClassType.LookupError", "createTypeConstant", []),
+    "h_AssertionError": ("PythonBuiltinClassType.AssertionError", "createTypeConstant", []),
+    "h_AttributeError": ("PythonBuiltinClassType.AttributeError", "createTypeConstant", []),
+    "h_BufferError": ("PythonBuiltinClassType.BufferError", "createTypeConstant", []),
+    "h_EOFError": ("PythonBuiltinClassType.EOFError", "createTypeConstant", []),
+    "h_FloatingPointError": ("PythonBuiltinClassType.FloatingPointError", "createTypeConstant", []),
+    "h_OSError": ("PythonBuiltinClassType.OSError", "createTypeConstant", []),
+    "h_ImportError": ("PythonBuiltinClassType.ImportError", "createTypeConstant", []),
+    "h_ModuleNotFoundError": ("PythonBuiltinClassType.ModuleNotFoundError", "createTypeConstant", []),
+    "h_IndexError": ("PythonBuiltinClassType.IndexError", "createTypeConstant", []),
+    "h_KeyError": ("PythonBuiltinClassType.KeyError", "createTypeConstant", []),
+    "h_KeyboardInterrupt": ("PythonBuiltinClassType.KeyboardInterrupt", "createTypeConstant", []),
+    "h_MemoryError": ("PythonBuiltinClassType.MemoryError", "createTypeConstant", []),
+    "h_NameError": ("PythonBuiltinClassType.NameError", "createTypeConstant", []),
+    "h_OverflowError": ("PythonBuiltinClassType.OverflowError", "createTypeConstant", []),
+    "h_RuntimeError": ("PythonBuiltinClassType.RuntimeError", "createTypeConstant", []),
+    "h_RecursionError": ("PythonBuiltinClassType.RecursionError", "createTypeConstant", []),
+    "h_NotImplementedError": ("PythonBuiltinClassType.NotImplementedError", "createTypeConstant", []),
+    "h_SyntaxError": ("PythonBuiltinClassType.SyntaxError", "createTypeConstant", []),
+    "h_IndentationError": ("PythonBuiltinClassType.IndentationError", "createTypeConstant", []),
+    "h_TabError": ("PythonBuiltinClassType.TabError", "createTypeConstant", []),
+    "h_ReferenceError": ("PythonBuiltinClassType.ReferenceError", "createTypeConstant", []),
+    "h_SystemError": ("SystemError", "createTypeConstant", []),
+    "h_SystemExit": ("PythonBuiltinClassType.SystemExit", "createTypeConstant", []),
+    "h_TypeError": ("PythonBuiltinClassType.TypeError", "createTypeConstant", []),
+    "h_UnboundLocalError": ("PythonBuiltinClassType.UnboundLocalError", "createTypeConstant", []),
+    "h_UnicodeError": ("PythonBuiltinClassType.UnicodeError", "createTypeConstant", []),
+    "h_UnicodeEncodeError": ("PythonBuiltinClassType.UnicodeEncodeError", "createTypeConstant", []),
+    "h_UnicodeDecodeError": ("PythonBuiltinClassType.UnicodeDecodeError", "createTypeConstant", []),
+    "h_UnicodeTranslateError": ("PythonBuiltinClassType.UnicodeTranslateError", "createTypeConstant", []),
+    "h_ValueError": ("PythonBuiltinClassType.ValueError", "createTypeConstant", []),
+    "h_ZeroDivisionError": ("PythonBuiltinClassType.ZeroDivisionError", "createTypeConstant", []),
+    "h_BlockingIOError": ("PythonBuiltinClassType.BlockingIOError", "createTypeConstant", []),
+    "h_BrokenPipeError": ("PythonBuiltinClassType.BrokenPipeError", "createTypeConstant", []),
+    "h_ChildProcessError": ("PythonBuiltinClassType.ChildProcessError", "createTypeConstant", []),
+    "h_ConnectionError": ("PythonBuiltinClassType.ConnectionError", "createTypeConstant", []),
+    "h_ConnectionAbortedError": ("PythonBuiltinClassType.ConnectionAbortedError", "createTypeConstant", []),
+    "h_ConnectionRefusedError": ("PythonBuiltinClassType.ConnectionRefusedError", "createTypeConstant", []),
+    "h_ConnectionResetError": ("PythonBuiltinClassType.ConnectionResetError", "createTypeConstant", []),
+    "h_FileExistsError": ("PythonBuiltinClassType.FileExistsError", "createTypeConstant", []),
+    "h_FileNotFoundError": ("PythonBuiltinClassType.FileNotFoundError", "createTypeConstant", []),
+    "h_InterruptedError": ("PythonBuiltinClassType.InterruptedError", "createTypeConstant", []),
+    "h_IsADirectoryError": ("PythonBuiltinClassType.IsADirectoryError", "createTypeConstant", []),
+    "h_NotADirectoryError": ("PythonBuiltinClassType.NotADirectoryError", "createTypeConstant", []),
+    "h_PermissionError": ("PythonBuiltinClassType.PermissionError", "createTypeConstant", []),
+    "h_ProcessLookupError": ("PythonBuiltinClassType.ProcessLookupError", "createTypeConstant", []),
+    "h_TimeoutError": ("PythonBuiltinClassType.TimeoutError", "createTypeConstant", []),
+    "h_Warning": ("PythonBuiltinClassType.Warning", "createTypeConstant", []),
+    "h_UserWarning": ("PythonBuiltinClassType.UserWarning", "createTypeConstant", []),
+    "h_DeprecationWarning": ("PythonBuiltinClassType.DeprecationWarning", "createTypeConstant", []),
+    "h_PendingDeprecationWarning": ("PythonBuiltinClassType.PendingDeprecationWarning", "createTypeConstant", []),
+    "h_SyntaxWarning": ("PythonBuiltinClassType.SyntaxWarning", "createTypeConstant", []),
+    "h_RuntimeWarning": ("PythonBuiltinClassType.RuntimeWarning", "createTypeConstant", []),
+    "h_FutureWarning": ("PythonBuiltinClassType.FutureWarning", "createTypeConstant", []),
+    "h_ImportWarning": ("PythonBuiltinClassType.ImportWarning", "createTypeConstant", []),
+    "h_UnicodeWarning": ("PythonBuiltinClassType.UnicodeWarning", "createTypeConstant", []),
+    "h_BytesWarning": ("PythonBuiltinClassType.BytesWarning", "createTypeConstant", []),
+    "h_ResourceWarning": ("PythonBuiltinClassType.ResourceWarning", "createTypeConstant", []),
+    "h_BaseObjectType": ("PythonBuiltinClassType.PythonObject", "createTypeConstant", []),
+    "h_TypeType": ("PythonBuiltinClassType.PythonClass", "createTypeConstant", []),
+    "h_BoolType": ("PythonBuiltinClassType.Boolean", "createTypeConstant", []),
+    "h_LongType": ("PythonBuiltinClassType.PInt", "createTypeConstant", []),
+    "h_FloatType": ("PythonBuiltinClassType.PFloat", "createTypeConstant", []),
+    "h_UnicodeType": ("PythonBuiltinClassType.PString", "createTypeConstant", []),
+    "h_TupleType": ("PythonBuiltinClassType.PTuple", "createTypeConstant", []),
+    "h_ListType": ("PythonBuiltinClassType.PList", "createTypeConstant", []),
+    "h_ComplexType": ("PythonBuiltinClassType.PComplex", "createTypeConstant", []),
+    "h_BytesType": ("PythonBuiltinClassType.PBytes", "createTypeConstant", []),
+    "h_MemoryViewType": ("PythonBuiltinClassType.PMemoryView", "createTypeConstant", []),
+    "h_CapsuleType": ("PythonBuiltinClassType.Capsule", "createTypeConstant", []),
+    "h_SliceType": ("PythonBuiltinClassType.PSlice", "createTypeConstant", []),
+}
+
 def get_cast_fun(type_name):
     if type_name == 'HPy':
         return 'HPY_UP'
@@ -213,7 +304,7 @@ class autogen_ctx_init_jni_h(GraalPyAutoGenFile):
     def generate(self):
         lines = []
         w = lines.append
-        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG});')
+        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG}, jlongArray jctx_handles);')
         # emit the declarations for all the ctx_*_jni functions
         for func in self.api.functions:
             if func.name not in NO_WRAPPER:
@@ -235,20 +326,38 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
         w('')
         w(f'#define TRAMPOLINE(FUN_NAME) {get_jni_function_prefix(JNI_HPY_BACKEND_CLASS)} ## FUN_NAME')
         w('')
+
+        # generate global variables for JNI method IDs
         for func in self.api.functions:
             w(f'static jmethodID jniMethod_{func.ctx_name()};')
         w('')
-        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG})')
+
+        # start of 'init_autogen_jni_ctx'
+        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG}, jlongArray jctx_handles)')
         w('{')
-        # TODO: initialize context handles
-        # for var in self.api.variables:
-        #     name = var.name
-        #     w(f'    {UCTX_ARG}->{name} = ...;')
+
+        # initialize context handles
+        w('')
+        w('    jlong *ctx_handles = (*env)->GetLongArrayElements(env, jctx_handles, NULL);')
+        w('    if (ctx_handles == NULL) {')
+        w(f'        LOGS("ERROR: Could not access Java context handle array elements\\n");')
+        w('        return 1;')
+        w('    }')
+        for var in self.api.variables:
+            w(f'    {UCTX_ARG}->{var.ctx_name()} = _jlong2h(ctx_handles[{var.ctx_index}]);')
+        w('    (*env)->ReleaseLongArrayElements(env, jctx_handles, ctx_handles, JNI_ABORT);')
+        w('')
+
+        # initialize context function pointers
         for func in self.api.functions:
             self.gen_jni_method_init(w, func)
         w(f'    return 0;')
+
+        # end of 'init_autogen_jni_ctx'
         w('}')
         w('')
+
+        # generate upcall trampolines
         for func in self.api.functions:
             debug_wrapper = self.gen_trace_wrapper(func)
             if debug_wrapper:
@@ -345,6 +454,45 @@ class autogen_ctx_jni_upcall_enum(AutoGenFilePart):
             jname = fname[0].upper() + fname[1:]
             w(f'{self.INDENT}{jname}')
         return ',\n'.join(lines) + ';\n'
+
+
+class autogen_ctx_handles_init(AutoGenFilePart):
+    """
+    Generates a Java long array that contains the handles used to initialize the
+    context handles like, e.g., 'h_None'.
+    For this, the generator iterates over all variables as specified in
+    'public_api.h' and emits the constructor call.
+    The position where the handle is written into the array is the context index
+    as specified in 'public_api.h'. This is to ensure that the consumer of the
+    array (i.e. 'autogen_wrappers_jni') will assign the right value to the
+    appropriate context member.
+
+    For example: 'h_Ellipsis' has context index '4'. The generator will emit
+    code like 'ctxHandles[4] = createHandle(PEllipsis.INSTANCE);'.
+
+    The mapping of context handles to Java objects and how the handle is created
+    is specified by table 'CTX_HANDLES'.
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(JNI_HPY_CONTEXT_PKG + JNI_HPY_BACKEND_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start ctx handles array}}\n'
+    END_MARKER = INDENT + '// {{end ctx handles array}}'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        max_ctx_index = max([v.ctx_index for v in self.api.variables])
+        w(f'{self.INDENT}long[] ctxHandles = new long[{max_ctx_index + 1}];')
+        def gen_ctor(var_name):
+            data = CTX_HANDLES[var_name]
+            args = ", ".join([data[0]] + data[2])
+            return f'{data[1]}({args})'
+
+        for var in self.api.variables:
+            w(f'{self.INDENT}ctxHandles[{var.ctx_index}] = {gen_ctor(var.ctx_name())};')
+        w(f'{self.INDENT}return ctxHandles;')
+        w('')
+        return '\n'.join(lines)
 
 
 class autogen_svm_jni_upcall_config(AutoGenFilePart):
@@ -600,4 +748,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_call_jni,
               autogen_ctx_jni_upcall_enum,
               autogen_svm_jni_upcall_config,
-              autogen_jni_upcall_method_stub)
+              autogen_jni_upcall_method_stub,
+              autogen_ctx_handles_init)

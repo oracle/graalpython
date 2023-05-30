@@ -51,7 +51,7 @@
 
 */
 
-_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx);
+_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx, jlongArray jctx_handles);
 HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def);
 HPy ctx_Dup_jni(HPyContext *ctx, HPy h);
 void ctx_Close_jni(HPyContext *ctx, HPy h);
