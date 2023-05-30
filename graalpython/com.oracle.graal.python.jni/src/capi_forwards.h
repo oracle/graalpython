@@ -1240,6 +1240,8 @@ void unimplemented(const char* name) {
 #undef _PyBytes_FromHex
 #undef _PyBytes_Join
 #undef _PyBytes_Resize
+#undef _PyCFunction_GetMethodDef
+#undef _PyCFunction_GetModule
 #undef _PyCode_CheckLineNumber
 #undef _PyCode_ConstantKey
 #undef _PyCode_GetExtra
@@ -4809,6 +4811,16 @@ PyAPI_FUNC(int) _PyBytes_Resize(PyObject** a, Py_ssize_t b) {
     int result = (int) __target___PyBytes_Resize(a, b);
     return result;
 }
+PyMethodDef* (*__target___PyCFunction_GetMethodDef)(PyObject*) = NULL;
+PyAPI_FUNC(PyMethodDef*) _PyCFunction_GetMethodDef(PyObject* a) {
+    PyMethodDef* result = (PyMethodDef*) __target___PyCFunction_GetMethodDef(a);
+    return result;
+}
+PyObject* (*__target___PyCFunction_GetModule)(PyObject*) = NULL;
+PyAPI_FUNC(PyObject*) _PyCFunction_GetModule(PyObject* a) {
+    PyObject* result = (PyObject*) __target___PyCFunction_GetModule(a);
+    return result;
+}
 PyAPI_FUNC(int) _PyCode_CheckLineNumber(int a, PyCodeAddressRange* b) {
     unimplemented("_PyCode_CheckLineNumber"); exit(-1);
 }
@@ -6409,6 +6421,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyBytesWriter_Resize = getAPI("_PyBytesWriter_Resize");
     __target___PyBytesWriter_WriteBytes = getAPI("_PyBytesWriter_WriteBytes");
     __target___PyBytes_Resize = getAPI("_PyBytes_Resize");
+    __target___PyCFunction_GetMethodDef = getAPI("_PyCFunction_GetMethodDef");
+    __target___PyCFunction_GetModule = getAPI("_PyCFunction_GetModule");
     __target___PyErr_BadInternalCall = getAPI("_PyErr_BadInternalCall");
     __target___PyErr_WriteUnraisableMsg = getAPI("_PyErr_WriteUnraisableMsg");
     __target___PyEval_SliceIndex = getAPI("_PyEval_SliceIndex");

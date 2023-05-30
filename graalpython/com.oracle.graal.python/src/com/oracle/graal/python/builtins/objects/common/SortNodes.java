@@ -162,6 +162,11 @@ public abstract class SortNodes {
         public String getName() {
             return "sort_comparator";
         }
+
+        @Override
+        public boolean setsUpCalleeContext() {
+            return true;
+        }
     }
 
     public abstract static class SortSequenceStorageNode extends PNodeWithContext {

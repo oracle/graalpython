@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,16 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 public abstract class SSLOptions {
 
-    public static final int DEFAULT_OPTIONS = 0;
-
     public static final int SSL_OP_NO_SSLv2 = 0;
     public static final int SSL_OP_NO_SSLv3 = 0x2000000;
     public static final int SSL_OP_NO_TLSv1 = 0x4000000;
     public static final int SSL_OP_NO_TLSv1_1 = 0x10000000;
     public static final int SSL_OP_NO_TLSv1_2 = 0x8000000;
     public static final int SSL_OP_NO_TLSv1_3 = 0x20000000;
+
+    // We just ignore this because Java's TLS doesn't provide compression anyway
+    public static final int SSL_OP_NO_COMPRESSION = 0x20000;
+    public static final int SSL_OP_NO_TICKET = 0x4000;
+
+    public static final int SSL_OP_ALL = SSL_OP_NO_COMPRESSION;
 }

@@ -92,8 +92,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.Ge
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -2088,7 +2088,7 @@ public abstract class CExtNodes {
             if (lookup != null) {
                 return lookup;
             }
-            if (HandleTester.pointsToPyHandleSpace(pointer)) {
+            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
                 return HandleResolver.resolve(pointer);
             }
             return pointer;
@@ -2109,7 +2109,7 @@ public abstract class CExtNodes {
                 if (lookup != null) {
                     return lookup;
                 }
-                if (HandleTester.pointsToPyHandleSpace(pointer)) {
+                if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
                     return HandleResolver.resolve(pointer);
                 }
             }

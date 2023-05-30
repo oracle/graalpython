@@ -189,4 +189,11 @@ public abstract class PRootNode extends RootNode {
         // no code for non-user functions
         return PythonUtils.EMPTY_BYTE_ARRAY;
     }
+
+    /**
+     * True if the root calls CalleeContext.enter or an equivalent on entry.
+     */
+    public boolean setsUpCalleeContext() {
+        return false;
+    }
 }

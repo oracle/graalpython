@@ -484,6 +484,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_GetFlags", ret = Int, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyCFunction_GetFunction", ret = PY_C_FUNCTION, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyCFunction_GetSelf", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_PyCFunction_GetModule", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_PyCFunction_GetMethodDef", ret = PyMethodDef, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDef, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = PolyglotImpl)

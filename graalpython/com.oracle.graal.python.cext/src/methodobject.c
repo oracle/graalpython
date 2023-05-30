@@ -87,3 +87,11 @@ PyTypeObject * PyCFunction_GetClass(PyObject *func) {
 	PyMethodDef* def = PyCFunctionObject_m_ml(func);
 	return PyMethodDef_ml_flags(def) & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
 }
+
+PyObject* _PyCFunction_GetModule(PyObject *func) {
+    return PyCFunctionObject_m_module(func);
+}
+
+PyMethodDef* _PyCFunction_GetMethodDef(PyObject *func) {
+    return PyCFunctionObject_m_ml(func);
+}
