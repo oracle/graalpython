@@ -577,7 +577,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_ASS_SUBSCRIPT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_ASS_SUBSCRIPT);
         }
     }
 
@@ -586,7 +586,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_LENGTH);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_LENGTH);
         }
     }
 
@@ -595,7 +595,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_SUBSCRIPT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_SUBSCRIPT);
         }
     }
 
@@ -604,7 +604,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_LENGTH);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_LENGTH);
         }
     }
 
@@ -812,7 +812,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ABSOLUTE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_ABSOLUTE);
         }
     }
 
@@ -821,7 +821,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ADD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_ADD);
         }
     }
 
@@ -830,7 +830,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_AND);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_AND);
         }
     }
 
@@ -839,7 +839,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_BOOL);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_BOOL);
         }
     }
 
@@ -848,7 +848,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_DIVMOD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_DIVMOD);
         }
     }
 
@@ -857,7 +857,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_FLOAT);
         }
     }
 
@@ -866,7 +866,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOOR_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_FLOOR_DIVIDE);
         }
     }
 
@@ -875,7 +875,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INDEX);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INDEX);
         }
     }
 
@@ -884,7 +884,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_ADD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_ADD);
         }
     }
 
@@ -893,7 +893,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_AND);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_AND);
         }
     }
 
@@ -902,7 +902,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
         }
     }
 
@@ -911,7 +911,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_LSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_LSHIFT);
         }
     }
 
@@ -920,7 +920,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_MULTIPLY);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_MULTIPLY);
         }
     }
 
@@ -929,7 +929,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_OR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_OR);
         }
     }
 
@@ -938,7 +938,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_POWER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_POWER);
         }
     }
 
@@ -947,7 +947,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_REMAINDER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_REMAINDER);
         }
     }
 
@@ -956,7 +956,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_RSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_RSHIFT);
         }
     }
 
@@ -965,7 +965,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_SUBTRACT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_SUBTRACT);
         }
     }
 
@@ -974,7 +974,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
         }
     }
 
@@ -983,7 +983,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_XOR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_XOR);
         }
     }
 
@@ -992,7 +992,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INT);
         }
     }
 
@@ -1001,7 +1001,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INVERT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INVERT);
         }
     }
 
@@ -1010,7 +1010,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_LSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_LSHIFT);
         }
     }
 
@@ -1019,7 +1019,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_MULTIPLY);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_MULTIPLY);
         }
     }
 
@@ -1028,7 +1028,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_NEGATIVE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_NEGATIVE);
         }
     }
 
@@ -1037,7 +1037,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_OR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_OR);
         }
     }
 
@@ -1046,7 +1046,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POSITIVE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_POSITIVE);
         }
     }
 
@@ -1055,7 +1055,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POWER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_POWER);
         }
     }
 
@@ -1064,7 +1064,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_REMAINDER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_REMAINDER);
         }
     }
 
@@ -1073,7 +1073,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_RSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_RSHIFT);
         }
     }
 
@@ -1082,7 +1082,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_SUBTRACT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_SUBTRACT);
         }
     }
 
@@ -1091,7 +1091,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_TRUE_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_TRUE_DIVIDE);
         }
     }
 
@@ -1100,7 +1100,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_XOR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_XOR);
         }
     }
 
@@ -1130,7 +1130,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_CONCAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_CONCAT);
         }
     }
 
@@ -1139,7 +1139,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_ITEM);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_ITEM);
         }
     }
 
@@ -1148,7 +1148,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_REPEAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_REPEAT);
         }
     }
 
@@ -1307,7 +1307,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_call extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_CALL);
         }
     }
@@ -1425,7 +1425,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_hash extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_HASH);
         }
     }
@@ -1434,7 +1434,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_init extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_INIT);
         }
     }
@@ -1454,7 +1454,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iter extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITER);
         }
     }
@@ -1463,7 +1463,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iternext extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITERNEXT);
         }
     }
@@ -1514,7 +1514,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_repr extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_REPR);
         }
     }
@@ -1523,7 +1523,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_richcompare extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_RICHCOMPARE);
         }
     }
@@ -1532,7 +1532,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_setattro extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_SETATTRO);
         }
     }
@@ -1541,7 +1541,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_str extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_STR);
         }
     }
@@ -1560,7 +1560,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_get extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_GET);
         }
     }
@@ -1569,7 +1569,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_set extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_SET);
         }
     }
