@@ -40,29 +40,3 @@ index 66e2835..bc32b1b 100644
      /* Called at the start of a callback.  Replacement for
         PyGILState_Ensure().
      */
-diff --git a/cffi/_cffi_include.h b/cffi/_cffi_include.h
-index e4c0a67..53b7d06 100644
---- a/cffi/_cffi_include.h
-+++ b/cffi/_cffi_include.h
-@@ -121,7 +121,7 @@ extern "C" {
- #endif
- 
- /**********  CPython-specific section  **********/
--#ifndef PYPY_VERSION
-+#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
- 
- 
- #if PY_MAJOR_VERSION >= 3
-diff --git a/cffi/_embedding.h b/cffi/_embedding.h
-index 8e8df88..90fdcd6 100644
---- a/cffi/_embedding.h
-+++ b/cffi/_embedding.h
-@@ -113,7 +113,7 @@ static void _cffi_release_reentrant_mutex(void)
- 
- 
- /**********  CPython-specific section  **********/
--#ifndef PYPY_VERSION
-+#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
- 
- #include "_cffi_errors.h"
- 
