@@ -122,7 +122,6 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -661,7 +660,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         } else if (GraalHPyBoxing.isBoxedInt(handle)) {
             receiver = PythonBuiltinClassType.PInt;
         } else {
-            receiver = GetClassNode.getUncached().execute(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
+            receiver = InlinedGetClassNode.executeUncached(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
         }
 
         if (receiver == type) {
@@ -758,7 +757,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
 
-        Object clazz = GetClassNode.getUncached().execute(receiver);
+        Object clazz = InlinedGetClassNode.executeUncached(receiver);
         if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
             PSequence sequence = (PSequence) receiver;
             SequenceStorage storage = sequence.getSequenceStorage();
@@ -776,7 +775,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         increment(HPyJNIUpcall.HPyListCheck);
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             Object obj = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
-            Object clazz = GetClassNode.getUncached().execute(obj);
+            Object clazz = InlinedGetClassNode.executeUncached(obj);
             return PInt.intValue(clazz == PythonBuiltinClassType.PList || IsSubtypeNodeGen.getUncached().execute(clazz, PythonBuiltinClassType.PList));
         } else {
             return 0;
@@ -979,30 +978,22 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxCapsuleGet(long capsuleBits, int key, long namePtr) {
         Object capsule = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(capsuleBits));
         try {
-            if (!(capsule instanceof PyCapsule) || ((PyCapsule) capsule).getPointer() == null) {
+            if (!(capsule instanceof PyCapsule pyCapsule) || ((PyCapsule) capsule).getPointer() == null) {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.getErrorMessage(key));
             }
             GraalHPyCapsuleGet.isLegalCapsule(capsule, key, PRaiseNode.getUncached());
-            PyCapsule pyCapsule = (PyCapsule) capsule;
             Object result;
             switch (key) {
-                case CapsuleKey.Pointer:
+                case CapsuleKey.Pointer -> {
                     if (!capsuleNameMatches(namePtr, coerceToPointer(pyCapsule.getName()))) {
                         return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.INCORRECT_NAME);
                     }
                     result = pyCapsule.getPointer();
-                    break;
-                case CapsuleKey.Context:
-                    result = pyCapsule.getContext();
-                    break;
-                case CapsuleKey.Name:
-                    result = pyCapsule.getName();
-                    break;
-                case CapsuleKey.Destructor:
-                    result = pyCapsule.getDestructor();
-                    break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid key");
+                }
+                case CapsuleKey.Context -> result = pyCapsule.getContext();
+                case CapsuleKey.Name -> result = pyCapsule.getName();
+                case CapsuleKey.Destructor -> result = pyCapsule.getDestructor();
+                default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
             return coerceToPointer(result);
         } catch (CannotCastException e) {
@@ -1145,9 +1136,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
          * Check if argument is actually a type. We will only accept PythonClass because that's the
          * only one that makes sense here.
          */
-        if (type instanceof PythonClass) {
-            PythonClass clazz = (PythonClass) type;
-
+        if (type instanceof PythonClass clazz) {
             // allocate native space
             long basicSize = clazz.basicSize;
             if (basicSize == -1) {
@@ -1243,7 +1232,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hCollection));
-            Object clazz = GetClassNode.getUncached().execute(receiver);
+            Object clazz = InlinedGetClassNode.executeUncached(receiver);
             if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
                 if (!PInt.isIntRange(lidx)) {
                     throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
@@ -1297,7 +1286,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence));
-            Object clazz = GetClassNode.getUncached().execute(receiver);
+            Object clazz = InlinedGetClassNode.executeUncached(receiver);
             Object key = HPyAsPythonObjectNodeGen.getUncached().execute(hKey);
             Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
 
@@ -1340,7 +1329,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence));
-            Object clazz = GetClassNode.getUncached().execute(receiver);
+            Object clazz = InlinedGetClassNode.executeUncached(receiver);
 
             if (clazz == PythonBuiltinClassType.PList && ctxListSetItem(receiver, lidx, hValue)) {
                 return 0;
@@ -1400,7 +1389,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             if (PyIndexCheckNodeGen.getUncached().execute(receiver) || CanBeDoubleNodeGen.getUncached().execute(receiver)) {
                 return 1;
             }
-            Object receiverType = GetClassNode.getUncached().execute(receiver);
+            Object receiverType = InlinedGetClassNode.executeUncached(receiver);
             return PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
