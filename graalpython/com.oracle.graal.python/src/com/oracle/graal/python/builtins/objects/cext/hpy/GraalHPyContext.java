@@ -1148,7 +1148,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
         backend.finalizeNativeContext();
-        scheduler.close();
+        if (scheduler != null) {
+            scheduler.close();
+        }
     }
 
     private void startUpcallsDaemon(long interval) {
