@@ -652,8 +652,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
@@ -688,7 +687,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
+                        @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;

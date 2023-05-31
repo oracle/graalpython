@@ -2534,16 +2534,50 @@ public final class PythonContext extends Python3Core {
             return UnsafeWrapper.UNSAFE;
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new RuntimeException("NAtive access not allowed, cannot manipulate native memory");
+        throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
     }
 
-    @TruffleBoundary
     public long allocateNativeMemory(long size) {
-        return getUnsafe().allocateMemory(size);
+        return allocateNativeMemoryBoundary(getUnsafe(), size);
     }
 
     @TruffleBoundary
+    private static long allocateNativeMemoryBoundary(Unsafe unsafe, long size) {
+        return unsafe.allocateMemory(size);
+    }
+
     public void freeNativeMemory(long address) {
-        getUnsafe().freeMemory(address);
+        freeNativeMemoryBoundary(getUnsafe(), address);
+    }
+
+    @TruffleBoundary
+    private static void freeNativeMemoryBoundary(Unsafe unsafe, long address) {
+        unsafe.freeMemory(address);
+    }
+
+    public void copyNativeMemory(long dst, byte[] src, int srcOffset, int size) {
+        copyNativeMemoryBoundary(getUnsafe(), null, dst, src, byteArrayOffset(srcOffset), size);
+    }
+
+    public void copyNativeMemory(byte[] dst, int dstOffset, long src, int size) {
+        copyNativeMemoryBoundary(getUnsafe(), dst, byteArrayOffset(dstOffset), null, src, size);
+    }
+
+    private static long byteArrayOffset(int offset) {
+        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
+    }
+
+    @TruffleBoundary
+    private static void copyNativeMemoryBoundary(Unsafe unsafe, Object dst, long dstOffset, Object src, long srcOffset, int size) {
+        unsafe.copyMemory(src, srcOffset, dst, dstOffset, size);
+    }
+
+    public void setNativeMemory(long pointer, int size, byte value) {
+        setNativeMemoryBoundary(getUnsafe(), pointer, size, value);
+    }
+
+    @TruffleBoundary
+    private static void setNativeMemoryBoundary(Unsafe unsafe, long pointer, int size, byte value) {
+        unsafe.setMemory(pointer, size, value);
     }
 }

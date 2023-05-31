@@ -134,8 +134,8 @@ public abstract class PointerNodes {
 
         @Specialization
         static void doNativeMemory(Node inliningTarget, byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, LongPointerStorage src, int srcOffset, int size) {
-            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
-            unsafe.copyMemory(null, src.pointer + srcOffset, dst, byteArrayOffset(dstOffset), size);
+            PythonContext context = PythonContext.get(inliningTarget);
+            context.copyNativeMemory(dst, dstOffset, src.pointer + srcOffset, size);
         }
     }
 
@@ -327,8 +327,8 @@ public abstract class PointerNodes {
 
         @Specialization
         static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
-            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
-            unsafe.copyMemory(src, byteArrayOffset(srcOffset), null, dst.pointer + dstOffset, size);
+            PythonContext context = PythonContext.get(inliningTarget);
+            context.copyNativeMemory(dst.pointer + dstOffset, src, srcOffset, size);
         }
 
         @Specialization
@@ -627,7 +627,7 @@ public abstract class PointerNodes {
             // We need to copy the whole memory block to keep the pointer offsets consistent
             PythonContext context = PythonContext.get(inliningTarget);
             long pointer = context.allocateNativeMemory(len);
-            context.getUnsafe().copyMemory(storage.bytes, byteArrayOffset(0), null, pointer, len);
+            context.copyNativeMemory(pointer, storage.bytes, 0, len);
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
         }
@@ -637,7 +637,7 @@ public abstract class PointerNodes {
             int len = storage.size;
             PythonContext context = PythonContext.get(inliningTarget);
             long pointer = context.allocateNativeMemory(len);
-            context.getUnsafe().setMemory(pointer, len, (byte) 0);
+            context.setNativeMemory(pointer, len, (byte) 0);
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
         }
@@ -872,9 +872,5 @@ public abstract class PointerNodes {
             memory.storage = newStorage;
             return newStorage;
         }
-    }
-
-    private static long byteArrayOffset(int offset) {
-        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
     }
 }
