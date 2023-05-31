@@ -1416,8 +1416,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_getattro extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_GETATTRO);
+        Object get(PythonManagedClass object) {
+            return LookupNativeSlotNode.LookupNativeGetattroSlotNode.executeUncached(object);
         }
     }
 

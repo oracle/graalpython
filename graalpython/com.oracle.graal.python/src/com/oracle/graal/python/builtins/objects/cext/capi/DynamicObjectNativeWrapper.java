@@ -634,7 +634,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         static Object doTpGetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookup) {
+                        @Cached LookupNativeSlotNode.LookupNativeGetattroSlotNode lookup) {
             return lookup.execute(object);
         }
 

@@ -334,6 +334,64 @@ class TestObject(object):
         tester = TestInt()
         assert tester.foo == "foo"
 
+    def test_getattro_inheritance(self):
+        TestWithGetattro = CPyExtType(
+            'TestWithGetattro',
+            '''
+            static PyObject* getattro(PyObject* self, PyObject* key) {
+                if (PyObject_IsTrue(key)) {
+                    Py_INCREF(key);
+                    return key;
+                }
+                return PyErr_Format(PyExc_AttributeError, "Nope");
+            }
+
+            static PyObject* call_getattro_slot(PyObject* unused, PyObject* args) {
+                PyObject* object;
+                PyObject* key;
+                if (!PyArg_ParseTuple(args, "OO", &object, &key))
+                    return NULL;
+                return Py_TYPE(object)->tp_getattro(object, key);
+            }
+            ''',
+            tp_getattro='getattro',
+            tp_methods='{"call_getattro_slot", (PyCFunction)call_getattro_slot, METH_VARARGS | METH_STATIC, ""}'
+        )
+
+        def validate(cls, has_getattro, has_getattr):
+            foo = cls()
+            if has_getattro:
+                assert foo.asdf == 'asdf'
+                assert TestWithGetattro.call_getattro_slot(foo, 'asdf') == 'asdf'
+            elif has_getattr:
+                assert foo.asdf == 3
+                assert TestWithGetattro.call_getattro_slot(foo, 'asdf') == 3
+            if has_getattro and not has_getattr:
+                assert_raises(AttributeError, lambda: getattr(foo, ''))
+                assert_raises(AttributeError, TestWithGetattro.call_getattro_slot, foo, '')
+            if has_getattr:
+                assert getattr(foo, '') == 3
+                assert TestWithGetattro.call_getattro_slot(foo, '') == 3
+
+        validate(TestWithGetattro, True, False)
+
+        class Subclass(TestWithGetattro):
+            pass
+
+        validate(Subclass, True, False)
+
+        class ObjWithGetattr:
+            def __getattr__(self, item):
+                return 3
+
+        validate(ObjWithGetattr, False, True)
+
+        class SubclassWithGetattr(TestWithGetattro):
+            def __getattr__(self, item):
+                return 3
+
+        validate(SubclassWithGetattr, True, True)
+
     def test_dict(self):
         TestDict = CPyExtType("TestDict",
                              """static PyObject* custom_dict = NULL;

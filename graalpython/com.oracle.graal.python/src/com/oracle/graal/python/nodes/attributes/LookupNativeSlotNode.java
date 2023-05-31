@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResu
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -71,7 +73,10 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -302,14 +307,18 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
             return getNULL();
         }
         PythonContext context = getContext();
-        return context.getCApiContext().getOrCreateProcWrapper(context.lookupType(owner), slot, value);
+        return wrapCallable(context, context.lookupType(owner), value);
     }
 
     private Object wrapManagedMethod(PythonManagedClass owner, Object value) {
         if (value instanceof PNone) {
             return getNULL();
         }
-        return getContext().getCApiContext().getOrCreateProcWrapper(owner, slot, value);
+        return wrapCallable(getContext(), owner, value);
+    }
+
+    private Object wrapCallable(PythonContext context, PythonManagedClass owner, Object value) {
+        return context.getCApiContext().getOrCreateProcWrapper(owner, slot, () -> slot.wrapperFactory.apply(value));
     }
 
     @GenerateCached(false)
@@ -331,6 +340,46 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
             }
             return lookupGeneric(type, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(),
                             InteropLibrary.getUncached());
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({SpecialMethodSlot.class, SlotMethodDef.class})
+    public abstract static class LookupNativeGetattroSlotNode extends Node {
+        public abstract Object execute(Object type);
+
+        public static Object executeUncached(Object type) {
+            return LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen.getUncached().execute(type);
+        }
+
+        @Specialization
+        Object get(PythonManagedClass type,
+                        @Shared @Cached(parameters = "GetAttr") LookupCallableSlotInMRONode lookupGetattr,
+                        @Shared @Cached(parameters = "GetAttribute") LookupCallableSlotInMRONode lookupGetattribute,
+                        @Shared @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookupNativeGetattro) {
+            Object getattr = lookupGetattr.execute(type);
+            if (getattr == PNone.NO_VALUE) {
+                return lookupNativeGetattro.execute(type);
+            } else {
+                Object getattribute = lookupGetattribute.execute(type);
+                return PythonContext.get(this).getCApiContext().getOrCreateProcWrapper(type, SlotMethodDef.TP_GETATTRO, () -> new PyProcsWrapper.GetAttrCombinedWrapper(getattribute, getattr));
+            }
+        }
+
+        @Specialization
+        Object get(PythonBuiltinClassType type,
+                        @Shared @Cached(parameters = "GetAttr") LookupCallableSlotInMRONode lookupGetattr,
+                        @Shared @Cached(parameters = "GetAttribute") LookupCallableSlotInMRONode lookupGetattribute,
+                        @Shared @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookupNativeGetattro) {
+            return get(PythonContext.get(this).lookupType(type), lookupGetattr, lookupGetattribute, lookupNativeGetattro);
+        }
+
+        @Fallback
+        Object get(Object type,
+                        @Shared @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookupNativeGetattro) {
+            // I don't think we ever get here, but if we do, for a native class we just return its
+            // slot
+            return lookupNativeGetattro.execute(type);
         }
     }
 }
