@@ -2591,6 +2591,8 @@ public abstract class TypeNodes {
         }
 
         private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+            // Our formatter currently forces all the case labels on a single line
+            // @formatter:off
             return switch (cls) {
                 case PBytes -> 1;
                 case PInt -> 4;
@@ -2604,6 +2606,7 @@ public abstract class TypeNodes {
                 case PythonClass -> 40;
                 default -> 0;
             };
+            // @formatter:on
         }
     }
 
