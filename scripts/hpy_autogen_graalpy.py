@@ -659,7 +659,13 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
         lines = [old]
         w = lines.append
         for func in self.api.functions:
+            if func.name in NO_WRAPPER:
+                continue
+
             func_type = get_trace_wrapper_node(func).type
+
+            # context member enum, e.g., 'CTX_MODULECREATE'
+            ctx_enum = get_context_member_enum(func.ctx_name())
 
             # context function name w/o underscores, e.g., 'ctxGetItemi'
             jname = func.ctx_name().replace('_', '')
@@ -670,15 +676,25 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
             rettype = get_java_signature_type(func_type.type)
             if f' {jname}(' not in old:
                 java_params = []
+                all_longs = True
+                java_param_names = []
                 for i, p in enumerate(func_type.args.params[1:]):
                     jtype = get_java_signature_type(p.type)
                     p_name = p.name if p.name else f'arg{i}'
                     java_params.append(f'{jtype} {p_name}')
+                    all_longs = all_longs and (jtype == 'long')
+                    java_param_names.append(p_name)
 
                 w(f'{self.INDENT}public {rettype} {jname}({", ".join(java_params)}) {{')
                 w(f'{self.INDENT * 2}increment(HPyJNIUpcall.{fname});')
-                w(f'{self.INDENT * 2}// TODO implement')
-                w(f'{self.INDENT * 2}throw CompilerDirectives.shouldNotReachHere();')
+                return_result = '' if rettype == 'void' else 'return '
+                arr_type = 'long' if all_longs else 'Object'
+                args = ', '.join(java_param_names)
+                if rettype == 'int' or rettype == 'void':
+                    prefix = 'Int'
+                elif rettype == 'long':
+                    prefix = 'Long'
+                w(f'{self.INDENT * 2}{return_result}execute{prefix}ContextFunction({HPY_CONTEXT_MEMBER_CLASS}.{ctx_enum}, new {arr_type}[]{{{args}}});')
                 w(self.INDENT + '}')
                 w('')
         return '\n'.join(lines)

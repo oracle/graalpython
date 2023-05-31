@@ -73,17 +73,24 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -1403,842 +1410,697 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxModuleCreate(long def) {
         increment(HPyJNIUpcall.HPyModuleCreate);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_MODULE_CREATE, new long[]{def});
     }
 
     public long ctxLongFromUnsignedLong(long value) {
         increment(HPyJNIUpcall.HPyLongFromUnsignedLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG, new long[]{value});
     }
 
     public long ctxLongFromLongLong(long v) {
         increment(HPyJNIUpcall.HPyLongFromLongLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMLONGLONG, new long[]{v});
     }
 
     public long ctxLongFromUnsignedLongLong(long v) {
         increment(HPyJNIUpcall.HPyLongFromUnsignedLongLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG, new long[]{v});
     }
 
     public long ctxLongFromSizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSizet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMSIZE_T, new long[]{value});
     }
 
     public long ctxLongFromSsizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSsizet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMSSIZE_T, new long[]{value});
     }
 
     public long ctxLongAsUnsignedLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONG, new long[]{h});
     }
 
     public long ctxLongAsUnsignedLongMask(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongMask);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK, new long[]{h});
     }
 
     public long ctxLongAsLongLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsLongLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASLONGLONG, new long[]{h});
     }
 
     public long ctxLongAsUnsignedLongLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG, new long[]{h});
     }
 
     public long ctxLongAsUnsignedLongLongMask(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongLongMask);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK, new long[]{h});
     }
 
     public long ctxLongAsSizet(long h) {
         increment(HPyJNIUpcall.HPyLongAsSizet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASSIZE_T, new long[]{h});
     }
 
     public long ctxLongAsSsizet(long h) {
         increment(HPyJNIUpcall.HPyLongAsSsizet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASSSIZE_T, new long[]{h});
     }
 
     public long ctxLongAsVoidPtr(long h) {
         increment(HPyJNIUpcall.HPyLongAsVoidPtr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASVOIDPTR, new long[]{h});
     }
 
     public long ctxBoolFromLong(long v) {
         increment(HPyJNIUpcall.HPyBoolFromLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BOOL_FROMLONG, new long[]{v});
     }
 
     public int ctxSequenceCheck(long h) {
         increment(HPyJNIUpcall.HPySequenceCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_SEQUENCE_CHECK, new long[]{h});
     }
 
     public long ctxAdd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyAdd);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ADD, new long[]{h1, h2});
     }
 
     public long ctxSubtract(long h1, long h2) {
         increment(HPyJNIUpcall.HPySubtract);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_SUBTRACT, new long[]{h1, h2});
     }
 
     public long ctxMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyMultiply);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_MULTIPLY, new long[]{h1, h2});
     }
 
     public long ctxMatrixMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyMatrixMultiply);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_MATRIXMULTIPLY, new long[]{h1, h2});
     }
 
     public long ctxFloorDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyFloorDivide);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_FLOORDIVIDE, new long[]{h1, h2});
     }
 
     public long ctxTrueDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyTrueDivide);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_TRUEDIVIDE, new long[]{h1, h2});
     }
 
     public long ctxRemainder(long h1, long h2) {
         increment(HPyJNIUpcall.HPyRemainder);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_REMAINDER, new long[]{h1, h2});
     }
 
     public long ctxDivmod(long h1, long h2) {
         increment(HPyJNIUpcall.HPyDivmod);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_DIVMOD, new long[]{h1, h2});
     }
 
     public long ctxPower(long h1, long h2, long h3) {
         increment(HPyJNIUpcall.HPyPower);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_POWER, new long[]{h1, h2, h3});
     }
 
     public long ctxNegative(long h1) {
         increment(HPyJNIUpcall.HPyNegative);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_NEGATIVE, new long[]{h1});
     }
 
     public long ctxPositive(long h1) {
         increment(HPyJNIUpcall.HPyPositive);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_POSITIVE, new long[]{h1});
     }
 
     public long ctxAbsolute(long h1) {
         increment(HPyJNIUpcall.HPyAbsolute);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ABSOLUTE, new long[]{h1});
     }
 
     public long ctxInvert(long h1) {
         increment(HPyJNIUpcall.HPyInvert);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INVERT, new long[]{h1});
     }
 
     public long ctxLshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyLshift);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LSHIFT, new long[]{h1, h2});
     }
 
     public long ctxRshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyRshift);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_RSHIFT, new long[]{h1, h2});
     }
 
     public long ctxAnd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyAnd);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_AND, new long[]{h1, h2});
     }
 
     public long ctxXor(long h1, long h2) {
         increment(HPyJNIUpcall.HPyXor);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_XOR, new long[]{h1, h2});
     }
 
     public long ctxOr(long h1, long h2) {
         increment(HPyJNIUpcall.HPyOr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_OR, new long[]{h1, h2});
     }
 
     public long ctxIndex(long h1) {
         increment(HPyJNIUpcall.HPyIndex);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INDEX, new long[]{h1});
     }
 
     public long ctxLong(long h1) {
         increment(HPyJNIUpcall.HPyLong);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LONG, new long[]{h1});
     }
 
     public long ctxFloat(long h1) {
         increment(HPyJNIUpcall.HPyFloat);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_FLOAT, new long[]{h1});
     }
 
     public long ctxInPlaceAdd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceAdd);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEADD, new long[]{h1, h2});
     }
 
     public long ctxInPlaceSubtract(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceSubtract);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACESUBTRACT, new long[]{h1, h2});
     }
 
     public long ctxInPlaceMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceMultiply);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEMULTIPLY, new long[]{h1, h2});
     }
 
     public long ctxInPlaceMatrixMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceMatrixMultiply);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEMATRIXMULTIPLY, new long[]{h1, h2});
     }
 
     public long ctxInPlaceFloorDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceFloorDivide);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEFLOORDIVIDE, new long[]{h1, h2});
     }
 
     public long ctxInPlaceTrueDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceTrueDivide);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACETRUEDIVIDE, new long[]{h1, h2});
     }
 
     public long ctxInPlaceRemainder(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceRemainder);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEREMAINDER, new long[]{h1, h2});
     }
 
     public long ctxInPlacePower(long h1, long h2, long h3) {
         increment(HPyJNIUpcall.HPyInPlacePower);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEPOWER, new long[]{h1, h2, h3});
     }
 
     public long ctxInPlaceLshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceLshift);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACELSHIFT, new long[]{h1, h2});
     }
 
     public long ctxInPlaceRshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceRshift);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACERSHIFT, new long[]{h1, h2});
     }
 
     public long ctxInPlaceAnd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceAnd);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEAND, new long[]{h1, h2});
     }
 
     public long ctxInPlaceXor(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceXor);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEXOR, new long[]{h1, h2});
     }
 
     public long ctxInPlaceOr(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceOr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_INPLACEOR, new long[]{h1, h2});
     }
 
     public int ctxCallableCheck(long h) {
         increment(HPyJNIUpcall.HPyCallableCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_CALLABLE_CHECK, new long[]{h});
     }
 
     public long ctxCallTupleDict(long callable, long args, long kw) {
         increment(HPyJNIUpcall.HPyCallTupleDict);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_CALLTUPLEDICT, new long[]{callable, args, kw});
     }
 
     public void ctxFatalError(long message) {
         increment(HPyJNIUpcall.HPyFatalError);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_FATALERROR, new long[]{message});
     }
 
     public void ctxErrSetString(long h_type, long message) {
         increment(HPyJNIUpcall.HPyErrSetString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_SETSTRING, new long[]{h_type, message});
     }
 
     public void ctxErrSetObject(long h_type, long h_value) {
         increment(HPyJNIUpcall.HPyErrSetObject);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_SETOBJECT, new long[]{h_type, h_value});
     }
 
     public long ctxErrSetFromErrnoWithFilename(long h_type, long filename_fsencoded) {
         increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilename);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAME, new long[]{h_type, filename_fsencoded});
     }
 
     public void ctxErrSetFromErrnoWithFilenameObjects(long h_type, long filename1, long filename2) {
         increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilenameObjects);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS, new long[]{h_type, filename1, filename2});
     }
 
     public int ctxErrOccurred() {
         increment(HPyJNIUpcall.HPyErrOccurred);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_ERR_OCCURRED, new long[]{});
     }
 
     public int ctxErrExceptionMatches(long exc) {
         increment(HPyJNIUpcall.HPyErrExceptionMatches);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_ERR_EXCEPTIONMATCHES, new long[]{exc});
     }
 
     public void ctxErrNoMemory() {
         increment(HPyJNIUpcall.HPyErrNoMemory);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_NOMEMORY, new long[]{});
     }
 
     public void ctxErrClear() {
         increment(HPyJNIUpcall.HPyErrClear);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_CLEAR, new long[]{});
     }
 
     public long ctxErrNewException(long name, long base, long dict) {
         increment(HPyJNIUpcall.HPyErrNewException);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ERR_NEWEXCEPTION, new long[]{name, base, dict});
     }
 
     public long ctxErrNewExceptionWithDoc(long name, long doc, long base, long dict) {
         increment(HPyJNIUpcall.HPyErrNewExceptionWithDoc);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ERR_NEWEXCEPTIONWITHDOC, new long[]{name, doc, base, dict});
     }
 
     public int ctxErrWarnEx(long category, long message, long stack_level) {
         increment(HPyJNIUpcall.HPyErrWarnEx);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_ERR_WARNEX, new long[]{category, message, stack_level});
     }
 
     public void ctxErrWriteUnraisable(long obj) {
         increment(HPyJNIUpcall.HPyErrWriteUnraisable);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_ERR_WRITEUNRAISABLE, new long[]{obj});
     }
 
     public int ctxIsTrue(long h) {
         increment(HPyJNIUpcall.HPyIsTrue);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_ISTRUE, new long[]{h});
     }
 
     public long ctxTypeFromSpec(long spec, long params) {
         increment(HPyJNIUpcall.HPyTypeFromSpec);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_TYPE_FROMSPEC, new long[]{spec, params});
     }
 
     public long ctxGetAttr(long obj, long name) {
         increment(HPyJNIUpcall.HPyGetAttr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_GETATTR, new long[]{obj, name});
     }
 
     public long ctxMaybeGetAttrs(long obj, long name) {
         increment(HPyJNIUpcall.HPyMaybeGetAttrs);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_MAYBEGETATTR_S, new long[]{obj, name});
     }
 
     public int ctxHasAttr(long obj, long name) {
         increment(HPyJNIUpcall.HPyHasAttr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_HASATTR, new long[]{obj, name});
     }
 
     public int ctxHasAttrs(long obj, long name) {
         increment(HPyJNIUpcall.HPyHasAttrs);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_HASATTR_S, new long[]{obj, name});
     }
 
     public int ctxSetAttr(long obj, long name, long value) {
         increment(HPyJNIUpcall.HPySetAttr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_SETATTR, new long[]{obj, name, value});
     }
 
     public int ctxSetAttrs(long obj, long name, long value) {
         increment(HPyJNIUpcall.HPySetAttrs);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_SETATTR_S, new long[]{obj, name, value});
     }
 
     public long ctxGetItem(long obj, long key) {
         increment(HPyJNIUpcall.HPyGetItem);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_GETITEM, new long[]{obj, key});
     }
 
     public int ctxContains(long container, long key) {
         increment(HPyJNIUpcall.HPyContains);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_CONTAINS, new long[]{container, key});
     }
 
     public int ctxTypeCheckg(long obj, long type) {
         increment(HPyJNIUpcall.HPyTypeCheckg);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_TYPECHECK_G, new long[]{obj, type});
     }
 
     public int ctxSetType(long obj, long type) {
         increment(HPyJNIUpcall.HPySetType);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_SETTYPE, new long[]{obj, type});
     }
 
     public int ctxTypeIsSubtype(long sub, long type) {
         increment(HPyJNIUpcall.HPyTypeIsSubtype);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE, new long[]{sub, type});
     }
 
     public int ctxIsg(long obj, long other) {
         increment(HPyJNIUpcall.HPyIsg);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_IS_G, new long[]{obj, other});
     }
 
     public long ctxAsStructLegacy(long h) {
         increment(HPyJNIUpcall.HPyAsStructLegacy);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ASSTRUCTLEGACY, new long[]{h});
     }
 
     public long ctxRepr(long obj) {
         increment(HPyJNIUpcall.HPyRepr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_REPR, new long[]{obj});
     }
 
     public long ctxStr(long obj) {
         increment(HPyJNIUpcall.HPyStr);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_STR, new long[]{obj});
     }
 
     public long ctxASCII(long obj) {
         increment(HPyJNIUpcall.HPyASCII);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ASCII, new long[]{obj});
     }
 
     public long ctxBytes(long obj) {
         increment(HPyJNIUpcall.HPyBytes);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES, new long[]{obj});
     }
 
     public long ctxRichCompare(long v, long w, int op) {
         increment(HPyJNIUpcall.HPyRichCompare);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_RICHCOMPARE, new Object[]{v, w, op});
     }
 
     public int ctxRichCompareBool(long v, long w, int op) {
         increment(HPyJNIUpcall.HPyRichCompareBool);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_RICHCOMPAREBOOL, new Object[]{v, w, op});
     }
 
     public long ctxHash(long obj) {
         increment(HPyJNIUpcall.HPyHash);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_HASH, new long[]{obj});
     }
 
     public long ctxSeqIterNew(long seq) {
         increment(HPyJNIUpcall.HPySeqIterNew);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_SEQITER_NEW, new long[]{seq});
     }
 
     public int ctxBytesCheck(long h) {
         increment(HPyJNIUpcall.HPyBytesCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_BYTES_CHECK, new long[]{h});
     }
 
     public long ctxBytesSize(long h) {
         increment(HPyJNIUpcall.HPyBytesSize);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_SIZE, new long[]{h});
     }
 
     public long ctxBytesGETSIZE(long h) {
         increment(HPyJNIUpcall.HPyBytesGETSIZE);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_GET_SIZE, new long[]{h});
     }
 
     public long ctxBytesAsString(long h) {
         increment(HPyJNIUpcall.HPyBytesAsString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_ASSTRING, new long[]{h});
     }
 
     public long ctxBytesASSTRING(long h) {
         increment(HPyJNIUpcall.HPyBytesASSTRING);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_AS_STRING, new long[]{h});
     }
 
     public long ctxBytesFromString(long v) {
         increment(HPyJNIUpcall.HPyBytesFromString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_FROMSTRING, new long[]{v});
     }
 
     public long ctxBytesFromStringAndSize(long v, long len) {
         increment(HPyJNIUpcall.HPyBytesFromStringAndSize);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_BYTES_FROMSTRINGANDSIZE, new long[]{v, len});
     }
 
     public long ctxUnicodeFromString(long utf8) {
         increment(HPyJNIUpcall.HPyUnicodeFromString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_FROMSTRING, new long[]{utf8});
     }
 
     public int ctxUnicodeCheck(long h) {
         increment(HPyJNIUpcall.HPyUnicodeCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_UNICODE_CHECK, new long[]{h});
     }
 
     public long ctxUnicodeAsASCIIString(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsASCIIString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASASCIISTRING, new long[]{h});
     }
 
     public long ctxUnicodeAsLatin1String(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsLatin1String);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASLATIN1STRING, new long[]{h});
     }
 
     public long ctxUnicodeAsUTF8String(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsUTF8String);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8STRING, new long[]{h});
     }
 
     public long ctxUnicodeAsUTF8AndSize(long h, long size) {
         increment(HPyJNIUpcall.HPyUnicodeAsUTF8AndSize);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE, new long[]{h, size});
     }
 
     public long ctxUnicodeDecodeFSDefault(long v) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefault);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT, new long[]{v});
     }
 
     public long ctxUnicodeDecodeFSDefaultAndSize(long v, long size) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefaultAndSize);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE, new long[]{v, size});
     }
 
     public long ctxUnicodeEncodeFSDefault(long h) {
         increment(HPyJNIUpcall.HPyUnicodeEncodeFSDefault);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ENCODEFSDEFAULT, new long[]{h});
     }
 
     public long ctxUnicodeReadChar(long h, long index) {
         increment(HPyJNIUpcall.HPyUnicodeReadChar);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_READCHAR, new long[]{h, index});
     }
 
     public long ctxUnicodeDecodeASCII(long s, long size, long errors) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeASCII);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODEASCII, new long[]{s, size, errors});
     }
 
     public long ctxUnicodeDecodeLatin1(long s, long size, long errors) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeLatin1);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODELATIN1, new long[]{s, size, errors});
     }
 
     public long ctxUnicodeFromEncodedObject(long obj, long encoding, long errors) {
         increment(HPyJNIUpcall.HPyUnicodeFromEncodedObject);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT, new long[]{obj, encoding, errors});
     }
 
     public long ctxUnicodeInternFromString(long str) {
         increment(HPyJNIUpcall.HPyUnicodeInternFromString);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_INTERNFROMSTRING, new long[]{str});
     }
 
     public long ctxUnicodeSubstring(long obj, long start, long end) {
         increment(HPyJNIUpcall.HPyUnicodeSubstring);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_SUBSTRING, new long[]{obj, start, end});
     }
 
     public int ctxListAppend(long h_list, long h_item) {
         increment(HPyJNIUpcall.HPyListAppend);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_LIST_APPEND, new long[]{h_list, h_item});
     }
 
     public int ctxDictCheck(long h) {
         increment(HPyJNIUpcall.HPyDictCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_DICT_CHECK, new long[]{h});
     }
 
     public long ctxDictKeys(long h) {
         increment(HPyJNIUpcall.HPyDictKeys);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_DICT_KEYS, new long[]{h});
     }
 
     public long ctxDictGetItem(long op, long key) {
         increment(HPyJNIUpcall.HPyDictGetItem);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_DICT_GETITEM, new long[]{op, key});
     }
 
     public int ctxTupleCheck(long h) {
         increment(HPyJNIUpcall.HPyTupleCheck);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_TUPLE_CHECK, new long[]{h});
     }
 
     public int ctxSliceUnpack(long slice, long start, long stop, long step) {
         increment(HPyJNIUpcall.HPySliceUnpack);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_SLICE_UNPACK, new long[]{slice, start, stop, step});
     }
 
     public long ctxContextVarNew(long name, long default_value) {
         increment(HPyJNIUpcall.HPyContextVarNew);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_CONTEXTVAR_NEW, new long[]{name, default_value});
     }
 
     public long ctxContextVarSet(long context_var, long value) {
         increment(HPyJNIUpcall.HPyContextVarSet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_CONTEXTVAR_SET, new long[]{context_var, value});
     }
 
     public long ctxImportImportModule(long name) {
         increment(HPyJNIUpcall.HPyImportImportModule);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_IMPORT_IMPORTMODULE, new long[]{name});
     }
 
     public int ctxCapsuleIsValid(long capsule, long name) {
         increment(HPyJNIUpcall.HPyCapsuleIsValid);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_CAPSULE_ISVALID, new long[]{capsule, name});
     }
 
     public int ctxCapsuleSet(long capsule, int key, long value) {
         increment(HPyJNIUpcall.HPyCapsuleSet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_CAPSULE_SET, new Object[]{capsule, key, value});
     }
 
     public long ctxFromPyObject(long obj) {
         increment(HPyJNIUpcall.HPyFromPyObject);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_FROMPYOBJECT, new long[]{obj});
     }
 
     public long ctxAsPyObject(long h) {
         increment(HPyJNIUpcall.HPyAsPyObject);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    public void ctxCallRealFunctionFromTrampoline(long sig, long func, long args) {
-        increment(HPyJNIUpcall.HPyCallRealFunctionFromTrampoline);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_ASPYOBJECT, new long[]{h});
     }
 
     public long ctxListBuilderNew(long initial_size) {
         increment(HPyJNIUpcall.HPyListBuilderNew);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LISTBUILDER_NEW, new long[]{initial_size});
     }
 
     public void ctxListBuilderSet(long builder, long index, long h_item) {
         increment(HPyJNIUpcall.HPyListBuilderSet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_LISTBUILDER_SET, new long[]{builder, index, h_item});
     }
 
     public long ctxListBuilderBuild(long builder) {
         increment(HPyJNIUpcall.HPyListBuilderBuild);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LISTBUILDER_BUILD, new long[]{builder});
     }
 
     public void ctxListBuilderCancel(long builder) {
         increment(HPyJNIUpcall.HPyListBuilderCancel);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_LISTBUILDER_CANCEL, new long[]{builder});
     }
 
     public long ctxTupleBuilderNew(long initial_size) {
         increment(HPyJNIUpcall.HPyTupleBuilderNew);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_TUPLEBUILDER_NEW, new long[]{initial_size});
     }
 
     public void ctxTupleBuilderSet(long builder, long index, long h_item) {
         increment(HPyJNIUpcall.HPyTupleBuilderSet);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_TUPLEBUILDER_SET, new long[]{builder, index, h_item});
     }
 
     public long ctxTupleBuilderBuild(long builder) {
         increment(HPyJNIUpcall.HPyTupleBuilderBuild);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_TUPLEBUILDER_BUILD, new long[]{builder});
     }
 
     public void ctxTupleBuilderCancel(long builder) {
         increment(HPyJNIUpcall.HPyTupleBuilderCancel);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_TUPLEBUILDER_CANCEL, new long[]{builder});
     }
 
     public long ctxTrackerNew(long size) {
         increment(HPyJNIUpcall.HPyTrackerNew);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_TRACKER_NEW, new long[]{size});
     }
 
     public int ctxTrackerAdd(long ht, long h) {
         increment(HPyJNIUpcall.HPyTrackerAdd);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_TRACKER_ADD, new long[]{ht, h});
     }
 
     public void ctxTrackerForgetAll(long ht) {
         increment(HPyJNIUpcall.HPyTrackerForgetAll);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_TRACKER_FORGETALL, new long[]{ht});
     }
 
     public void ctxTrackerClose(long ht) {
         increment(HPyJNIUpcall.HPyTrackerClose);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_TRACKER_CLOSE, new long[]{ht});
     }
 
     public void ctxReenterPythonExecution(long state) {
         increment(HPyJNIUpcall.HPyReenterPythonExecution);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_REENTERPYTHONEXECUTION, new long[]{state});
     }
 
     public long ctxLeavePythonExecution() {
         increment(HPyJNIUpcall.HPyLeavePythonExecution);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeLongContextFunction(HPyContextMember.CTX_LEAVEPYTHONEXECUTION, new long[]{});
     }
 
     public void ctxDump(long h) {
         increment(HPyJNIUpcall.HPyDump);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        executeIntContextFunction(HPyContextMember.CTX_DUMP, new long[]{h});
     }
 
     public int ctxTypeCheckSlot(long type, long value) {
         increment(HPyJNIUpcall.HPyTypeCheckSlot);
-        // TODO implement
-        throw CompilerDirectives.shouldNotReachHere();
+        return executeIntContextFunction(HPyContextMember.CTX_TYPE_CHECKSLOT, new long[]{type, value});
     }
     // {{end ctx funcs}}
 
@@ -2349,5 +2211,127 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         ctxHandles[233] = createTypeConstant(PythonBuiltinClassType.PSlice);
         return ctxHandles;
         // {{end ctx handles array}}
+    }
+
+    private Object executeContextFunction(HPyContextMember member, long[] arguments) {
+        HPyContextSignature signature = member.getSignature();
+        HPyContextSignatureType[] argTypes = signature.parameterTypes();
+        assert arguments.length == argTypes.length - 1;
+        Object[] argCast = new Object[argTypes.length];
+        argCast[0] = context;
+        for (int i = 1; i < argCast.length; i++) {
+            argCast[i] = convertLongArg(argTypes[i], arguments[i - 1]);
+        }
+        return GraalHPyContextFunction.getUncached(member).execute(argCast);
+    }
+
+    private Object executeContextFunction(HPyContextMember member, Object[] arguments) {
+        HPyContextSignature signature = member.getSignature();
+        HPyContextSignatureType[] argTypes = signature.parameterTypes();
+        assert arguments.length == argTypes.length - 1;
+        Object[] argCast = new Object[argTypes.length];
+        argCast[0] = context;
+        for (int i = 1; i < argCast.length; i++) {
+            argCast[i] = convertArg(argTypes[i], arguments[i - 1]);
+        }
+        return GraalHPyContextFunction.getUncached(member).execute(argCast);
+    }
+
+    private long executeLongContextFunction(HPyContextMember member, long[] arguments) {
+        try {
+            Object result = executeContextFunction(member, arguments);
+            return convertLongRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getLongErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private int executeIntContextFunction(HPyContextMember member, long[] arguments) {
+        try {
+            Object result = executeContextFunction(member, arguments);
+            return convertIntRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return switch (member.getSignature().returnType()) {
+                case Int, HPy_UCS4 -> -1;
+                default -> throw CompilerDirectives.shouldNotReachHere();
+            };
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private long executeLongContextFunction(HPyContextMember member, Object[] arguments) {
+        try {
+            Object result = executeContextFunction(member, arguments);
+            return convertLongRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getLongErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private int executeIntContextFunction(HPyContextMember member, Object[] arguments) {
+        try {
+            Object result = executeContextFunction(member, arguments);
+            return convertIntRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return switch (member.getSignature().returnType()) {
+                case Int, HPy_UCS4 -> -1;
+                default -> throw CompilerDirectives.shouldNotReachHere();
+            };
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private Object convertLongArg(HPyContextSignatureType type, long argBits) {
+        return switch (type) {
+            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder, HPyTracker -> bitsAsPythonObject(argBits);
+            case Int, HPy_UCS4 -> -1;
+            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, Cpy_PyObjectPtr, CVoid -> argBits;
+            case CharPtr, ConstCharPtr -> new GraalHPyJNIFunctionPointer(argBits, null, false);
+            case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
+            default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
+        };
+    }
+
+    private Object convertArg(HPyContextSignatureType type, Object arg) {
+        return switch (type) {
+            case Int, HPy_UCS4 -> (Integer) arg;
+            default -> convertLongArg(type, (Long) arg);
+        };
+    }
+
+    private long convertLongRet(HPyContextSignatureType type, Object result) {
+        return switch (type) {
+            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder, HPyTracker -> GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
+            case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> coerceToPointer(result);
+            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> (Long) HPyAsNativeInt64NodeGen.getUncached().execute(result);
+            default -> throw CompilerDirectives.shouldNotReachHere();
+        };
+    }
+
+    private int convertIntRet(HPyContextSignatureType type, Object result) {
+        return switch (type) {
+            case Int, HPy_UCS4 -> (int) result;
+            case CVoid -> 0;
+            default -> throw CompilerDirectives.shouldNotReachHere();
+        };
+    }
+
+    private long getLongErrorValue(HPyContextSignatureType type) {
+        return switch (type) {
+            case HPy, VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr, HPyListBuilder, HPyTupleBuilder, HPyTracker, HPyThreadState -> 0;
+            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
+            default -> throw CompilerDirectives.shouldNotReachHere();
+        };
     }
 }
