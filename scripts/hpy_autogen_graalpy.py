@@ -74,6 +74,7 @@ NO_WRAPPER = {
 HPY_CONTEXT_PKG = 'com.oracle.graal.python.builtins.objects.cext.hpy.'
 HPY_CONTEXT_CLASS = 'GraalHPyNativeContext'
 HPY_CONTEXT_MEMBER_CLASS = 'HPyContextMember'
+HPY_CONTEXT_FUNCTIONS_CLASS = 'GraalHPyContextFunctions'
 
 ###############################################################################
 #                                COMMON PARTS                                 #
@@ -107,6 +108,69 @@ class autogen_ctx_member_enum(AutoGenFilePart):
                 signature = ', '.join(params)
                 w(f'{self.INDENT}{mname}("{ctx_name}", {rettype}, {signature})')
         return ',\n'.join(lines) + ';\n'
+
+
+#    @HPyContextFunction("ctx_Module_Create")
+#    @GenerateUncached
+#    public abstract static class GraalHPyModuleCreate extends HPyBinaryContextFunction {
+class autogen_ctx_function_factory(AutoGenFilePart):
+    """
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + HPY_CONTEXT_FUNCTIONS_CLASS)
+    INPUT_FILE = PATH
+    BEGIN_MARKER = INDENT + '// {{start ctx func factory}}\n'
+    END_MARKER = INDENT + '// {{end ctx func factory}}\n'
+
+    CTX_FUNC_NODE_NAME_REGEX = re.compile(r'\s*public (?:abstract )?static (?:final )?class (?P<cls>\w+) ')
+    CTX_FUNC_ANNOTATION_REGEX = re.compile(r'\s*@HPyContextFunction\("(?P<ctx_name>\w+)"\)')
+    CTX_FUNC_ANNOTATION= '@HPyContextFunction'
+
+    def __init__(self, api):
+        super().__init__(api)
+        self.root = None
+
+
+    def write(self, root):
+        self.root = root
+        super().write(root)
+        self.root = None
+
+    def generate(self, old):
+        ctx_func_nodes = {}
+        with self.root.join(self.INPUT_FILE).open('r') as f:
+            func_node = []
+            for line in f.readlines():
+                match_annotation = self.CTX_FUNC_ANNOTATION_REGEX.match(line)
+                assert self.CTX_FUNC_ANNOTATION not in line or match_annotation is not None, line
+                if match_annotation:
+                    func_node.append(match_annotation.group('ctx_name'))
+                match_class = self.CTX_FUNC_NODE_NAME_REGEX.match(line)
+                if match_class and func_node:
+                    ctx_func_nodes[match_class.group('cls')] = func_node
+                    func_node = []
+
+        lines = []
+        w = lines.append
+        w(self.INDENT + 'public static GraalHPyContextFunction create(HPyContextMember member) {');
+        w(self.INDENT + '    return switch (member) {')
+        for cls_name, ctx_funcs in ctx_func_nodes.items():
+            key = ', '.join([x.upper() for x in ctx_funcs])
+            w(f'{self.INDENT}        case {key} -> {cls_name}NodeGen.create();')
+        w(self.INDENT + '        default -> throw CompilerDirectives.shouldNotReachHere();')
+        w(self.INDENT + '    };')
+        w(self.INDENT + '}')
+        w('')
+        w(self.INDENT + 'public static GraalHPyContextFunction getUncached(HPyContextMember member) {');
+        w(self.INDENT + '    return switch (member) {')
+        for cls_name, ctx_funcs in ctx_func_nodes.items():
+            key = ', '.join([x.upper() for x in ctx_funcs])
+            w(f'{self.INDENT}        case {key} -> {cls_name}NodeGen.getUncached();')
+        w(self.INDENT + '        default -> throw CompilerDirectives.shouldNotReachHere();')
+        w(self.INDENT + '    };')
+        w(self.INDENT + '}')
+        w('')
+        return '\n'.join(lines)
 
 ###############################################################################
 #                                 JNI BACKEND                                 #
@@ -878,69 +942,6 @@ class autogen_ctx_llvm_init(AutoGenFilePart):
         return '\n'.join(lines)
 
 
-#    @HPyContextFunction("ctx_Module_Create")
-#    @GenerateUncached
-#    public abstract static class GraalHPyModuleCreate extends HPyBinaryContextFunction {
-class autogen_ctx_llvm_context_function_factory(AutoGenFilePart):
-    """
-    """
-    INDENT = '        '
-    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(LLVM_HPY_CONTEXT_PKG + LLVM_HPY_BACKEND_CLASS)
-    INPUT_FILE = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + 'GraalHPyContextFunctions')
-    BEGIN_MARKER = INDENT + '// {{start llvm ctx func factory}}\n'
-    END_MARKER = INDENT + '// {{end llvm ctx func factory}}\n'
-
-    CTX_FUNC_NODE_NAME_REGEX = re.compile(r'\s*public (?:abstract )?static (?:final )?class (?P<cls>\w+) ')
-    CTX_FUNC_ANNOTATION_REGEX = re.compile(r'\s*@HPyContextFunction\("(?P<ctx_name>\w+)"\)')
-    CTX_FUNC_ANNOTATION= '@HPyContextFunction'
-
-    def __init__(self, api):
-        super().__init__(api)
-        self.root = None
-
-
-    def write(self, root):
-        self.root = root
-        super().write(root)
-        self.root = None
-
-    def generate(self, old):
-        ctx_func_nodes = {}
-        with self.root.join(self.INPUT_FILE).open('r') as f:
-            func_node = []
-            for line in f.readlines():
-                match_annotation = self.CTX_FUNC_ANNOTATION_REGEX.match(line)
-                assert self.CTX_FUNC_ANNOTATION not in line or match_annotation is not None, line
-                if match_annotation:
-                    func_node.append(match_annotation.group('ctx_name'))
-                match_class = self.CTX_FUNC_NODE_NAME_REGEX.match(line)
-                if match_class and func_node:
-                    ctx_func_nodes[match_class.group('cls')] = func_node
-                    func_node = []
-
-        lines = []
-        w = lines.append
-        w(self.INDENT + 'static GraalHPyContextFunction createContextFunctionNode(HPyContextMember member) {');
-        w(self.INDENT + '    return switch (member) {')
-        for cls_name, ctx_funcs in ctx_func_nodes.items():
-            key = ', '.join([x.upper() for x in ctx_funcs])
-            w(f'{self.INDENT}        case {key} -> {cls_name}NodeGen.create();')
-        w(self.INDENT + '        default -> throw CompilerDirectives.shouldNotReachHere();')
-        w(self.INDENT + '    };')
-        w(self.INDENT + '}')
-        w('')
-        w(self.INDENT + 'static GraalHPyContextFunction getUncachedContextFunctionNode(HPyContextMember member) {');
-        w(self.INDENT + '    return switch (member) {')
-        for cls_name, ctx_funcs in ctx_func_nodes.items():
-            key = ', '.join([x.upper() for x in ctx_funcs])
-            w(f'{self.INDENT}        case {key} -> {cls_name}NodeGen.getUncached();')
-        w(self.INDENT + '        default -> throw CompilerDirectives.shouldNotReachHere();')
-        w(self.INDENT + '    };')
-        w(self.INDENT + '}')
-        w('')
-        return '\n'.join(lines)
-
-
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
               autogen_ctx_jni,
@@ -951,4 +952,4 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_handles_init,
               autogen_ctx_member_enum,
               autogen_ctx_llvm_init,
-              autogen_ctx_llvm_context_function_factory)
+              autogen_ctx_function_factory)
