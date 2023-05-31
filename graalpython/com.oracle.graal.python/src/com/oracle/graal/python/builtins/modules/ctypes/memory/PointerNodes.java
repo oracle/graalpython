@@ -646,11 +646,12 @@ public abstract class PointerNodes {
         static long doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, int offset,
                         @Cached(inline = false) GetPointerValueAsLongNode toNativeNode) {
             PythonContext context = PythonContext.get(inliningTarget);
+            Unsafe unsafe = context.getUnsafe();
             long pointer = context.allocateNativeMemory(storage.pointers.length * 8L);
             for (int i = 0; i < storage.pointers.length; i++) {
                 Pointer itemPointer = storage.pointers[i];
                 long subpointer = toNativeNode.execute(inliningTarget, itemPointer.memory, itemPointer.memory.storage, itemPointer.offset);
-                context.getUnsafe().putLong(pointer + i * 8L, subpointer);
+                unsafe.putLong(pointer + i * 8L, subpointer);
             }
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
