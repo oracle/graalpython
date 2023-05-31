@@ -2260,6 +2260,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             HPyTransformExceptionToNativeNode.executeUncached(e);
             return switch (member.getSignature().returnType()) {
                 case Int, HPy_UCS4 -> -1;
+                case CVoid -> 0;
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         } catch (Throwable t) {

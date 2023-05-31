@@ -99,7 +99,8 @@ class autogen_ctx_member_enum(AutoGenFilePart):
             if func.name not in NO_WRAPPER:
                 ctx_name = func.ctx_name()
                 mname = get_context_member_enum(ctx_name)
-                node = func.node
+                node = deepcopy(func.node) # copy node because 'maybe_make_void' might modify the tree
+                maybe_make_void(func, node)
                 rettype = get_signature_type(node.type.type)
                 params = []
                 for p in node.type.args.params:
