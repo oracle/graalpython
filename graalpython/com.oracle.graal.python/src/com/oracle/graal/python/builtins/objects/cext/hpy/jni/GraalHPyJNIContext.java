@@ -366,6 +366,20 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * if you change the name of this function, also modify {@code hpy_jni.c} appropriately.
      */
     long getHPyDebugContext() {
+        /*
+         * It is a valid path that this method is called but the debug context has not yet been
+         * initialized. In particular, this can happen if the leak detector is used which calls
+         * methods of the native debug module. The native methods may call function
+         * 'hpy_debug_get_ctx' which upcalls to this method. All this may happen before any HPy
+         * extension was loaded with debug mode enabled.
+         */
+        if (hPyDebugContext == 0) {
+            try {
+                initHPyDebugContext();
+            } catch (ApiInitException e) {
+                throw CompilerDirectives.shouldNotReachHere(e.getMessage());
+            }
+        }
         return hPyDebugContext;
     }
 
