@@ -40,19 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_ELIPSIS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.io.PrintStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -81,15 +77,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -777,36 +769,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             for (int i = 0; i < argNodes.length; i++) {
                 argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
             }
-        }
-
-        public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
-            if (t instanceof PException pe) {
-                // this is ok, and will be handled correctly
-                throw pe;
-            }
-            if (t instanceof ThreadDeath td) {
-                // ThreadDeath subclasses are used internally by Truffle
-                throw td;
-            }
-            if (t instanceof StackOverflowError soe) {
-                PythonContext context = PythonContext.get(null);
-                context.reacquireGilAfterStackOverflow();
-                PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
-                throw ExceptionUtils.wrapJavaException(soe, null, newException);
-            }
-            if (t instanceof OutOfMemoryError oome) {
-                PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
-                throw ExceptionUtils.wrapJavaException(oome, null, newException);
-            }
-            // everything else: log and convert to PException (SystemError)
-            CompilerDirectives.transferToInterpreter();
-            PNodeWithContext.printStack();
-            PrintStream out = new PrintStream(PythonContext.get(null).getEnv().err());
-            out.println("while executing " + where1 + " " + where2);
-            out.println("should not throw exceptions apart from PException");
-            t.printStackTrace(out);
-            out.flush();
-            throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
         }
 
         private Object getErrorValue(HPyContextSignatureType type) {

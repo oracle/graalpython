@@ -40,12 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+
+import java.io.PrintStream;
+
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -120,4 +133,33 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract void initNativeFastPaths();
 
+    public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
+        if (t instanceof PException pe) {
+            // this is ok, and will be handled correctly
+            throw pe;
+        }
+        if (t instanceof ThreadDeath td) {
+            // ThreadDeath subclasses are used internally by Truffle
+            throw td;
+        }
+        if (t instanceof StackOverflowError soe) {
+            PythonContext context = PythonContext.get(null);
+            context.reacquireGilAfterStackOverflow();
+            PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
+            throw ExceptionUtils.wrapJavaException(soe, null, newException);
+        }
+        if (t instanceof OutOfMemoryError oome) {
+            PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
+            throw ExceptionUtils.wrapJavaException(oome, null, newException);
+        }
+        // everything else: log and convert to PException (SystemError)
+        CompilerDirectives.transferToInterpreter();
+        PNodeWithContext.printStack();
+        PrintStream out = new PrintStream(PythonContext.get(null).getEnv().err());
+        out.println("while executing " + where1 + " " + where2);
+        out.println("should not throw exceptions apart from PException");
+        t.printStackTrace(out);
+        out.flush();
+        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
+    }
 }
