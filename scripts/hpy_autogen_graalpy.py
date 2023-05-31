@@ -58,6 +58,14 @@ class AutoGenFilePart:
 def cap(s):
     return s[0].upper() + s[1:]
 
+
+def java_qname_to_path(java_class_qname):
+    return java_class_qname.replace('.', '/') + '.java'
+
+
+def get_context_member_enum(ctx_name):
+    return ctx_name.upper()
+
 # If contained in this set, we won't generate anything for this HPy API func.
 NO_WRAPPER = {
     '_HPy_CallRealFunctionFromTrampoline',
@@ -65,6 +73,40 @@ NO_WRAPPER = {
 
 HPY_CONTEXT_PKG = 'com.oracle.graal.python.builtins.objects.cext.hpy.'
 HPY_CONTEXT_CLASS = 'GraalHPyNativeContext'
+HPY_CONTEXT_MEMBER_CLASS = 'HPyContextMember'
+
+###############################################################################
+#                                COMMON PARTS                                 #
+###############################################################################
+
+class autogen_ctx_member_enum(AutoGenFilePart):
+    """
+    Generates the enum of context members.
+    """
+    INDENT = '    '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + HPY_CONTEXT_MEMBER_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start ctx members}}\n'
+    END_MARKER = INDENT + '// {{end ctx members}}\n'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        for var in self.api.variables:
+            mname = var.name.upper()
+            w(f'{self.INDENT}{mname}("{var.name}")')
+        for func in self.api.functions:
+            if func.name not in NO_WRAPPER:
+                ctx_name = func.ctx_name()
+                mname = get_context_member_enum(ctx_name)
+                node = func.node
+                rettype = get_signature_type(node.type.type)
+                params = []
+                for p in node.type.args.params:
+                    params.append(get_signature_type(p.type))
+                assert params
+                signature = ', '.join(params)
+                w(f'{self.INDENT}{mname}("{ctx_name}", {rettype}, {signature})')
+        return ',\n'.join(lines) + ';\n'
 
 ###############################################################################
 #                                 JNI BACKEND                                 #
@@ -301,9 +343,6 @@ def get_trace_wrapper_node(func):
     newnode = funcnode_with_new_name(func.node, '%s_jni' % func.ctx_name())
     maybe_make_void(func, newnode)
     return newnode
-
-def java_qname_to_path(java_class_qname):
-    return java_class_qname.replace('.', '/') + '.java'
 
 def get_jni_class_header(java_class_qname):
     return java_class_qname.replace('.', '_') + '.h'
@@ -805,36 +844,6 @@ def get_signature_type(type):
     return result
 
 
-class autogen_ctx_llvm_upcall_enum(AutoGenFilePart):
-    """
-    Generates the enum of context members for the Graal HPy LLVM backend.
-    """
-    INDENT = '        '
-    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(LLVM_HPY_CONTEXT_PKG + LLVM_HPY_BACKEND_CLASS)
-    BEGIN_MARKER = INDENT + '// {{start llvm ctx members}}\n'
-    END_MARKER = INDENT + '// {{end llvm ctx members}}\n'
-
-    def generate(self, old):
-        lines = []
-        w = lines.append
-        for var in self.api.variables:
-            mname = var.name.upper()
-            w(f'{self.INDENT}{mname}("{var.name}")')
-        for func in self.api.functions:
-            if func.name not in NO_WRAPPER:
-                ctx_name = func.ctx_name()
-                mname = ctx_name.upper()
-                node = func.node
-                rettype = get_signature_type(node.type.type)
-                params = []
-                for p in node.type.args.params:
-                    params.append(get_signature_type(p.type))
-                assert params
-                signature = ', '.join(params)
-                w(f'{self.INDENT}{mname}("{ctx_name}", {rettype}, {signature})')
-        return ',\n'.join(lines) + ';\n'
-
-
 class autogen_ctx_llvm_init(AutoGenFilePart):
     """
     Generates initialization code for the context handles like, e.g., 'h_None'.
@@ -940,6 +949,6 @@ generators = (autogen_ctx_init_jni_h,
               autogen_svm_jni_upcall_config,
               autogen_jni_upcall_method_stub,
               autogen_ctx_handles_init,
-              autogen_ctx_llvm_upcall_enum,
+              autogen_ctx_member_enum,
               autogen_ctx_llvm_init,
               autogen_ctx_llvm_context_function_factory)
