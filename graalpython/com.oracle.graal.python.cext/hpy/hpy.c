@@ -96,6 +96,10 @@ int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject) {
 	return 0;
 }
 
+void *graal_hpy_long2ptr(int64_t lval) {
+	return (void *)lval;
+}
+
 /* Call from Java if the HPy debug context is initialized. */
 void graal_hpy_set_debug_context(HPyContext *debug_ctx) {
 	g_debug_ctx = debug_ctx;
