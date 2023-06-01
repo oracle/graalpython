@@ -168,6 +168,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -1842,45 +1844,42 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class HPyLongFromLong extends Node {
-        public abstract Object execute(int value, boolean signed);
+        public abstract Object execute(Node inliningTarget, int value, boolean signed);
 
-        public abstract Object execute(long value, boolean signed);
+        public abstract Object execute(Node inliningTarget, long value, boolean signed);
 
-        public abstract Object execute(Object value, boolean signed);
+        public abstract Object execute(Node inliningTarget, Object value, boolean signed);
 
         @Specialization(guards = "signed")
-        static Object doSignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static int doSignedInt(int n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = "!signed")
-        static Object doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+        static long doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed) {
             if (n < 0) {
-                return asHandleNode.execute(n & 0xFFFFFFFFL);
+                return n & 0xFFFFFFFFL;
             }
-            return asHandleNode.execute(n);
+            return n;
         }
 
         @Specialization(guards = "signed")
-        static Object doSignedLong(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static long doSignedLong(long n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = {"!signed", "n >= 0"})
-        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static long doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = {"!signed", "n < 0"})
         static Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(factory.createInt(convertToBigInteger(n)));
+            return factory.createInt(convertToBigInteger(n));
         }
 
         @TruffleBoundary
@@ -1890,9 +1889,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(factory.createNativeVoidPtr(n.getPtr()));
+            return factory.createNativeVoidPtr(n.getPtr());
         }
     }
 

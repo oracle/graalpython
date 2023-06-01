@@ -1321,8 +1321,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyLongFromLong fromLongNode) {
-            return fromLongNode.execute(value, true);
+            return fromLongNode.execute(inliningTarget, value, true);
         }
     }
 
@@ -1334,8 +1335,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyLongFromLong fromLongNode) {
-            return fromLongNode.execute(value, false);
+            return fromLongNode.execute(inliningTarget, value, false);
         }
     }
 
