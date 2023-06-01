@@ -124,6 +124,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import sun.misc.Unsafe;
 
 public abstract class CExtCommonNodes {
     @TruffleBoundary
@@ -707,6 +708,7 @@ public abstract class CExtCommonNodes {
 
     @GenerateUncached
     public abstract static class GetByteArrayNode extends Node {
+        private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
         public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
 
@@ -724,6 +726,29 @@ public abstract class CExtCommonNodes {
                 return subRangeIfNeeded(bytes, n);
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization
+        static byte[] doNativePointer(NativePointer nativePointer, long n) throws OverflowException {
+            /*
+             * This specialization is only reached if native access is allowed since NativePointer
+             * objects are **ONLY** created in JNI upcalls. So, it is not necessary to test if
+             * native access is allowed here.
+             */
+            assert PythonContext.get(null).getEnv().isNativeAccessAllowed();
+            long pointer = nativePointer.asPointer();
+            long size;
+            if (n < 0) {
+                size = 0;
+                while (UNSAFE.getByte(pointer + size) != 0) {
+                    size++;
+                }
+            } else {
+                size = n;
+            }
+            byte[] bytes = new byte[PInt.intValueExact(size)];
+            UNSAFE.copyMemory(null, pointer, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, size);
+            return bytes;
         }
 
         @Specialization(limit = "5")

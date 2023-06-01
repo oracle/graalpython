@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
@@ -2300,7 +2301,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder, HPyTracker -> bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
             case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, Cpy_PyObjectPtr, CVoid -> argBits;
-            case CharPtr, ConstCharPtr -> new GraalHPyJNIFunctionPointer(argBits, null, false);
+            case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
             case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
