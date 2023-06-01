@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -208,16 +209,12 @@ abstract class AccessForeignItemNodes {
                 try {
                     return getToPythonNode().executeConvert(lib.readHashValue(object, key));
                 } catch (UnsupportedMessageException | UnknownKeyException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw keyError(this, key, lib, switchEncodingNode);
                 } finally {
                     gil.acquire();
                 }
             }
-            try {
-                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            throw keyError(this, key, lib, switchEncodingNode);
         }
 
         @Fallback
@@ -230,8 +227,10 @@ abstract class AccessForeignItemNodes {
             if (libForObject.isArrayElementReadable(object, index)) {
                 try {
                     return getToPythonNode().executeConvert(libForObject.readArrayElement(object, index));
-                } catch (UnsupportedMessageException | InvalidArrayIndexException ex) {
-                    throw CompilerDirectives.shouldNotReachHere(ex);
+                } catch (UnsupportedMessageException ex) {
+                    throw raise(IndexError, ErrorMessages.ITEM_S_OF_S_OBJ_IS_NOT_READABLE, index, object);
+                } catch (InvalidArrayIndexException ex) {
+                    throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, index);
                 }
             }
             throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, index);
@@ -324,10 +323,18 @@ abstract class AccessForeignItemNodes {
                 try {
                     lib.writeHashEntry(object, key, value);
                     return PNone.NONE;
-                } catch (UnsupportedMessageException | UnknownKeyException e) {
+                } catch (UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } catch (UnsupportedMessageException e) {
+                    if (lib.isHashEntryExisting(object, key)) {
+                        return raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, key, object);
+                    } else {
+                        return raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_INSERTABLE, key, object);
+                    }
                 } catch (UnsupportedTypeException e) {
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
+                } catch (Throwable e) {
+                    throw e;
                 } finally {
                     gil.acquire();
                 }
@@ -335,9 +342,7 @@ abstract class AccessForeignItemNodes {
             wrongIndex.enter(inliningTarget);
             gil.release(true);
             try {
-                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                throw keyError(this, key, lib, switchEncodingNode);
             } finally {
                 gil.acquire();
             }
@@ -354,8 +359,10 @@ abstract class AccessForeignItemNodes {
                 try {
                     libForObject.writeArrayElement(object, idx, value);
                     return;
-                } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                } catch (InvalidArrayIndexException e) {
+                    throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
+                } catch (UnsupportedMessageException e) {
+                    throw raise(IndexError, ErrorMessages.ITEM_S_OF_S_OBJ_IS_NOT_WRITABLE, idx, object);
                 } catch (UnsupportedTypeException e) {
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 }
@@ -431,17 +438,15 @@ abstract class AccessForeignItemNodes {
                 try {
                     lib.removeHashEntry(object, key);
                     return PNone.NONE;
-                } catch (UnsupportedMessageException | UnknownKeyException e) {
+                } catch (UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } catch (UnsupportedMessageException e) {
+                    return raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, object);
                 } finally {
                     gil.acquire();
                 }
             }
-            try {
-                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            throw keyError(this, key, lib, switchEncodingNode);
         }
 
         @Fallback
@@ -458,7 +463,7 @@ abstract class AccessForeignItemNodes {
                 } catch (InvalidArrayIndexException ex) {
                     throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw raise(IndexError, ErrorMessages.ITEM_S_OF_S_OBJ_IS_NOT_REMOVABLE, idx, object);
                 }
             }
             throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
@@ -466,6 +471,14 @@ abstract class AccessForeignItemNodes {
 
         public static RemoveForeignItemNode create() {
             return RemoveForeignItemNodeGen.create();
+        }
+    }
+
+    private static PException keyError(AccessForeignItemBaseNode node, Object key, InteropLibrary lib, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        try {
+            return node.raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 }

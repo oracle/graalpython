@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,8 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.graalvm.polyglot.proxy.ProxyHashMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -585,6 +587,165 @@ public class JavaInteropTest {
             context.getBindings("python").putMember("javaStr", new WrapString("test"));
             assertEquals(context.eval("python", "javaStr * javaBool").asString(), "test");
             assertEquals(context.eval("python", "javaBool * javaStr").asString(), "test");
+        }
+
+        public class UnsupportedProxyHashMap implements ProxyHashMap {
+            @Override
+            public long getHashSize() {
+                return 0;
+            }
+
+            @Override
+            public boolean hasHashEntry(Value key) {
+                return key.asString().endsWith("_exists");
+            }
+
+            @Override
+            public Object getHashValue(Value key) {
+                throw new UnsupportedOperationException("map is not readable");
+            }
+
+            @Override
+            public void putHashEntry(Value key, Value value) {
+                throw new UnsupportedOperationException("map is read only");
+            }
+
+            @Override
+            public boolean removeHashEntry(Value key) {
+                throw new UnsupportedOperationException("map is read only");
+            }
+
+            @Override
+            public Object getHashEntriesIterator() {
+                return null;
+            }
+        }
+
+        public class UnsupportedProxyArray implements ProxyArray {
+
+            @Override
+            public Object get(long index) {
+                throw new UnsupportedOperationException("array is not readable");
+            }
+
+            @Override
+            public void set(long index, Value value) {
+                throw new UnsupportedOperationException("array is read only");
+            }
+
+            @Override
+            public boolean remove(long index) {
+                throw new UnsupportedOperationException("array is read only");
+            }
+
+            @Override
+            public long getSize() {
+                return 1;
+            }
+        }
+
+        @Test
+        public void modifyUnsupportedProxyHashMap() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "     obj['foo_exists']=42\n" +
+                            "  except AttributeError as e:\n" +
+                            "    if(not str(e).endswith('not writable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyHashMap());
+        }
+
+        @Test
+        public void putUnsupportedProxyHashMap() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "     obj['foo']=42\n" +
+                            "  except AttributeError as e:\n" +
+                            "    if(not str(e).endswith('not insertable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyHashMap());
+        }
+
+        @Test
+        public void removeUnsupportedProxyHashMap() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "     del obj['foo']\n" +
+                            "  except KeyError as e:\n" +
+                            "      pass\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyHashMap());
+        }
+
+        @Test
+        public void removeExistingUnsupportedProxyHashMap() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "    del obj['foo_exists']\n" +
+                            "  except AttributeError as e:\n" +
+                            "    if(not str(e).endswith('not removable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyHashMap());
+        }
+
+        @Test
+        public void getUnsupportedArrayElement() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "    return obj[0]\n" +
+                            "  except IndexError as e:\n" +
+                            "    if(not str(e).endswith('not readable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyArray());
+        }
+
+        @Test
+        public void setUnsupportedArrayElement() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "    obj[0] = 42\n" +
+                            "  except IndexError as e:\n" +
+                            "    if(not str(e).endswith('not writable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyArray());
+        }
+
+        @Test
+        public void removeUnsupportedArrayElement() throws IOException {
+            Source suitePy = Source.newBuilder("python", "" +
+                            "def foo(obj):\n" +
+                            "  try:\n" +
+                            "    del obj[0]\n" +
+                            "  except IndexError as e:\n" +
+                            "    if(not str(e).endswith('not removable')):" +
+                            "      raise e\n" +
+                            "foo",
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new UnsupportedProxyArray());
         }
     }
 
