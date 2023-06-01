@@ -88,7 +88,7 @@ ALL_FIELDS
     UPCALL(ctxContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
     UPCALL(ctxBulkClose, SIG_PTR SIG_INT, SIG_VOID) \
     UPCALL(ctxUnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
-    UPCALL(ctxTupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY)
+    UPCALL(ctxSequenceFromArray, SIG_JLONGARRAY SIG_BOOL SIG_BOOL, SIG_HPY)
 
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
@@ -300,14 +300,14 @@ static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result
     return 0;
 }
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal) {
+_HPy_HIDDEN HPy upcallSequenceFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal, bool create_list) {
     jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
     (*jniEnv)->SetLongArrayRegion(jniEnv, jLongArray, 0, (jsize) nitems, (const jlong *)items);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctxTupleFromArray, jLongArray, (jboolean) steal);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctxSequenceFromArray, jLongArray, (jboolean) steal, (jboolean) create_list);
 }
 
 static HPy ctx_Tuple_FromArray_jni(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
-    return upcallTupleFromArray(ctx, items, nitems, false);
+    return upcallSequenceFromArray(ctx, items, nitems, false, JNI_FALSE);
 }
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
@@ -336,11 +336,6 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject j
     ctx->ctx_Tracker_Close = augment_Tracker_Close;
 
     ctx->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
-
-    ctx->ctx_TupleBuilder_New = ctx_TupleBuilder_New_jni;
-    ctx->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set_jni;
-    ctx->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build_jni;
-    ctx->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel_jni;
 
     ctx->ctx_Tuple_FromArray = ctx_Tuple_FromArray_jni;
 

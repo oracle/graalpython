@@ -354,14 +354,10 @@ static jmethodID jniMethod_ctx_FromPyObject;
 static HPy ctx_FromPyObject_jni(HPyContext *ctx, cpy_PyObject *obj);
 static jmethodID jniMethod_ctx_AsPyObject;
 static cpy_PyObject *ctx_AsPyObject_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_ListBuilder_New;
-static HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size);
-static jmethodID jniMethod_ctx_ListBuilder_Set;
-static void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item);
-static jmethodID jniMethod_ctx_ListBuilder_Build;
-static HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder);
-static jmethodID jniMethod_ctx_ListBuilder_Cancel;
-static void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder);
+_HPy_HIDDEN jmethodID jniMethod_ctx_ListBuilder_New;
+_HPy_HIDDEN jmethodID jniMethod_ctx_ListBuilder_Set;
+_HPy_HIDDEN jmethodID jniMethod_ctx_ListBuilder_Build;
+_HPy_HIDDEN jmethodID jniMethod_ctx_ListBuilder_Cancel;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_New;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Set;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Build;
@@ -2178,26 +2174,6 @@ static HPy ctx_FromPyObject_jni(HPyContext *ctx, cpy_PyObject *obj)
 static cpy_PyObject *ctx_AsPyObject_jni(HPyContext *ctx, HPy h)
 {
     return (cpy_PyObject *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsPyObject, HPY_UP(h));
-}
-
-static HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size)
-{
-    return DO_UPCALL_HPYLISTBUILDER(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_New, SIZE_T_UP(initial_size));
-}
-
-static void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Set, HPY_LIST_BUILDER_UP(builder), SIZE_T_UP(index), HPY_UP(h_item));
-}
-
-static HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Build, HPY_LIST_BUILDER_UP(builder));
-}
-
-static void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Cancel, HPY_LIST_BUILDER_UP(builder));
 }
 
 static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field)

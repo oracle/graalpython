@@ -58,7 +58,15 @@ static inline _HPyBuilder_s *_ht2hb(HPyTupleBuilder ht) {
 }
 
 static inline HPyTupleBuilder _hb2ht(_HPyBuilder_s *hp) {
-    return (HPyTupleBuilder) {(HPy_ssize_t) (hp)};
+    return (HPyTupleBuilder) {(intptr_t) (hp)};
+}
+
+static inline _HPyBuilder_s *_hl2hb(HPyListBuilder ht) {
+    return (_HPyBuilder_s *) (ht)._lst;
+}
+
+static inline HPyListBuilder _hb2hl(_HPyBuilder_s *hp) {
+    return (HPyListBuilder) {(intptr_t) (hp)};
 }
 
 static inline _HPyBuilder_s *builder_new(HPy_ssize_t size) {
@@ -120,7 +128,7 @@ ctx_TupleBuilder_Build_jni(HPyContext *ctx, HPyTupleBuilder builder)
         HPyErr_NoMemory(ctx);
         return HPy_NULL;
     }
-    HPy res = upcallTupleFromArray(ctx, hb->handles, hb->capacity, JNI_TRUE);
+    HPy res = upcallSequenceFromArray(ctx, hb->handles, hb->capacity, JNI_TRUE, JNI_FALSE);
     free(hb);
     return res;
 }
@@ -129,4 +137,36 @@ _HPy_HIDDEN void
 ctx_TupleBuilder_Cancel_jni(HPyContext *ctx, HPyTupleBuilder builder)
 {
     builder_cancel(ctx, _ht2hb(builder));
+}
+
+_HPy_HIDDEN HPyListBuilder
+ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t size)
+{
+    return _hb2hl(builder_new(size));
+}
+
+_HPy_HIDDEN void
+ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder,
+                        HPy_ssize_t index, HPy h_item)
+{
+    builder_set(ctx, _hl2hb(builder), index, h_item);
+}
+
+_HPy_HIDDEN HPy
+ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder)
+{
+    _HPyBuilder_s *hb = _hl2hb(builder);
+    if (hb == NULL) {
+        HPyErr_NoMemory(ctx);
+        return HPy_NULL;
+    }
+    HPy res = upcallSequenceFromArray(ctx, hb->handles, hb->capacity, JNI_TRUE, JNI_TRUE);
+    free(hb);
+    return res;
+}
+
+_HPy_HIDDEN void
+ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder)
+{
+    builder_cancel(ctx, _hl2hb(builder));
 }

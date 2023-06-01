@@ -170,7 +170,7 @@
     {"name":"ctxGetAttrs","parameterTypes":["long","java.lang.String"]},
     {"name":"ctxBulkClose","parameterTypes":["long","int"]},
     {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"]},
-    {"name":"ctxTupleFromArray","parameterTypes":["long[]","boolean"]},
+    {"name":"ctxSequenceFromArray","parameterTypes":["long[]","boolean","boolean"]},
     {"name":"ctxContextVarGet","parameterTypes":["long","long","long"]},
     {"name":"ctxFieldStore","parameterTypes":["long","long","long"]},
     {"name":"ctxGlobalStore","parameterTypes":["long","long"]}

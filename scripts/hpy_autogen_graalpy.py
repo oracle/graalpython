@@ -188,7 +188,7 @@ JNI_NO_WRAPPER = NO_WRAPPER.union({
 # will still generate the function declaration and such. The common use case
 # for that is if you provide a custom upcall stub implementation.
 JNI_NO_DEFAULT_UPCALL_STUB = JNI_NO_WRAPPER.union({
-    #'HPyListBuilder_New', 'HPyListBuilder_Set','HPyListBuilder_Build','HPyListBuilder_Cancel',
+    'HPyListBuilder_New', 'HPyListBuilder_Set','HPyListBuilder_Build','HPyListBuilder_Cancel',
     'HPyTupleBuilder_New', 'HPyTupleBuilder_Set','HPyTupleBuilder_Build','HPyTupleBuilder_Cancel',
     'HPyUnicode_FromWideChar', 'HPyGlobal_Load'
 })

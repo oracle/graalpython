@@ -454,6 +454,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     enum HPyJNIUpcall implements HPyUpcall {
         HPyUnicodeFromJCharArray,
         HPyBulkClose,
+        HPySequenceFromArray,
 
         // {{start jni upcalls}}
         HPyModuleCreate,
@@ -852,8 +853,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * optionally steal the item handles in order to avoid repeated upcalls just to close them. This
      * is useful to implement, e.g., tuple builder.
      */
-    public long ctxTupleFromArray(long[] hItems, boolean steal) {
-        increment(HPyJNIUpcall.HPyTupleFromArray);
+    public long ctxSequenceFromArray(long[] hItems, boolean steal, boolean create_list) {
+        increment(HPyJNIUpcall.HPySequenceFromArray);
 
         Object[] objects = new Object[hItems.length];
         for (int i = 0; i < hItems.length; i++) {
@@ -863,8 +864,13 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 closeNativeHandle(hBits);
             }
         }
-        PTuple tuple = slowPathFactory.createTuple(objects);
-        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(tuple));
+        Object result;
+        if (create_list) {
+            result = slowPathFactory.createList(objects);
+        } else {
+            result = slowPathFactory.createTuple(objects);
+        }
+        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
     }
 
     public long ctxFieldLoad(long bits, long idx) {

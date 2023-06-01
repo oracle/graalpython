@@ -166,7 +166,7 @@ _buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
 
 _HPy_HIDDEN extern JNIEnv* jniEnv;
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal);
+_HPy_HIDDEN HPy upcallSequenceFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal, bool create_list);
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
 
