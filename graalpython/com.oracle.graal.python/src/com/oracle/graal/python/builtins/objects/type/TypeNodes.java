@@ -169,8 +169,9 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -241,8 +242,8 @@ public abstract class TypeNodes {
         @Specialization
         long doBuiltinClassType(PythonBuiltinClassType clazz,
                         @Bind("this") Node inliningTarget,
-                        @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Shared("read") @Cached ReadAttributeFromDynamicObjectNode readHiddenFlagsNode,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
             return doManaged(PythonContext.get(this).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
         }
@@ -250,8 +251,8 @@ public abstract class TypeNodes {
         @Specialization
         long doManaged(PythonManagedClass clazz,
                         @Bind("this") Node inliningTarget,
-                        @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Shared("read") @Cached ReadAttributeFromDynamicObjectNode readHiddenFlagsNode,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
 
             Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
@@ -301,7 +302,7 @@ public abstract class TypeNodes {
                 if (mroEntry instanceof PythonAbstractNativeObject) {
                     result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
-                    long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(),
+                    long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromDynamicObjectNode.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(),
                                     InlinedCountingConditionProfile.getUncached());
                     result = setFlags(result, flags);
                 }
@@ -453,13 +454,13 @@ public abstract class TypeNodes {
 
         @Specialization
         void doPBCT(PythonBuiltinClassType clazz, long flags,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode) {
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
             doManaged(PythonContext.get(this).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
         }
 
         @Specialization
         static void doManaged(PythonManagedClass clazz, long flags,
-                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode) {
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
             writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
         }
 
@@ -1716,7 +1717,7 @@ public abstract class TypeNodes {
         @Specialization
         static boolean doUserClass(PythonClass obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached ReadAttributeFromDynamicObjectNode readAttributeFromObjectNode,
                         @Cached InlinedBranchProfile hasHPyFlagsProfile) {
             // Special case for custom classes created via HPy: They are managed classes but can
             // have custom flags. The flags may prohibit subtyping.
@@ -2569,7 +2570,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToObjectNode write) {
+                        @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_BASICSIZE, value);
         }
     }
@@ -2622,7 +2623,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToObjectNode write) {
+                        @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_ITEMSIZE, value);
         }
     }
@@ -2657,7 +2658,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToObjectNode write) {
+                        @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_DICTOFFSET, value);
         }
     }

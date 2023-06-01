@@ -1752,6 +1752,7 @@ public abstract class CExtNodes {
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                         @Cached GetTypeMemberNode getTypeMemberNode) {
+            CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
             MroSequenceStorage mroStorage = getMroNode.execute(cls);
             int n = mroStorage.length();
