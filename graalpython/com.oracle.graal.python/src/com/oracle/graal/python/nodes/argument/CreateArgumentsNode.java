@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -85,9 +86,11 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -701,11 +704,26 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         protected abstract static class SearchNamedParameterNode extends Node {
             public abstract int execute(TruffleString[] parameters, TruffleString name);
 
-            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"})
+            @Idempotent // I think this is true, I would just like the assertion
+            protected static boolean nameIsAtIndex(TruffleString[] parameters, TruffleString name, int index) {
+                return uncached(parameters, name, TruffleString.EqualNode.getUncached()) == index;
+            }
+
+            @SuppressWarnings("unused")
+            @Specialization(guards = {"name == cachedName", "parameters == cachedParameters", "nameIsAtIndex(cachedParameters, cachedName, index)"}, limit = "1")
+            static int cachedSingle(TruffleString[] parameters, TruffleString name,
+                            @Cached("name") TruffleString cachedName,
+                            @Cached(value = "parameters", dimensions = 0) TruffleString[] cachedParameters,
+                            @Shared @Cached TruffleString.EqualNode equalNode,
+                            @Cached("uncached(parameters, name, equalNode)") int index) {
+                return index;
+            }
+
+            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"}, replaces = "cachedSingle")
             @ExplodeLoop
-            int cached(TruffleString[] parameters, TruffleString name,
+            static int cached(TruffleString[] parameters, TruffleString name,
                             @Cached("parameters.length") int cachedLen,
-                            @Cached TruffleString.EqualNode equalNode) {
+                            @Shared @Cached TruffleString.EqualNode equalNode) {
                 int idx = -1;
                 for (int i = 0; i < cachedLen; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
@@ -716,8 +734,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
 
             @Specialization(replaces = "cached")
-            int uncached(TruffleString[] parameters, TruffleString name,
-                            @Cached TruffleString.EqualNode equalNode) {
+            static int uncached(TruffleString[] parameters, TruffleString name,
+                            @Shared @Cached TruffleString.EqualNode equalNode) {
                 for (int i = 0; i < parameters.length; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
                         return i;
@@ -914,11 +932,34 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         public abstract PKeyword execute(PKeyword[] kwdefaults, TruffleString kwname);
 
-        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"})
+        @Idempotent
+        protected final boolean isSingleContext() {
+            return PythonLanguage.get(this).isSingleContext();
+        }
+
+        @Idempotent // I think this is true, I would just like the assertion
+        protected static boolean kwIsCorrect(PKeyword[] kwdefaults, TruffleString kwname, PKeyword result) {
+            return doUncached(kwdefaults, kwname, TruffleString.EqualNode.getUncached()) == result;
+        }
+
+        protected static TruffleString.EqualNode getUncachedEqualNode() {
+            return TruffleString.EqualNode.getUncached();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"kwname == cachedKwName", "kwdefaults == cachedKwdefaults", "isSingleContext()", "kwIsCorrect(cachedKwdefaults, cachedKwName, result)"}, limit = "1")
+        PKeyword cachedSingle(PKeyword[] kwdefaults, TruffleString kwname,
+                        @Cached("kwname") TruffleString cachedKwName,
+                        @Cached(value = "kwdefaults", weak = true, dimensions = 0) PKeyword[] cachedKwdefaults,
+                        @Cached(value = "doUncached(kwdefaults, kwname, getUncachedEqualNode())", weak = true) PKeyword result) {
+            return result;
+        }
+
+        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"}, replaces = "cachedSingle")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        PKeyword doCached(PKeyword[] kwdefaults, TruffleString kwname,
+        static PKeyword doCached(PKeyword[] kwdefaults, TruffleString kwname,
                         @Cached("kwdefaults.length") int cachedLength,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Shared @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < cachedLength; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
@@ -928,8 +969,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        PKeyword doUncached(PKeyword[] kwdefaults, TruffleString kwname,
-                        @Cached TruffleString.EqualNode equalNode) {
+        static PKeyword doUncached(PKeyword[] kwdefaults, TruffleString kwname,
+                        @Shared @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < kwdefaults.length; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
