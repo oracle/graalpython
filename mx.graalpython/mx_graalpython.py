@@ -311,6 +311,12 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
+def node_footprint_analyzer(args, **kwargs):
+    main_class = 'com.oracle.graal.python.test.advance.NodeFootprintAnalyzer'
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
+    return mx.run_java(vm_args + [main_class] + args, **kwargs)
+
+
 def _pythonhome_context():
     return set_env(GRAAL_PYTHONHOME=_pythonhome())
 
@@ -3072,6 +3078,7 @@ mx.update_commands(SUITE, {
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
+    'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'python-capi-forwards': [generate_capi_forwards, ''],
 })
