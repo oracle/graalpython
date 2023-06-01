@@ -1385,6 +1385,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         }
                         yield pointer.createReference();
                     }
+                    // Needed because javac-generated default is not PE-friendly
+                    default -> throw CompilerDirectives.shouldNotReachHere();
                 };
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
