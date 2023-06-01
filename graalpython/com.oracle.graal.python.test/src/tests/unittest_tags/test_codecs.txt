@@ -47,6 +47,7 @@
 *graalpython.lib-python.3.test.test_codecs.ExceptionChainingTest.test_non_str_arg_is_not_wrapped
 *graalpython.lib-python.3.test.test_codecs.ExceptionChainingTest.test_unflagged_non_text_codec_handling
 *graalpython.lib-python.3.test.test_codecs.IDNACodecTest.test_builtin_decode
+*graalpython.lib-python.3.test.test_codecs.IDNACodecTest.test_builtin_decode_length_limit
 *graalpython.lib-python.3.test.test_codecs.IDNACodecTest.test_builtin_encode
 *graalpython.lib-python.3.test.test_codecs.IDNACodecTest.test_errors
 *graalpython.lib-python.3.test.test_codecs.IDNACodecTest.test_incremental_decode
