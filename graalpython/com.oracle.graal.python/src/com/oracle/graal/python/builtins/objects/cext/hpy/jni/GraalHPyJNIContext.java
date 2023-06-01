@@ -2067,26 +2067,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         executeIntContextFunction(HPyContextMember.CTX_TUPLEBUILDER_CANCEL, new long[]{builder});
     }
 
-    public long ctxTrackerNew(long size) {
-        increment(HPyJNIUpcall.HPyTrackerNew);
-        return executeLongContextFunction(HPyContextMember.CTX_TRACKER_NEW, new long[]{size});
-    }
-
-    public int ctxTrackerAdd(long ht, long h) {
-        increment(HPyJNIUpcall.HPyTrackerAdd);
-        return executeIntContextFunction(HPyContextMember.CTX_TRACKER_ADD, new long[]{ht, h});
-    }
-
-    public void ctxTrackerForgetAll(long ht) {
-        increment(HPyJNIUpcall.HPyTrackerForgetAll);
-        executeIntContextFunction(HPyContextMember.CTX_TRACKER_FORGETALL, new long[]{ht});
-    }
-
-    public void ctxTrackerClose(long ht) {
-        increment(HPyJNIUpcall.HPyTrackerClose);
-        executeIntContextFunction(HPyContextMember.CTX_TRACKER_CLOSE, new long[]{ht});
-    }
-
     public void ctxReenterPythonExecution(long state) {
         increment(HPyJNIUpcall.HPyReenterPythonExecution);
         executeIntContextFunction(HPyContextMember.CTX_REENTERPYTHONEXECUTION, new long[]{state});
@@ -2298,7 +2278,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private Object convertLongArg(HPyContextSignatureType type, long argBits) {
         return switch (type) {
-            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder, HPyTracker -> bitsAsPythonObject(argBits);
+            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
             case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, Cpy_PyObjectPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
@@ -2317,7 +2297,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private long convertLongRet(HPyContextSignatureType type, Object result) {
         return switch (type) {
-            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder, HPyTracker -> GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
+            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
             case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> coerceToPointer(result);
             case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> (Long) HPyAsNativeInt64NodeGen.getUncached().execute(result);
             default -> throw CompilerDirectives.shouldNotReachHere();
@@ -2334,7 +2314,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private long getLongErrorValue(HPyContextSignatureType type) {
         return switch (type) {
-            case HPy, VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr, HPyListBuilder, HPyTupleBuilder, HPyTracker, HPyThreadState -> 0;
+            case HPy, VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr, HPyListBuilder, HPyTupleBuilder, HPyThreadState -> 0;
             case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };

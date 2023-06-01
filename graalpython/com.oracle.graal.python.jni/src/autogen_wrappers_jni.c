@@ -366,14 +366,6 @@ _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_New;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Set;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Build;
 _HPy_HIDDEN jmethodID jniMethod_ctx_TupleBuilder_Cancel;
-static jmethodID jniMethod_ctx_Tracker_New;
-static HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t size);
-static jmethodID jniMethod_ctx_Tracker_Add;
-static int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
-static jmethodID jniMethod_ctx_Tracker_ForgetAll;
-static void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
-static jmethodID jniMethod_ctx_Tracker_Close;
-static void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
 static jmethodID jniMethod_ctx_Field_Load;
 static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field);
 static jmethodID jniMethod_ctx_ReenterPythonExecution;
@@ -1414,30 +1406,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_TupleBuilder_Cancel = &ctx_TupleBuilder_Cancel_jni;
-    jniMethod_ctx_Tracker_New = (*env)->GetMethodID(env, clazz, "ctxTrackerNew", "(J)J");
-    if (jniMethod_ctx_Tracker_New == NULL) {
-        LOGS("ERROR: Java method ctxTrackerNew not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Tracker_New = &ctx_Tracker_New_jni;
-    jniMethod_ctx_Tracker_Add = (*env)->GetMethodID(env, clazz, "ctxTrackerAdd", "(JJ)I");
-    if (jniMethod_ctx_Tracker_Add == NULL) {
-        LOGS("ERROR: Java method ctxTrackerAdd not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Tracker_Add = &ctx_Tracker_Add_jni;
-    jniMethod_ctx_Tracker_ForgetAll = (*env)->GetMethodID(env, clazz, "ctxTrackerForgetAll", "(J)V");
-    if (jniMethod_ctx_Tracker_ForgetAll == NULL) {
-        LOGS("ERROR: Java method ctxTrackerForgetAll not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Tracker_ForgetAll = &ctx_Tracker_ForgetAll_jni;
-    jniMethod_ctx_Tracker_Close = (*env)->GetMethodID(env, clazz, "ctxTrackerClose", "(J)V");
-    if (jniMethod_ctx_Tracker_Close == NULL) {
-        LOGS("ERROR: Java method ctxTrackerClose not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Tracker_Close = &ctx_Tracker_Close_jni;
     jniMethod_ctx_Field_Load = (*env)->GetMethodID(env, clazz, "ctxFieldLoad", "(JJ)J");
     if (jniMethod_ctx_Field_Load == NULL) {
         LOGS("ERROR: Java method ctxFieldLoad not found found !\n");
@@ -2230,26 +2198,6 @@ static HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builder)
 static void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_ListBuilder_Cancel, HPY_LIST_BUILDER_UP(builder));
-}
-
-static HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t size)
-{
-    return DO_UPCALL_HPYTRACKER(CONTEXT_INSTANCE(ctx), ctx_Tracker_New, SIZE_T_UP(size));
-}
-
-static int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Tracker_Add, HPY_TRACKER_UP(ht), HPY_UP(h));
-}
-
-static void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Tracker_ForgetAll, HPY_TRACKER_UP(ht));
-}
-
-static void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
-{
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Tracker_Close, HPY_TRACKER_UP(ht));
 }
 
 static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy source_object, HPyField source_field)

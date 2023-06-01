@@ -180,7 +180,8 @@ class autogen_ctx_function_factory(AutoGenFilePart):
 # If contained in this set, we won't generate anything for the JNI backend.
 JNI_NO_WRAPPER = NO_WRAPPER.union({
     'HPy_GetItem_s', 'HPy_SetItem_s', 'HPy_GetAttr_s', 'HPyTuple_FromArray', 'HPyContextVar_Get',
-    'HPyField_Store', 'HPyGlobal_Store'
+    'HPyField_Store', 'HPyGlobal_Store', 'HPyTracker_New', 'HPyTracker_Add', 'HPyTracker_ForgetAll',
+    'HPyTracker_Close'
 })
 
 # If contained in this set, we won't generate a default upcall stub. But we
@@ -660,7 +661,7 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
         lines = [old]
         w = lines.append
         for func in self.api.functions:
-            if func.name in NO_WRAPPER:
+            if func.name in JNI_NO_WRAPPER:
                 continue
 
             func_type = get_trace_wrapper_node(func).type

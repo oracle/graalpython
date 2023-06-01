@@ -328,6 +328,13 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject j
         return PTR_UP(NULL);
     }
 
+    /* The HPyTracker is backend-specific. For JNI, we stay in native since there is no benefit for
+       doing an upcall. */
+    ctx->ctx_Tracker_New = augment_Tracker_New;
+    ctx->ctx_Tracker_Add = augment_Tracker_Add;
+    ctx->ctx_Tracker_ForgetAll = augment_Tracker_ForgetAll;
+    ctx->ctx_Tracker_Close = augment_Tracker_Close;
+
     ctx->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
 
     ctx->ctx_TupleBuilder_New = ctx_TupleBuilder_New_jni;
