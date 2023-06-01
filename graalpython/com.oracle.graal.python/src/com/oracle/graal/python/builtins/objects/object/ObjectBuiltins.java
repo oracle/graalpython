@@ -28,10 +28,8 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
@@ -91,10 +89,9 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Get
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -561,16 +558,15 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends ObjectNodes.AbstractSetattrNode {
-        @Child WriteAttributeToObjectNode writeNode;
+    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
-        @Override
-        protected boolean writeAttribute(Object object, TruffleString key, Object value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.create());
-            }
-            return writeNode.execute(object, key, value);
+        @Specialization
+        Object set(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            return PNone.NONE;
         }
 
         @NeverDefault
@@ -835,25 +831,23 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
         static Object doit(VirtualFrame frame, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
-                        @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PyObjectGetAttr getAttr) {
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode,
+                        @Cached TypeNodes.GetItemSizeNode getItemSizeNode) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             long size = 0;
-            Object itemsize = lookupAttr.execute(frame, obj, T___ITEMSIZE__);
-            if (itemsize != PNone.NO_VALUE) {
-                Object clsItemsize = lookupAttr.execute(frame, cls, T___ITEMSIZE__);
+            long itemsize = getItemSizeNode.execute(inliningTarget, cls);
+            if (itemsize != 0) {
                 Object objLen = lookupAttr.execute(frame, obj, T___LEN__);
-                if (clsItemsize != PNone.NO_VALUE && objLen != PNone.NO_VALUE) {
-                    size = asLongNode.execute(frame, clsItemsize) * sizeNode.execute(frame, obj);
+                if (objLen != PNone.NO_VALUE) {
+                    size = sizeNode.execute(frame, obj) * itemsize;
                 }
             }
-            size += asLongNode.execute(frame, getAttr.execute(frame, cls, T___BASICSIZE__));
+            size += getBasicSizeNode.execute(inliningTarget, cls);
             return size;
         }
     }

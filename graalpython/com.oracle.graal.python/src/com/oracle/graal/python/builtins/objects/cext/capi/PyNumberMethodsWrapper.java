@@ -66,6 +66,10 @@ public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
+    public PythonManagedClass getWrappedClass() {
+        return (PythonManagedClass) getDelegate();
+    }
+
     @SuppressWarnings("static-method")
     @ExportMessage
     protected boolean hasMembers() {
@@ -91,7 +95,7 @@ public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            Object result = readSlotByNameNode.execute(this, member);
+            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
             if (result == null) {
                 throw UnknownIdentifierException.create(member);
             }

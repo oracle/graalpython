@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,19 +57,19 @@ public abstract class ReadSlotByNameNode extends Node {
         this.slots = group.slots;
     }
 
-    public abstract Object execute(PythonNativeWrapper wrapper, String member);
+    public abstract Object execute(PythonManagedClass type, String member);
 
     @Specialization(guards = {"cachedMember.equals(member)", "slot != null"}, limit = "slots.length")
-    Object cachedMember(PythonNativeWrapper wrapper, @SuppressWarnings("unused") String member,
+    Object cachedMember(PythonManagedClass type, @SuppressWarnings("unused") String member,
                     @SuppressWarnings("unused") @Cached("member") String cachedMember,
                     @SuppressWarnings("unused") @Cached("getSlot(cachedMember)") SlotMethodDef slot,
                     @Cached(parameters = "slot") LookupNativeSlotNode lookup) {
-        return lookup.execute(wrapper.getDelegate());
+        return lookup.execute(type);
     }
 
     @Specialization(guards = "getSlot(member) == null")
     @SuppressWarnings("unused")
-    Object miss(PythonNativeWrapper wrapper, String member) {
+    Object miss(PythonManagedClass type, String member) {
         return null;
     }
 
@@ -97,10 +98,10 @@ public abstract class ReadSlotByNameNode extends Node {
 
         @Override
         @TruffleBoundary
-        public Object execute(PythonNativeWrapper wrapper, String member) {
+        public Object execute(PythonManagedClass type, String member) {
             SlotMethodDef slot = getSlot(member);
             if (slot != null) {
-                return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), slot);
+                return LookupNativeSlotNode.executeUncached(type, slot);
             }
             return null;
         }

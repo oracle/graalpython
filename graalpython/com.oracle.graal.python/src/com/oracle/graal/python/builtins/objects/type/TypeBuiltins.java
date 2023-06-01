@@ -46,9 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNA
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
@@ -113,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -122,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -134,11 +130,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -158,17 +156,18 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
@@ -749,16 +748,30 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends AbstractSetattrNode {
-        @Child WriteAttributeToObjectNode writeNode;
+    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "!isImmutable(object)")
+        static Object set(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            return PNone.NONE;
+        }
 
-        @Override
-        protected boolean writeAttribute(Object object, TruffleString key, Object value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.createForceType());
+        @Specialization(guards = "isImmutable(object)")
+        @TruffleBoundary
+        Object setBuiltin(Object object, Object key, Object value) {
+            if (PythonContext.get(this).isInitialized()) {
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), object);
+            } else {
+                set(null, object, key, value, null, ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
+                return PNone.NONE;
             }
-            return writeNode.execute(object, key, value);
+        }
+
+        protected static boolean isImmutable(Object type) {
+            // TODO should also check Py_TPFLAGS_IMMUTABLETYPE
+            return type instanceof PythonBuiltinClass || type instanceof PythonBuiltinClassType;
         }
     }
 
@@ -1234,144 +1247,37 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    abstract static class DictoffsetNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        Object getDictoffsetType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            return getDictoffsetManaged(getCore().lookupType(cls), value, profile, getName);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getDictoffsetManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            // recursion anchor; since the metaclass of 'type' is 'type'
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                return getName.execute(cls, TYPE_DICTOFFSET);
-            }
-            return getName.execute(cls, T___DICTOFFSET__);
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setDictoffsetType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setDictoffsetBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setDictoffsetClass(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, T___DICTOFFSET__, value);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMember.TP_DICTOFFSET);
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+    @Builtin(name = J___DICTOFFSET__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class DictoffsetNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getDictoffsetType(Object cls,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetDictOffsetNode getDictOffsetNode) {
+            return getDictOffsetNode.execute(inliningTarget, cls);
         }
     }
 
-    @Builtin(name = J___ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    abstract static class ItemsizeNode extends AbstractSlotNode {
+    @Builtin(name = J___ITEMSIZE__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ItemsizeNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(value)")
-        static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getItemsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetItemsizeNode getItemsizeNode) {
-            return getItemsizeNode.execute(cls);
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setItemsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setItemsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isPythonBuiltinClass(cls)", "!isNoValue(value)"})
-        Object setItemsize(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, J___ITEMSIZE__, cls);
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        @Specialization
+        static long getItemsizeType(Object cls,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetItemSizeNode getItemsizeNode) {
+            return getItemsizeNode.execute(inliningTarget, cls);
         }
     }
 
-    @Builtin(name = J___BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    abstract static class BasicsizeNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        Object getBasicsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            return getBasicsizeManaged(getCore().lookupType(cls), value, profile, getName);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getBasicsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached ReadAttributeFromObjectNode getName) {
-            Object basicsize;
-            // recursion anchor; since the metaclass of 'type' is 'type'
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                basicsize = getName.execute(cls, TYPE_BASICSIZE);
-            } else {
-                basicsize = getName.execute(cls, T___BASICSIZE__);
-            }
-            return basicsize != PNone.NO_VALUE ? basicsize : 0;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setBasicsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setBasicsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setBasicsize(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, T___BASICSIZE__, value);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMember.TP_BASICSIZE);
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+    @Builtin(name = J___BASICSIZE__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class BasicsizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getBasicsizeType(Object cls,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
+            return getBasicSizeNode.execute(inliningTarget, cls);
         }
     }
 

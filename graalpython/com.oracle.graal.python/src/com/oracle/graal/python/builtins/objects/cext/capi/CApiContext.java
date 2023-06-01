@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1116,12 +1117,12 @@ public final class CApiContext extends CExtContext {
     private final WeakIdentityHashMap<PythonManagedClass, PyProcsWrapper[]> procWrappers = new WeakIdentityHashMap<>();
 
     @TruffleBoundary
-    public Object getOrCreateProcWrapper(PythonManagedClass owner, SlotMethodDef slot, Object callable) {
+    public Object getOrCreateProcWrapper(PythonManagedClass owner, SlotMethodDef slot, Supplier<PyProcsWrapper> supplier) {
         PyProcsWrapper[] slotWrappers = procWrappers.computeIfAbsent(owner, key -> new PyProcsWrapper[SlotMethodDef.values().length]);
         int idx = slot.ordinal();
         PyProcsWrapper wrapper = slotWrappers[idx];
         if (wrapper == null) {
-            wrapper = slot.wrapperFactory.apply(callable);
+            wrapper = supplier.get();
             slotWrappers[idx] = wrapper;
         }
         return wrapper;

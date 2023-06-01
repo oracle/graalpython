@@ -375,10 +375,15 @@ class TestPyObject(CPyExtTestCase):
         argspec="OOi",
         resultspec="i",
     )
-    
+
+    class TypeWithGetattr:
+        def __getattr__(self, item):
+            return item
+
     __PyObject_GetAttrString_ARGS = (
             (MyObject(), "foo"),
             ([], "__len__"),
+            (TypeWithGetattr(), "foo"),
         )
     test_PyObject_GetAttrString = CPyExtFunction(
         lambda args: getattr(*args),
@@ -442,6 +447,7 @@ class TestPyObject(CPyExtTestCase):
     __PyObject_GetAttr_ARGS = (
             (MyObject(), "foo"),
             ([], "__len__"),
+            (TypeWithGetattr(), "foo"),
         )
     test_PyObject_GetAttr = CPyExtFunction(
         lambda args: getattr(*args),

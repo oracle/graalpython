@@ -65,9 +65,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_NAME;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
@@ -166,7 +163,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -557,35 +553,23 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         static long doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___BASICSIZE__);
-            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : 0L;
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
+            return getBasicSizeNode.execute(inliningTarget, object);
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         static long doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___ITEMSIZE__);
-            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
-            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            if (val == PNone.NO_VALUE) {
-                return 0L;
-            }
-            return asSizeNode.executeExact(null, val);
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetItemSizeNode getItemSizeNode) {
+            return getItemSizeNode.execute(inliningTarget, object);
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         static long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            Object dictoffset = getAttrNode.execute(object, T___DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? asSizeNode.executeExact(null, dictoffset) : 0L;
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetDictOffsetNode getDictOffsetNode) {
+            return getDictOffsetNode.execute(inliningTarget, object);
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
@@ -650,7 +634,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         static Object doTpGetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookup) {
+                        @Cached LookupNativeSlotNode.LookupNativeGetattroSlotNode lookup) {
             return lookup.execute(object);
         }
 
@@ -1375,29 +1359,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return true;
             }
 
-            @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
-            static void doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
-                            @Cached WriteAttributeToObjectNode writeAttrNode,
-                            @Cached WriteAttributeToBuiltinTypeNode writeAttrToBuiltinNode,
-                            @Cached ConditionProfile isBuiltinProfile,
-                            @Cached IsBuiltinClassProfile profile) {
-                if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
-                    writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
-                } else if (isBuiltinProfile.profile(object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
-                    writeAttrToBuiltinNode.execute(object, T___BASICSIZE__, basicsize);
-                } else {
-                    writeAttrNode.execute(object, T___BASICSIZE__, basicsize);
-                }
+            @Specialization(guards = "eq(TP_BASICSIZE, key)")
+            static void doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
+                            @Bind("this") Node inliningTarget,
+                            @Cached TypeNodes.SetBasicSizeNode setBasicSizeNode) {
+                setBasicSizeNode.execute(inliningTarget, object, basicsize);
             }
 
-            @Specialization(guards = {"isPythonClass(object)", "eq(TP_ITEMSIZE, key)"})
-            static void doTpItemsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long itemsize,
-                            @Cached WriteAttributeToObjectNode writeAttrNode,
-                            @Cached ConditionProfile profile) {
-                if (!profile.profile(object instanceof PythonBuiltinClass)) {
-                    // not expected to happen ...
-                    writeAttrNode.execute(object, T___ITEMSIZE__, itemsize);
-                }
+            @Specialization(guards = "eq(TP_ITEMSIZE, key)")
+            static void doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long itemsize,
+                            @Bind("this") Node inliningTarget,
+                            @Cached TypeNodes.SetItemSizeNode setItemSizeNode) {
+                setItemSizeNode.execute(inliningTarget, object, itemsize);
             }
 
             @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
@@ -1520,17 +1493,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-            static void doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @Cached CastToJavaLongExactNode cast,
-                            @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
-                // TODO properly implement 'tp_dictoffset' for builtin classes
-                if (!(object instanceof PythonBuiltinClass)) {
-                    try {
-                        setAttrNode.execute(object, T___DICTOFFSET__, cast.execute(value));
-                    } catch (CannotCastException e) {
-                        throw CompilerDirectives.shouldNotReachHere("non-integer passed to tp_dictoffset assignment");
-                    }
-                }
+            static void doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value,
+                            @Bind("this") Node inliningTarget,
+                            @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode) {
+                setDictOffsetNode.execute(inliningTarget, object, value);
             }
 
             @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")

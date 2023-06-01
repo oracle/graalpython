@@ -66,6 +66,10 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
+    public PythonManagedClass getWrappedClass() {
+        return (PythonManagedClass) getDelegate();
+    }
+
     @ExportMessage
     protected boolean hasMembers() {
         return true;
@@ -88,7 +92,7 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            Object result = readSlotByNameNode.execute(this, member);
+            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
             if (result == null) {
                 throw UnknownIdentifierException.create(member);
             }

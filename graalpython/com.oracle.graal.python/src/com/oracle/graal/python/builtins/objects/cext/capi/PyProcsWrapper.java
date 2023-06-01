@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -75,6 +77,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -157,6 +160,59 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 }
                 try {
                     return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
+                return PythonContext.get(gil).getNativeNull().getPtr();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GetAttrCombinedWrapper extends PyProcsWrapper {
+
+        private final Object getattr;
+
+        public GetAttrCombinedWrapper(Object getattro, Object getattr) {
+            super(getattro);
+            this.getattr = getattr;
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallBinaryMethodNode executeNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile errorProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, 2, arguments.length);
+                }
+                try {
+                    Object object = toJavaNode.execute(arguments[0]);
+                    Object key = toJavaNode.execute(arguments[1]);
+                    try {
+                        return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), object, key));
+                    } catch (PException e) {
+                        e.expectAttributeError(inliningTarget, errorProfile);
+                    }
+                    return toNativeNode.execute(executeNode.executeObject(null, getattr, object, key));
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
                 }

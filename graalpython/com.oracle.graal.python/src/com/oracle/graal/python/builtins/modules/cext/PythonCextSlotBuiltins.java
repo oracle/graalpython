@@ -120,10 +120,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
@@ -141,7 +138,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -215,7 +211,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -241,13 +236,10 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -585,7 +577,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_ASS_SUBSCRIPT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_ASS_SUBSCRIPT);
         }
     }
 
@@ -594,7 +586,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_LENGTH);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_LENGTH);
         }
     }
 
@@ -603,7 +595,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyMappingMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_SUBSCRIPT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.MP_SUBSCRIPT);
         }
     }
 
@@ -612,7 +604,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_LENGTH);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_LENGTH);
         }
     }
 
@@ -820,7 +812,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ABSOLUTE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_ABSOLUTE);
         }
     }
 
@@ -829,7 +821,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ADD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_ADD);
         }
     }
 
@@ -838,7 +830,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_AND);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_AND);
         }
     }
 
@@ -847,7 +839,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_BOOL);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_BOOL);
         }
     }
 
@@ -856,7 +848,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_DIVMOD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_DIVMOD);
         }
     }
 
@@ -865,7 +857,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_FLOAT);
         }
     }
 
@@ -874,7 +866,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOOR_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_FLOOR_DIVIDE);
         }
     }
 
@@ -883,7 +875,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INDEX);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INDEX);
         }
     }
 
@@ -892,7 +884,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_ADD);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_ADD);
         }
     }
 
@@ -901,7 +893,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_AND);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_AND);
         }
     }
 
@@ -910,7 +902,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
         }
     }
 
@@ -919,7 +911,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_LSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_LSHIFT);
         }
     }
 
@@ -928,7 +920,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_MULTIPLY);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_MULTIPLY);
         }
     }
 
@@ -937,7 +929,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_OR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_OR);
         }
     }
 
@@ -946,7 +938,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_POWER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_POWER);
         }
     }
 
@@ -955,7 +947,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_REMAINDER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_REMAINDER);
         }
     }
 
@@ -964,7 +956,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_RSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_RSHIFT);
         }
     }
 
@@ -973,7 +965,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_SUBTRACT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_SUBTRACT);
         }
     }
 
@@ -982,7 +974,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
         }
     }
 
@@ -991,7 +983,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_XOR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INPLACE_XOR);
         }
     }
 
@@ -1000,7 +992,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INT);
         }
     }
 
@@ -1009,7 +1001,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INVERT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_INVERT);
         }
     }
 
@@ -1018,7 +1010,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_LSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_LSHIFT);
         }
     }
 
@@ -1027,7 +1019,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_MULTIPLY);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_MULTIPLY);
         }
     }
 
@@ -1036,7 +1028,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_NEGATIVE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_NEGATIVE);
         }
     }
 
@@ -1045,7 +1037,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_OR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_OR);
         }
     }
 
@@ -1054,7 +1046,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POSITIVE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_POSITIVE);
         }
     }
 
@@ -1063,7 +1055,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POWER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_POWER);
         }
     }
 
@@ -1072,7 +1064,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_REMAINDER);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_REMAINDER);
         }
     }
 
@@ -1081,7 +1073,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_RSHIFT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_RSHIFT);
         }
     }
 
@@ -1090,7 +1082,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_SUBTRACT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_SUBTRACT);
         }
     }
 
@@ -1099,7 +1091,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_TRUE_DIVIDE);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_TRUE_DIVIDE);
         }
     }
 
@@ -1108,7 +1100,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PyNumberMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_XOR);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.NB_XOR);
         }
     }
 
@@ -1138,7 +1130,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_CONCAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_CONCAT);
         }
     }
 
@@ -1147,7 +1139,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_ITEM);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_ITEM);
         }
     }
 
@@ -1156,7 +1148,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PySequenceMethodsWrapper wrapper) {
-            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_REPEAT);
+            return LookupNativeSlotNode.executeUncached(wrapper.getWrappedClass(), SlotMethodDef.SQ_REPEAT);
         }
     }
 
@@ -1304,11 +1296,10 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_basicsize extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___BASICSIZE__);
-            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : 0L;
+        static long get(PythonManagedClass object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetBasicSizeNode getBasicSizeNode) {
+            return getBasicSizeNode.execute(inliningTarget, object);
         }
     }
 
@@ -1316,7 +1307,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_call extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_CALL);
         }
     }
@@ -1373,14 +1364,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            Object dictoffset = getAttrNode.execute(object, T___DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? asSizeNode.executeExact(null, dictoffset) : 0L;
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetDictOffsetNode getDictOffsetNode) {
+            return getDictOffsetNode.execute(inliningTarget, object);
         }
     }
 
@@ -1390,9 +1376,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(PythonManagedClass object,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
+                        @Cached LookupAttributeInMRONode.Dynamic lookup) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            Object docObj = getAttrNode.execute(object, SpecialAttributeNames.T___DOC__);
+            Object docObj = lookup.execute(object, T___DOC__);
             if (docObj instanceof TruffleString) {
                 return new CStringWrapper((TruffleString) docObj);
             } else if (docObj instanceof PString) {
@@ -1430,8 +1416,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_getattro extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_GETATTRO);
+        Object get(PythonManagedClass object) {
+            return LookupNativeSlotNode.LookupNativeGetattroSlotNode.executeUncached(object);
         }
     }
 
@@ -1439,7 +1425,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_hash extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_HASH);
         }
     }
@@ -1448,7 +1434,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_init extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_INIT);
         }
     }
@@ -1458,15 +1444,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object get(PythonManagedClass object,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PInteropGetAttributeNode getAttrNode) {
-            Object val = getAttrNode.execute(object, T___ITEMSIZE__);
-            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
-            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            if (val == PNone.NO_VALUE) {
-                return 0L;
-            }
-            return asSizeNode.executeExact(null, val);
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.GetItemSizeNode getItemSizeNode) {
+            return getItemSizeNode.execute(inliningTarget, object);
         }
     }
 
@@ -1474,7 +1454,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iter extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITER);
         }
     }
@@ -1483,7 +1463,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iternext extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITERNEXT);
         }
     }
@@ -1534,7 +1514,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_repr extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_REPR);
         }
     }
@@ -1543,7 +1523,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_richcompare extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_RICHCOMPARE);
         }
     }
@@ -1552,7 +1532,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_setattro extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_SETATTRO);
         }
     }
@@ -1561,7 +1541,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_str extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_STR);
         }
     }
@@ -1580,7 +1560,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_get extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_GET);
         }
     }
@@ -1589,7 +1569,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_set extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
+        Object get(PythonManagedClass object) {
             return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_SET);
         }
     }
@@ -1742,20 +1722,11 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_basicsize extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "isPythonClass(object)")
-        static Object doTpBasicsize(Object object, long basicsize,
+        @Specialization
+        static Object doTpBasicsize(PythonManagedClass object, long basicsize,
                         @Bind("this") Node inliningTarget,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WriteAttributeToBuiltinTypeNode writeAttrToBuiltinNode,
-                        @Cached InlinedConditionProfile isBuiltinProfile,
-                        @Cached InlineIsBuiltinClassProfile profile) {
-            if (profile.profileClass(inliningTarget, object, PythonBuiltinClassType.PythonClass)) {
-                writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
-            } else if (isBuiltinProfile.profile(inliningTarget, object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
-                writeAttrToBuiltinNode.execute(object, T___BASICSIZE__, basicsize);
-            } else {
-                writeAttrNode.execute(object, T___BASICSIZE__, basicsize);
-            }
+                        @Cached TypeNodes.SetBasicSizeNode setBasicSizeNode) {
+            setBasicSizeNode.execute(inliningTarget, object, basicsize);
             return PNone.NO_VALUE;
         }
     }
@@ -1819,17 +1790,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpDictoffset(PythonManagedClass object, long value,
-                        @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (!(object instanceof PythonBuiltinClass)) {
-                try {
-                    setAttrNode.execute(object, T___DICTOFFSET__, value);
-                } catch (CannotCastException e) {
-                    throw CompilerDirectives.shouldNotReachHere("non-integer passed to tp_dictoffset assignment");
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.SetDictOffsetNode setDictOffsetNode) {
+            setDictOffsetNode.execute(inliningTarget, object, value);
             return PNone.NO_VALUE;
         }
 
@@ -1875,14 +1838,11 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_itemsize extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "isPythonClass(object)")
-        static Object doTpItemsize(Object object, long itemsize,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached ConditionProfile profile) {
-            if (!profile.profile(object instanceof PythonBuiltinClass)) {
-                // not expected to happen ...
-                writeAttrNode.execute(object, T___ITEMSIZE__, itemsize);
-            }
+        @Specialization
+        static Object doTpItemsize(PythonManagedClass object, long itemsize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.SetItemSizeNode setItemSizeNode) {
+            setItemSizeNode.execute(inliningTarget, object, itemsize);
             return PNone.NO_VALUE;
         }
     }
