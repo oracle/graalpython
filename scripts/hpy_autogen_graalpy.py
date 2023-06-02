@@ -192,6 +192,7 @@ class autogen_ctx_function_factory(AutoGenFilePart):
 
         lines = []
         w = lines.append
+        w(self.INDENT + '@NeverDefault');
         w(self.INDENT + 'public static GraalHPyContextFunction create(HPyContextMember member) {');
         w(self.INDENT + '    return switch (member) {')
         for cls_name, ctx_funcs in ctx_func_nodes.items():

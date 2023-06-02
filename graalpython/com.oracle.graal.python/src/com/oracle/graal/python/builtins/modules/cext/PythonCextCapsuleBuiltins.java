@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.GetInternalNativePointerNode;
@@ -99,11 +100,12 @@ public final class PythonCextCapsuleBuiltins {
     public abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         public static int doCapsule(PyCapsule o, TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             if (o.getPointer() == null) {
                 return 0;
             }
-            if (!nameMatchesNode.execute(name, o.getName())) {
+            if (!nameMatchesNode.execute(inliningTarget, name, o.getName())) {
                 return 0;
             }
             return 1;
@@ -123,7 +125,7 @@ public final class PythonCextCapsuleBuiltins {
             if (o.getPointer() == null) {
                 throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
             }
-            if (!nameMatchesNode.execute(name, o.getName())) {
+            if (!nameMatchesNode.execute(this, name, o.getName())) {
                 throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
             }
             return o.getPointer();
@@ -347,7 +349,7 @@ public final class PythonCextCapsuleBuiltins {
 
             /* compare attribute name to module.name by hand */
             PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
-            if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, name, nameMatchesNode) == 1) {
+            if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, name, this, nameMatchesNode) == 1) {
                 return capsule.getPointer();
             } else {
                 throw raise(AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
@@ -58,6 +59,7 @@ public abstract class GraalHPyJNIConvertArgNode extends Node {
 
     private static final GraalHPyJNIConvertArgUncachedNode UNCACHED = new GraalHPyJNIConvertArgUncachedNode();
 
+    @NeverDefault
     public static GraalHPyJNIConvertArgNode create(@SuppressWarnings("unused") LLVMType signature) {
         return new GraalHPyJNIConvertArgCachedNode();
     }

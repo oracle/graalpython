@@ -40,18 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.capsule;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 /**
  * Compares two names according to the semantics of PyCapsule's {@code name_matches} function (see C
@@ -71,8 +74,10 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
  * </pre>
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyCapsuleNameMatchesNode extends Node {
-    public abstract boolean execute(Object name1, Object name2);
+    public abstract boolean execute(Node inliningTarget, Object name1, Object name2);
 
     @Specialization(guards = "ignoredName2 == null")
     static boolean common(@SuppressWarnings("unused") PNone ignoredName1, @SuppressWarnings("unused") Object ignoredName2) {
@@ -81,7 +86,7 @@ public abstract class PyCapsuleNameMatchesNode extends Node {
 
     @Specialization
     static boolean ts(TruffleString n1, TruffleString n2,
-                    @Cached TruffleString.EqualNode equalNode) {
+                    @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
         if (n1 == null && n2 == null) {
             return true;
         }
@@ -93,9 +98,9 @@ public abstract class PyCapsuleNameMatchesNode extends Node {
 
     @Fallback
     static boolean fallback(Object name1, Object name2,
-                    @Cached CExtNodes.FromCharPointerNode fromCharPtr,
+                    @Cached(inline = false) CExtNodes.FromCharPointerNode fromCharPtr,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached TruffleString.EqualNode equalNode) {
+                    @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
         TruffleString n1 = name1 instanceof TruffleString ? (TruffleString) name1 : null;
         TruffleString n2 = name2 instanceof TruffleString ? (TruffleString) name2 : null;
         if (n1 == null) {

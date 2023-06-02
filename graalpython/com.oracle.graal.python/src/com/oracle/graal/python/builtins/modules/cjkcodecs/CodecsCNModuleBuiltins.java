@@ -133,7 +133,7 @@ public class CodecsCNModuleBuiltins extends PythonBuiltins {
             }
 
             PyCapsule codecobj = factory().createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
-            return createCodec(codecobj, nameMatchesNode, factory(), getRaiseNode());
+            return createCodec(this, codecobj, nameMatchesNode, factory(), getRaiseNode());
         }
     }
 

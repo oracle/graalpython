@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.Specialization;
  * currently just delegates to {@link PCallHPyFunction} but this may change in the future.
  */
 @GenerateUncached
+@GenerateInline(false)
 abstract class GraalHPyLLVMCallHelperFunctionNode extends HPyCallHelperFunctionNode {
 
     @Specialization

@@ -371,6 +371,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -413,6 +414,7 @@ public abstract class GraalHPyContextFunctions {
         public abstract Object execute(Object[] arguments);
 
         // {{start ctx func factory}}
+        @NeverDefault
         public static GraalHPyContextFunction create(HPyContextMember member) {
             return switch (member) {
                 case CTX_DUP -> GraalHPyDupNodeGen.create();
@@ -3406,6 +3408,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object capsule, int key, Object namePtr,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached PRaiseNode raiseNode) {
             isLegalCapsule(capsule, key, raiseNode);
@@ -3413,7 +3416,7 @@ public abstract class GraalHPyContextFunctions {
             Object result;
             switch (key) {
                 case CapsuleKey.Pointer -> {
-                    if (!nameMatchesNode.execute(pyCapsule.getName(), namePtr)) {
+                    if (!nameMatchesNode.execute(inliningTarget, pyCapsule.getName(), namePtr)) {
                         throw raiseNode.raise(ValueError, INCORRECT_NAME);
                     }
                     result = pyCapsule.getPointer();
@@ -3481,8 +3484,9 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyCapsuleIsValid extends HPyTernaryContextFunction {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object capsule, Object namePtr,
+                             @Bind("this") Node inliningTarget,
                              @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
-            return PInt.intValue(capsule instanceof PyCapsule pyCapsule && nameMatchesNode.execute(pyCapsule.getName(), namePtr));
+            return PInt.intValue(capsule instanceof PyCapsule pyCapsule && nameMatchesNode.execute(inliningTarget, pyCapsule.getName(), namePtr));
         }
     }
 

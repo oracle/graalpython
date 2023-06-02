@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multibytecodec")
@@ -129,14 +130,14 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object createCodec(PyCapsule arg,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
-            return createCodec(arg, nameMatchesNode, factory(), getRaiseNode());
+            return createCodec(this, arg, nameMatchesNode, factory(), getRaiseNode());
         }
 
-        static Object createCodec(PyCapsule arg,
+        static Object createCodec(Node inliningTarget, PyCapsule arg,
                         PyCapsuleNameMatchesNode nameMatchesNode,
                         PythonObjectFactory factory,
                         PRaiseNode raiseNode) {
-            if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, nameMatchesNode) == 0) {
+            if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, inliningTarget, nameMatchesNode) == 0) {
                 throw raiseNode.raise(ValueError, ARGUMENT_TYPE_INVALID);
             }
             MultibyteCodec codec;

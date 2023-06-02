@@ -84,7 +84,7 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
     @ExportMessage
     static final class Execute {
 
-        @Specialization(guards = "receiver.signature == cachedSignature")
+        @Specialization(guards = "receiver.signature == cachedSignature", limit = "1")
         static Object doCached(GraalHPyJNIFunctionPointer receiver, Object[] arguments,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached("receiver.signature") LLVMType cachedSignature,

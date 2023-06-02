@@ -727,15 +727,18 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @SuppressWarnings("truffle-inlining")
     abstract static class HPyExecuteContextFunction extends Node {
-        public abstract Object execute(HPyContextMember member, Object[] arguments) throws ArityException;
+        public abstract Object execute(Node inliningTarget, HPyContextMember member, Object[] arguments) throws ArityException;
 
-        @Specialization(guards = "member == cachedMember")
-        Object doCached(@SuppressWarnings("unused") HPyContextMember member, Object[] arguments,
+        @Specialization(guards = "member == cachedMember", limit = "1")
+        static Object doCached(Node inliningTarget, @SuppressWarnings("unused") HPyContextMember member, Object[] arguments,
                         @Cached("member") HPyContextMember cachedMember,
                         @Cached(parameters = "member") GraalHPyContextFunction contextFunctionNode,
-                        @Cached("createRetNode(member)") CExtToNativeNode retNode,
-                        @Cached("createArgNodes(member)") CExtAsPythonObjectNode[] argNodes,
+                        @Cached(value = "createRetNode(member)", neverDefault = false) CExtToNativeNode retNode,
+                        @Cached(value = "createArgNodes(member)", neverDefault = false) CExtAsPythonObjectNode[] argNodes,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, cachedMember.getSignature().parameterTypes().length);
             try {
@@ -757,14 +760,14 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
-                return getErrorValue(cachedMember.getSignature().returnType());
+                return getErrorValue(inliningTarget, cachedMember.getSignature().returnType());
             }
         }
 
         @Specialization(replaces = "doCached")
         @TruffleBoundary
-        Object doUncached(HPyContextMember member, Object[] arguments) throws ArityException {
-            return doCached(member, arguments, member, GraalHPyContextFunction.getUncached(member), getUncachedRetNode(member), getUncachedArgNodes(member),
+        static Object doUncached(Node inliningTarget, HPyContextMember member, Object[] arguments) throws ArityException {
+            return doCached(inliningTarget, member, arguments, member, GraalHPyContextFunction.getUncached(member), getUncachedRetNode(member), getUncachedArgNodes(member),
                             HPyTransformExceptionToNativeNodeGen.getUncached());
         }
 
@@ -782,13 +785,13 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             }
         }
 
-        private Object getErrorValue(HPyContextSignatureType type) {
+        private static Object getErrorValue(Node inliningTarget, HPyContextSignatureType type) {
             return switch (type) {
                 case Int, HPy_UCS4 -> -1;
                 case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
                 case CDouble -> -1.0;
                 case HPy -> GraalHPyHandle.NULL_HANDLE;
-                case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(this).getNativeNull().getPtr();
+                case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(inliningTarget).getNativeNull().getPtr();
                 case CVoid -> PNone.NO_VALUE;
                 default -> throw CompilerDirectives.shouldNotReachHere("unsupported return type");
             };
@@ -869,8 +872,9 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached HPyExecuteContextFunction call) throws ArityException {
-            return call.execute(member, arguments);
+            return call.execute(inliningTarget, member, arguments);
         }
     }
 

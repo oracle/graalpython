@@ -200,13 +200,15 @@ public class GraalHPyNodes {
 
     /**
      * A node interface for calling (native) helper functions. The implementation depends on the HPy
-     * backend. This is the reason why this node takes the HPy context as construction parameter. The recommended usage of this node is
+     * backend. This is the reason why this node takes the HPy context as construction parameter.
+     * The recommended usage of this node is
+     * 
      * <pre>
-     *     &#064;Specialization
-     *     Object doSomething(GraalHPyContext hpyContext,
-     *                        &#064;Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode) {
-     *         // ...
-     *     }
+     * &#064;Specialization
+     * Object doSomething(GraalHPyContext hpyContext,
+     *                 &#064;Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode) {
+     *     // ...
+     * }
      * </pre>
      */
     public abstract static class HPyCallHelperFunctionNode extends Node {
@@ -1518,10 +1520,11 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
             closeHandleNode.execute(dest[destOffset]);
-            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
+            closeArrayWrapperNode.execute(inliningTarget, (HPyArrayWrapper) dest[destOffset + 1]);
         }
     }
 
@@ -1562,11 +1565,12 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
             closeFirstHandleNode.execute(dest[destOffset]);
-            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
+            closeArrayWrapperNode.execute(inliningTarget, (HPyArrayWrapper) dest[destOffset + 1]);
             closeSecondHandleNode.execute(dest[destOffset + 3]);
         }
     }
