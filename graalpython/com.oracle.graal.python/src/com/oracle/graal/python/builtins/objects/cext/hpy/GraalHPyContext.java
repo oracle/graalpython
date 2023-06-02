@@ -1149,7 +1149,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
         backend.finalizeNativeContext();
         if (scheduler != null) {
-            scheduler.close();
+            scheduler.shutdown();
         }
     }
 
