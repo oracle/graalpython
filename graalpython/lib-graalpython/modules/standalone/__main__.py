@@ -64,6 +64,10 @@ assert sys.pycache_prefix is None
 JAVA_LAUNCHER = "Py2BinLauncher"
 JAVA_LAUNCHER_FILE = f"{JAVA_LAUNCHER}.java"
 
+CMD_NATIVE_EXECUTABLE = "native_executable"
+CMD_JAVA_BINDINGS = "java_bindings"
+CMD_JAVA_PYTHON_APP = "polyglot_java_python_app"
+ATTR_STANDALONE_CMD = "command"
 
 def get_tools():
     java_home = os.environ.get("GRAALVM_HOME", os.environ.get("JAVA_HOME", ""))
@@ -242,10 +246,10 @@ def main(args):
         "--keep-temp", action="store_true", help="Keep temporary files for debugging."
     )
 
-    subparsers = parser.add_subparsers(required=True)
+    subparsers = parser.add_subparsers(required=True, dest=ATTR_STANDALONE_CMD)
 
     parser_bin = subparsers.add_parser(
-        "binary", help="Create a standalone binary from the Python code directly."
+        CMD_NATIVE_EXECUTABLE, help="Create a standalone binary from the Python code directly."
     )
     parser_bin.add_argument(
         "-m", "--module", help="Python file or module folder to run", required=True
@@ -267,7 +271,7 @@ def main(args):
     )
 
     parser_jar = subparsers.add_parser(
-        "java",
+        CMD_JAVA_BINDINGS,
         help="Create a Java project from the Python code. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
     )
     parser_jar.add_argument(
@@ -281,58 +285,86 @@ def main(args):
         required=True,
     )
 
+    parser_app = subparsers.add_parser(
+        CMD_JAVA_PYTHON_APP,
+        help="Create a skeleton Java project. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
+    )
+    
+    parser_app.add_argument(
+        "-o",
+        "--output-directory",
+        help="The directory to write the Java project to.",
+        required=True,
+    )
+    
     parsed_args = parser.parse_args(args)
 
-    preparing_java_project = hasattr(parsed_args, "output_directory")
-    if preparing_java_project:
-        check_output_directory(parsed_args)
+    if(parsed_args.command == CMD_JAVA_PYTHON_APP):        
+        target_dir = parsed_args.output_directory
+        os.makedirs(target_dir, exist_ok=True)
+
+        shutil.copytree(os.path.join(os.path.dirname(__file__), "app/src"), os.path.join(target_dir, "src"))
+
+        vfs_home = os.path.join(target_dir, "src", "main", "resources", "vfs", "home")
+        os.makedirs(vfs_home, exist_ok=True)
+        shutil.copytree(__graalpython__.capi_home, os.path.join(vfs_home, "lib-graalpython"))
+        shutil.copytree(__graalpython__.stdlib_home, os.path.join(vfs_home, "lib-python", "3"))
+
+        shutil.copy(os.path.join(os.path.dirname(__file__), "app/native-image-resources.json"), target_dir )
+        shutil.copy(os.path.join(os.path.dirname(__file__), "app/pom.xml"), target_dir)
         
-    java_launcher_template = os.path.join(os.path.dirname(__file__), JAVA_LAUNCHER_FILE)
-    (
-        resource_zip,
-        vfs_prefix,
-        home_prefix,
-        venv_prefix,
-        proj_prefix,
-    ) = parse_path_constants(java_launcher_template)
+    else:    
+        preparing_java_binding = parsed_args.command == CMD_JAVA_BINDINGS
 
-    if preparing_java_project:
-        ni, jc = "", ""
-        resource_prefix = os.path.join("src", "main", "resources")
-        code_prefix = os.path.join("src", "main", "java")
-        targetdir = parsed_args.output_directory
-    else:
-        ni, jc = get_tools()
-        resource_prefix = ""
-        code_prefix = ""
-        targetdir = tempfile.mkdtemp()
+        if preparing_java_binding:
+            check_output_directory(parsed_args)
 
-    if parsed_args.verbose:
-        print(f"Creating target directory {targetdir}")
-    os.makedirs(targetdir, exist_ok=True)
-    try:
-        if parsed_args.verbose:
-            print("Bundling Python resources")
-        bundle_python_resources(
-            os.path.join(targetdir, resource_prefix, resource_zip),
+        java_launcher_template = os.path.join(os.path.dirname(__file__), JAVA_LAUNCHER_FILE)
+        (
+            resource_zip,
             vfs_prefix,
             home_prefix,
             venv_prefix,
             proj_prefix,
-            parsed_args.module,
-            parsed_args.venv,
-        )
+        ) = parse_path_constants(java_launcher_template)
 
-        java_file = os.path.join(targetdir, code_prefix, JAVA_LAUNCHER_FILE)
-        os.makedirs(os.path.dirname(java_file), exist_ok=True)
-        shutil.copy(java_launcher_template, java_file)
-        shutil.copy(os.path.join(os.path.dirname(__file__), "pom.xml"), targetdir)
+        if preparing_java_binding:
+            ni, jc = "", ""
+            resource_prefix = os.path.join("src", "main", "resources")
+            code_prefix = os.path.join("src", "main", "java")
+            targetdir = parsed_args.output_directory
+        else:
+            ni, jc = get_tools()
+            resource_prefix = ""
+            code_prefix = ""
+            targetdir = tempfile.mkdtemp()
 
-        if not preparing_java_project:
-            build_binary(targetdir, jc, java_file, ni, parsed_args)
-    finally:
-        if not preparing_java_project and not parsed_args.keep_temp:
-            shutil.rmtree(targetdir)
+        if parsed_args.verbose:
+            print(f"Creating target directory {targetdir}")
+        os.makedirs(targetdir, exist_ok=True)
+        try:
+            if parsed_args.verbose:
+                print("Bundling Python resources")
+            bundle_python_resources(
+                os.path.join(targetdir, resource_prefix, resource_zip),
+                vfs_prefix,
+                home_prefix,
+                venv_prefix,
+                proj_prefix,
+                parsed_args.module,
+                parsed_args.venv,
+            )
+
+            java_file = os.path.join(targetdir, code_prefix, JAVA_LAUNCHER_FILE)
+            os.makedirs(os.path.dirname(java_file), exist_ok=True)
+            shutil.copy(java_launcher_template, java_file)
+            shutil.copy(os.path.join(os.path.dirname(__file__), "pom.xml"), targetdir)
+
+            if not preparing_java_binding:
+                build_binary(targetdir, jc, java_file, ni, parsed_args)
+        finally:
+            if not preparing_java_binding and not parsed_args.keep_temp:
+                shutil.rmtree(targetdir)
 
 
 if __name__ == "__main__":

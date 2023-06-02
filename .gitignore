@@ -24,6 +24,7 @@ mx.graalpython/eclipse-launches
 asv
 *.json
 !**/resources/*.json
+!graalpython/lib-graalpython/modules/standalone/app/native-image-resources.json
 language
 *.bc
 *.iml
