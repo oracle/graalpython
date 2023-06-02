@@ -285,6 +285,11 @@ public class AsyncHandler {
         public boolean isInternal() {
             return true;
         }
+
+        @Override
+        public boolean setsUpCalleeContext() {
+            return true;
+        }
     }
 
     private final RootCallTarget callTarget;

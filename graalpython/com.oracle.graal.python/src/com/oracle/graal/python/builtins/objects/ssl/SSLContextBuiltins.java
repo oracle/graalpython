@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -177,7 +177,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
                 }
                 PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext());
-                long options = SSLOptions.DEFAULT_OPTIONS;
+                long options = SSLOptions.SSL_OP_ALL;
                 if (method != SSLMethod.SSL3) {
                     options |= SSLOptions.SSL_OP_NO_SSLv3;
                 }

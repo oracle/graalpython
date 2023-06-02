@@ -300,6 +300,33 @@ public final class PosixConstants {
     public static final OptionalIntConstant TCP_CONGESTION;
     public static final OptionalIntConstant TCP_USER_TIMEOUT;
     public static final OptionalIntConstant TCP_NOTSENT_LOWAT;
+    public static final OptionalIntConstant IPV6_JOIN_GROUP;
+    public static final OptionalIntConstant IPV6_LEAVE_GROUP;
+    public static final OptionalIntConstant IPV6_MULTICAST_HOPS;
+    public static final OptionalIntConstant IPV6_MULTICAST_IF;
+    public static final OptionalIntConstant IPV6_MULTICAST_LOOP;
+    public static final OptionalIntConstant IPV6_UNICAST_HOPS;
+    public static final OptionalIntConstant IPV6_V6ONLY;
+    public static final OptionalIntConstant IPV6_CHECKSUM;
+    public static final OptionalIntConstant IPV6_DONTFRAG;
+    public static final OptionalIntConstant IPV6_DSTOPTS;
+    public static final OptionalIntConstant IPV6_HOPLIMIT;
+    public static final OptionalIntConstant IPV6_HOPOPTS;
+    public static final OptionalIntConstant IPV6_NEXTHOP;
+    public static final OptionalIntConstant IPV6_PATHMTU;
+    public static final OptionalIntConstant IPV6_PKTINFO;
+    public static final OptionalIntConstant IPV6_RECVDSTOPTS;
+    public static final OptionalIntConstant IPV6_RECVHOPLIMIT;
+    public static final OptionalIntConstant IPV6_RECVHOPOPTS;
+    public static final OptionalIntConstant IPV6_RECVPKTINFO;
+    public static final OptionalIntConstant IPV6_RECVRTHDR;
+    public static final OptionalIntConstant IPV6_RECVTCLASS;
+    public static final OptionalIntConstant IPV6_RTHDR;
+    public static final OptionalIntConstant IPV6_RTHDRDSTOPTS;
+    public static final OptionalIntConstant IPV6_RTHDR_TYPE_0;
+    public static final OptionalIntConstant IPV6_RECVPATHMTU;
+    public static final OptionalIntConstant IPV6_TCLASS;
+    public static final OptionalIntConstant IPV6_USE_MIN_MTU;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_STORAGE;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
@@ -337,6 +364,7 @@ public final class PosixConstants {
     public static final IntConstant[] shutdownHow;
     public static final IntConstant[] socketOptions;
     public static final IntConstant[] tcpOptions;
+    public static final IntConstant[] ipv6Options;
 
     static {
         Registry reg = Registry.create();
@@ -564,6 +592,33 @@ public final class PosixConstants {
         TCP_CONGESTION = reg.createOptionalInt("TCP_CONGESTION");
         TCP_USER_TIMEOUT = reg.createOptionalInt("TCP_USER_TIMEOUT");
         TCP_NOTSENT_LOWAT = reg.createOptionalInt("TCP_NOTSENT_LOWAT");
+        IPV6_JOIN_GROUP = reg.createOptionalInt("IPV6_JOIN_GROUP");
+        IPV6_LEAVE_GROUP = reg.createOptionalInt("IPV6_LEAVE_GROUP");
+        IPV6_MULTICAST_HOPS = reg.createOptionalInt("IPV6_MULTICAST_HOPS");
+        IPV6_MULTICAST_IF = reg.createOptionalInt("IPV6_MULTICAST_IF");
+        IPV6_MULTICAST_LOOP = reg.createOptionalInt("IPV6_MULTICAST_LOOP");
+        IPV6_UNICAST_HOPS = reg.createOptionalInt("IPV6_UNICAST_HOPS");
+        IPV6_V6ONLY = reg.createOptionalInt("IPV6_V6ONLY");
+        IPV6_CHECKSUM = reg.createOptionalInt("IPV6_CHECKSUM");
+        IPV6_DONTFRAG = reg.createOptionalInt("IPV6_DONTFRAG");
+        IPV6_DSTOPTS = reg.createOptionalInt("IPV6_DSTOPTS");
+        IPV6_HOPLIMIT = reg.createOptionalInt("IPV6_HOPLIMIT");
+        IPV6_HOPOPTS = reg.createOptionalInt("IPV6_HOPOPTS");
+        IPV6_NEXTHOP = reg.createOptionalInt("IPV6_NEXTHOP");
+        IPV6_PATHMTU = reg.createOptionalInt("IPV6_PATHMTU");
+        IPV6_PKTINFO = reg.createOptionalInt("IPV6_PKTINFO");
+        IPV6_RECVDSTOPTS = reg.createOptionalInt("IPV6_RECVDSTOPTS");
+        IPV6_RECVHOPLIMIT = reg.createOptionalInt("IPV6_RECVHOPLIMIT");
+        IPV6_RECVHOPOPTS = reg.createOptionalInt("IPV6_RECVHOPOPTS");
+        IPV6_RECVPKTINFO = reg.createOptionalInt("IPV6_RECVPKTINFO");
+        IPV6_RECVRTHDR = reg.createOptionalInt("IPV6_RECVRTHDR");
+        IPV6_RECVTCLASS = reg.createOptionalInt("IPV6_RECVTCLASS");
+        IPV6_RTHDR = reg.createOptionalInt("IPV6_RTHDR");
+        IPV6_RTHDRDSTOPTS = reg.createOptionalInt("IPV6_RTHDRDSTOPTS");
+        IPV6_RTHDR_TYPE_0 = reg.createOptionalInt("IPV6_RTHDR_TYPE_0");
+        IPV6_RECVPATHMTU = reg.createOptionalInt("IPV6_RECVPATHMTU");
+        IPV6_TCLASS = reg.createOptionalInt("IPV6_TCLASS");
+        IPV6_USE_MIN_MTU = reg.createOptionalInt("IPV6_USE_MIN_MTU");
         SIZEOF_STRUCT_SOCKADDR_STORAGE = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_STORAGE");
         SIZEOF_STRUCT_SOCKADDR_IN = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN");
         OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY");
@@ -608,6 +663,9 @@ public final class PosixConstants {
                         SO_PRIORITY, SO_MARK, SO_DOMAIN, SO_PROTOCOL};
         tcpOptions = new IntConstant[]{TCP_NODELAY, TCP_MAXSEG, TCP_CORK, TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT, TCP_SYNCNT, TCP_LINGER2, TCP_DEFER_ACCEPT, TCP_WINDOW_CLAMP, TCP_INFO, TCP_QUICKACK,
                         TCP_FASTOPEN, TCP_CONGESTION, TCP_USER_TIMEOUT, TCP_NOTSENT_LOWAT};
+        ipv6Options = new IntConstant[]{IPV6_JOIN_GROUP, IPV6_LEAVE_GROUP, IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_UNICAST_HOPS, IPV6_V6ONLY, IPV6_CHECKSUM, IPV6_DONTFRAG,
+                        IPV6_DSTOPTS, IPV6_HOPLIMIT, IPV6_HOPOPTS, IPV6_NEXTHOP, IPV6_PATHMTU, IPV6_PKTINFO, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS, IPV6_RECVPKTINFO, IPV6_RECVRTHDR,
+                        IPV6_RECVTCLASS, IPV6_RTHDR, IPV6_RTHDRDSTOPTS, IPV6_RTHDR_TYPE_0, IPV6_RECVPATHMTU, IPV6_TCLASS, IPV6_USE_MIN_MTU};
     }
     // end generated by gen_native_cfg.py
     // @formatter:on

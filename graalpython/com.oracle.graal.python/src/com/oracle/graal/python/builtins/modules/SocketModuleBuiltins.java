@@ -182,6 +182,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.tcpOptions);
         addConstants(PosixConstants.shutdownHow);
         addConstants(PosixConstants.ip4Address);
+        addConstants(PosixConstants.ipv6Options);
     }
 
     @Override

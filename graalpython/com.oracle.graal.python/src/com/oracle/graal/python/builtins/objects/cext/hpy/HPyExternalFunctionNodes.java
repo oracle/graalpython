@@ -552,6 +552,11 @@ public abstract class HPyExternalFunctionNodes {
         public boolean isPythonInternal() {
             return true;
         }
+
+        @Override
+        public boolean setsUpCalleeContext() {
+            return true;
+        }
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
@@ -1312,6 +1317,11 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         public boolean isInternal() {
+            return true;
+        }
+
+        @Override
+        public boolean setsUpCalleeContext() {
             return true;
         }
     }

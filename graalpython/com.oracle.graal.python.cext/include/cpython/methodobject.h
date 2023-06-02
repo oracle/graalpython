@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,3 +32,10 @@ typedef struct {
     PyCFunctionObject func;
     PyTypeObject *mm_class; /* Class that defines this method */
 } PyCMethodObject;
+
+/*
+ * XXX These functions are GraalPy-only. We need them to replace field access in our patches.
+ * Currently used by (at least) cffi patch.
+ */
+PyAPI_FUNC(PyObject*) _PyCFunction_GetModule(PyObject* a);
+PyAPI_FUNC(PyMethodDef*) _PyCFunction_GetMethodDef(PyObject* a);
