@@ -1982,6 +1982,12 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 ))
 
 
+standalone_dependencies_common = {
+    'LLVM Runtime Core': ('lib/sulong', []),
+    'LLVM Runtime Native': ('lib/sulong', []),
+    'LLVM.org toolchain': ('lib/llvm-toolchain', []),
+}
+
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
@@ -1999,12 +2005,15 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'TRegex',
         'ICU4J',
     ],
-    standalone_dependencies={
-        'LLVM Runtime Core': ('lib/sulong', []),
-        'LLVM Runtime Native': ('lib/sulong', []),
-        'LLVM.org toolchain': ('lib/llvm-toolchain', []),
+    standalone_dependencies={**standalone_dependencies_common, **{
         'GraalVM Python license files': ('', []),
-    },
+    }},
+    standalone_dependencies_enterprise={**standalone_dependencies_common, **{
+        'LLVM Runtime Enterprise': ('lib/sulong', []),
+        'LLVM Runtime Native Enterprise': ('lib/sulong', []),
+        'GraalVM Python license files EE': ('', []),
+        'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
+    }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
         'graalpython:BOUNCYCASTLE-PROVIDER',
