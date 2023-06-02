@@ -138,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDivmodNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDumpNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDupNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrClearNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrExceptionMatchesNodeGen;
@@ -537,11 +538,12 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.create();
                 case CTX_SEQUENCE_CHECK -> GraalHPyIsSequenceNodeGen.create();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.create();
+                case CTX_DUMP -> GraalHPyDumpNodeGen.create();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.create();
-                case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.create();
+                case CTX_TYPECHECK, CTX_TYPECHECK_G -> GraalHPyTypeCheckNodeGen.create();
                 case CTX_ERR_NEWEXCEPTIONWITHDOC -> GraalHPyNewExceptionWithDocNodeGen.create();
                 case CTX_ERR_NEWEXCEPTION -> GraalHPyNewExceptionNodeGen.create();
-                case CTX_IS -> GraalHPyIsNodeGen.create();
+                case CTX_IS, CTX_IS_G -> GraalHPyIsNodeGen.create();
                 case CTX_IMPORT_IMPORTMODULE -> GraalHPyImportModuleNodeGen.create();
                 case CTX_FIELD_STORE -> GraalHPyFieldStoreNodeGen.create();
                 case CTX_FIELD_LOAD -> GraalHPyFieldLoadNodeGen.create();
@@ -696,11 +698,12 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.getUncached();
                 case CTX_SEQUENCE_CHECK -> GraalHPyIsSequenceNodeGen.getUncached();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.getUncached();
+                case CTX_DUMP -> GraalHPyDumpNodeGen.getUncached();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.getUncached();
-                case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.getUncached();
+                case CTX_TYPECHECK, CTX_TYPECHECK_G -> GraalHPyTypeCheckNodeGen.getUncached();
                 case CTX_ERR_NEWEXCEPTIONWITHDOC -> GraalHPyNewExceptionWithDocNodeGen.getUncached();
                 case CTX_ERR_NEWEXCEPTION -> GraalHPyNewExceptionNodeGen.getUncached();
-                case CTX_IS -> GraalHPyIsNodeGen.getUncached();
+                case CTX_IS, CTX_IS_G -> GraalHPyIsNodeGen.getUncached();
                 case CTX_IMPORT_IMPORTMODULE -> GraalHPyImportModuleNodeGen.getUncached();
                 case CTX_FIELD_STORE -> GraalHPyFieldStoreNodeGen.getUncached();
                 case CTX_FIELD_LOAD -> GraalHPyFieldLoadNodeGen.getUncached();
@@ -2909,6 +2912,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Dump")
     @GenerateUncached
     public abstract static class GraalHPyDump extends HPyBinaryContextFunction {
 
@@ -2947,6 +2951,7 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @HPyContextFunction("ctx_TypeCheck")
+    @HPyContextFunction("ctx_TypeCheck_g")
     @GenerateUncached
     public abstract static class GraalHPyTypeCheck extends HPyTernaryContextFunction {
 
@@ -3065,6 +3070,7 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @HPyContextFunction("ctx_Is")
+    @HPyContextFunction("ctx_Is_g")
     @GenerateUncached
     public abstract static class GraalHPyIs extends HPyTernaryContextFunction {
 

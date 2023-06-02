@@ -777,7 +777,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return typeCheck(bits, type);
     }
 
-    public int ctxTypeCheckG(long bits, long typeGlobalBits) {
+    public int ctxTypeCheckg(long bits, long typeGlobalBits) {
         increment(HPyJNIUpcall.HPyTypeCheck);
         Object type = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(typeGlobalBits));
         return typeCheck(bits, type);
@@ -978,7 +978,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    public int ctxIsG(long aBits, long bBits) {
+    public int ctxIsg(long aBits, long bBits) {
         Object a = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
         Object b = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bBits));
         try {
@@ -1809,11 +1809,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeIntContextFunction(HPyContextMember.CTX_CONTAINS, new long[]{container, key});
     }
 
-    public int ctxTypeCheckg(long obj, long type) {
-        increment(HPyJNIUpcall.HPyTypeCheckg);
-        return executeIntContextFunction(HPyContextMember.CTX_TYPECHECK_G, new long[]{obj, type});
-    }
-
     public int ctxSetType(long obj, long type) {
         increment(HPyJNIUpcall.HPySetType);
         return executeIntContextFunction(HPyContextMember.CTX_SETTYPE, new long[]{obj, type});
@@ -1822,11 +1817,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public int ctxTypeIsSubtype(long sub, long type) {
         increment(HPyJNIUpcall.HPyTypeIsSubtype);
         return executeIntContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE, new long[]{sub, type});
-    }
-
-    public int ctxIsg(long obj, long other) {
-        increment(HPyJNIUpcall.HPyIsg);
-        return executeIntContextFunction(HPyContextMember.CTX_IS_G, new long[]{obj, other});
     }
 
     public long ctxAsStructLegacy(long h) {
