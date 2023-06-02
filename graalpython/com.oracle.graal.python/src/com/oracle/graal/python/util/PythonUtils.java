@@ -106,19 +106,15 @@ import sun.misc.Unsafe;
 
 public final class PythonUtils {
 
-    public static final ByteArraySupport arrayAccessor;
+    public static final ByteArraySupport ARRAY_ACCESSOR_LE = ByteArraySupport.littleEndian();
+    public static final ByteArraySupport ARRAY_ACCESSOR_BE = ByteArraySupport.bigEndian();
+    public static final ByteArraySupport ARRAY_ACCESSOR = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ARRAY_ACCESSOR_LE : ARRAY_ACCESSOR_BE;
+    public static final ByteArraySupport ARRAY_ACCESSOR_SWAPPED = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ARRAY_ACCESSOR_BE : ARRAY_ACCESSOR_LE;
+
     public static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
 
-    static {
-        if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
-            arrayAccessor = ByteArraySupport.bigEndian();
-        } else {
-            arrayAccessor = ByteArraySupport.littleEndian();
-        }
-    }
-
     public static ByteArraySupport byteArraySupport(ByteOrder order) {
-        return order == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.littleEndian() : ByteArraySupport.bigEndian();
+        return order == ByteOrder.LITTLE_ENDIAN ? ARRAY_ACCESSOR_LE : ARRAY_ACCESSOR_BE;
     }
 
     private PythonUtils() {
@@ -236,6 +232,19 @@ public final class PythonUtils {
     @TruffleBoundary
     public static TruffleString getMessage(Exception ex) {
         return toTruffleStringUncached(ex.getMessage());
+    }
+
+    /**
+     * Execute Arrays.fill and puts all exceptions on slow path.
+     */
+    public static void fill(byte[] array, int from, int to, byte value) {
+        try {
+            Arrays.fill(array, from, to, value);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
     }
 
     /**

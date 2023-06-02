@@ -2684,6 +2684,12 @@ public final class IntBuiltins extends PythonBuiltins {
         static boolean toBoolean(PInt self) {
             return !self.isZero();
         }
+
+        @Specialization
+        static boolean toBoolean(PythonNativeVoidPtr self,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            return !lib.isNull(self.getPointerObject());
+        }
     }
 
     @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)

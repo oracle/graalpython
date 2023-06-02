@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
@@ -47,7 +48,11 @@ public final class PyCArgObject extends PythonBuiltinObject {
 
     FFIType pffi_type;
     char tag;
-    PtrValue value;
+    /*
+     * In CPython, the struct directly contains the value as an union. We use a pointer to a value,
+     * thus there is one more pointer indirection.
+     */
+    Pointer valuePointer;
     Object obj;
     int size;
 
@@ -56,7 +61,6 @@ public final class PyCArgObject extends PythonBuiltinObject {
         pffi_type = null;
         tag = '\0';
         obj = null;
-        value = PtrValue.nil();
+        valuePointer = Pointer.NULL;
     }
-
 }

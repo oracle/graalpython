@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGER;
@@ -87,12 +86,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCArray)
@@ -108,9 +109,11 @@ public class PyCArrayBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode newNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-            return GenericPyCDataNew(dict, factory().createCDataObject(type));
+            return newNode.execute(inliningTarget, type, dict);
         }
     }
 
@@ -146,7 +149,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
             // self.b_ptr.createStorage(stgdict.ffi_type_pointer, stgdict.size, value);
             int offset = index * size;
 
-            pyCDataSetNode.execute(frame, self, stgdict.proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset));
+            pyCDataSetNode.execute(frame, self, stgdict.proto, stgdict.setfunc, value, index, size, self.b_ptr.withOffset(offset));
             return PNone.NONE;
         }
 
@@ -219,13 +222,10 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for array object instances";
-            /*
-             * Would it be clearer if we got the item size from stgdict.proto's stgdict?
-             */
             int size = stgdict.size / stgdict.length;
             int offset = index * size;
 
-            return pyCDataGetNode.execute(stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset));
+            return pyCDataGetNode.execute(stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.withOffset(offset));
         }
 
         @Specialization(limit = "1")

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
@@ -1371,12 +1372,14 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new StructParamObject(clazz, getShape(clazz)));
     }
 
-    public final CDataObject createCDataObject(Object clazz) {
-        return trace(new CDataObject(clazz, getShape(clazz)));
+    // Don't use directly, use CtypesNodes.CreateCDataObjectNode
+    public final CDataObject createCDataObject(Object clazz, Pointer b_ptr, int b_size, boolean b_needsfree) {
+        return trace(new CDataObject(clazz, getShape(clazz), b_ptr, b_size, b_needsfree));
     }
 
-    public final PyCFuncPtrObject createPyCFuncPtrObject(Object clazz) {
-        return trace(new PyCFuncPtrObject(clazz, getShape(clazz)));
+    // Don't use directly, use CtypesNodes.CreateCDataObjectNode
+    public final PyCFuncPtrObject createPyCFuncPtrObject(Object clazz, Pointer b_ptr, int b_size, boolean b_needsfree) {
+        return trace(new PyCFuncPtrObject(clazz, getShape(clazz), b_ptr, b_size, b_needsfree));
     }
 
     public final CFieldObject createCFieldObject(Object clazz) {

@@ -50,13 +50,14 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -138,7 +140,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached CallNode callNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
-                        @Cached GetBytesFromNativePointerNode getNativeBytes,
+                        @Cached PointerNodes.MemcpyNode memcpyNode,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             Object[] converters = thunk.converters;
             int nArgs = converters.length;
@@ -150,35 +152,25 @@ public final class CThunkObject extends PythonBuiltinObject {
             try {
                 Object[] arglist = new Object[nArgs];
                 for (int i = 0; i < nArgs; ++i) {
+                    Object arg = pArgs[i];
+                    if (lib.isPointer(arg)) {
+                        try {
+                            arg = lib.asPointer(arg);
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
+                    FFIType argType = thunk.atypes[i];
+                    Pointer value = Pointer.create(argType, argType.size, arg, 0);
                     StgDictObject dict = pyTypeStgDictNode.execute(converters[i]);
                     if (dict != null &&
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
-                        FFIType type = dict.ffi_type_pointer;
-                        PtrValue ptr = PtrValue.nil();
-                        ptr.createStorage(type, type.size, pArgs[i]);
-                        if (type.type.isArray()) {
-                            if (lib.isPointer(pArgs[i])) {
-                                byte[] bytes = getNativeBytes.execute(pArgs[i], -1);
-                                ptr.toBytes(type, bytes);
-                            }
-                        }
-                        arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
-                        /*
-                         * XXX XXX XX We have the problem that c_byte or c_short have dict->size of
-                         * 1 resp. 4, but these parameters are pushed as sizeof(int) bytes. BTW, the
-                         * same problem occurs when they are pushed as parameters
-                         */
+                        arglist[i] = getFuncNode.execute(dict.getfunc, value, dict.size);
                     } else if (dict != null) {
-                        /*
-                         * Hm, shouldn't we use PyCData_AtAddress() or something like that instead?
-                         */
-                        assert lib.isPointer(pArgs[i]);
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        // memcpy(obj.b_ptr, pArgs[i], dict.size);
-                        obj.b_ptr.toNativePointer(pArgs[i], thunk.atypes[i].type);
+                        memcpyNode.execute(inliningTarget, obj.b_ptr, value, dict.size);
                         arglist[i] = obj;
-                        // arglist[i] = pArgs[i];
                     } else {
                         throw raiseNode.raise(TypeError, CANNOT_BUILD_PARAMETER);
                         // PrintError("Parsing argument %zd\n", i);
@@ -205,7 +197,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                      */
                     Object keep = PNone.NONE;
                     try {
-                        PtrValue mem = PtrValue.allocate(restype, restype.size);
+                        Pointer mem = Pointer.allocate(restype, restype.size);
                         keep = setFuncNode.execute(null, setfunc, mem, result, 0);
                     } catch (PException e) {
                         /* Could not convert callback result. */

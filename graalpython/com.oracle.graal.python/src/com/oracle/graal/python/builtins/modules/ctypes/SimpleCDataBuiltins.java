@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
@@ -61,9 +60,9 @@ import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNod
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -107,7 +106,6 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         assert dict.setfunc != FieldSet.nil;
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
-        /* consumes the refcount the setfunc returns */
         keepRefNode.execute(frame, self, 0, result);
     }
 
@@ -116,9 +114,11 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-            return GenericPyCDataNew(dict, factory().createCDataObject(type));
+            return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
 
@@ -190,19 +190,17 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        static boolean Simple_bool(CDataObject self) {
-            if (self.b_ptr.ptr == null) {
+        static boolean Simple_bool(CDataObject self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.ReadBytesNode read) {
+            if (self.b_ptr.isNull()) {
                 return false;
             }
-            // return memcmp(self.b_ptr, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", self.b_size);
-            if (self.b_ptr.ptr instanceof ByteArrayStorage) {
-                byte[] bytes = ((ByteArrayStorage) self.b_ptr.ptr).value;
-                for (int i = 0; i < self.b_size; i++) {
-                    if (bytes[i] != 0) {
-                        return false;
-                    }
+            byte[] bytes = read.execute(inliningTarget, self.b_ptr, self.b_size);
+            for (byte b : bytes) {
+                if (b != 0) {
+                    return true;
                 }
-                return true;
             }
             return false;
         }

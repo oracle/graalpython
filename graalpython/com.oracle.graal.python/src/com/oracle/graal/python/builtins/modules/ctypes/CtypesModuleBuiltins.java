@@ -44,10 +44,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArgError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
-import static com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins.paramFunc;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
-import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins.PyCFuncPtrFromDllNode.strchr;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
@@ -55,7 +54,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTED_CTYPES_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FFI_CALL_FAILED;
@@ -87,8 +85,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
 
 import java.io.IOException;
 import java.util.List;
@@ -102,24 +98,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -132,11 +125,9 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -151,6 +142,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -163,7 +155,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -173,6 +164,7 @@ import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -184,12 +176,15 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.UnsupportedSpecializationException;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -206,7 +201,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -240,8 +234,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final int TYPEFLAG_HASPOINTER = 0x200;
     protected static final int TYPEFLAG_HASUNION = 0x400;
     protected static final int TYPEFLAG_HASBITFIELD = 0x800;
-
-    protected static final int DICTFLAG_FINAL = 0x1000;
 
     @Override
     public void initialize(Python3Core core) {
@@ -352,6 +344,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object function;
         TruffleString signature;
         FFIType[] atypes;
+        FFIType rtype;
 
         final boolean isManaged;
 
@@ -629,29 +622,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (size < dict.size) {
                 throw raise(ValueError, MINIMUM_SIZE_IS_D, dict.size);
             }
-            if (obj.b_needsfree == 0) {
+            if (obj.b_needsfree) {
                 throw raise(ValueError, MEMORY_CANNOT_BE_RESIZED_BECAUSE_THIS_OBJECT_DOESN_T_OWN_IT);
             }
-            /*- TODO
-            if (size <= sizeof(obj.b_value)) {
-                // internal default buffer is large enough
-                obj.b_size = size;
-                return PNone.NONE;
-            }
-            Object ptr;
-            if (!_CDataObject_HasExternalBuffer(obj)) {
-                /*
-                 * We are currently using the objects default buffer, but it isn't large enough any
-                 * more.
-                 * /
-                ptr = PyMem_Malloc(size);
-                memset(ptr, 0, size);
-                memmove(ptr, obj.b_ptr, obj.b_size);
-            } else {
-                ptr = PyMem_Realloc(obj.b_ptr, size);
-            }
-            obj.b_ptr.ptr = ptr;
-            */
             obj.b_size = size;
             return PNone.NONE;
         }
@@ -754,7 +727,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             DLHandler handle;
             Exception exception = null;
-            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING));
+            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
+                            (!getContext().getOption(PythonOptions.UseSystemToolchain) &&
+                                            endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
                     Object handler = loadLLVMLibrary(context, name);
@@ -780,86 +755,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static DLHandler getHandler(Object ptr, PythonContext context) {
-        Object adr = ptr;
-        if (PGuards.isInteger(adr)) {
-            adr = getObjectAtAddress(context, (Long) adr);
-        }
-        if (adr instanceof DLHandler) {
-            return (DLHandler) adr;
-        }
-        return null;
-    }
-
-    static NativeFunction getNativeFunction(Object ptr, PythonContext context) {
-        Object adr = ptr;
-        if (PGuards.isInteger(adr)) {
-            adr = getObjectAtAddress(context, (Long) adr);
-        }
-        if (adr instanceof NativeFunction) {
-            return (NativeFunction) adr;
-        }
-        return null;
-    }
-
     @Builtin(name = "dlclose", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class DlCloseNode extends PythonUnaryBuiltinNode {
 
-        private static boolean dlclose(Object ptr, PythonContext context) {
-            DLHandler handle = getHandler(ptr, context);
+        @Specialization
+        Object py_dl_close(Object pointerObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            DLHandler handle = handleFromLongNode.getDLHandler(inliningTarget, pointerObj);
             if (handle != null) {
                 handle.isClosed = true;
-                return true;
+                return PNone.NONE;
             }
-            return false;
+            throw raise(OSError, T_DL_ERROR);
         }
-
-        @Specialization
-        Object py_dl_close(Object h,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            Object handle = asVoidPtr.execute(h);
-
-            if (!dlclose(handle, getContext())) {
-                throw raise(OSError, T_DL_ERROR);
-            }
-            return PNone.NONE;
-        }
-    }
-
-    protected static DLHandler getHandleFromLongObject(Object obj, PythonContext context, PyLong_AsVoidPtr asVoidPtr, PRaiseNode raiseNode) {
-        Object h = null;
-        try {
-            h = asVoidPtr.execute(obj);
-        } catch (PException e) {
-            // throw later.
-        }
-        DLHandler handle = h != null ? getHandler(h, context) : null;
-        if (handle == null) {
-            throw raiseNode.raise(ValueError, COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
-        }
-        return handle;
-    }
-
-    protected static NativeFunction getFunctionFromLongObject(Object obj, PythonContext context,
-                    PyLong_AsVoidPtr asVoidPtr) {
-        if (obj instanceof NativeFunction) {
-            return (NativeFunction) obj;
-        }
-        Object f = asVoidPtr.execute(obj);
-        return f != null ? getNativeFunction(f, context) : null;
     }
 
     protected abstract static class CtypesDlSymNode extends PNodeWithRaise {
 
-        protected abstract Object execute(VirtualFrame frame, DLHandler handle, Object n, PythonBuiltinClassType error);
+        protected abstract Object execute(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error);
 
         @Specialization
-        protected Object ctypes_dlsym(VirtualFrame frame, DLHandler handle, Object n, PythonBuiltinClassType error,
+        protected Object ctypes_dlsym(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaStringNode asString,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
+            DLHandler handle = handleFromPointerNode.getDLHandler(inliningTarget, handlePtr);
             String name = asString.execute(n);
             if (handle == null || handle.isClosed) {
                 throw raise(error, T_DL_ERROR);
@@ -888,13 +813,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class DlSymNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+        static Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached AuditNode auditNode,
                         @Cached CtypesDlSymNode dlSymNode) {
             auditNode.audit("ctypes.dlsym/handle", obj, name);
-            DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
-            return dlSymNode.execute(frame, handle, name, OSError);
+            return dlSymNode.execute(frame, pointerFromLongNode.execute(inliningTarget, obj), name, OSError);
         }
     }
 
@@ -1042,23 +967,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object doit(CDataObject obj, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedGetClassNode getClassNode,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyTypeCheck pyTypeCheck) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj, offset, inliningTarget, getClassNode);
             }
-            FFIType ffiType = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = 'P';
-            // parg.pffi_type = FFIType.ffi_type_pointer;
-            parg.pffi_type = ffiType.getAsArray();
+            parg.pffi_type = FFIType.ffi_type_pointer;
             parg.obj = obj;
-            if (parg.pffi_type != ffiType && !obj.b_ptr.isManagedBytes()) {
-                parg.value = PtrValue.allocate(parg.pffi_type, ffiType.size);
-                parg.value.writeArrayElement(ffiType, 0, obj.b_ptr.getPrimitiveValue(ffiType));
-                obj.b_ptr.ptr = parg.value.ptr;
-            }
-            parg.value = obj.b_ptr.ref(offset);
+            parg.valuePointer = obj.b_ptr.createReference(offset);
 
             return parg;
         }
@@ -1081,18 +998,18 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return ptr;
     }
 
-    @Builtin(name = "call_function", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "call_function", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    protected abstract static class CallFunctionNode extends PythonTernaryBuiltinNode {
+    protected abstract static class CallFunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object call_function(VirtualFrame frame, PythonModule ctypesModule, Object f, PTuple arguments,
+        Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            // Object func = _parse_voidp(tuple[0]);
-            NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            NativeFunction func = handleFromLongNode.getNativeFunction(inliningTarget, pointerObj);
             auditNode.audit("ctypes.call_function", func, arguments);
             return callProcNode.execute(frame, func,
                             getArray.execute(arguments.getSequenceStorage()),
@@ -1116,7 +1033,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 return error(null, obj);
             }
             auditNode.audit("ctypes.addressof", obj);
-            return obj.b_ptr;
+            return factory().createNativeVoidPtr(obj.b_ptr);
         }
 
         @SuppressWarnings("unused")
@@ -1126,18 +1043,18 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    protected abstract static class CallCdeclfunctionNode extends PythonTernaryBuiltinNode {
+    protected abstract static class CallCdeclfunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doit(VirtualFrame frame, PythonModule ctypesModule, Object f, PTuple arguments,
+        Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
-                        @Cached GetInternalObjectArrayNode getArray,
                         @Cached CallProcNode callProcNode,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            // Object func = _parse_voidp(tuple[0]);
-            NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
+                        @Cached GetInternalObjectArrayNode getArray,
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            NativeFunction func = handleFromLongNode.getNativeFunction(inliningTarget, pointerObj);
             auditNode.audit("ctypes.call_function", func, arguments);
             return callProcNode.execute(frame, func,
                             getArray.execute(arguments.getSequenceStorage()),
@@ -1152,7 +1069,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final class argument {
         FFIType ffi_type;
         StgDictObject stgDict;
-        Object value;
+        /*
+         * CPython stores the value directly in a union. We use a pointer, so there is one more
+         * pointer indirection
+         */
+        Pointer valuePointer;
+        // Used to hold reference to object that have native memory finalizers
+        Object keep;
     }
 
     /**
@@ -1176,18 +1099,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          */
         protected static final int CTYPES_MAX_ARGCOUNT = 1024;
 
-        @Specialization(guards = "!pProc.isManaged() || pProc.isLLVM()")
-        Object _ctypes_callproc(VirtualFrame frame,
-                        NativeFunction pProc,
-                        Object[] argarray,
-                        @SuppressWarnings("unused") int flags,
-                        Object[] argtypes, Object[] converters,
-                        Object restype,
+        @Specialization
+        Object _ctypes_callproc(VirtualFrame frame, NativeFunction pProc, Object[] argarray, @SuppressWarnings("unused") int flags, Object[] argtypes, Object[] converters, Object restype,
                         Object checker,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConvParamNode convParamNode,
+                        @Cached ConvertParameterToBackendValueNode convertParameterToBackendValueNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
-                        @Cached GetBytesFromNativePointerNode getNativeBytes,
                         @Cached GetResultNode getResultNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -1203,46 +1122,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             int argtype_count = argtypes != null ? argtypes.length : 0;
 
             /* Convert the arguments */
-            final boolean isLLVM = pProc.isLLVM();
+            BackendMode mode = BackendMode.NFI;
+            if (pProc.isManaged()) {
+                if (pProc.isLLVM()) {
+                    mode = BackendMode.LLVM;
+                } else {
+                    mode = BackendMode.INTRINSIC;
+                }
+            }
             for (int i = 0; i < argcount; ++i) {
                 args[i] = new argument();
-                Object arg = argarray[i]; /* borrowed ref */
+                Object arg = argarray[i];
                 /*
                  * For cdecl functions, we allow more actual arguments than the length of the
                  * argtypes tuple. This is checked in _ctypes::PyCFuncPtr_Call
                  */
+                Object v = arg;
                 if (converters != null && argtype_count > i) {
-                    Object v;
                     try {
-                        v = callNode.execute(frame, converters[i], argtypes[i], arg);
+                        v = callNode.execute(frame, converters[i], arg);
                     } catch (PException e) {
                         throw raise(ArgError, ARGUMENT_D, i + 1);
                     }
-
-                    convParamNode.execute(frame, v, i + 1, args[i]);
-                } else {
-                    convParamNode.execute(frame, arg, i + 1, args[i]);
                 }
+                convParamNode.execute(frame, v, i + 1, args[i]);
                 FFIType ffiType = args[i].ffi_type;
                 atypes[i] = ffiType;
                 if (arg instanceof PyCFuncPtrObject) {
                     atypes[i] = new FFIType(atypes[i], ((PyCFuncPtrObject) arg).thunk);
                 }
-                Object value = args[i].value;
-                if (ffiType.type.isArray()) {
-                    if (!isLLVM) {
-                        value = getContext().getEnv().asGuestValue(value);
-                    } else {
-                        if (ffiType.type == FFI_TYPE_STRUCT) {
-                            assert value instanceof byte[] : "It should be byte[]!";
-                            assert args[i].stgDict != null : "We need stgDict for Structs";
-                            value = CDataObject.createWrapper(args[i].stgDict, (byte[]) value);
-                        } else {
-                            value = getContext().getEnv().asGuestValue(value);
-                        }
-                    }
-                }
-                avalues[i] = value;
+                avalues[i] = convertParameterToBackendValueNode.execute(inliningTarget, args[i].valuePointer, args[i].ffi_type, args[i].stgDict, mode);
             }
 
             FFIType rtype = FFIType.ffi_type_sint;
@@ -1253,90 +1162,28 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
             Object result;
-            if (isLLVM) {
-                result = callManagedFunction(pProc, avalues, ilib);
-            } else {
+            if (mode == BackendMode.NFI) {
                 result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
-            }
-            if (rtype.type.isArray()) {
-                if (ilib.isNull(result)) {
-                    return PNone.NONE;
-                } else if (ilib.hasArrayElements(result)) {
-                    try {
-                        long resSize = ilib.getArraySize(result);
-                        byte[] bytes = new byte[(int) resSize];
-                        for (int i = 0; i < resSize; i++) {
-                            bytes[i] = (byte) ilib.readArrayElement(result, i);
-                        }
-                        result = bytes;
-                    } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else if (!isLLVM && ilib.isPointer(result)) {
-                    result = getNativeBytes.execute(result, -1);
-                } else if (ilib.isNumber(result)) {
-                    byte[] bytes = new byte[rtype.size];
-                    CtypesNodes.setValue(rtype.type, bytes, 0, result);
-                    result = bytes;
-                } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("Returned object is not supported."));
-                }
             } else {
-                try {
-                    switch (rtype.type) {
-                        case FFI_TYPE_UINT8:
-                        case FFI_TYPE_SINT8:
-                            result = ilib.asByte(result);
-                            break;
-                        case FFI_TYPE_UINT16:
-                        case FFI_TYPE_SINT16:
-                            result = ilib.asShort(result);
-                            break;
-                        case FFI_TYPE_UINT32:
-                        case FFI_TYPE_SINT32:
-                            result = ilib.asInt(result);
-                            break;
-                        case FFI_TYPE_SINT64:
-                        case FFI_TYPE_UINT64:
-                            result = ilib.asLong(result);
-                            break;
-                    }
-                } catch (UnsupportedMessageException e) {
-                    // pass through.
+                result = callManagedFunction(pProc, avalues, ilib);
+                if (mode == BackendMode.INTRINSIC) {
+                    /*
+                     * We don't want result conversion for functions implemented in Java, they
+                     * should take care to produce the desired result type
+                     */
+                    return result;
                 }
             }
 
-            if (!PGuards.isPNone(checker)) {
-                if (rtype.type.isArray()) {
-                    throw raise(NotImplementedError, toTruffleStringUncached("Array checker is not implemented."));
-                }
-                return callNode.execute(checker, result);
-            }
-
-            // return result;
-            /*- TODO (mq) require more support from NFI.
-            Object resbuf = alloca(max(rtype.size, sizeof(ffi_arg)));
-            _call_function_pointer(flags, pProc, avalues, atypes, rtype, resbuf, argcount, state);
-            */
-            return getResultNode.execute(restype, rtype, result, checker, getRaiseNode());
-        }
-
-        @Specialization(guards = "pProc.isManaged()")
-        Object doManaged(NativeFunction pProc,
-                        Object[] argarray,
-                        @SuppressWarnings("unused") int flags,
-                        @SuppressWarnings("unused") Object[] argtypes,
-                        @SuppressWarnings("unused") Object[] converters,
-                        @SuppressWarnings("unused") Object restype,
-                        @SuppressWarnings("unused") Object checker,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            return callManagedFunction(pProc, argarray, ilib);
+            return getResultNode.execute(restype, rtype, result, checker);
         }
 
         Object callManagedFunction(NativeFunction pProc, Object[] argarray, InteropLibrary ilib) {
             try {
                 return ilib.execute(pProc.sym, argarray);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            } catch (PException e) {
+                throw e;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | AbstractTruffleException e) {
                 throw raise(RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
                 throw raise(NotImplementedError, toTruffleStringUncached("require backend support.")); // TODO:
@@ -1365,10 +1212,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
                 pProc.atypes = atypes;
+                pProc.rtype = restype;
                 pProc.function = function;
                 pProc.signature = signature;
             } else {
-                if (equals(atypes, pProc.atypes)) {
+                if (equals(atypes, pProc.atypes) && restype == pProc.rtype) {
                     function = pProc.function;
                 } else {
                     TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
@@ -1421,13 +1269,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1453,9 +1301,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         */
     }
 
+    @ImportStatic(PGuards.class)
     abstract static class GetResultNode extends Node {
 
-        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker, PRaiseNode raiseNode);
+        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker);
 
         /*
          * Convert the C value in result into a Python object, depending on restype.
@@ -1465,48 +1314,88 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * result to checker and return the result. - If restype is another ctypes type, return an
          * instance of that. - Otherwise, call restype and return the result.
          */
-        @Specialization(guards = "restype == null")
-        static Object asIs(@SuppressWarnings("unused") Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @SuppressWarnings("unused") PRaiseNode raiseNode) {
-            assert !rtype.type.isArray() : "need array conversion!";
-            return result;
+        @Specialization(guards = "restype == null", limit = "1")
+        static Object asInt(@SuppressWarnings("unused") Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+                        @CachedLibrary("result") InteropLibrary ilib) {
+            try {
+                return ilib.asInt(result);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
-        @Specialization(guards = {"restype != null", "dict == null"})
-        static Object callResType(Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @SuppressWarnings("unused") PRaiseNode raiseNode,
-                        @SuppressWarnings("unused") @Cached PyTypeStgDictNode pyTypeStgDictNode,
+        @Specialization(guards = "isNone(restype)")
+        @SuppressWarnings("unused")
+        static Object none(Object restype, FFIType rtype, Object result, Object checker) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
+        static Object callResType(Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+                        @CachedLibrary("result") InteropLibrary ilib,
+                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode) {
-            assert !rtype.type.isArray() : "must be an int!";
-            // return PyObject_CallFunction(restype, "i", *(int *)result);
-            return callNode.execute(restype, result);
+            try {
+                return callNode.execute(restype, ilib.asInt(result));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
-        @Specialization(guards = {"restype != null", "dict != null"})
-        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker, PRaiseNode raiseNode,
+        @Specialization(guards = {"restype != null", "!isNone(restype)", "dict != null"}, limit = "1")
+        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @CachedLibrary("result") InteropLibrary ilib,
+                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetFuncNode getFuncNode,
-                        @Cached PythonObjectFactory factory) {
-            Object retval;
-            PtrValue r;
-            if (rtype.type.isArray()) {
-                assert result instanceof byte[] : "byte[] should have been extracted after native call";
-                r = PtrValue.bytes(rtype, (byte[]) result);
-            } else {
-                r = PtrValue.nil();
-                r.toPrimitive(rtype, result);
+                        @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode) {
+            Pointer resultPtr;
+            try {
+                resultPtr = switch (rtype.type) {
+                    case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> Pointer.create(rtype, rtype.size, ilib.asByte(result), 0);
+                    case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> Pointer.create(rtype, rtype.size, ilib.asShort(result), 0);
+                    case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> Pointer.create(rtype, rtype.size, ilib.asInt(result), 0);
+                    case FFI_TYPE_SINT64, FFI_TYPE_UINT64 -> Pointer.create(rtype, rtype.size, ilib.asLong(result), 0);
+                    case FFI_TYPE_FLOAT -> Pointer.create(rtype, rtype.size, ilib.asFloat(result), 0);
+                    case FFI_TYPE_DOUBLE -> Pointer.create(rtype, rtype.size, ilib.asDouble(result), 0);
+                    case FFI_TYPE_VOID -> Pointer.NULL;
+                    case FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+                        Pointer pointer;
+                        if (ilib.isNull(result)) {
+                            pointer = Pointer.NULL;
+                        } else if (ilib.isPointer(result)) {
+                            pointer = Pointer.nativeMemory(ilib.asPointer(result));
+                        } else if (ilib.fitsInLong(result)) {
+                            pointer = Pointer.nativeMemory(ilib.asLong(result));
+                        } else if (ilib.hasArrayElements(result)) {
+                            int size = (int) ilib.getArraySize(result);
+                            byte[] bytes = new byte[size + 1];
+                            for (int i = 0; i < size; i++) {
+                                bytes[i] = (byte) ilib.readArrayElement(result, i);
+                            }
+                            pointer = Pointer.bytes(bytes);
+                        } else {
+                            pointer = Pointer.nativeMemory(result);
+                        }
+                        yield pointer.createReference();
+                    }
+                    // Needed because javac-generated default is not PE-friendly
+                    default -> throw CompilerDirectives.shouldNotReachHere();
+                };
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
+            Object retval;
             if (dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, restype, getBaseClassNode, isSameTypeNode)) {
-                retval = getFuncNode.execute(dict.getfunc, r, dict.size);
+                retval = getFuncNode.execute(dict.getfunc, resultPtr, dict.size);
             } else {
-                retval = PyCData_FromBaseObj(restype, null, 0, r, factory, raiseNode, pyTypeStgDictNode);
+                retval = fromBaseObjNode.execute(inliningTarget, restype, null, 0, resultPtr);
             }
             assert retval != null : "Should have raised an error earlier!";
             if (PGuards.isPNone(checker) || checker == null) {
@@ -1544,43 +1433,37 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached ConvParamNode recursive,
-                        @Cached PythonObjectFactory factory) {
-            StgDictObject dict = pyObjectStgDictNode.execute(obj);
-            pa.stgDict = dict;
-            if (dict != null) {
-                assert dict.paramfunc != -1;
-                /* If it has an stgdict, it is a CDataObject */
-                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode);
+                        @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
+                        @Cached ConvParamNode recursive) {
+            if (obj instanceof CDataObject cdata) {
+                pa.stgDict = pyObjectStgDictNode.execute(cdata);
+                PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
                 pa.ffi_type = carg.pffi_type;
-                // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
-                assert carg.value.offset == 0 : "TODO";
-                pa.value = carg.value.ptr.getValue();
+                pa.valuePointer = carg.valuePointer;
+                pa.keep = cdata;
                 return;
             }
 
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
-                pa.ffi_type = carg.pffi_type;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                assert carg.value.offset == 0 : "TODO";
-                // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
-                pa.value = carg.value.ptr.getValue();
+                pa.ffi_type = carg.pffi_type;
+                pa.valuePointer = carg.valuePointer;
+                pa.keep = carg;
                 return;
             }
 
             /* check for None, integer, string or unicode and use directly if successful */
             if (obj == PNone.NONE) {
                 pa.ffi_type = FFIType.ffi_type_pointer;
-                pa.value = getContext().getEnv().asGuestValue(null); // TODO check
+                pa.valuePointer = Pointer.NULL.createReference();
                 return;
             }
 
             if (longCheckNode.execute(obj)) {
                 pa.ffi_type = FFIType.ffi_type_sint;
                 try {
-                    pa.value = asInt.executeExact(frame, obj);
+                    pa.valuePointer = Pointer.create(pa.ffi_type, pa.ffi_type.size, asInt.executeExact(frame, obj), 0);
                 } catch (PException e) {
                     e.expectOverflowError(inliningTarget, profile);
                     throw raise(OverflowError, INT_TOO_LONG_TO_CONVERT);
@@ -1589,24 +1472,27 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
 
             if (obj instanceof PBytes) {
-                // pa.ffi_type = FFIType.ffi_type_pointer;
-                pa.ffi_type = FFIType.ffi_type_sint8_array;
                 int len = bufferLib.getBufferLength(obj);
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
-                pa.value = bytes;
+                Pointer valuePtr = Pointer.bytes(bytes);
+                pa.ffi_type = FFIType.ffi_type_pointer;
+                pa.valuePointer = valuePtr.createReference();
+                // Unlike CPython, we can attach the lifetime directly to the argument object
+                new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
             }
 
             if (unicodeCheckNode.execute(obj)) {
-                // TODO determine this better
-                Encoding wCharTEncoding = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? UTF_16 : UTF_32;
-                TruffleString string = switchEncodingNode.execute(toString.execute(obj), wCharTEncoding);
-                int len = string.byteLength(wCharTEncoding);
-                byte[] bytes = new byte[len + (wCharTEncoding == UTF_16 ? 2 : 4)];
-                copyToByteArrayNode.execute(string, 0, bytes, 0, len, wCharTEncoding);
-                pa.ffi_type = FFIType.ffi_type_sint8_array;
-                pa.value = bytes;
+                TruffleString string = switchEncodingNode.execute(toString.execute(obj), WCHAR_T_ENCODING);
+                int len = string.byteLength(WCHAR_T_ENCODING);
+                byte[] bytes = new byte[len + WCHAR_T_SIZE];
+                copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
+                Pointer valuePtr = Pointer.bytes(bytes);
+                pa.ffi_type = FFIType.ffi_type_pointer;
+                pa.valuePointer = valuePtr.createReference();
+                // Unlike CPython, we can attach the lifetime directly to the argument object
+                new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
             }
 
@@ -1621,6 +1507,108 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
+        }
+    }
+
+    enum BackendMode {
+        NFI,
+        LLVM,
+        INTRINSIC
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({FFIType.FFI_TYPES.class, BackendMode.class})
+    abstract static class ConvertParameterToBackendValueNode extends Node {
+        public abstract Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType, StgDictObject dict, BackendMode mode);
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT8 || ffiType.type == FFI_TYPE_UINT8")
+        static byte doByte(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadByteNode readByteNode) {
+            return readByteNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT16 || ffiType.type == FFI_TYPE_UINT16")
+        static short doShort(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadShortNode readShortNode) {
+            return readShortNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT32 || ffiType.type == FFI_TYPE_UINT32")
+        static int doInt(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
+            return readIntNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT64 || ffiType.type == FFI_TYPE_UINT64")
+        static long doLong(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
+            return readLongNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_FLOAT")
+        static float doFloat(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
+            return Float.intBitsToFloat(readIntNode.execute(inliningTarget, pointer));
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_DOUBLE")
+        static double doDouble(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
+            return Double.longBitsToDouble(readLongNode.execute(inliningTarget, pointer));
+        }
+
+        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doNFIPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
+            Pointer value = readPointerNode.execute(inliningTarget, pointer);
+            return toNativeNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doLLVMPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
+            Pointer value = readPointerNode.execute(inliningTarget, pointer);
+            /*
+             * TODO this is currently the same as NFI, but here we have an opportunity to pass
+             * interop objects instead of allocating native memory.
+             */
+            return toNativeNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = {"mode == INTRINSIC", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doIntrinsicPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
+            return readPointerNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_STRUCT"})
+        @SuppressWarnings("unused")
+        static Object doNFIStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED);
+        }
+
+        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_STRUCT"})
+        static Object doLLVMStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadBytesNode readBytesNode) {
+            byte[] bytes = new byte[dict.size];
+            // TODO avoid copying the bytes if possible
+            readBytesNode.execute(inliningTarget, bytes, 0, pointer, dict.size);
+            return CDataObject.createWrapper(dict, bytes);
         }
     }
 
@@ -1797,32 +1785,17 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
-        static Object l(long ptr, @SuppressWarnings("unused") long src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-            result.b_ptr = PtrValue.nativePointer(ptr);
-            return result;
-        }
-
-        @Specialization
-        static Object nativeptr(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-            result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
-            return result;
-        }
-
-        @Specialization
-        static Object cdata(CDataObject ptr, CDataObject src, Object ctype,
+        Object cast(Pointer ptr, Pointer srcObj, Pointer ctypeObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode) {
+                        @Cached CallNode callNode,
+                        @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Cached PointerNodes.ReadPythonObject readPythonObject,
+                        @Cached PointerNodes.WritePointerNode writePointerNode) {
+            Object src = readPythonObject.execute(inliningTarget, srcObj);
+            Object ctype = readPythonObject.execute(inliningTarget, ctypeObj);
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
@@ -1832,44 +1805,28 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * It must certainly contain the source objects one. It must contain the source object
              * itself.
              */
-            if (pyTypeCheck.isCDataObject(src)) {
+            if (src instanceof CDataObject cdata && pyTypeCheck.isCDataObject(cdata)) {
                 /*
                  * PyCData_GetContainer will initialize src.b_objects, we need this so it can be
                  * shared
                  */
-                PyCData_GetContainer(src, factory);
+                PyCData_GetContainer(cdata, factory);
 
-                /* But we need a dictionary! */
-                if (src.b_objects == null) {
-                    src.b_objects = factory.createDict();
+                if (cdata.b_objects == null) {
+                    cdata.b_objects = factory.createDict();
                 }
-                result.b_objects = src.b_objects;
+                result.b_objects = cdata.b_objects;
                 if (PGuards.isDict(result.b_objects)) {
                     // PyLong_FromVoidPtr((void *)src);
                     PDict dict = (PDict) result.b_objects;
-                    Object index = factory.createNativeVoidPtr(src);
-                    dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, src));
+                    Object index = factory.createNativeVoidPtr(cdata);
+                    dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, cdata));
                 }
             }
-            /* Should we assert that result is a pointer type? */
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.b_ptr.ref(0);
+            writePointerNode.execute(inliningTarget, result.b_ptr, ptr);
             return result;
         }
-
-        @Specialization(guards = "!isCDataObject(src)")
-        static Object ptr(PtrValue ptr, @SuppressWarnings("unused") Object src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-
-            /* Should we assert that result is a pointer type? */
-            // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.ref(0);
-            return result;
-        }
-
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -1898,25 +1855,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         abstract Object execute(Object dest, Object src, Object size);
 
-        protected static boolean isManagedBytes(CDataObject cdata) {
-            return cdata.b_ptr.isManagedBytes();
-        }
-
-        @Specialization(guards = "isManagedBytes(dest)")
-        static Object memmove(CDataObject dest, PBytes src, int size,
-                        @Cached GetInternalByteArrayNode getBytes) {
-            byte[] srcBytes = getBytes.execute(src.getSequenceStorage());
-            byte[] destBytes = ((ByteArrayStorage) dest.b_ptr.ptr).value;
-            PythonUtils.arraycopy(srcBytes, 0, destBytes, dest.b_ptr.offset, size);
-            return dest;
-        }
-
-        @Specialization(guards = {"isManagedBytes(dest)", "isManagedBytes(src)"})
-        static Object memmove(CDataObject dest, CDataObject src, int size) {
-            byte[] srcBytes = ((ByteArrayStorage) src.b_ptr.ptr).value;
-            byte[] destBytes = ((ByteArrayStorage) dest.b_ptr.ptr).value;
-            PythonUtils.arraycopy(srcBytes, src.b_ptr.offset, destBytes, dest.b_ptr.offset, size);
-            return dest;
+        @Specialization
+        static Object memmove(Pointer destPtr, Pointer srcPtr, long size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.MemcpyNode memcpyNode,
+                        @Cached PythonObjectFactory factory) {
+            memcpyNode.execute(inliningTarget, destPtr, srcPtr, (int) size);
+            return factory.createNativeVoidPtr(destPtr);
         }
 
     }
@@ -1957,24 +1902,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @ExportMessage
         static class Execute {
 
-            @Specialization(guards = "!isNative(arguments)")
+            @Specialization
             static Object managed(@SuppressWarnings("unused") MemMoveFunction self, Object[] arguments,
                             @Cached MemmoveNode memmoveNode) {
                 return memmoveNode.execute(arguments[0], arguments[1], arguments[2]);
-            }
-
-            @SuppressWarnings("unused")
-            @Specialization(guards = "isNative(arguments)")
-            static Object nativeMove(@SuppressWarnings("unused") MemMoveFunction self, Object[] arguments) {
-                throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("memmove doesn't support native types yet."));
-            }
-
-            private static boolean isNativePtr(Object o) {
-                return o instanceof PtrValue && ((PtrValue) o).isNativePointer();
-            }
-
-            protected static boolean isNative(Object[] arguments) {
-                return arguments.length > 2 && (isNativePtr(arguments[0]) || isNativePtr(arguments[1]));
             }
         }
     }
@@ -1984,32 +1915,30 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         abstract Object execute(Object dest, Object src, Object size);
 
-        protected static boolean isManagedBytes(CDataObject cdata) {
-            return cdata.b_ptr.isManagedBytes();
-        }
-
-        protected static boolean isMemoryView(PtrValue ptr) {
-            return ptr.isMemoryView();
-        }
-
-        @Specialization(guards = "isManagedBytes(ptr)")
-        static Object memset(CDataObject ptr, int value, int num) {
-            byte[] ptrBytes = ((ByteArrayStorage) ptr.b_ptr.ptr).value;
-            for (int i = ptr.b_ptr.offset; i < (ptr.b_ptr.offset + num); i++) {
-                ptrBytes[i] = (byte) value;
+        @Specialization
+        static Object memset(Pointer ptr, int value, long size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.WriteLongNode writeLongNode,
+                        @Cached PointerNodes.WriteByteNode writeByteNode,
+                        @Cached PythonObjectFactory factory) {
+            byte b = (byte) value;
+            long fill = 0;
+            for (int i = 0; i < Long.BYTES * 8; i += 8) {
+                fill |= (long) b << i;
             }
-            return ptr;
-        }
-
-        @Specialization(guards = "isMemoryView(ptr)")
-        static Object memset(PtrValue ptr, int value, int num,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
-            PMemoryView memoryView = ((MemoryViewStorage) ptr.ptr).value;
-            int len = accessLib.getBufferLength(memoryView);
-            for (int i = Math.max(0, ptr.offset); i < (ptr.offset + num) && i < len; i++) {
-                accessLib.writeByte(memoryView, i, (byte) value);
+            int i;
+            /*
+             * Try to write in chunks of 8 bytes, it's faster and it helps avoiding converting
+             * pointer storages when writing zeros.
+             */
+            for (i = 0; i < size / 8 * 8; i += 8) {
+                writeLongNode.execute(inliningTarget, ptr.withOffset(i), fill);
             }
-            return ptr;
+            /* Write the remainder if any */
+            for (; i < size; i++) {
+                writeByteNode.execute(inliningTarget, ptr.withOffset(i), b);
+            }
+            return factory.createNativeVoidPtr(ptr);
         }
     }
 
@@ -2049,24 +1978,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @ExportMessage
         static class Execute {
 
-            @Specialization(guards = "!isNative(arguments)")
+            @Specialization
             static Object managed(@SuppressWarnings("unused") MemSetFunction self, Object[] arguments,
                             @Cached MemsetNode memsetNode) {
                 return memsetNode.execute(arguments[0], arguments[1], arguments[2]);
-            }
-
-            @SuppressWarnings("unused")
-            @Specialization(guards = "isNative(arguments)")
-            static Object nativeSet(@SuppressWarnings("unused") MemSetFunction self, Object[] arguments) {
-                throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("memset doesn't support native types yet."));
-            }
-
-            private static boolean isNativePtr(Object o) {
-                return o instanceof PtrValue && ((PtrValue) o).isNativePointer();
-            }
-
-            protected static boolean isNative(Object[] arguments) {
-                return arguments.length > 2 && isNativePtr(arguments[0]);
             }
         }
     }
@@ -2077,63 +1992,17 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static Object string_at(TruffleString ptr, int size,
+        static Object string_at(Pointer ptr, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached AuditNode auditNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            auditNode.audit("ctypes.string_at", ptr, size);
-            // TODO GR-38502: Review and add negative/out-of-bounds checks for the size argument
-            assert TS_ENCODING == UTF_32;
-            byte[] bytes = new byte[ptr.byteLength(TS_ENCODING)];
-            copyToByteArrayNode.execute(ptr, 0, bytes, 0, bytes.length, TS_ENCODING);
-            int len = 0;
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PointerNodes.StrLenNode strLenNode,
+                        @Cached AuditNode auditNode) {
+            auditNode.audit("ctypes.string_at", factory.createNativeVoidPtr(ptr), size);
             if (size == -1) {
-                while (len < bytes.length && bytes[len] != 0) {
-                    ++len;
-                }
-            } else {
-                len = size;
+                size = strLenNode.execute(inliningTarget, ptr);
             }
-            return factory.createBytes(bytes, 0, len);
-        }
-
-        @Specialization
-        static Object string_at(CDataObject ptr, int size,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached AuditNode auditNode) {
-            auditNode.audit("ctypes.string_at", ptr, size);
-            byte[] bytes;
-            if (ptr.b_ptr.isManagedBytes()) {
-                ByteArrayStorage storage = (ByteArrayStorage) ptr.b_ptr.ptr;
-                bytes = storage.trim(ptr.b_ptr.offset);
-                if (size != -1) {
-                    bytes = PythonUtils.arrayCopyOf(bytes, size);
-                }
-                // else PyBytes_FromStringAndSize(ptr, strlen(ptr));
-            } else {
-                throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("string_at doesn't support some storage types yet."));
-            }
-            return factory.createBytes(bytes);
-        }
-
-        @Specialization
-        static Object string_at(PBytes ptr, int size,
-                        @Cached GetInternalByteArrayNode getBytes,
-                        @Cached PythonObjectFactory factory,
-                        @Cached AuditNode auditNode) {
-            auditNode.audit("ctypes.string_at", ptr, size);
-            byte[] bytes = getBytes.execute(ptr.getSequenceStorage());
-            if (size != -1) {
-                bytes = PythonUtils.arrayCopyOf(bytes, size);
-            }
-            return factory.createBytes(bytes);
-        }
-
-        @TruffleBoundary
-        @Fallback
-        static Object error(@SuppressWarnings("unused") Object ptr, @SuppressWarnings("unused") Object size) {
-            throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("string_at doesn't support some storage types yet."));
+            return factory.createBytes(read.execute(inliningTarget, ptr, size));
         }
     }
 
@@ -2165,45 +2034,21 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static TruffleString wstring_at(TruffleString ptr, int size,
+        static TruffleString wstring_at(Pointer ptr, int size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
                         @Cached AuditNode auditNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
-            int ssize = size;
-            auditNode.audit("ctypes.wstring_at", ptr, ssize);
-            if (ssize == -1) {
-                ssize = codePointLengthNode.execute(ptr, TS_ENCODING); // wcslen(ptr);
-            }
-            return substringNode.execute(ptr, 0, ssize, TS_ENCODING, false); // PyUnicode_FromWideChar(ptr,
-                                                                             // ssize);
-        }
-
-        @Specialization
-        static TruffleString wstring_at(CDataObject ptr, int size,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached AuditNode auditNode,
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            auditNode.audit("ctypes.wstring_at", ptr, size);
-            byte[] bytes;
-            if (ptr.b_ptr.isManagedBytes()) {
-                ByteArrayStorage storage = (ByteArrayStorage) ptr.b_ptr.ptr;
-                bytes = storage.trim(ptr.b_ptr.offset);
-                if (size != -1) {
-                    bytes = PythonUtils.arrayCopyOf(bytes, size);
-                }
-                // else wcslen(ptr);
-            } else {
-                throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("wstring_at doesn't support some storage types yet."));
+            auditNode.audit("ctypes.wstring_at", factory.createNativeVoidPtr(ptr), size);
+            if (size == -1) {
+                size = wCsLenNode.execute(inliningTarget, ptr);
             }
-            TruffleString s = fromByteArrayNode.execute(bytes, TruffleString.Encoding.UTF_8);
+            byte[] bytes = read.execute(inliningTarget, ptr, size * WCHAR_T_SIZE);
+            TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
-        }
-
-        @TruffleBoundary
-        @Fallback
-        static Object error(@SuppressWarnings("unused") Object ptr, @SuppressWarnings("unused") Object size) {
-            throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("wstring_at doesn't support some storage types yet."));
         }
     }
 
@@ -2259,5 +2104,4 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
         return toStringNode.execute(buf);
     }
-
 }

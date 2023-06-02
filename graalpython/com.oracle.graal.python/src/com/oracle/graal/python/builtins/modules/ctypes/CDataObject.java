@@ -40,20 +40,19 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -65,35 +64,22 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public class CDataObject extends PythonBuiltinObject {
 
-    /*
-     * Hm. Are there CDataObject's which do not need the b_objects member? In this case we probably
-     * should introduce b_flags to mark it as present... If b_objects is not present/unused b_length
-     * is unneeded as well.
-     */
-
-    PtrValue b_ptr; /* pointer to memory block */
-    int b_needsfree; /* need _we_ free the memory? */
+    final Pointer b_ptr; /* pointer to memory block */
+    final boolean b_needsfree; /* need _we_ free the memory? */
     CDataObject b_base; /* pointer to base object or NULL */
     int b_size; /* size of memory block in bytes */
     int b_length; /* number of references we need */
     int b_index; /* index of this object into base's b_object list */
     Object b_objects; /* dictionary of references we need to keep, or Py_None */
 
-    /*
-     * A default buffer in CDataObject, which can be used for small C types. If this buffer is too
-     * small, PyMem_Malloc will be called to create a larger one, and this one is not used.
-     *
-     * Making CDataObject a variable size object would be a better solution, but more difficult in
-     * the presence of PyCFuncPtrObject. Maybe later.
-     */
-    // Object b_value;
-
-    public CDataObject(Object cls, Shape instanceShape) {
+    public CDataObject(Object cls, Shape instanceShape, Pointer b_ptr, int b_size, boolean b_needsfree) {
         super(cls, instanceShape);
-        this.b_ptr = new PtrValue();
+        this.b_ptr = b_ptr;
+        this.b_size = b_size;
+        this.b_needsfree = b_needsfree;
     }
 
-    protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
+    public static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
         return new CDataObjectWrapper(dictObject, storage);
     }
 
@@ -121,11 +107,16 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     byte readByte(int byteIndex,
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.ptr != null) {
-            return bufferLib.readByte(b_ptr.ptr, b_ptr.offset + byteIndex);
-        }
-        throw CompilerDirectives.shouldNotReachHere("buffer read from empty CDataObject");
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PointerNodes.ReadByteNode readByteNode) {
+        return readByteNode.execute(inliningTarget, b_ptr.withOffset(byteIndex));
+    }
+
+    @ExportMessage
+    void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PointerNodes.ReadBytesNode readBytesNode) {
+        readBytesNode.execute(inliningTarget, dest, destOffset, b_ptr.withOffset(srcOffset), length);
     }
 
     @ExportMessage
@@ -136,71 +127,19 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     void writeByte(int byteIndex, byte value,
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.ptr != null) {
-            bufferLib.writeByte(b_ptr.ptr, b_ptr.offset + byteIndex, value);
-            return;
-        }
-        throw CompilerDirectives.shouldNotReachHere("buffer write to empty CDataObject");
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
+        writeBytesNode.execute(inliningTarget, b_ptr.withOffset(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
-    boolean hasInternalByteArray(
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.offset != 0) {
-            return false;
-        }
-        if (b_ptr.ptr != null) {
-            return bufferLib.hasInternalByteArray(b_ptr.ptr);
-        }
-        return true;
+    void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
+        writeBytesNode.execute(inliningTarget, b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 
-    @ExportMessage
-    byte[] getInternalByteArray(
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        assert hasInternalByteArray(bufferLib);
-        if (b_ptr.ptr != null) {
-            return bufferLib.getInternalByteArray(b_ptr.ptr);
-        }
-        return PythonUtils.EMPTY_BYTE_ARRAY;
-    }
-
-    /*-
-    static int PyCData_NewGetBuffer(Object myself, Py_buffer *view, int flags)
-    {
-        CDataObject self = (CDataObject *)myself;
-        StgDictObject dict = PyObject_stgdict(myself);
-        Py_ssize_t i;
-
-        if (view == null) return 0;
-
-        view.buf = self.b_ptr;
-        view.obj = myself;
-        view.len = self.b_size;
-        view.readonly = 0;
-        /* use default format character if not set * /
-        view.format = dict.format ? dict.format : "B";
-        view.ndim = dict.ndim;
-        view.shape = dict.shape;
-        view.itemsize = self.b_size;
-        if (view.itemsize) {
-            for (i = 0; i < view.ndim; ++i) {
-                view.itemsize /= dict.shape[i];
-            }
-        }
-        view.strides = NULL;
-        view.suboffsets = NULL;
-        view.internal = NULL;
-        return 0;
-    }
-
-    /*-
-    static PyBufferProcs PyCData_as_buffer = {
-            PyCData_NewGetBuffer,
-            NULL,
-    };
-    */
+    // TODO we could expose the internal array if available
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,7 +90,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeNode,
                         @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             writeNode.execute(object, key, value);
-            if (equalNode.execute(key, StructUnionTypeBuiltins.T__fields_, TS_ENCODING)) {
+            if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, false, factory());
             }
             return PNone.NONE;

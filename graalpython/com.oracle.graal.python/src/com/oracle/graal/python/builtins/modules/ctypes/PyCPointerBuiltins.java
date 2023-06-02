@@ -41,11 +41,9 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GetKeepedObjects;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_INSTANCE_HAS_NO_TYPE;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTEAD_OF_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_N_INSTEAD_OF_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NULL_POINTER_ACCESS;
 import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_DOES_NOT_SUPPORT_ITEM_DELETION;
 import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_INDICES_MUST_BE_INTEGER;
@@ -76,11 +74,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -89,15 +87,19 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCPointer)
@@ -108,42 +110,46 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         return PyCPointerBuiltinsFactory.getFactories();
     }
 
-    static void Pointer_set_contents(VirtualFrame frame, CDataObject self, Object value,
-                    PyTypeCheck pyTypeCheck,
-                    PRaiseNode raiseNode,
-                    PyObjectStgDictNode pyObjectStgDictNode,
-                    GetNameNode getNameNode,
-                    IsInstanceNode isInstanceNode,
-                    GetClassNode getClassNode,
-                    KeepRefNode keepRefNode,
-                    PythonObjectFactory factory) {
-        if (value == null) {
-            throw raiseNode.raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
-        }
-        StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-        assert stgdict != null : "Cannot be NULL for pointer instances";
-        assert stgdict.proto != null;
-        if (!pyTypeCheck.isCDataObject(value)) {
-            boolean res = isInstanceNode.executeWith(frame, value, stgdict.proto);
-            if (!res) {
-                raiseNode.raise(TypeError, EXPECTED_S_INSTEAD_OF_S,
-                                getNameNode.execute(stgdict.proto),
-                                getNameNode.execute(getClassNode.execute(value)));
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PointerSetContentsNode extends Node {
+        abstract void execute(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value);
+
+        @Specialization
+        static void set(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached KeepRefNode keepRefNode,
+                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Cached PythonObjectFactory factory) {
+            if (value == null) {
+                throw raiseNode.raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
+            StgDictObject stgdict = pyObjectStgDictNode.execute(self);
+            assert stgdict != null : "Cannot be NULL for pointer instances";
+            assert stgdict.proto != null;
+            if (!pyTypeCheck.isCDataObject(value)) {
+                boolean res = isInstanceNode.executeWith(frame, value, stgdict.proto);
+                if (!res) {
+                    raiseNode.raise(TypeError, EXPECTED_N_INSTEAD_OF_P, stgdict.proto, value);
+                }
+            }
+
+            CDataObject dst = (CDataObject) value;
+            writePointerNode.execute(inliningTarget, self.b_ptr, dst.b_ptr);
+
+            /*
+             * A Pointer instance must keep the value it points to alive. So, a pointer instance has
+             * b_length set to 2 instead of 1, and we set 'value' itself as the second item of the
+             * b_objects list, additionally.
+             */
+            keepRefNode.execute(frame, self, 1, value);
+
+            Object keep = GetKeepedObjects(dst, factory);
+            keepRefNode.execute(frame, self, 0, keep);
         }
-
-        CDataObject dst = (CDataObject) value;
-        self.b_ptr = dst.b_ptr;
-
-        /*
-         * A Pointer instance must keep the value it points to alive. So, a pointer instance has
-         * b_length set to 2 instead of 1, and we set 'value' itself as the second item of the
-         * b_objects list, additionally.
-         */
-        keepRefNode.execute(frame, self, 1, value);
-
-        Object keep = GetKeepedObjects(dst, factory);
-        keepRefNode.execute(frame, self, 0, keep);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -151,12 +157,14 @@ public class PyCPointerBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             if (dict.proto == null) {
                 throw raise(TypeError, CANNOT_CREATE_INSTANCE_HAS_NO_TYPE);
             }
-            return GenericPyCDataNew(dict, factory().createCDataObject(type));
+            return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
 
@@ -166,16 +174,10 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Pointer_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached KeepRefNode keepRefNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached GetNameNode getNameNode,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerSetContentsNode setContentsNode) {
             if (args.length > 0) {
-                Pointer_set_contents(frame, self, args[0],
-                                pyTypeCheck, getRaiseNode(), pyObjectStgDictNode, getNameNode, isInstanceNode,
-                                getClassNode, keepRefNode, factory());
+                setContentsNode.execute(frame, inliningTarget, self, args[0]);
             }
             return PNone.NONE;
         }
@@ -183,32 +185,29 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
     @Builtin(name = "contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "the object this pointer points to (read-write)")
     @GenerateNodeFactory
-    protected abstract static class PointerContentNode extends PythonBinaryBuiltinNode {
+    protected abstract static class PointerContentSNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            if (PtrValue.isNull(self.b_ptr)) {
+                        @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode,
+                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for pointer instances";
-            return PyCData_FromBaseObj(stgdict.proto,
-                            self, 0, self.b_ptr, factory(), getRaiseNode(), pyTypeStgDictNode);
+            return fromBaseObjNode.execute(inliningTarget, stgdict.proto,
+                            self, 0, readPointerNode.execute(inliningTarget, self.b_ptr));
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object set_contents(VirtualFrame frame, CDataObject self, Object value,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached GetNameNode getNameNode,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached KeepRefNode keepRefNode) {
-            Pointer_set_contents(frame, self, value, pyTypeCheck, getRaiseNode(), pyObjectStgDictNode,
-                            getNameNode, isInstanceNode, getClassNode, keepRefNode, factory());
+        static Object set_contents(VirtualFrame frame, CDataObject self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerSetContentsNode setContentsNode) {
+            setContentsNode.execute(frame, inliningTarget, self, value);
             return PNone.NONE;
         }
     }
@@ -220,7 +219,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         boolean Pointer_bool(CDataObject self) {
-            return !PtrValue.isNull(self.b_ptr);
+            return !self.b_ptr.isNull();
         }
     }
 
@@ -230,14 +229,16 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (value == PNone.NO_VALUE) {
                 throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
 
-            if (PtrValue.isNull(self.b_ptr)) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
@@ -253,7 +254,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset));
+            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, readPointerNode.execute(inliningTarget, self.b_ptr).withOffset(offset));
             return PNone.NONE;
         }
     }
@@ -264,10 +265,12 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Pointer_item(CDataObject self, int index,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            if (PtrValue.isNull(self.b_ptr)) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
@@ -282,15 +285,17 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset));
+            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, readPointerNode.execute(inliningTarget, self.b_ptr).withOffset(offset));
         }
 
         @Specialization(limit = "1")
         Object Pointer_subscriptSlice(VirtualFrame frame, CDataObject self, PSlice slice,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -369,25 +374,25 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             Object[] np = new Object[len];
 
             for (int cur = start, i = 0; i < len; cur += step, i++) {
-                np[i] = Pointer_item(self, cur, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
+                np[i] = Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode);
             }
             return factory().createList(np);
-
         }
 
         @Specialization(guards = "!isPSlice(item)")
         Object Pointer_subscript(VirtualFrame frame, CDataObject self, Object item,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyIndexCheckNode indexCheckNode) {
             if (indexCheckNode.execute(item)) {
                 int i = asSizeNode.executeExact(frame, item, IndexError);
-                return Pointer_item(self, i, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
+                return Pointer_item(self, i, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode);
             }
             throw raise(TypeError, POINTER_INDICES_MUST_BE_INTEGER);
-
         }
     }
 }

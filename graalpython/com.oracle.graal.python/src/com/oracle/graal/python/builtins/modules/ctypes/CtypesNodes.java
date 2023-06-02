@@ -50,38 +50,39 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
+import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
+
+    public static final int WCHAR_T_SIZE = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
+    public static final TruffleString.Encoding WCHAR_T_ENCODING = WCHAR_T_SIZE == 2 ? TruffleString.Encoding.UTF_16 : TruffleString.Encoding.UTF_32;
 
     @GenerateUncached
     protected abstract static class PyTypeCheck extends Node {
@@ -161,128 +162,28 @@ public class CtypesNodes {
         }
     }
 
-    @GenerateUncached
-    protected abstract static class GetBytesFromNativePointerNode extends PNodeWithContext {
-
-        abstract byte[] execute(Object pointer, int size);
-
-        protected CtypesModuleBuiltins getCtypesMod(PythonContext context) {
-            return (CtypesModuleBuiltins) context.lookupBuiltinModule(T__CTYPES).getBuiltins();
-        }
-
-        @Specialization(guards = "size > 0")
-        byte[] getBytes(Object pointer, int size,
-                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
-                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
-                        @Shared("r") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-            try {
-                byte[] bytes = new byte[size];
-                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
-                return bytes;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.raise(SystemError, e);
-            }
-        }
-
-        @Specialization(guards = "ignored < 0")
-        byte[] getStringBytes(Object pointer, @SuppressWarnings("unused") int ignored,
-                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
-                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
-                        @Shared("r") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-            try {
-                long size = (Long) lib.execute(mod.getStrlenFunction(), pointer);
-                byte[] bytes = new byte[(int) size];
-                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
-                return bytes;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.raise(SystemError, e);
-            }
-        }
-
-        @Specialization(guards = "size == 0")
-        static byte[] empty(@SuppressWarnings("unused") Object pointer, @SuppressWarnings("unused") int size) {
-            return EMPTY_BYTE_ARRAY;
-        }
-
-    }
-
-    protected static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
-    protected static final ByteArraySupport SERIALIZE_BE = ByteArraySupport.bigEndian();
-
     protected static Object getValue(FFI_TYPES type, byte[] storage, int offset) {
-        switch (type) {
-            case FFI_TYPE_UINT8_ARRAY:
-            case FFI_TYPE_SINT8_ARRAY:
-            case FFI_TYPE_UINT8:
-            case FFI_TYPE_SINT8:
-                return storage[offset];
-            case FFI_TYPE_UINT16_ARRAY:
-            case FFI_TYPE_SINT16_ARRAY:
-            case FFI_TYPE_UINT16:
-            case FFI_TYPE_SINT16:
-                return SERIALIZE_LE.getShort(storage, offset);
-            case FFI_TYPE_UINT32_ARRAY:
-            case FFI_TYPE_SINT32_ARRAY:
-            case FFI_TYPE_UINT32:
-            case FFI_TYPE_SINT32:
-                return SERIALIZE_LE.getInt(storage, offset);
-            case FFI_TYPE_UINT64_ARRAY:
-            case FFI_TYPE_SINT64_ARRAY:
-            case FFI_TYPE_UINT64:
-            case FFI_TYPE_SINT64:
-                return SERIALIZE_LE.getLong(storage, offset);
-            case FFI_TYPE_FLOAT_ARRAY:
-            case FFI_TYPE_FLOAT:
-                return SERIALIZE_LE.getFloat(storage, offset);
-            case FFI_TYPE_DOUBLE_ARRAY:
-            case FFI_TYPE_DOUBLE:
-                return SERIALIZE_LE.getDouble(storage, offset);
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
-        }
+        return switch (type) {
+            case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> storage[offset];
+            case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> ARRAY_ACCESSOR.getShort(storage, offset);
+            case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> ARRAY_ACCESSOR.getInt(storage, offset);
+            case FFI_TYPE_UINT64, FFI_TYPE_SINT64, FFI_TYPE_POINTER -> ARRAY_ACCESSOR.getLong(storage, offset);
+            case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.getFloat(storage, offset);
+            case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.getDouble(storage, offset);
+            default -> throw CompilerDirectives.shouldNotReachHere("Unexpected value type for getValue");
+        };
     }
 
     protected static void setValue(FFI_TYPES type, byte[] storage, int offset, Object value) {
         switch (type) {
-            case FFI_TYPE_UINT8_ARRAY:
-            case FFI_TYPE_SINT8_ARRAY:
-            case FFI_TYPE_UINT8:
-            case FFI_TYPE_SINT8:
-                storage[offset] = (byte) value;
-                break;
-            case FFI_TYPE_UINT16_ARRAY:
-            case FFI_TYPE_SINT16_ARRAY:
-            case FFI_TYPE_UINT16:
-            case FFI_TYPE_SINT16:
-                SERIALIZE_LE.putShort(storage, offset, (Short) value);
-                break;
-            case FFI_TYPE_UINT32_ARRAY:
-            case FFI_TYPE_SINT32_ARRAY:
-            case FFI_TYPE_UINT32:
-            case FFI_TYPE_SINT32:
-                SERIALIZE_LE.putInt(storage, offset, (Integer) value);
-                break;
-            case FFI_TYPE_UINT64_ARRAY:
-            case FFI_TYPE_SINT64_ARRAY:
-            case FFI_TYPE_UINT64:
-            case FFI_TYPE_SINT64:
-                SERIALIZE_LE.putLong(storage, offset, (Long) value);
-                break;
-            case FFI_TYPE_FLOAT_ARRAY:
-            case FFI_TYPE_FLOAT:
-                SERIALIZE_LE.putFloat(storage, offset, (Float) value);
-                break;
-            case FFI_TYPE_DOUBLE_ARRAY:
-            case FFI_TYPE_DOUBLE:
-                SERIALIZE_LE.putDouble(storage, offset, (Double) value);
-                break;
-            case FFI_TYPE_STRUCT:
-                setValue(storage, value, offset);
-                break;
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
+            case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> storage[offset] = (byte) value;
+            case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> ARRAY_ACCESSOR.putShort(storage, offset, (Short) value);
+            case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> ARRAY_ACCESSOR.putInt(storage, offset, (Integer) value);
+            case FFI_TYPE_UINT64, FFI_TYPE_SINT64 -> ARRAY_ACCESSOR.putLong(storage, offset, (Long) value);
+            case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.putFloat(storage, offset, (Float) value);
+            case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.putDouble(storage, offset, (Double) value);
+            case FFI_TYPE_STRUCT -> setValue(storage, value, offset);
+            default -> throw CompilerDirectives.shouldNotReachHere("Unexpected value type for setValue");
         }
     }
 
@@ -291,22 +192,22 @@ public class CtypesNodes {
             value[idx] = (byte) v;
             return;
         } else if (v instanceof Short) {
-            SERIALIZE_LE.putShort(value, idx, (short) v);
+            ARRAY_ACCESSOR.putShort(value, idx, (short) v);
             return;
         } else if (v instanceof Integer) {
-            SERIALIZE_LE.putInt(value, idx, (int) v);
+            ARRAY_ACCESSOR.putInt(value, idx, (int) v);
             return;
         } else if (v instanceof Long) {
-            SERIALIZE_LE.putLong(value, idx, (long) v);
+            ARRAY_ACCESSOR.putLong(value, idx, (long) v);
             return;
         } else if (v instanceof Double) {
-            SERIALIZE_LE.putDouble(value, idx, (double) v);
+            ARRAY_ACCESSOR.putDouble(value, idx, (double) v);
             return;
         } else if (v instanceof Boolean) {
             value[idx] = (byte) (((boolean) v) ? 1 : 0);
             return;
         } else if (v instanceof Float) {
-            SERIALIZE_LE.putFloat(value, idx, (float) v);
+            ARRAY_ACCESSOR.putFloat(value, idx, (float) v);
             return;
         } else if (isJavaString(v)) {
             String s = (String) v;
@@ -333,5 +234,146 @@ public class CtypesNodes {
     @TruffleBoundary(allowInlining = true)
     public static char charAt(String s, int i) {
         return s.charAt(i);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class HandleFromPointerNode extends Node {
+        abstract Object execute(Node inliningTarget, Pointer pointer);
+
+        final CtypesModuleBuiltins.DLHandler getDLHandler(Node inliningTarget, Pointer pointer) {
+            Object handle = execute(inliningTarget, pointer);
+            if (handle instanceof CtypesModuleBuiltins.DLHandler dlHandler) {
+                return dlHandler;
+            }
+            return null;
+        }
+
+        final CtypesModuleBuiltins.NativeFunction getNativeFunction(Node inliningTarget, Pointer pointer) {
+            Object handle = execute(inliningTarget, pointer);
+            if (handle instanceof CtypesModuleBuiltins.NativeFunction nativeFunction) {
+                return nativeFunction;
+            }
+            return null;
+        }
+
+        @Specialization
+        static Object convert(Node inliningTarget, Pointer pointer,
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode) {
+            Object handle = getPointerValueAsObjectNode.execute(inliningTarget, pointer);
+            if (handle instanceof Long address) {
+                return CtypesModuleBuiltins.getObjectAtAddress(PythonContext.get(inliningTarget), address);
+            }
+            return handle;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class HandleFromLongNode extends Node {
+        abstract Object execute(Node inliningTarget, Object pointerObj);
+
+        final CtypesModuleBuiltins.DLHandler getDLHandler(Node inliningTarget, Object pointerObj) {
+            Object handle = execute(inliningTarget, pointerObj);
+            if (handle instanceof CtypesModuleBuiltins.DLHandler dlHandler) {
+                return dlHandler;
+            }
+            return null;
+        }
+
+        final CtypesModuleBuiltins.NativeFunction getNativeFunction(Node inliningTarget, Object pointerObj) {
+            Object handle = execute(inliningTarget, pointerObj);
+            if (handle instanceof CtypesModuleBuiltins.NativeFunction nativeFunction) {
+                return nativeFunction;
+            }
+            return null;
+        }
+
+        @Specialization
+        static Object convert(Node inliningTarget, Object pointerObj,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Cached HandleFromPointerNode handleFromPointerNode) {
+            Pointer pointer = pointerFromLongNode.execute(inliningTarget, pointerObj);
+            return handleFromPointerNode.execute(inliningTarget, pointer);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PyCDataFromBaseObjNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr);
+
+        @Specialization
+        static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CreateCDataObjectNode createCDataObjectNode,
+                        @Cached PyCDataMallocBufferNode mallocBufferNode,
+                        @Cached PointerNodes.MemcpyNode memcpyNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
+            dict.flags |= DICTFLAG_FINAL;
+            CDataObject cmem;
+
+            if (base != null) { /* use base's buffer */
+                cmem = createCDataObjectNode.execute(inliningTarget, type, adr, dict.size, false);
+                cmem.b_base = base;
+            } else { /* copy contents of adr */
+                cmem = mallocBufferNode.execute(inliningTarget, type, dict);
+                memcpyNode.execute(inliningTarget, cmem.b_ptr, adr, dict.size);
+            }
+            cmem.b_length = dict.length;
+            cmem.b_index = index;
+            return cmem;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CreateCDataObjectNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree);
+
+        @Specialization
+        static CDataObject doCreate(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PythonObjectFactory factory) {
+            CDataObject result;
+            if (isSubtypeNode.execute(type, PyCFuncPtr)) {
+                result = factory.createPyCFuncPtrObject(type, pointer, size, needsfree);
+            } else {
+                result = factory.createCDataObject(type, pointer, size, needsfree);
+            }
+            if (needsfree) {
+                new PointerReference(result, pointer, PythonContext.get(inliningTarget).getSharedFinalizer());
+            }
+            return result;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PyCDataMallocBufferNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, StgDictObject dict);
+
+        @Specialization
+        static CDataObject doCreate(Node inliningTarget, Object type, StgDictObject dict,
+                        @Cached CreateCDataObjectNode createCDataObjectNode) {
+            Pointer pointer = dict.size > 0 ? Pointer.allocate(dict.ffi_type_pointer, dict.size) : Pointer.NULL;
+            return createCDataObjectNode.execute(inliningTarget, type, pointer, dict.size, true);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericPyCDataNewNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, StgDictObject dict);
+
+        @Specialization
+        static CDataObject doCreate(Node inliningTarget, Object type, StgDictObject dict,
+                        @Cached PyCDataMallocBufferNode mallocBufferNode) {
+            CDataObject obj = mallocBufferNode.execute(inliningTarget, type, dict);
+            obj.b_length = dict.length;
+            dict.flags |= DICTFLAG_FINAL;
+            return obj;
+        }
     }
 }

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DICTFLAG_FINAL;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASBITFIELD;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASUNION;
@@ -49,6 +48,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
+import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;
@@ -91,10 +91,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -128,11 +128,11 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
     private static final int MAX_STRUCT_SIZE = 16;
 
-    protected static final TruffleString T__abstract_ = tsLiteral("_abstract_");
-    protected static final TruffleString T__fields_ = tsLiteral("_fields_");
-    protected static final TruffleString T__swappedbytes_ = tsLiteral("_swappedbytes_");
-    protected static final TruffleString T__use_broken_old_ctypes_structure_semantics_ = tsLiteral("_use_broken_old_ctypes_structure_semantics_");
-    protected static final TruffleString T__pack_ = tsLiteral("_pack_");
+    protected static final TruffleString T__ABSTRACT_ = tsLiteral("_abstract_");
+    protected static final TruffleString T__FIELDS_ = tsLiteral("_fields_");
+    protected static final TruffleString T__SWAPPEDBYTES_ = tsLiteral("_swappedbytes_");
+    protected static final TruffleString T__USE_BROKEN_OLD_CTYPES_STRUCTURE_SEMANTICS_ = tsLiteral("_use_broken_old_ctypes_structure_semantics_");
+    protected static final TruffleString T__PACK_ = tsLiteral("_pack_");
 
     @ImportStatic(StructUnionTypeBuiltins.class)
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -153,7 +153,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("create(T__fields_)") SetAttributeNode setFieldsAttributeNode) {
+                        @Cached("create(T__FIELDS_)") SetAttributeNode setFieldsAttributeNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
@@ -163,8 +163,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            /* keep this for bw compatibility */
-            if (getItemResDict.hasKey(resDict.getDictStorage(), T__abstract_)) {
+            if (getItemResDict.hasKey(resDict.getDictStorage(), T__ABSTRACT_)) {
                 return result;
             }
 
@@ -177,11 +176,11 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * requirements of the instances
              */
             dict.setDictStorage(addAllToOtherNode.execute(frame, resDict.getDictStorage(), dict.getDictStorage()));
-            setDict.execute((PythonObject) result, dict);
+            setDict.execute(result, dict);
             dict.format = T_UPPER_B;
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
-            Object fieldsValue = getItemStgDict.execute(dict.getDictStorage(), T__fields_);
+            Object fieldsValue = getItemStgDict.execute(dict.getDictStorage(), T__FIELDS_);
             if (fieldsValue != null) {
                 setFieldsAttributeNode.execute(frame, result, fieldsValue);
             } else {
@@ -224,9 +223,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
-                        @Cached(parameters = "T__swappedbytes_") LookupAttributeInMRONode lookupSwappedbytes,
-                        @Cached(parameters = "T__pack_") LookupAttributeInMRONode lookupPack,
-                        @Cached(parameters = "T__use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes,
+                        @Cached PyObjectLookupAttr lookupSwappedbytes,
+                        @Cached PyObjectLookupAttr lookupPack,
+                        @Cached PyObjectLookupAttr lookupBrokenCtypes,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -238,15 +237,15 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * XXX Remove this in ctypes 1.0!
              */
             boolean use_broken_old_ctypes_semantics;
-            Object tmp = lookupSwappedbytes.execute(type);
+            Object tmp = lookupSwappedbytes.execute(frame, type, T__SWAPPEDBYTES_);
             boolean big_endian;
             // PY_BIG_ENDIAN;
             big_endian = tmp == PNone.NO_VALUE; // !PY_BIG_ENDIAN;
 
-            tmp = lookupBrokenCtypes.execute(type);
+            tmp = lookupBrokenCtypes.execute(frame, type, T__USE_BROKEN_OLD_CTYPES_STRUCTURE_SEMANTICS_);
             use_broken_old_ctypes_semantics = tmp != PNone.NO_VALUE;
 
-            tmp = lookupPack.execute(type);
+            tmp = lookupPack.execute(frame, type, T__PACK_);
             boolean isPacked = tmp != PNone.NO_VALUE;
             int pack = 0;
             if (tmp != PNone.NO_VALUE) {

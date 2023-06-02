@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,26 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.ctypes;
+package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
-import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.graal.python.runtime.AsyncHandler;
 
-public final class PyCFuncPtrObject extends CDataObject {
+/**
+ * Weak reference object that will deallocate possible native memory pointed to by a {@link Pointer}
+ * when given referent gets garbage collected. It is not necessary to keep a reference to this
+ * object after creating it, it stores a reference to itself into
+ * {@link AsyncHandler.SharedFinalizer} automatically.
+ */
+public class PointerReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-    CThunkObject thunk;
-    Object callable;
-
-    /* These two fields will override the ones in the type's stgdict if they are set */
-    Object[] converters;
-    Object[] argtypes;
-    Object restype;
-    Object checker;
-    Object errcheck;
-    Object[] paramflags; // PTuple[]
-
-    public PyCFuncPtrObject(Object cls, Shape instanceShape, Pointer b_ptr, int b_size, boolean b_needsfree) {
-        super(cls, instanceShape, b_ptr, b_size, b_needsfree);
+    public PointerReference(Object referent, Pointer pointer, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, pointer, sharedFinalizer);
     }
 
+    @Override
+    public AsyncHandler.AsyncAction release() {
+        // This node currently doesn't need a call target
+        return (context) -> PointerNodes.FreeNode.getUncached().execute(null, (Pointer) getReference());
+    }
 }

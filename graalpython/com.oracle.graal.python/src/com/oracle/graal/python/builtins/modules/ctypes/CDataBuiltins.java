@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,8 +61,8 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -79,7 +79,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(extendClasses = PyCData)
@@ -113,7 +115,7 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getBNeedsFree(CDataObject self) {
-            return self.b_needsfree != 0;
+            return self.b_needsfree;
         }
     }
 
@@ -152,25 +154,20 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object reduce(VirtualFrame frame, CDataObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached PointerNodes.ReadBytesNode readBytesNode,
+                        @Cached InlinedGetClassNode getClassNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
-            if (self.b_ptr.isManagedBytes()) {
-                ByteArrayStorage byteArrayStorage = (ByteArrayStorage) self.b_ptr.ptr;
-                int len = byteArrayStorage.value.length;
-                int offset = self.b_ptr.offset;
-                t1[1] = factory().createBytes(PythonUtils.arrayCopyOfRange(byteArrayStorage.value, offset, len), self.b_size);
-            } else {
-                throw raise(NotImplementedError, toTruffleStringUncached("Storage is not covered yet."));
-            }
-            Object clazz = getClassNode.execute(self);
+            t1[1] = factory().createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
+            Object clazz = getClassNode.execute(inliningTarget, self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
             PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), T_UNPICKLE, null);

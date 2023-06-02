@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StgDict;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__AS_PARAMETER_;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -82,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -128,10 +129,6 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
 
-        protected boolean isStruct() {
-            return true;
-        }
-
         @Specialization
         Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Cached TypeNode typeNew,
@@ -139,7 +136,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
+                        @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached SetAttributeNode.Dynamic setAttrString,
@@ -156,7 +153,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
 
-            Object proto = lookupAttrId.execute(result);
+            Object proto = lookupAttrType.execute(frame, result, T__TYPE_);
             if (proto == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
@@ -327,16 +324,16 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = code;
             parg.pffi_type = fd.pffi_type;
-            parg.value.createStorage(parg.pffi_type, dict.size, value);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, dict.size);
             try {
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
+                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.valuePointer, value, 0);
                 return parg;
             } catch (PException e) {
                 // pass through to check for _as_parameter_
             }
 
             Object as_parameter = lookupAsParam.execute(frame, value, T__AS_PARAMETER_);
-            if (as_parameter != null) {
+            if (as_parameter != PNone.NO_VALUE) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
                 Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode);
                 // Py_LeaveRecursiveCall();

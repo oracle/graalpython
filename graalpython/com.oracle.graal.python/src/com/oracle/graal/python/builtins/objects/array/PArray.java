@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -304,51 +304,51 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     short readShort(int byteOffset) {
-        return PythonUtils.arrayAccessor.getShort(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getShort(buffer, byteOffset);
     }
 
     @ExportMessage
     void writeShort(int byteOffset, short value) {
-        PythonUtils.arrayAccessor.putShort(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putShort(buffer, byteOffset, value);
     }
 
     @ExportMessage
     int readInt(int byteOffset) {
-        return PythonUtils.arrayAccessor.getInt(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getInt(buffer, byteOffset);
     }
 
     @ExportMessage
     void writeInt(int byteOffset, int value) {
-        PythonUtils.arrayAccessor.putInt(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putInt(buffer, byteOffset, value);
     }
 
     @ExportMessage
     long readLong(int byteOffset) {
-        return PythonUtils.arrayAccessor.getLong(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getLong(buffer, byteOffset);
     }
 
     @ExportMessage
     void writeLong(int byteOffset, long value) {
-        PythonUtils.arrayAccessor.putLong(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putLong(buffer, byteOffset, value);
     }
 
     @ExportMessage
     float readFloat(int byteOffset) {
-        return PythonUtils.arrayAccessor.getFloat(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getFloat(buffer, byteOffset);
     }
 
     @ExportMessage
     void writeFloat(int byteOffset, float value) {
-        PythonUtils.arrayAccessor.putFloat(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putFloat(buffer, byteOffset, value);
     }
 
     @ExportMessage
     double readDouble(int byteOffset) {
-        return PythonUtils.arrayAccessor.getDouble(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getDouble(buffer, byteOffset);
     }
 
     @ExportMessage
     void writeDouble(int byteOffset, double value) {
-        PythonUtils.arrayAccessor.putDouble(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putDouble(buffer, byteOffset, value);
     }
 }

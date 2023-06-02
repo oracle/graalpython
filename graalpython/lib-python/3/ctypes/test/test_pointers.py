@@ -201,8 +201,9 @@ class PointersTestCase(unittest.TestCase):
         self.assertTrue(POINTER(LargeNamedType))
 
         # to not leak references, we must clean _pointer_type_cache
-        from ctypes import _pointer_type_cache
-        del _pointer_type_cache[LargeNamedType]
+        # GraalVM change
+        # from ctypes import _pointer_type_cache
+        # del _pointer_type_cache[LargeNamedType]
 
     def test_pointer_type_str_name(self):
         large_string = 'T' * 2 ** 25
@@ -210,8 +211,9 @@ class PointersTestCase(unittest.TestCase):
         self.assertTrue(P)
 
         # to not leak references, we must clean _pointer_type_cache
-        from ctypes import _pointer_type_cache
-        del _pointer_type_cache[id(P)]
+        # GraalVM change
+        # from ctypes import _pointer_type_cache
+        # del _pointer_type_cache[id(P)]
 
     def test_abstract(self):
         from ctypes import _Pointer

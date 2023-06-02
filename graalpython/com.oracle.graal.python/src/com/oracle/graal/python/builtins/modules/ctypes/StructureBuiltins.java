@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__fields_;
+import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__FIELDS_;
 import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
@@ -70,11 +70,13 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Structure, PythonBuiltinClassType.Union})
@@ -91,10 +93,11 @@ public class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            CDataObject result = factory().createCDataObject(type);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-            return CDataTypeBuiltins.GenericPyCDataNew(dict, result);
+            return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
 
@@ -169,7 +172,7 @@ public class StructureBuiltins extends PythonBuiltins {
             }
 
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            fields = getItem.execute(dict.getDictStorage(), T__fields_);
+            fields = getItem.execute(dict.getDictStorage(), T__FIELDS_);
             if (fields == null) {
                 return index;
             }

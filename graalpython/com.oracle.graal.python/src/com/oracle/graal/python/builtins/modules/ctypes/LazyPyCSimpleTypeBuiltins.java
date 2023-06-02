@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__AS_PARAMETER_;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
-import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_uint8_array;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -63,25 +63,25 @@ import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltins
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltinsFactory.CWCharPFromParamNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -118,17 +118,18 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static void addClassMethod(PythonObjectSlowPathFactory pythonObjectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
+    private static void addClassMethod(PythonObjectSlowPathFactory objectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Builtin builtin) {
         TruffleString name = toTruffleStringUncached(builtin.name());
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
-                        l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
-                        factory.getNodeClass(),
+                        l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true),
+                        nodeFactory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = pythonObjectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
+        PBuiltinFunction function = objectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
+        PDecoratedMethod classMethod = objectFactory.createClassmethodFromCallableObj(function);
         function.setAttribute(T___DOC__, builtinDoc);
-        WriteAttributeToObjectNode.getUncached(true).execute(type, name, function);
+        WriteAttributeToObjectNode.getUncached(true).execute(type, name, classMethod);
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
@@ -151,13 +152,13 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAttr) {
             if (PGuards.isString(value)) {
                 PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = ffi_type_uint8_array;
+                parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'Z';
-                parg.value = PtrValue.bytes(parg.pffi_type, PythonUtils.EMPTY_BYTE_ARRAY);
-                parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
+                parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+                parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.valuePointer, value, 0);
                 return parg;
             }
             boolean res = isInstanceNode.executeWith(frame, value, type);
@@ -182,11 +183,10 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cwCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }
@@ -210,56 +210,52 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isLong(value, longCheckNode)")
         Object voidPtr(@SuppressWarnings("unused") Object type, Object value,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        @Cached CastToNativeLongNode toNativeLongNode) {
-            /* Should probably allow buffer interface as well */
+                        @Exclusive @Cached SetFuncNode setFuncNode) {
             /* int, long */
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'P';
-            // TODO: check if wrap is needed
-            parg.value = PtrValue.nativePointer(toNativeLongNode.execute(value));
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.P_set, parg.valuePointer, value, 0);
             parg.obj = PNone.NONE;
             return parg;
         }
 
         @Specialization
-        Object bytes(@SuppressWarnings("unused") Object type, PBytes value, // PyBytes_Check
-                        @Cached GetInternalByteArrayNode getBytes) {
+        Object bytes(@SuppressWarnings("unused") Object type, PBytes value,
+                        @Exclusive @Cached SetFuncNode setFuncNode) {
             /* bytes */
             PyCArgObject parg = factory().createCArgObject();
-            parg.pffi_type = ffi_type_uint8_array;
+            parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.valuePointer, value, 0);
             parg.obj = value;
             return parg;
         }
 
         @Specialization
-        Object string(@SuppressWarnings("unused") Object type, TruffleString tvalue,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) { // PyUnicode_Check
+        Object string(@SuppressWarnings("unused") Object type, TruffleString value,
+                        @Exclusive @Cached SetFuncNode setFuncNode) {
             /* unicode */
             PyCArgObject parg = factory().createCArgObject();
-            parg.pffi_type = ffi_type_uint8_array;
+            parg.pffi_type = ffi_type_pointer;
             parg.tag = 'Z';
-            TruffleString str = switchEncodingNode.execute(tvalue, TruffleString.Encoding.UTF_8);
-            int len = str.byteLength(TruffleString.Encoding.UTF_8);
-            byte[] b = new byte[len];
-            copyToByteArrayNode.execute(str, 0, b, 0, len, TruffleString.Encoding.UTF_8);
-            parg.value = PtrValue.bytes(parg.pffi_type, b);
-            parg.obj = tvalue;
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.Z_set, parg.valuePointer, value, 0);
+            parg.obj = value;
             return parg;
         }
 
         @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(value, longCheckNode)"})
-        Object c_void_p_from_param(VirtualFrame frame, Object type, Object value, // PyUnicode_Check
+        Object c_void_p_from_param(VirtualFrame frame, Object type, Object value,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached PyObjectLookupAttr lookupAttr) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -280,12 +276,11 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
             /* function pointer */
-            if (value instanceof PyCFuncPtrObject && pyTypeCheck.isPyCFuncPtrObject(value)) {
-                PyCFuncPtrObject func = (PyCFuncPtrObject) value;
+            if (value instanceof PyCFuncPtrObject func && pyTypeCheck.isPyCFuncPtrObject(value)) {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'P';
-                parg.value = func.b_ptr;
+                parg.valuePointer = func.b_ptr;
                 parg.obj = value;
                 return parg;
             }
@@ -293,24 +288,22 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             StgDictObject stgd = pyObjectStgDictNode.execute(value);
             if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isTruffleString(stgd.proto)) { // PyUnicode_Check
                 int code = codePointAtIndexNode.execute((TruffleString) stgd.proto, 0, TS_ENCODING);
-                switch (code) {
-                    case 'z': /* c_char_p */
-                    case 'Z': /* c_wchar_p */
-                        PyCArgObject parg = factory().createCArgObject();
-                        parg.pffi_type = ffi_type_uint8_array;
-                        parg.tag = 'Z';
-                        parg.obj = value;
-                        /* Remember: b_ptr points to where the pointer is stored! */
-                        parg.value = ((CDataObject) value).b_ptr;
-                        return parg;
+                /* c_char_p, c_wchar_p */
+                if (code == 'z' || code == 'Z') {
+                    PyCArgObject parg = factory().createCArgObject();
+                    parg.pffi_type = ffi_type_pointer;
+                    parg.tag = 'Z';
+                    parg.obj = value;
+                    /* Remember: b_ptr points to where the pointer is stored! */
+                    parg.valuePointer = ((CDataObject) value).b_ptr;
+                    return parg;
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }
@@ -329,11 +322,12 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object bytes(@SuppressWarnings("unused") Object type, PBytes value,
-                        @Cached GetInternalByteArrayNode getBytes) {
+                        @Cached SetFuncNode setFuncNode) {
             PyCArgObject parg = factory().createCArgObject();
-            parg.pffi_type = ffi_type_uint8_array;
+            parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.valuePointer, value, 0);
             parg.obj = value;
             return parg;
         }
@@ -345,7 +339,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CCharPFromParamNode cCharPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAttr) {
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
                 return value;
@@ -368,11 +362,10 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }

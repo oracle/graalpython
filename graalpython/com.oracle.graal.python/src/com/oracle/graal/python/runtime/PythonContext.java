@@ -63,6 +63,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -180,6 +181,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
+
+import sun.misc.Unsafe;
 
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
@@ -2506,5 +2509,75 @@ public final class PythonContext extends Python3Core {
 
     public void setDlopenFlags(int dlopenFlags) {
         this.dlopenFlags = dlopenFlags;
+    }
+
+    private static final class UnsafeWrapper {
+        private static final Unsafe UNSAFE = initUnsafe();
+
+        private static Unsafe initUnsafe() {
+            try {
+                return Unsafe.getUnsafe();
+            } catch (SecurityException e) {
+            }
+            try {
+                Field theUnsafeInstance = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafeInstance.setAccessible(true);
+                return (Unsafe) theUnsafeInstance.get(Unsafe.class);
+            } catch (Exception e) {
+                throw new RuntimeException("exception while trying to get Unsafe.theUnsafe via reflection:", e);
+            }
+        }
+    }
+
+    public Unsafe getUnsafe() {
+        if (isNativeAccessAllowed()) {
+            return UnsafeWrapper.UNSAFE;
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
+    }
+
+    public long allocateNativeMemory(long size) {
+        return allocateNativeMemoryBoundary(getUnsafe(), size);
+    }
+
+    @TruffleBoundary
+    private static long allocateNativeMemoryBoundary(Unsafe unsafe, long size) {
+        return unsafe.allocateMemory(size);
+    }
+
+    public void freeNativeMemory(long address) {
+        freeNativeMemoryBoundary(getUnsafe(), address);
+    }
+
+    @TruffleBoundary
+    private static void freeNativeMemoryBoundary(Unsafe unsafe, long address) {
+        unsafe.freeMemory(address);
+    }
+
+    public void copyNativeMemory(long dst, byte[] src, int srcOffset, int size) {
+        copyNativeMemoryBoundary(getUnsafe(), null, dst, src, byteArrayOffset(srcOffset), size);
+    }
+
+    public void copyNativeMemory(byte[] dst, int dstOffset, long src, int size) {
+        copyNativeMemoryBoundary(getUnsafe(), dst, byteArrayOffset(dstOffset), null, src, size);
+    }
+
+    private static long byteArrayOffset(int offset) {
+        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
+    }
+
+    @TruffleBoundary
+    private static void copyNativeMemoryBoundary(Unsafe unsafe, Object dst, long dstOffset, Object src, long srcOffset, int size) {
+        unsafe.copyMemory(src, srcOffset, dst, dstOffset, size);
+    }
+
+    public void setNativeMemory(long pointer, int size, byte value) {
+        setNativeMemoryBoundary(getUnsafe(), pointer, size, value);
+    }
+
+    @TruffleBoundary
+    private static void setNativeMemoryBoundary(Unsafe unsafe, long pointer, int size, byte value) {
+        unsafe.setMemory(pointer, size, value);
     }
 }

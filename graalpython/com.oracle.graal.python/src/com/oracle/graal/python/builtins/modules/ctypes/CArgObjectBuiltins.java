@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StructParam;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -51,17 +50,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CArgObject)
@@ -97,7 +100,9 @@ public class CArgObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doit(PyCArgObject self,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PointerNodes.ReadByteNode readByteNode) {
             String ret;
             switch (self.tag) {
                 case 'b':
@@ -110,25 +115,25 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 case 'L':
                 case 'q': // TODO big int
                 case 'Q': // TODO big int
-                    ret = PythonUtils.formatJString("<cparam '%c' (%d)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%d)>", self.tag, self.valuePointer);
                     break;
                 case 'd':
                 case 'f': {
-                    ret = PythonUtils.formatJString("<cparam '%c' (%f)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%f)>", self.tag, self.valuePointer);
                     break;
                 }
                 case 'c':
-                    byte[] bytes = ((ByteArrayStorage) self.value.ptr).value;
-                    if (isLiteralChar((char) bytes[0])) {
-                        ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.value);
+                    byte val = readByteNode.execute(inliningTarget, self.valuePointer);
+                    if (isLiteralChar((char) val)) {
+                        ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.valuePointer);
                     } else {
-                        ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                        ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.valuePointer));
                     }
                     break;
                 case 'z':
                 case 'Z':
                 case 'P':
-                    ret = PythonUtils.formatJString("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                    ret = PythonUtils.formatJString("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.valuePointer));
                     break;
                 default:
                     if (isLiteralChar(self.tag)) {
@@ -147,69 +152,57 @@ public class CArgObjectBuiltins extends PythonBuiltins {
     protected static final int PyCSimpleTypeParamFunc = 8;
     protected static final int StructUnionTypeParamFunc = 16;
 
-    protected static PyCArgObject paramFunc(int f, CDataObject self, StgDictObject stgDict, PythonObjectFactory factory,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        PyCArgObject parg = factory.createCArgObject();
-        switch (f) {
-            case PyCArrayTypeParamFunc: // Corresponds to PyCArrayType_paramfunc
-                parg.tag = 'P';
-                // parg.pffi_type = FFIType.ffi_type_pointer;
-                parg.pffi_type = stgDict.ffi_type_pointer;
-                parg.value = self.b_ptr;
-                parg.obj = self;
-                return parg;
-            case PyCFuncPtrTypeParamFunc: // Corresponds to PyCFuncPtrType_paramfunc
-            case PyCPointerTypeParamFunc: // Corresponds to PyCPointerType_paramfunc
-                parg.tag = 'P';
-                // parg.pffi_type = ffi_type_pointer;
-                parg.pffi_type = stgDict.ffi_type_pointer;
-                parg.obj = self;
-                parg.value = self.b_ptr;
-                return parg;
-            case PyCSimpleTypeParamFunc: // Corresponds to PyCSimpleType_paramfunc
-                assert stgDict != null : "Cannot be NULL for CDataObject instances";
-                TruffleString fmt = (TruffleString) stgDict.proto;
-                assert fmt != null;
+    @GenerateUncached
+    abstract static class ParamFuncNode extends Node {
+        abstract PyCArgObject execute(CDataObject self, StgDictObject stgDict);
 
-                char code = (char) codePointAtIndexNode.execute(fmt, 0, TS_ENCODING);
-                FieldDesc fd = FFIType._ctypes_get_fielddesc(code);
-                assert fd != null;
-
-                parg.tag = code;
-                parg.pffi_type = fd.pffi_type;
-                parg.obj = self;
-                parg.value = self.b_ptr.copy(); // memcpy(parg.value, self.b_ptr, self.b_size);
-                return parg;
-            case StructUnionTypeParamFunc: // Corresponds to StructUnionType_paramfunc
-                /*
-                 * PyCStructType_Type - a meta type/class. Creating a new class using this one as
-                 * __metaclass__ will call the constructor StructUnionType_new. It replaces the
-                 * tp_dict member with a new instance of StgDict, and initializes the C accessible
-                 * fields somehow.
-                 */
-                PtrValue ptr = self.b_ptr;
-                Object obj = self;
-                if (self.b_size > StgDictObject.VOID_PTR_SIZE) {
-                    // ptr = PyMem_Malloc(self.b_size); TODO
-                    // memcpy(ptr, self.b_ptr, self.b_size); TODO
-
-                    /*
-                     * Create a Python object which calls PyMem_Free(ptr) in its deallocator. The
-                     * object will be destroyed at _ctypes_callproc() cleanup.
-                     */
-                    StructParamObject struct_param = factory.createStructParamObject(StructParam);
-                    obj = struct_param;
-                    struct_param.ptr = ptr;
+        @Specialization
+        protected static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
+                        @Cached PythonObjectFactory factory,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            PyCArgObject parg = factory.createCArgObject();
+            switch (stgDict.paramfunc) {
+                // Corresponds to PyCArrayType_paramfunc
+                case PyCArrayTypeParamFunc -> {
+                    parg.tag = 'P';
+                    parg.pffi_type = FFIType.ffi_type_pointer;
+                    parg.valuePointer = self.b_ptr.createReference();
+                    parg.obj = self;
+                    return parg;
                 }
-
-                assert stgDict != null : "Cannot be NULL for structure/union instances";
-                parg.pffi_type = stgDict.ffi_type_pointer;
-                parg.tag = 'V';
-                parg.value = ptr;
-                parg.size = self.b_size;
-                parg.obj = obj;
-                return parg;
+                // Corresponds to PyCFuncPtrType_paramfunc and PyCPointerType_paramfunc
+                case PyCFuncPtrTypeParamFunc, PyCPointerTypeParamFunc -> {
+                    parg.tag = 'P';
+                    parg.pffi_type = FFIType.ffi_type_pointer;
+                    parg.obj = self;
+                    parg.valuePointer = self.b_ptr;
+                    return parg;
+                }
+                // Corresponds to PyCSimpleType_paramfunc
+                case PyCSimpleTypeParamFunc -> {
+                    TruffleString fmt = (TruffleString) stgDict.proto;
+                    assert fmt != null;
+                    char code = (char) codePointAtIndexNode.execute(fmt, 0, TS_ENCODING);
+                    FieldDesc fd = FFIType._ctypes_get_fielddesc(code);
+                    assert fd != null;
+                    parg.tag = code;
+                    parg.pffi_type = fd.pffi_type;
+                    parg.obj = self;
+                    parg.valuePointer = self.b_ptr;
+                    return parg;
+                }
+                // Corresponds to StructUnionType_paramfunc
+                case StructUnionTypeParamFunc -> {
+                    Pointer ptr = self.b_ptr;
+                    parg.pffi_type = stgDict.ffi_type_pointer;
+                    parg.tag = 'V';
+                    parg.valuePointer = ptr;
+                    parg.size = self.b_size;
+                    parg.obj = self;
+                    return parg;
+                }
+                default -> throw CompilerDirectives.shouldNotReachHere("Unknown function parameter");
+            }
         }
-        throw CompilerDirectives.shouldNotReachHere("Unknown function parameter");
     }
 }

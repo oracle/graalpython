@@ -51,6 +51,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class StgDictObject extends PDict {
 
     protected static final int VOID_PTR_SIZE = Long.BYTES; // sizeof(void *)
+    protected static final int DICTFLAG_FINAL = 0x1000;
 
     /*
      * The size and align fields are unneeded, they are in ffi_type as well. As an experiment shows,

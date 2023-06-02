@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE;
@@ -65,13 +66,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -106,8 +108,8 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
-                        @Cached("create(T__LENGTH_)") LookupAttributeInMRONode lookupAttrIdLength,
+                        @Cached PyObjectLookupAttr lookupAttrType,
+                        @Cached PyObjectLookupAttr lookupAttrLength,
                         @Cached IsBuiltinObjectProfile profile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNode typeNew,
@@ -119,8 +121,8 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
              * create the new instance (which is a class, since we are a metatype!)
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
-            Object length_attr = lookupAttrIdLength.execute(result);
-            if (length_attr == null) {
+            Object length_attr = lookupAttrLength.execute(frame, result, T__LENGTH_);
+            if (length_attr == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
             }
 
@@ -139,8 +141,8 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
             }
 
-            Object type_attr = lookupAttrId.execute(result);
-            if (type_attr == null) {
+            Object type_attr = lookupAttrType.execute(frame, result, T__TYPE_);
+            if (type_attr == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
@@ -181,8 +183,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
             stgdict.paramfunc = CArgObjectBuiltins.PyCArrayTypeParamFunc;
 
             /* Arrays are passed as pointers to function calls. */
-            // stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
-            stgdict.ffi_type_pointer = itemdict.ffi_type_pointer.getAsArray();
+            stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);

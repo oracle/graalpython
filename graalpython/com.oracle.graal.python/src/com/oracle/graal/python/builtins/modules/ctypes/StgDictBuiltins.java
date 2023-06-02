@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -107,7 +106,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         return StgDictBuiltinsFactory.getFactories();
     }
 
-    protected static final TruffleString T__anonymous_ = tsLiteral("_anonymous_");
+    protected static final TruffleString T__ANONYMOUS_ = tsLiteral("_anonymous_");
 
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
@@ -176,7 +175,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached("create(T__fields_)") GetAttributeNode getAttrString) {
+                        @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
             if (!sequenceCheckNode.execute(fields)) {
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
@@ -286,8 +285,8 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,
-                        @Cached(parameters = "T__anonymous_") LookupAttributeInMRONode lookupAnon) {
-            Object anon = lookupAnon.execute(type);
+                        @Cached PyObjectLookupAttr lookupAnon) {
+            Object anon = lookupAnon.execute(frame, type, T__ANONYMOUS_);
             if (PGuards.isPNone(anon)) {
                 return;
             }
