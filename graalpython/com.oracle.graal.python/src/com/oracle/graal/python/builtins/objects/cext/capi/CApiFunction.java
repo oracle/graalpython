@@ -664,6 +664,11 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_New", ret = PyObject, args = {Py_ssize_t, PY_UCS4}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyVectorcall_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_Py_dg_dtoa", ret = CHAR_PTR, args = {Double, Int, Int, INT_LIST, INT_LIST, CHAR_PTR_LIST}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_Py_dg_freedtoa", ret = Void, args = {CHAR_PTR}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_Py_dg_infinity", ret = Double, args = {Int}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_Py_dg_stdnan", ret = Double, args = {Int}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_Py_dg_strtod", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = PolyglotImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -679,11 +684,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_convert_optional_to_ssize_t", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_DecodeLocaleEx", ret = Int, args = {ConstCharPtrAsTruffleString, WCHAR_T_PTR_LIST, SIZE_T_PTR, CONST_CHAR_PTR_LIST, Int, _PY_ERROR_HANDLER}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_device_encoding", ret = PyObject, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_dg_dtoa", ret = CHAR_PTR, args = {Double, Int, Int, INT_LIST, INT_LIST, CHAR_PTR_LIST}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_dg_freedtoa", ret = Void, args = {CHAR_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_dg_infinity", ret = Double, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_dg_stdnan", ret = Double, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_dg_strtod", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_DisplaySourceLine", ret = Int, args = {PyObject, PyObject, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_dup", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_EncodeLocaleEx", ret = Int, args = {CONST_WCHAR_PTR, CHAR_PTR_LIST, SIZE_T_PTR, CONST_CHAR_PTR_LIST, Int, _PY_ERROR_HANDLER}, call = NotImplemented)

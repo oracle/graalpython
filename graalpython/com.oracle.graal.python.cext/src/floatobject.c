@@ -5,6 +5,7 @@
  */
 
 #include "capi.h"
+#include "pycore_dtoa.h"          // _Py_dg_dtoa()
 
 
 

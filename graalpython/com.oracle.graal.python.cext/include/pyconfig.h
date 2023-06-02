@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -144,6 +144,14 @@
 #else
 #define NT_THREADS 1
 #endif
+
+// The following should have been generated using `configure` command,
+// but instead, are set manully for the time being.
+
+/* Define if C doubles are 64-bit IEEE 754 binary format, stored with the
+   least significant byte first */
+#define DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1
+
 
 #endif /*Py_PYCONFIG_H*/
 
