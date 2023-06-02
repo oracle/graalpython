@@ -42,15 +42,25 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * Retrieve slots occupation of `cls->tp_as_number`, `cls->tp_as_sequence` and `cls->tp_as_mapping`
@@ -72,11 +82,42 @@ public abstract class GetMethodsFlagsNode extends Node {
         return cls.getMethodsFlags();
     }
 
-    @Specialization
-    static long doNative(PythonAbstractNativeObject cls,
-                    @Cached PCallCapiFunction callCapiFunction) {
-        Long flags = (Long) callCapiFunction.call(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
+    public static final HiddenKey METHODS_FLAGS = new HiddenKey("__methods_flags__");
+
+    @TruffleBoundary
+    private static long populateMethodsFlags(PythonAbstractNativeObject cls, PDict dict) {
+        Long flags = (Long) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
+        HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags);
         return flags;
+    }
+
+    protected static long getMethodsFlags(PythonAbstractNativeObject cls) {
+        return doNative(cls, CExtNodes.GetTypeMemberNode.getUncached(), HashingStorageGetItemNodeGen.getUncached());
+    }
+
+    // The assumption should hold unless `PyType_Modified` is called.
+    protected static Assumption nativeAssumption(PythonAbstractNativeObject cls) {
+        return PythonContext.get(null).getNativeClassStableAssumption(cls, true).getAssumption();
+    }
+
+    @Specialization(guards = "cachedCls == cls", limit = "5", assumptions = "nativeAssumption(cachedCls)")
+    static long doNativeCached(@SuppressWarnings("unused") PythonAbstractNativeObject cls,
+                    @SuppressWarnings("unused") @Cached("cls") PythonAbstractNativeObject cachedCls,
+                    @Cached("getMethodsFlags(cls)") long flags) {
+        return flags;
+    }
+
+    @Specialization(replaces = "doNativeCached")
+    static long doNative(PythonAbstractNativeObject cls,
+                    @Cached CExtNodes.GetTypeMemberNode getTpDictNode,
+                    @Cached HashingStorageGetItem getItem) {
+        // classes must have tp_dict since they are set during PyType_Ready
+        PDict dict = (PDict) getTpDictNode.execute(cls, NativeMember.TP_DICT);
+        Object f = getItem.execute(null, dict.getDictStorage(), METHODS_FLAGS);
+        if (f == null) {
+            return populateMethodsFlags(cls, dict);
+        }
+        return (Long) f;
     }
 
     @Fallback
