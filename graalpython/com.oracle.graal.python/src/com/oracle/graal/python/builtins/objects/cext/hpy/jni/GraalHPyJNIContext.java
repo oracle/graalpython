@@ -2302,10 +2302,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
-            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, Cpy_PyObjectPtr, CVoid -> argBits;
+            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }
