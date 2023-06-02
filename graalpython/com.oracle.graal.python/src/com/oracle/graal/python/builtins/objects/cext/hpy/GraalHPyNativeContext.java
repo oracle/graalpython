@@ -50,6 +50,7 @@ import java.io.PrintStream;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -99,6 +100,10 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     protected abstract void setNativeCache(long cachePtr);
 
     protected abstract long getWcharSize();
+
+    public abstract HPyCallHelperFunctionNode createCallHelperFunctionNode();
+
+    public abstract HPyCallHelperFunctionNode getUncachedCallHelperFunctionNode();
 
     protected final boolean useNativeFastPaths() {
         return context.useNativeFastPaths;

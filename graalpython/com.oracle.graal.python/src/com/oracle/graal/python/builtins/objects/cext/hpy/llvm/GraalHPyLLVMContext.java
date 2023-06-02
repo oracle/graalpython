@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyDummyToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
@@ -301,6 +302,16 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
+    }
+
+    @Override
+    public HPyCallHelperFunctionNode createCallHelperFunctionNode() {
+        return GraalHPyLLVMCallHelperFunctionNodeGen.create();
+    }
+
+    @Override
+    public HPyCallHelperFunctionNode getUncachedCallHelperFunctionNode() {
+        return GraalHPyLLVMCallHelperFunctionNodeGen.getUncached();
     }
 
     @ExportMessage

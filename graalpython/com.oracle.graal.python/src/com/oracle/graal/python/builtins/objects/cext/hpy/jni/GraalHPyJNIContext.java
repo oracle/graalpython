@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
@@ -103,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -423,6 +423,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         setNativeSpaceFunction(nativePointer, cachePtr);
     }
 
+    @Override
+    public HPyCallHelperFunctionNode createCallHelperFunctionNode() {
+        return new GraalHPyJNICallHelperFunctionNode();
+    }
+
+    @Override
+    public HPyCallHelperFunctionNode getUncachedCallHelperFunctionNode() {
+        return GraalHPyJNICallHelperFunctionNode.UNCACHED;
+    }
+
     /* JNI helper functions */
 
     @TruffleBoundary
@@ -433,6 +443,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @TruffleBoundary
     private static native int initJNINativeFastPaths(long uctxPointer);
+
+    @TruffleBoundary
+    public static native int getErrno();
+
+    @TruffleBoundary
+    public static native long getStrerror(int errno);
 
     /* HPY internal JNI trampoline declarations */
 

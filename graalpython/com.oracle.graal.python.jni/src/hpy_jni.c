@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <errno.h>
 
 //*************************
 // JNI upcalls
@@ -452,6 +453,13 @@ JNIEXPORT jint JNICALL JNI_HELPER(setNativeSpaceFunction)(JNIEnv *env, jclass cl
     return 0;
 }
 
+JNIEXPORT jint JNICALL JNI_HELPER(getErrno)(JNIEnv *env, jclass clazz) {
+	return (jint) errno;
+}
+
+JNIEXPORT jlong JNICALL JNI_HELPER(getStrerror)(JNIEnv *env, jclass clazz, jint i) {
+	return PTR_UP(strerror(i));
+}
 
 HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
 {

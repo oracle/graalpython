@@ -197,6 +197,34 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class GraalHPyNodes {
+
+    /**
+     * A node interface for calling (native) helper functions. The implementation depends on the HPy
+     * backend. This is the reason why this node takes the HPy context as construction parameter. The recommended usage of this node is
+     * <pre>
+     *     &#064;Specialization
+     *     Object doSomething(GraalHPyContext hpyContext,
+     *                        &#064;Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode) {
+     *         // ...
+     *     }
+     * </pre>
+     */
+    public abstract static class HPyCallHelperFunctionNode extends Node {
+        public final Object call(GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
+            return execute(context, name, args);
+        }
+
+        protected abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
+
+        public static HPyCallHelperFunctionNode create(GraalHPyContext context) {
+            return context.getBackend().createCallHelperFunctionNode();
+        }
+
+        public static HPyCallHelperFunctionNode getUncached(GraalHPyContext context) {
+            return context.getBackend().getUncachedCallHelperFunctionNode();
+        }
+    }
+
     @GenerateUncached
     public abstract static class PCallHPyFunction extends PNodeWithContext {
 
@@ -204,7 +232,7 @@ public class GraalHPyNodes {
             return execute(context, name, args);
         }
 
-        abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
+        public abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
 
         @Specialization
         static Object doIt(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,

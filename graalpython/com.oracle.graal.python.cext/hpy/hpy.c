@@ -343,11 +343,11 @@ int graal_hpy_get_errno() {
 	return errno;
 }
 
-void* graal_hpy_get_strerror(int i) {
+char *graal_hpy_get_strerror(int i) {
 	if (i != 0) {
-		return polyglot_from_string(strerror(i), SRC_CS);
+		return strerror(i);
 	}
-	return polyglot_from_string("Error", SRC_CS);
+	return "Error";
 }
 
 uint64_t graal_hpy_strlen(const char *ptr) {

@@ -262,6 +262,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateFunctionNode;
@@ -1650,14 +1651,14 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object errMessagePtr,
-                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperFunctionNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
-            Object i = callFromStringNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
-            Object message = callFromStringNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i);
+            Object i = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
+            Object message = fromCharPointerNode.execute(callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
             if (!isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException)) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
@@ -1686,12 +1687,13 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object filenameObject1, Object filenameObject2,
-                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode) {
-            Object i = callFromStringNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
-            Object message = callFromStringNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i);
+            Object i = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
+            Object message = fromCharPointerNode.execute(callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
             if (!isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException)) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
