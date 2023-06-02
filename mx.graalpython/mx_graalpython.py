@@ -1990,6 +1990,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'LLVM Runtime Enterprise': ('lib/sulong', []),
         'LLVM Runtime Native Enterprise': ('lib/sulong', []),
         'GraalVM Python license files EE': ('', []),
+        'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
     }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
