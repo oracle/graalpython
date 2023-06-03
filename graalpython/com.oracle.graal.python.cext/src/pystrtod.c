@@ -8,7 +8,7 @@
    locale, change it back to a dot.  Since the string cannot get
    longer, no need for a maximum buffer size parameter. */
 #include <Python.h>
-//#include "pycore_dtoa.h"
+#include "pycore_dtoa.h"
 #include <locale.h>
 
 /* Case-insensitive string match used for nan and inf detection; t should be

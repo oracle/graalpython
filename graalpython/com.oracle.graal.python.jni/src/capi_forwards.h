@@ -6001,20 +6001,29 @@ PyAPI_FUNC(int) _Py_convert_optional_to_ssize_t(PyObject* a, void* b) {
 PyAPI_FUNC(PyObject*) _Py_device_encoding(int a) {
     unimplemented("_Py_device_encoding"); exit(-1);
 }
+char* (*__target___Py_dg_dtoa)(double, int, int, int*, int*, char**) = NULL;
 PyAPI_FUNC(char*) _Py_dg_dtoa(double a, int b, int c, int* d, int* e, char** f) {
-    unimplemented("_Py_dg_dtoa"); exit(-1);
+    char* result = (char*) __target___Py_dg_dtoa(a, b, c, d, e, f);
+    return result;
 }
+void (*__target___Py_dg_freedtoa)(char*) = NULL;
 PyAPI_FUNC(void) _Py_dg_freedtoa(char* a) {
-    unimplemented("_Py_dg_freedtoa"); exit(-1);
+    __target___Py_dg_freedtoa(a);
 }
+double (*__target___Py_dg_infinity)(int) = NULL;
 PyAPI_FUNC(double) _Py_dg_infinity(int a) {
-    unimplemented("_Py_dg_infinity"); exit(-1);
+    double result = (double) __target___Py_dg_infinity(a);
+    return result;
 }
+double (*__target___Py_dg_stdnan)(int) = NULL;
 PyAPI_FUNC(double) _Py_dg_stdnan(int a) {
-    unimplemented("_Py_dg_stdnan"); exit(-1);
+    double result = (double) __target___Py_dg_stdnan(a);
+    return result;
 }
+double (*__target___Py_dg_strtod)(const char*, char**) = NULL;
 PyAPI_FUNC(double) _Py_dg_strtod(const char* a, char** b) {
-    unimplemented("_Py_dg_strtod"); exit(-1);
+    double result = (double) __target___Py_dg_strtod(a, b);
+    return result;
 }
 PyAPI_FUNC(int) _Py_dup(int a) {
     unimplemented("_Py_dup"); exit(-1);
@@ -6491,6 +6500,11 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___Py_HashBytes = getAPI("_Py_HashBytes");
     __target___Py_HashPointer = getAPI("_Py_HashPointer");
     __target___Py_HashPointerRaw = getAPI("_Py_HashPointerRaw");
+    __target___Py_dg_dtoa = getAPI("_Py_dg_dtoa");
+    __target___Py_dg_freedtoa = getAPI("_Py_dg_freedtoa");
+    __target___Py_dg_infinity = getAPI("_Py_dg_infinity");
+    __target___Py_dg_stdnan = getAPI("_Py_dg_stdnan");
+    __target___Py_dg_strtod = getAPI("_Py_dg_strtod");
     __target___Py_gitidentifier = getAPI("_Py_gitidentifier");
     __target___Py_gitversion = getAPI("_Py_gitversion");
     __target___Py_parse_inf_or_nan = getAPI("_Py_parse_inf_or_nan");

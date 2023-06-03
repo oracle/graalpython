@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -167,3 +167,21 @@ class TestPyFloat(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+class TestPyOSDouble:
+    def test_PyOS_double_to_string(self):
+        TestPyOS_Double_To_String = CPyExtType("TestPyOS_Double_To_String",
+                                '''
+                                static PyObject* testPyOS_D_to_Str(PyObject* self, PyObject *pyval) {
+                                    double val = PyFloat_AsDouble(pyval);
+                                    char *str = PyOS_double_to_string(val, 'f', 6, 0x2, NULL);
+                                    return PyUnicode_FromString(str);
+                                }
+                                ''',
+                                tp_methods='{"PyOS_double_to_string_test", (PyCFunction)testPyOS_D_to_Str, METH_O, ""}',
+                                )
+        tester = TestPyOS_Double_To_String()
+        assert tester.PyOS_double_to_string_test(150.604459) == '150.604459'
+        assert tester.PyOS_double_to_string_test(174.426353) == '174.426353'
+        assert tester.PyOS_double_to_string_test(151.074362) == '151.074362'
+        assert tester.PyOS_double_to_string_test(190.08) == '190.080000'
