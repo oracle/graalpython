@@ -4,11 +4,11 @@ Component
 This is a release of GraalVM Community Edition 20.0 Python Language Component. 
 This particular copy of the software is released under Universal Permissive 
 License (UPL) v. 1.0.
-Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved
+Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved
 
 ===========================================================================
            Universal Permissive License v. 1.0.
-Copyright (c) 2018, Oracle and/or its affiliates
+Copyright (c) 2018, 2023, Oracle and/or its affiliates
 The Universal Permissive License (UPL), Version 1.0
 Subject to the condition set forth below, permission is hereby granted to any 
 person obtaining a copy of this software, associated documentation and/or data 

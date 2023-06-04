@@ -27,8 +27,3 @@ Non-vulnerability related security issues may be discussed on GitHub Issues or t
 [2]: https://www.oracle.com/corporate/security-practices/assurance/vulnerability/reporting.html
 [3]: https://www.oracle.com/security-alerts/encryptionkey.html
 [4]: https://www.oracle.com/security-alerts/
-
-### Security-Related Information
-
-
-
