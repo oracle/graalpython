@@ -1876,15 +1876,20 @@ def _python_checkpatchfiles():
         pypi_base_url = "https://pypi.org"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
-        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/(.*\.patch)")
+        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/.*?([^/]*\.patch)")
         checked = {
+            # meson-python puts the whole license text in the field. It's MIT
+            'meson-python-0.12.patch',
+            'meson-python-0.13.patch',
             # scipy puts the whole license text in the field, skip it. It's new BSD
             'scipy-1.3.1.patch',
             'scipy-1.4.1.patch',
             'scipy-1.7.3.patch',
             'scipy-1.8.1.patch',
             'scipy-1.9.1.patch',
+            'scipy-1.9.3.patch',
             'scipy-1.10.0.patch',
+            'scipy-1.10.1.patch',
             # pandas puts the whole license text in the field. Its BSD-3-Clause
             'pandas-1.4.3.patch',
             'pandas-1.5.2.patch',
@@ -1893,16 +1898,30 @@ def _python_checkpatchfiles():
             'setuptools-60.9.patch',
             'setuptools-63.patch',
             'setuptools-65.patch',
-            'wheel-0.33.patch',
-            'wheel-0.34.patch'
+            # Empty license field. It's MIT
+            'urllib3-2.patch',
+            # Empty license field. It's MIT
+            'wheel-pre-0.35.patch',
         }
         allowed_licenses = [
-            "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License",
-            "BSD or Apache License, Version 2.0", "Apache License, Version 2.0",
-            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache", "Apache License", "new BSD",
-            "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0", "Apache 2.0", "MPL-2.0", "BSD 3-Clause",
+            "MIT",
+            "BSD",
+            "BSD-3-Clause",
+            "Apache License, Version 2.0",
+            "PSF",
+            "Apache",
+            "new BSD",
+            "Apache-2.0",
+            "MPL-2.0",
             "LGPL",
         ]
+
+        def as_license_regex(name):
+            subregex = re.escape(name).replace(r'\-', '[- ]')
+            return f'(?:{subregex}(?: license)?)'
+
+        allowed_licenses_regex = re.compile('|'.join(map(as_license_regex, allowed_licenses)), re.IGNORECASE)
+
         for line in content.split("\n"):
             if not line or os.stat(line).st_size == 0:
                 # empty files are just markers and do not need to be license checked
@@ -1910,7 +1929,7 @@ def _python_checkpatchfiles():
             match = patchfile_pattern.search(line)
             if match:
                 package_name = match.group(1)
-                patch_name = match.group(3)
+                patch_name = match.group(2)
                 if patch_name in checked:
                     continue
                 checked.add(patch_name)
@@ -1919,12 +1938,15 @@ def _python_checkpatchfiles():
                 response = urllib_request.urlopen(package_url)
                 try:
                     data = json.loads(response.read())
-                    data_license = data["info"]["license"]
-                    if data_license not in allowed_licenses:
-                        mx.abort(
-                            f"The license for the original project of patch file {patch_name!r} is {data_license!r}. "
-                            f"We cannot include a patch for it. Allowed licenses are: {allowed_licenses}"
-                        )
+                    license_field = data["info"]["license"]
+                    license_field_no_parens = re.sub(r'[()]', '', license_field)
+                    license_tokens = re.split(r' AND | OR ', license_field_no_parens)
+                    for license_token in license_tokens:
+                        if not allowed_licenses_regex.match(license_token):
+                            mx.abort(
+                                f"The license for the original project of patch file {patch_name!r} is {license_field!r}. "
+                                f"We cannot include a patch for it. Allowed licenses are: {allowed_licenses}"
+                            )
                 except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:
