@@ -422,6 +422,7 @@ def retag_unittests(args):
     parser.add_argument('--inspect', action='store_true')
     parser.add_argument('-debug-java', action='store_true')
     parser.add_argument('--jvm', action='store_true')
+    parser.add_argument('--timeout')
     parsed_args, remaining_args = parser.parse_known_args(args)
     env = os.environ.copy()
     env.update(
@@ -441,6 +442,8 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
+    if parsed_args.timeout:
+        args += [f'--timeout={parsed_args.timeout}']
     vm = python_svm() if not parsed_args.jvm else python_gvm()
     if parsed_args.jvm:
         args += ['-ea']

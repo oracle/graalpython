@@ -50,7 +50,8 @@ if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "_
 else:
     TAGS_DIR = "null"
 
-TIMEOUT = 90 * 60
+RUN_TIMEOUT = 90 * 60
+RETAG_TIMEOUT = 20 * 60
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
 LINE = "=" * 80
 
@@ -107,14 +108,16 @@ def make_test_function(working_test):
             if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
                 run_serialize_out(cmd)
             else:
-                rcode = run_with_timeout(cmd).returncode
+                rcode = run_with_timeout(cmd, timeout=RUN_TIMEOUT).returncode
                 if rcode:
                     raise subprocess.CalledProcessError(rcode, cmd)
                 print(working_test[0], "was finished.")
 
     def run_serialize_out(cmd):
-        result = run_with_timeout(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result = run_with_timeout(cmd, timeout=RUN_TIMEOUT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         append_out = "-v" in sys.argv
+        if result.returncode == 124:
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=RUN_TIMEOUT)
         if result.returncode:
             message = f"{working_test[0]} failed with exit code {result.returncode}.\n"
             append_out = True
@@ -196,14 +199,14 @@ def parse_unittest_output(output):
             return
 
 
-def run_with_timeout(cmd, *args, **kwargs):
+def run_with_timeout(cmd, *, timeout, **kwargs):
     p = subprocess.getstatusoutput("which timeout" if sys.platform != 'darwin' else "which gtimeout")
     if p[0] != 0:
         print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
     else:
-        timeout = p[1].strip()
-        cmd = [timeout, "-s", "9", str(TIMEOUT)] + cmd
-    return subprocess.run(cmd, *args, **kwargs)
+        timeout_cmd = p[1].strip()
+        cmd = [timeout_cmd, "-k", "10", str(timeout)] + cmd
+    return subprocess.run(cmd, **kwargs)
 
 
 def main():
@@ -213,14 +216,14 @@ def main():
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
     maxrepeats = 4
+    timeout = None
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
         elif arg.startswith("--maxrepeats="):
             maxrepeats = int(arg.partition("=")[2])
         elif arg.startswith("--timeout="):
-            global TIMEOUT
-            TIMEOUT = arg.partition("=")[2]
+            timeout = int(arg.partition("=")[2])
         elif arg == "--help":
             print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
@@ -228,6 +231,8 @@ def main():
                 arg += ".py"
             glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
 
+    if not timeout:
+        timeout = RETAG_TIMEOUT if retag else RUN_TIMEOUT
     testfiles = glob.glob(glob_pattern)
     testfiles += glob.glob(glob_pattern.replace(".py", "/__init__.py"))
 
@@ -268,15 +273,15 @@ def main():
             cmd.append(testfile)
 
             print(shlex.join(cmd))
-            p = run_with_timeout(cmd, errors='backslashreplace', **kwargs)
+            p = run_with_timeout(cmd, timeout=timeout, errors='backslashreplace', **kwargs)
             print("*stdout*")
             print(p.stdout)
             print("*stderr*")
             print(p.stderr)
 
-            if p.returncode == -9:
+            if p.returncode == 124:
                 print(
-                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {TIMEOUT}s by using --timeout=NNN")
+                    f"\nTimed out\nYou can try to increase the current timeout {timeout}s by using --timeout=NNN")
 
             passing_tests = set()
             failing_tests = set()
