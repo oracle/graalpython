@@ -174,7 +174,10 @@
     {"name":"ctxContextVarGet","parameterTypes":["long","long","long"]},
     {"name":"ctxFieldStore","parameterTypes":["long","long","long"]},
     {"name":"ctxGlobalStore","parameterTypes":["long","long"]}
-  ],
+  ]
+},
+{
+  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext",
   "fields":[
     {"name":"hpyHandleTable"},
     {"name":"hpyGlobalsTable"},
