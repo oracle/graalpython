@@ -1951,9 +1951,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ENCODEFSDEFAULT, new long[]{h});
     }
 
-    public long ctxUnicodeReadChar(long h, long index) {
+    public int ctxUnicodeReadChar(long h, long index) {
         increment(HPyJNIUpcall.HPyUnicodeReadChar);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_READCHAR, new long[]{h, index});
+        return executeIntContextFunction(HPyContextMember.CTX_UNICODE_READCHAR, new long[]{h, index});
     }
 
     public long ctxUnicodeDecodeASCII(long s, long size, long errors) {

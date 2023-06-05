@@ -431,7 +431,7 @@ def get_cast_fun(type_name):
     return 'LONG_UP'
 
 def get_jni_signature_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key'):
+    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'I'
     elif type_name == 'long':
         return 'J'
@@ -442,7 +442,7 @@ def get_jni_signature_type(type_name):
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key'):
+    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
@@ -453,7 +453,7 @@ def get_jni_c_type(type_name):
 
 def get_java_signature_type(type):
     type_name = toC(type)
-    if type_name in ('int', '_HPyCapsule_key'):
+    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'int'
     if type_name == 'double' or type_name == 'void':
         return type_name

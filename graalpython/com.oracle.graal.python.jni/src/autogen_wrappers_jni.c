@@ -1210,7 +1210,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Unicode_EncodeFSDefault = &ctx_Unicode_EncodeFSDefault_jni;
-    jniMethod_ctx_Unicode_ReadChar = (*env)->GetMethodID(env, clazz, "ctxUnicodeReadChar", "(JJ)J");
+    jniMethod_ctx_Unicode_ReadChar = (*env)->GetMethodID(env, clazz, "ctxUnicodeReadChar", "(JJ)I");
     if (jniMethod_ctx_Unicode_ReadChar == NULL) {
         LOGS("ERROR: Java method ctxUnicodeReadChar not found found !\n");
         return 1;
