@@ -1934,10 +1934,13 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached FromCharPointerNode fromCharPointerNode) {
-            Encoding fsDefault = Encoding.fromJCodingName(toJavaStringNode.execute(GetFileSystemEncodingNode.getFileSystemEncoding()));
-            return fromCharPointerNode.execute(charPtr, fsDefault);
+            return fromCharPointerNode.execute(charPtr, getFSDefault());
+        }
+
+        @TruffleBoundary
+        static Encoding getFSDefault() {
+            return Encoding.fromJCodingName(GetFileSystemEncodingNode.getFileSystemEncoding().toJavaStringUncached());
         }
     }
 
@@ -1947,9 +1950,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr, long lsize,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
-            Encoding fsDefault = Encoding.fromJCodingName(toJavaStringNode.execute(GetFileSystemEncodingNode.getFileSystemEncoding()));
+            Encoding fsDefault = GraalHPyUnicodeDecodeCharset.getFSDefault();
             try {
                 int size = PInt.intValueExact(lsize);
                 return fromNativePointerNode.execute(charPtr, 0, size, fsDefault, true);
