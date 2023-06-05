@@ -1940,7 +1940,7 @@ public abstract class GraalHPyContextFunctions {
 
         @TruffleBoundary
         static Encoding getFSDefault() {
-            return Encoding.fromJCodingName(GetFileSystemEncodingNode.getFileSystemEncoding().toJavaStringUncached());
+            return Encoding.fromJCodingName(System.getProperty("file.encoding"));
         }
     }
 
