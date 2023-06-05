@@ -79,7 +79,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -233,44 +232,28 @@ public abstract class CodeNodes {
             return getInSingleContextMode(inliningTarget, cachedCode);
         }
 
-        public static Signature getInSingleContextMode(Node inliningTarget, PFunction fun, InlinedBranchProfile firstExecution) {
+        public static Signature getInSingleContextMode(Node inliningTarget, PFunction fun) {
             assert isSingleContext(inliningTarget);
-            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(fun.getCode())) {
-                getInSingleContextMode(inliningTarget, fun.getCode());
+            CompilerAsserts.partialEvaluationConstant(fun);
+            if (CompilerDirectives.inCompiledCode()) {
+                return getInSingleContextMode(inliningTarget, fun.getCode());
+            } else {
+                PCode code = fun.getCode();
+                return code.getSignature();
             }
-            PCode code = fun.getCode();
-            Signature signature = code.signature;
-            if (signature == null) {
-                firstExecution.enter(inliningTarget);
-                RootCallTarget ct = code.initializeCallTarget();
-                signature = code.initializeSignature(ct);
-            }
-            return signature;
         }
 
         public static Signature getInSingleContextMode(Node inliningTarget, PCode code) {
             assert isSingleContext(inliningTarget);
             CompilerAsserts.partialEvaluationConstant(code);
-            if (code.signature == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                code.initializeSignature(code.initializeCallTarget());
-            }
-            return code.signature;
+            return code.getSignature();
         }
 
         @Specialization(replaces = "doCached")
         static Signature getGeneric(Node inliningTarget, PCode code,
                         @Cached InlinedConditionProfile signatureProfile,
                         @Cached InlinedConditionProfile ctProfile) {
-            Signature signature = code.signature;
-            if (signatureProfile.profile(inliningTarget, signature == null)) {
-                RootCallTarget ct = code.callTarget;
-                if (ctProfile.profile(inliningTarget, ct == null)) {
-                    ct = code.initializeCallTarget();
-                }
-                signature = code.initializeSignature(ct);
-            }
-            return signature;
+            return code.getSignature(inliningTarget, signatureProfile);
         }
     }
 
