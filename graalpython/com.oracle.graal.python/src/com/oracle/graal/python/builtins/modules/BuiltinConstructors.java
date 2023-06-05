@@ -2219,7 +2219,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Shared @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
-            return subtypeNew.call(cls, strNode.execute(frame, obj));
+            if (obj == PNone.NO_VALUE) {
+                return subtypeNew.call(cls, T_EMPTY_STRING);
+            } else {
+                return subtypeNew.call(cls, strNode.execute(frame, obj));
+            }
         }
 
         protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {

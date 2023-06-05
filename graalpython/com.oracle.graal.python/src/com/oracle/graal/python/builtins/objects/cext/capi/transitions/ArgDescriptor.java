@@ -233,7 +233,7 @@ public enum ArgDescriptor {
     PY_UCS4_PTR("Py_UCS4*"),
     PY_UNICODE("Py_UNICODE"),
     PyUnicodeObject(ArgBehavior.PyObject, "PyUnicodeObject*"),
-    PY_UNICODE_PTR("Py_UNICODE*"),
+    PY_UNICODE_PTR(ArgBehavior.WrappedPointer, "Py_UNICODE*"),
     PyVarObject(ArgBehavior.PyObject, "PyVarObject*"),
     ConstPyVarObject(ArgBehavior.PyObject, "const PyVarObject*"),
     PYADDRPAIR_PTR("PyAddrPair*"),
