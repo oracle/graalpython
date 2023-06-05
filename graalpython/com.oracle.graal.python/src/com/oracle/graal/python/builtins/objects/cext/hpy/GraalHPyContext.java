@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -101,6 +102,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -888,10 +890,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     public abstract static class GetHPyHandleForSingleton extends Node {
         public abstract int execute(Object delegateObject);
 
-        @Specialization
+        @Specialization(guards = "isNoValue(x)")
+        static int doNoValue(PNone x) {
+            assert x == PNone.NO_VALUE;
+            return 0;
+        }
+
+        @Specialization(guards = "!isNoValue(x)")
         static int doNone(PNone x) {
             assert x == PNone.NONE;
             return SINGLETON_HANDLE_NONE;
