@@ -312,6 +312,8 @@ typedef union { double d; ULong L[2]; } U;
 #endif
 #endif /*Flt_Rounds*/
 
+#undef Flt_Rounds // GR-46522
+#define Flt_Rounds 1
 #define Rounding Flt_Rounds
 
 #define Big0 (Frac_mask1 | Exp_msk1*(DBL_MAX_EXP+Bias-1))

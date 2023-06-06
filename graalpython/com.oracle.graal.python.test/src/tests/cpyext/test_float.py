@@ -185,3 +185,22 @@ class TestPyOSDouble:
         assert tester.PyOS_double_to_string_test(174.426353) == '174.426353'
         assert tester.PyOS_double_to_string_test(151.074362) == '151.074362'
         assert tester.PyOS_double_to_string_test(190.08) == '190.080000'
+
+    def test_PyOS_string_to_double(self):
+        TestPyOS_String_To_Double = CPyExtType("TestPyOS_String_To_Double",
+                                '''
+                                static PyObject* testPyOS_Str_to_D(PyObject* self, PyObject *str) {
+                                    char *endptr;
+                                    const char *s = (char *) PyUnicode_AsUTF8(str);
+                                    double ret = PyOS_string_to_double(s, &endptr, NULL);
+                                    if (PyErr_Occurred()) {
+                                        return NULL;
+                                    }
+                                    return PyFloat_FromDouble(ret);
+                                }
+                                ''',
+                                tp_methods='{"PyOS_string_to_double_test", (PyCFunction)testPyOS_Str_to_D, METH_O, ""}',
+                                )
+        tester = TestPyOS_String_To_Double()
+        assert tester.PyOS_string_to_double_test('5') == float(5)
+        assert tester.PyOS_string_to_double_test('150.604459') == float(150.604459)
