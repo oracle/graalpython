@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -279,22 +280,9 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
-                        @Cached CallNode callConstructor,
-                        @Cached BranchProfile noneValueProfile,
-                        @Cached BranchProfile exValueProfile,
-                        @Cached BranchProfile exProfile) {
-            if (value instanceof PNone) {
-                noneValueProfile.enter();
-                PBaseException ex = (PBaseException) callConstructor.execute(type);
-                throw getRaiseNode().raiseExceptionObject(ex);
-            } else if (isInstanceNode.executeWith(null, value, PythonBuiltinClassType.PBaseException)) {
-                exValueProfile.enter();
-                throw getRaiseNode().raiseExceptionObject((PBaseException) value);
-            } else {
-                exProfile.enter();
-                PBaseException ex = (PBaseException) callConstructor.execute(type, value);
-                throw getRaiseNode().raiseExceptionObject(ex);
-            }
+                        @Cached PrepareExceptionNode prepareExceptionNode) {
+            PBaseException exception = prepareExceptionNode.execute(null, type, value);
+            throw getRaiseNode().raiseExceptionObject(exception);
         }
 
         protected static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {

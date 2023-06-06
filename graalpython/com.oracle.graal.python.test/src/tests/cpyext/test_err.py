@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,19 @@ __dir__ = __file__.rpartition("/")[0]
 
 def _reference_setstring(args):
     raise args[0](args[1])
+
+
+def _reference_setobject(args):
+    exc_type, value = args
+    if issubclass(exc_type, BaseException):
+        if isinstance(value, exc_type):
+            raise value
+        if value is None:
+            raise exc_type
+        if isinstance(value, tuple):
+            raise exc_type(*value)
+        raise exc_type(value)
+
 
 def _new_ex_result_check(x, y):
     name = y[0]
@@ -188,11 +201,15 @@ class TestPyErr(CPyExtTestCase):
     )
     
     test_PyErr_SetObject = CPyExtFunctionVoid(
-        _reference_setstring,
+        _reference_setobject,
         lambda: (
+            (RuntimeError, None),
+            (RuntimeError, RuntimeError("error")),
             (ValueError, "hello"),
             (TypeError, "world"),
             (KeyError, "key"),
+            (RuntimeError, ValueError()),
+            (OSError, (2, "error")),
         ),
         resultspec="O",
         argspec='OO',
