@@ -3161,16 +3161,48 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(Node node, SequenceStorage s);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass", "!isNativeStorage(s)"})
         static SequenceStorage doSpecial(SequenceStorage s,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             return CompilerDirectives.castExact(CompilerDirectives.castExact(s, cachedClass).copy(), cachedClass);
         }
 
-        @Specialization(replaces = "doSpecial")
+        @Specialization(guards = "isNativeBytesStorage(s)")
+        static SequenceStorage doNativeBytes(NativeSequenceStorage s,
+                        @Shared @Cached GetNativeItemScalarNode getItem) {
+            byte[] bytes = new byte[s.length()];
+            for (int i = 0; i < s.length(); i++) {
+                bytes[i] = (byte) (int) getItem.execute(s, i);
+            }
+            return new ByteSequenceStorage(bytes);
+        }
+
+        @Specialization(guards = "isNativeObjectsStorage(s)")
+        static SequenceStorage doNativeObjects(NativeSequenceStorage s,
+                        @Shared @Cached GetNativeItemScalarNode getItem) {
+            Object[] objects = new Object[s.length()];
+            for (int i = 0; i < s.length(); i++) {
+                objects[i] = getItem.execute(s, i);
+            }
+            return new ObjectSequenceStorage(objects);
+        }
+
+        @Specialization(guards = "!isNativeStorage(s)", replaces = "doSpecial")
         @TruffleBoundary
         static SequenceStorage doGeneric(SequenceStorage s) {
             return s.copy();
+        }
+
+        protected static boolean isNativeStorage(SequenceStorage storage) {
+            return storage instanceof NativeSequenceStorage;
+        }
+
+        protected static boolean isNativeBytesStorage(NativeSequenceStorage storage) {
+            return storage.getElementType() == Byte;
+        }
+
+        protected static boolean isNativeObjectsStorage(NativeSequenceStorage storage) {
+            return storage.getElementType() == Generic;
         }
     }
 
