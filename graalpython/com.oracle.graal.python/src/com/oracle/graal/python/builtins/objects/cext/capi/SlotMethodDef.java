@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttr
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -119,57 +120,63 @@ public enum SlotMethodDef {
     TP_DESCR_GET(T___GET__, DescrGetFunctionWrapper::new),
     TP_DESCR_SET(T___SET__, SetAttrWrapper::new),
 
-    MP_LENGTH(T___LEN__, LenfuncWrapper::new),
-    MP_SUBSCRIPT(T___GETITEM__, BinaryFuncWrapper::new),
-    MP_ASS_SUBSCRIPT(T___SETITEM__, SetAttrWrapper::new),
+    MP_LENGTH(T___LEN__, LenfuncWrapper::new, MethodsFlags.MP_LENGTH),
+    MP_SUBSCRIPT(T___GETITEM__, BinaryFuncWrapper::new, MethodsFlags.MP_SUBSCRIPT),
+    MP_ASS_SUBSCRIPT(T___SETITEM__, SetAttrWrapper::new, MethodsFlags.MP_ASS_SUBSCRIPT),
 
-    SQ_LENGTH(T___LEN__, LenfuncWrapper::new),
-    SQ_ITEM(T___GETITEM__, SsizeargfuncWrapper::new),
-    SQ_REPEAT(T___MUL__, SsizeargfuncWrapper::new),
-    SQ_CONCAT(T___ADD__, BinaryFuncWrapper::new),
+    SQ_LENGTH(T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
+    SQ_ITEM(T___GETITEM__, SsizeargfuncWrapper::new, MethodsFlags.SQ_ITEM),
+    SQ_REPEAT(T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
+    SQ_CONCAT(T___ADD__, BinaryFuncWrapper::new, MethodsFlags.SQ_CONCAT),
 
-    NB_ABSOLUTE(T___ABS__, UnaryFuncWrapper::new),
-    NB_ADD(T___ADD__, BinaryFuncWrapper::new),
-    NB_AND(T___AND__, BinaryFuncWrapper::new),
-    NB_BOOL(T___BOOL__, InquiryWrapper::new),
-    NB_DIVMOD(T___DIVMOD__, BinaryFuncWrapper::new),
-    NB_FLOAT(T___FLOAT__, UnaryFuncWrapper::new),
-    NB_FLOOR_DIVIDE(T___FLOORDIV__, BinaryFuncWrapper::new),
-    NB_INDEX(T___INDEX__, UnaryFuncWrapper::new),
-    NB_INPLACE_ADD(T___IADD__, BinaryFuncWrapper::new),
-    NB_INPLACE_AND(T___IAND__, BinaryFuncWrapper::new),
-    NB_INPLACE_FLOOR_DIVIDE(T___IFLOORDIV__, BinaryFuncWrapper::new),
-    NB_INPLACE_LSHIFT(T___ILSHIFT__, BinaryFuncWrapper::new),
-    NB_INPLACE_MULTIPLY(T___IMUL__, BinaryFuncWrapper::new),
-    NB_INPLACE_OR(T___IOR__, BinaryFuncWrapper::new),
-    NB_INPLACE_POWER(T___IPOW__, TernaryFunctionWrapper::new),
-    NB_INPLACE_REMAINDER(T___IMOD__, BinaryFuncWrapper::new),
-    NB_INPLACE_RSHIFT(T___IRSHIFT__, BinaryFuncWrapper::new),
-    NB_INPLACE_SUBTRACT(T___ISUB__, BinaryFuncWrapper::new),
-    NB_INPLACE_TRUE_DIVIDE(T___ITRUEDIV__, BinaryFuncWrapper::new),
-    NB_INPLACE_XOR(T___IXOR__, BinaryFuncWrapper::new),
-    NB_INT(T___INT__, UnaryFuncWrapper::new),
-    NB_INVERT(T___INVERT__, UnaryFuncWrapper::new),
-    NB_LSHIFT(T___LSHIFT__, BinaryFuncWrapper::new),
-    NB_MULTIPLY(T___MUL__, BinaryFuncWrapper::new),
-    NB_NEGATIVE(T___NEG__, UnaryFuncWrapper::new),
-    NB_OR(T___OR__, BinaryFuncWrapper::new),
-    NB_POSITIVE(T___POS__, UnaryFuncWrapper::new),
-    NB_POWER(T___POW__, TernaryFunctionWrapper::new),
-    NB_REMAINDER(T___MOD__, BinaryFuncWrapper::new),
-    NB_RSHIFT(T___RSHIFT__, BinaryFuncWrapper::new),
-    NB_SUBTRACT(T___SUB__, BinaryFuncWrapper::new),
-    NB_TRUE_DIVIDE(T___TRUEDIV__, BinaryFuncWrapper::new),
-    NB_XOR(T___XOR__, BinaryFuncWrapper::new);
+    NB_ABSOLUTE(T___ABS__, UnaryFuncWrapper::new, MethodsFlags.NB_ABSOLUTE),
+    NB_ADD(T___ADD__, BinaryFuncWrapper::new, MethodsFlags.NB_ADD),
+    NB_AND(T___AND__, BinaryFuncWrapper::new, MethodsFlags.NB_AND),
+    NB_BOOL(T___BOOL__, InquiryWrapper::new, MethodsFlags.NB_BOOL),
+    NB_DIVMOD(T___DIVMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_DIVMOD),
+    NB_FLOAT(T___FLOAT__, UnaryFuncWrapper::new, MethodsFlags.NB_FLOAT),
+    NB_FLOOR_DIVIDE(T___FLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_FLOOR_DIVIDE),
+    NB_INDEX(T___INDEX__, UnaryFuncWrapper::new, MethodsFlags.NB_INDEX),
+    NB_INPLACE_ADD(T___IADD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_ADD),
+    NB_INPLACE_AND(T___IAND__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_AND),
+    NB_INPLACE_FLOOR_DIVIDE(T___IFLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_FLOOR_DIVIDE),
+    NB_INPLACE_LSHIFT(T___ILSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_LSHIFT),
+    NB_INPLACE_MULTIPLY(T___IMUL__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_MULTIPLY),
+    NB_INPLACE_OR(T___IOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_OR),
+    NB_INPLACE_POWER(T___IPOW__, TernaryFunctionWrapper::new, MethodsFlags.NB_INPLACE_POWER),
+    NB_INPLACE_REMAINDER(T___IMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_REMAINDER),
+    NB_INPLACE_RSHIFT(T___IRSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_RSHIFT),
+    NB_INPLACE_SUBTRACT(T___ISUB__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_SUBTRACT),
+    NB_INPLACE_TRUE_DIVIDE(T___ITRUEDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_TRUE_DIVIDE),
+    NB_INPLACE_XOR(T___IXOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_XOR),
+    NB_INT(T___INT__, UnaryFuncWrapper::new, MethodsFlags.NB_INT),
+    NB_INVERT(T___INVERT__, UnaryFuncWrapper::new, MethodsFlags.NB_INVERT),
+    NB_LSHIFT(T___LSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_LSHIFT),
+    NB_MULTIPLY(T___MUL__, BinaryFuncWrapper::new, MethodsFlags.NB_MULTIPLY),
+    NB_NEGATIVE(T___NEG__, UnaryFuncWrapper::new, MethodsFlags.NB_NEGATIVE),
+    NB_OR(T___OR__, BinaryFuncWrapper::new, MethodsFlags.NB_OR),
+    NB_POSITIVE(T___POS__, UnaryFuncWrapper::new, MethodsFlags.NB_POSITIVE),
+    NB_POWER(T___POW__, TernaryFunctionWrapper::new, MethodsFlags.NB_POWER),
+    NB_REMAINDER(T___MOD__, BinaryFuncWrapper::new, MethodsFlags.NB_REMAINDER),
+    NB_RSHIFT(T___RSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_RSHIFT),
+    NB_SUBTRACT(T___SUB__, BinaryFuncWrapper::new, MethodsFlags.NB_SUBTRACT),
+    NB_TRUE_DIVIDE(T___TRUEDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_TRUE_DIVIDE),
+    NB_XOR(T___XOR__, BinaryFuncWrapper::new, MethodsFlags.NB_XOR);
 
     public final NativeMember nativeMember;
     public final TruffleString methodName;
     public final Function<Object, PyProcsWrapper> wrapperFactory;
+    public final long methodFlag;
 
     SlotMethodDef(TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory) {
+        this(methodName, wrapperFactory, 0);
+    }
+
+    SlotMethodDef(TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory, long methodFlag) {
         this.methodName = methodName;
         this.wrapperFactory = wrapperFactory;
         this.nativeMember = NativeMember.valueOf(name());
+        this.methodFlag = methodFlag;
     }
 
     public String getMemberNameJavaString() {
