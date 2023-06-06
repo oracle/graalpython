@@ -57,6 +57,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorag
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -686,6 +688,31 @@ public abstract class PointerNodes {
             }
             throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
         }
+
+        @Specialization
+        static long doPythonObject(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, PythonObjectStorage storage, int offset,
+                        @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            Object nativeObject = toNativeNode.execute(storage.pythonObject);
+            long nativePointer;
+            if (nativeObject instanceof Long longPointer) {
+                nativePointer = longPointer;
+            } else {
+                if (!lib.isPointer(nativeObject)) {
+                    lib.toNative(nativeObject);
+                    if (!lib.isPointer(nativeObject)) {
+                        throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
+                    }
+                }
+                try {
+                    nativePointer = lib.asPointer(nativeObject);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            memory.storage = new LongPointerStorage(nativePointer);
+            return nativePointer + offset;
+        }
     }
 
     @GenerateUncached
@@ -811,14 +838,27 @@ public abstract class PointerNodes {
     @GenerateCached(false)
     public abstract static class ReadPythonObject extends Node {
         public final Object execute(Node inliningTarget, Pointer ptr) {
-            return execute(inliningTarget, ptr.memory.storage, ptr.offset);
+            return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset);
         }
 
-        protected abstract Object execute(Node inliningTarget, Storage storage, int offset);
+        protected abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
 
         @Specialization(guards = "offset == 0")
-        static Object doPythonObject(PythonObjectStorage storage, @SuppressWarnings("unused") int offset) {
+        static Object doPythonObject(@SuppressWarnings("unused") MemoryBlock memory, PythonObjectStorage storage, @SuppressWarnings("unused") int offset) {
             return storage.pythonObject;
+        }
+
+        @Fallback
+        static Object doGeneric(Node inliningTarget, MemoryBlock memory, Storage storage, int offset,
+                        @Cached GetPointerValueAsObjectNode getPointerValueAsObjectNode,
+                        @Cached(inline = false) CExtNodes.ResolveHandleNode resolveHandleNode,
+                        @Cached(inline = false) CApiTransitions.NativeToPythonNode nativeToPythonNode) {
+            /*
+             * We might get a pointer to a PyObject as a long when calling Python C API functions
+             * through ctypes.
+             */
+            Object pointerObject = getPointerValueAsObjectNode.execute(inliningTarget, memory, storage, offset);
+            return nativeToPythonNode.execute(resolveHandleNode.execute(pointerObject));
         }
     }
 
