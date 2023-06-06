@@ -482,7 +482,7 @@ final class Signals {
     static {
         for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
                         "PIPE", "PWR", "QUIT", "SEGV", "SYS", "TERM", "TRAP", "TSTP", "TTIN", "TTOUT", "USR1", "USR2",
-                        "VTALRM", "WINCH"}) {
+                        "VTALRM", "WINCH", "CHLD"}) {
             try {
                 int number = new sun.misc.Signal(signal).getNumber();
                 if (number > SIGMAX) {
