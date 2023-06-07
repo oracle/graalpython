@@ -1032,7 +1032,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCell_New", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCell_Set", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCFunction_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCode_Addr2Line", ret = Int, args = {PyCodeObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyCode_Optimize", ret = PyObject, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_BackslashReplaceErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_Decode", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)

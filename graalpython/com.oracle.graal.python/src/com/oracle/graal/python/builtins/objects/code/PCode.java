@@ -426,6 +426,15 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    public int bciToLine(int bci) {
+        RootNode funcRootNode = rootNodeForExtraction(getRootNode());
+        if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            return bytecodeRootNode.bciToLine(bci);
+        }
+        return -1;
+    }
+
+    @TruffleBoundary
     public TruffleString getName() {
         if (name == null) {
             name = extractName(getRootNode());

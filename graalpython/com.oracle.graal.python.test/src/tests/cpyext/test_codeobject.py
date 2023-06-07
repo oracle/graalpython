@@ -37,13 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import types
-
 import sys
+import types
 
 from . import CPyExtTestCase, CPyExtFunction
 
 __dir__ = __file__.rpartition("/")[0]
+
+
+def example_function():
+    return 1
 
 
 class DummyClass():
@@ -124,4 +127,19 @@ class TestCodeobject(CPyExtTestCase):
             "PyObject* lnotab",
         ],
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
+    )
+
+    test_PyCode_Addr2Line = CPyExtFunction(
+        lambda args: example_function.__code__.co_firstlineno + 1,
+        lambda: (
+            (example_function.__code__,),
+        ),
+        code='''int wrap_PyCode_Addr2Line(PyObject* code) {
+                return PyCode_Addr2Line((PyCodeObject*)code, 0);
+            }
+            ''',
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* code"],
+        callfunction="wrap_PyCode_Addr2Line",
     )
