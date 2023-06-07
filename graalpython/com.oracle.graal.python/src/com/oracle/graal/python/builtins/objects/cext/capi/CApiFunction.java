@@ -1093,7 +1093,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_EvalFrame", ret = PyObject, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_EvalFrameEx", ret = PyObject, args = {PyFrameObject, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyEval_GetFrame", ret = PyFrameObjectTransfer, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncDesc", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetGlobals", ret = PyObject, args = {}, call = NotImplemented)

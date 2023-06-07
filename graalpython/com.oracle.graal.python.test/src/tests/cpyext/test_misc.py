@@ -327,6 +327,21 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyEval_GetFrame = CPyExtFunction(
+        lambda args: sys._getframe(1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyEval_GetFrame(void) {
+            return (PyObject*)PyEval_GetFrame();
+        }
+        """,
+        resultspec="O",
+        argspec="",
+        arguments=[],
+        callfunction="wrap_PyEval_GetFrame",
+        cmpfunc=unhandled_error_compare,
+    )
+
     test_PyOS_FSPath = CPyExtFunction(
         lambda args: os.fspath(*args),
         lambda: (
