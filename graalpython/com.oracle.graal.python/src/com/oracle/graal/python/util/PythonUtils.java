@@ -89,6 +89,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -864,4 +865,24 @@ public final class PythonUtils {
                     0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
                     0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
     };
+
+    /**
+     * Use as a documentation and safety guard in specializations that are meant to be activated
+     * only in the uncached case. Those Specializations exist only to allow to generate an uncached
+     * variant of the node, but should never be activated in a regular cached case.
+     *
+     * Note that such specializations can take VirtualFrame and should forward it to other uncached
+     * (and cached) nodes. The uncached nodes may be executed during the uncached execution of the
+     * bytecode root node where it is allowed to pass the VirtualFrame around without materializing
+     * it.
+     */
+    public static void assertUncached() {
+        if (!TruffleOptions.AOT) {
+            // We cannot assert that it's never part of compilation, because then it would fail
+            // during native-image build since it cannot prove that this Specialization is never
+            // activated at runtime and includes this in runtime compiled methods.
+            CompilerAsserts.neverPartOfCompilation();
+        }
+        CompilerDirectives.transferToInterpreter();
+    }
 }
