@@ -189,6 +189,8 @@ public abstract class StringLiterals {
     public static final String J_LLVM_LANGUAGE = "llvm";
     public static final TruffleString T_LLVM_LANGUAGE = tsLiteral(J_LLVM_LANGUAGE);
 
+    public static final String J_NFI_LANGUAGE = "nfi";
+
     public static final TruffleString T_ID = tsLiteral("id");
 
     public static final TruffleString T_SITE = tsLiteral("site");
@@ -206,5 +208,4 @@ public abstract class StringLiterals {
     public static final TruffleString T_EXEC = tsLiteral("exec");
 
     public static final TruffleString T_EVAL = tsLiteral("eval");
-
 }

@@ -71,6 +71,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_ARGUMENTS_D_M
 import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
@@ -220,8 +221,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     private Object dyldSharedCacheContainsPathFunction;
     @CompilationFinal private Object strlenFunction;
     @CompilationFinal private Object memcpyFunction;
-
-    private static final String J_NFI_LANGUAGE = "nfi";
 
     protected static final int FUNCFLAG_STDCALL = 0x0;
     protected static final int FUNCFLAG_CDECL = 0x1;

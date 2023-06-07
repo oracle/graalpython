@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
@@ -672,7 +673,7 @@ public final class CApiContext extends CExtContext {
 
                 String libpython = System.getProperty("LibPythonNativeLibrary");
                 if (libpython != null) {
-                    SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
+                    SourceBuilder nfiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
                     nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
                 }
 
@@ -704,7 +705,7 @@ public final class CApiContext extends CExtContext {
         if (nativeLibrary != null) {
             try {
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "finalizeCAPI");
-                Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "():VOID", "exec").build()).call();
+                Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
                 SignatureLibrary.getUncached().call(signature, initFunction);
             } catch (InteropException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -727,7 +728,7 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
         } catch (UnsupportedMessageException e) {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "():POINTER", "exec").build()).call();
+            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
             Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
             nativeResult = InteropLibrary.getUncached().execute(bound);
         } catch (ArityException e) {
@@ -995,7 +996,7 @@ public final class CApiContext extends CExtContext {
                 return false;
             }
 
-            SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyJNIContext.getJNILibrary() + "\"", "<libpython-native>");
+            SourceBuilder nfiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + GraalHPyJNIContext.getJNILibrary() + "\"", "<libpython-native>");
             try {
                 LOGGER.config("loading native C API support library " + GraalHPyJNIContext.getJNILibrary());
                 nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
@@ -1005,7 +1006,8 @@ public final class CApiContext extends CExtContext {
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
                 Object initializeNativeLocations = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "initialize_native_locations");
                 Object signature = env.parseInternal(
-                                Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32", "exec").build()).call();
+                                Source.newBuilder(J_NFI_LANGUAGE, "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32",
+                                                "exec").build()).call();
                 Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore(), initializeNativeLocations);
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
@@ -1099,7 +1101,7 @@ public final class CApiContext extends CExtContext {
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonNativeWrapper.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);

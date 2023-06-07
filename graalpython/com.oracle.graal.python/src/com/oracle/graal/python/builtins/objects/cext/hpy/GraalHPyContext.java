@@ -728,12 +728,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public static Object evalNFI(PythonContext context, String source, String name) {
-        Source src = Source.newBuilder("nfi", source, name).build();
-        CallTarget ct = context.getEnv().parseInternal(src);
-        return ct.call();
-    }
-
     @SuppressWarnings("static-method")
     public GraalHPyHandle createHandle(Object delegate) {
         return GraalHPyHandle.create(delegate);

@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -639,7 +640,7 @@ public abstract class ExternalFunctionNodes {
             if (!lib.isExecutable(callable)) {
                 Env env = context.getEnv();
                 boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
-                Object nfiSignature = env.parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + sig.signature, sig.name()).build()).call();
+                Object nfiSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + sig.signature, sig.name()).build()).call();
 
                 /*
                  * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM
