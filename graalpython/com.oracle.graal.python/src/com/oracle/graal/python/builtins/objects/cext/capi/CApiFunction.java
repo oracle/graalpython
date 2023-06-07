@@ -359,6 +359,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyObject_CallMethod_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
@@ -1021,10 +1023,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {PY_BUFFER, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_SizeFromFormat", ret = Py_ssize_t, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, PY_BUFFER, Py_ssize_t, CHAR}, call = NotImplemented)
-    @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,
                     ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_Repr", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)

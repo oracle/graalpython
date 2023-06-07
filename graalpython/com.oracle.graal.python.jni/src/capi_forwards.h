@@ -1723,9 +1723,6 @@ PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
 PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, Py_buffer* b, Py_ssize_t c, char d) {
     unimplemented("PyBuffer_ToContiguous"); exit(-1);
 }
-PyAPI_FUNC(char*) PyByteArray_AsString(PyObject* a) {
-    unimplemented("PyByteArray_AsString"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) PyByteArray_Concat(PyObject* a, PyObject* b) {
     unimplemented("PyByteArray_Concat"); exit(-1);
 }
@@ -1740,9 +1737,6 @@ PyAPI_FUNC(PyObject*) PyByteArray_FromStringAndSize(const char* a, Py_ssize_t b)
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
     int result = (int) GraalPyByteArray_Resize(a, b);
     return result;
-}
-PyAPI_FUNC(Py_ssize_t) PyByteArray_Size(PyObject* a) {
-    unimplemented("PyByteArray_Size"); exit(-1);
 }
 char* (*__target__PyBytes_AsString)(PyObject*) = NULL;
 PyAPI_FUNC(char*) PyBytes_AsString(PyObject* a) {
