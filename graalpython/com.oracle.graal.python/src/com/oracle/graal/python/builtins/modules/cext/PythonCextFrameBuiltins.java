@@ -9,6 +9,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
@@ -63,9 +64,13 @@ public final class PythonCextFrameBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyFrameObject}, call = Direct)
     abstract static class PyFrame_GetBack extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PFrame frame,
+        Object get(PFrame frame,
                         @Cached FrameBuiltins.GetBackrefNode getBackNode) {
-            return getBackNode.execute(null, frame);
+            Object back = getBackNode.execute(null, frame);
+            if (back == PNone.NONE) {
+                return getNativeNull();
+            }
+            return back;
         }
     }
 
