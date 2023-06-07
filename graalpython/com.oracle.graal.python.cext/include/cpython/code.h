@@ -139,6 +139,10 @@ PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno);
    use PyFrame_GetLineNumber() instead. */
 PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject *, int);
 
+/* GraalPy specific to avoid direct field access. Used by (at least) pytorch */
+PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* code);
+PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* code);
+
 /* for internal use only */
 struct _opaque {
     int computed_line;
