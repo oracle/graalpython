@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.exception.ValidExceptionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -116,6 +117,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -151,6 +153,26 @@ public final class PythonCextErrBuiltins {
             PythonLanguage language = getLanguage();
             context.setCurrentException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPBaseException(value)")
+        Object createAndSet(Object type, Object value, @SuppressWarnings("unused") PNone tb,
+                        @Cached ValidExceptionNode isExcNode,
+                        @Cached CallNode callConstructor) {
+            if (isExcNode.execute(null, type)) {
+                PBaseException ex = (PBaseException) callConstructor.execute(type, value);
+                PythonLanguage language = PythonLanguage.get(this);
+                PythonContext.get(this).setCurrentException(language,
+                                PException.fromExceptionInfo(ex, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+                return PNone.NONE;
+            } else {
+                // CPython just saves all three values, only ensuring that tb is either NULL or a
+                // PyTraceBack. Throwing here would be incorrect, since it's valid to set
+                // "unnormalized" exception values and use PyErr_NormalizeException later. And even
+                // that just keeps going when the type is not an exception. Not sure what the use
+                // cases are for that, so for now we ignore it.
+                throw CompilerDirectives.shouldNotReachHere("unnormalized exceptions cannot be stored");
+            }
         }
     }
 
