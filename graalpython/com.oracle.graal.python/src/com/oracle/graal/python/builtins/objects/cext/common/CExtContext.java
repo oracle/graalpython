@@ -391,7 +391,7 @@ public abstract class CExtContext {
         return "_mmap".equals(name) || "_cpython_struct".equals(name);
     }
 
-    protected static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
+    public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
         Env env = context.getEnv();
         try {
             TruffleString extSuffix = context.getSoAbi();

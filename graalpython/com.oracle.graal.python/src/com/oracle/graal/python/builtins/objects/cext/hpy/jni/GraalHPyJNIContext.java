@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SIZEOF_LONG;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -64,12 +65,14 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
@@ -86,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseN
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
@@ -146,11 +150,17 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -187,6 +197,50 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @Override
     protected String getName() {
         return J_NAME;
+    }
+
+    @Override
+    protected Object loadExtensionLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException {
+        CompilerAsserts.neverPartOfCompilation();
+        TruffleFile extLibFile = context.getPublicTruffleFileRelaxed(path, context.getSoAbi());
+        try {
+            String src = "load \"" + extLibFile + '"';
+            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
+            return context.getEnv().parseInternal(loadSrc).call();
+        } catch (SecurityException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
+        }
+    }
+
+    @Override
+    protected Object initHPyModule(Object extLib, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
+        CompilerAsserts.neverPartOfCompilation();
+        /*
+         * We eagerly initialize the debug mode here to be able to produce an error message now if
+         * we cannot use it.
+         */
+        if (debug) {
+            initHPyDebugContext();
+        }
+
+        /*
+         * Even in the JNI backend, we load the library with NFI (instead of using 'System.load')
+         * because NFI may take care of additional security checks.
+         */
+        Object initFunction;
+        try {
+            InteropLibrary lib = InteropLibrary.getUncached(extLib);
+            initFunction = lib.readMember(extLib, initFuncName.toJavaStringUncached());
+        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+            throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, name, path, initFuncName);
+        }
+        // NFI doesn't know if a symbol is executable, so it always reports false
+        assert !InteropLibrary.getUncached().isExecutable(initFunction);
+
+        // bind the signature to the NFI (function) pointer
+        initFunction = HPyAttachJNIFunctionTypeNodeGen.getUncached().execute(context, initFunction, LLVMType.HPyModule_init);
+        return InteropLibrary.getUncached().execute(initFunction, this);
     }
 
     protected HPyUpcall[] getUpcalls() {

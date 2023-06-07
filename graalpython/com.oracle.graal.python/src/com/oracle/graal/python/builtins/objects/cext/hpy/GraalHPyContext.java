@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -108,7 +106,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -117,7 +114,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
@@ -180,85 +176,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
          * extension may already require some symbols defined in the HPy API or C API.
          */
         GraalHPyContext hpyUniversalContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
-        Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
-        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
+        GraalHPyNativeContext backend = hpyUniversalContext.backend;
+        Object llvmLibrary = backend.loadExtensionLibrary(location, context, name, path);
         TruffleString basename = getBaseName(name);
         TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
-        try {
-            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
-                Object nativeResult = initHPyModule(hpyUniversalContext, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib);
-                return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
-            }
-            throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, basename, path, hpyInitFuncName);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
-        }
-    }
-
-    /**
-     * Bascially the same as
-     * {@link #initHPyModule(GraalHPyContext, Object, TruffleString, TruffleString, TruffleString, boolean, InteropLibrary)}
-     * but always loads the module with the universal context and also verifies the result of the
-     * init function using the provided {@code checkResultNode}.
-     *
-     * @param context The {@link PythonContext}.
-     * @param llvmLibrary The HPy extension's shared library object.
-     * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
-     * @param name The HPy extension's name as requested by the user.
-     * @param path The HPy extension's shared library path.
-     * @param llvmInteropLib An interop library instance.
-     * @param checkResultNode An interop library instance.
-     * @return The verified result of the HPy extension's init function (a Python object; most like
-     *         a Python module).
-     */
-    @TruffleBoundary
-    public Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
-                    InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode)
-                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
-        Object nativeResult = initHPyModule(this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
-        return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
-    }
-
-    /**
-     * Execute an HPy extension's init function and return the raw result value.
-     *
-     * @param hpyUniversalContext The {@code HPyContext} pointer. This an either be an instance of
-     *            our (managed) {@link GraalHPyContext} or a native pointer to some other HPy
-     *            context (most common the debug context).
-     * @param llvmLibrary The HPy extension's shared library object.
-     * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
-     * @param name The HPy extension's name as requested by the user.
-     * @param path The HPy extension's shared library path.
-     * @param llvmInteropLib An interop library instance.
-     * @return The bare (unconverted) result of the HPy extension's init function. This will be a
-     *         handle that was created with the given {@code hpyContext}.
-     */
-    @TruffleBoundary
-    private static Object initHPyModule(GraalHPyContext hpyUniversalContext, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug,
-                    InteropLibrary llvmInteropLib) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
-        Object initFunction;
-        try {
-            initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
-        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
-        }
-
-        /*
-         * We eagerly initialize the debug mode here to be able to produce an error message now if
-         * we cannot use it.
-         */
-        if (debug) {
-            hpyUniversalContext.initHPyDebugContext();
-        }
-
-        // select appropriate HPy context
         boolean saved = hpyUniversalContext.debugMode;
         hpyUniversalContext.debugMode = debug;
         try {
-            if (debug || !InteropLibrary.getUncached().isExecutable(initFunction)) {
-                initFunction = HPyAttachFunctionTypeNode.getUncached().execute(hpyUniversalContext, initFunction, LLVMType.HPyModule_init);
-            }
-            return InteropLibrary.getUncached().execute(initFunction, hpyUniversalContext.backend);
+            Object nativeResult = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
+            return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         } finally {
             hpyUniversalContext.debugMode = saved;
         }

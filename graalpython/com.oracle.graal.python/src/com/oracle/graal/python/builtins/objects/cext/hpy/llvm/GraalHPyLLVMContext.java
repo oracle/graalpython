@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -108,6 +109,7 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -250,6 +252,38 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
              */
             throw CompilerDirectives.shouldNotReachHere(e);
         }
+    }
+
+    @Override
+    protected Object loadExtensionLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
+        CompilerAsserts.neverPartOfCompilation();
+        return CExtContext.loadLLVMLibrary(location, context, name, path);
+    }
+
+    @Override
+    protected Object initHPyModule(Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+        CompilerAsserts.neverPartOfCompilation();
+        Object initFunction;
+        InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
+        if (lib.isMemberReadable(llvmLibrary, initFuncName.toJavaStringUncached())) {
+            try {
+                initFunction = lib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        } else {
+            throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, name, path, initFuncName);
+        }
+        /*
+         * LLVM always answers message 'isExecutable' correctly. If the pointer object is not
+         * executable, this most certainly means that the loaded library does not contain bitcode,
+         * and so we fail.
+         */
+        if (!InteropLibrary.getUncached().isExecutable(initFunction)) {
+            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+        }
+        return InteropLibrary.getUncached().execute(initFunction, this);
     }
 
     @Override

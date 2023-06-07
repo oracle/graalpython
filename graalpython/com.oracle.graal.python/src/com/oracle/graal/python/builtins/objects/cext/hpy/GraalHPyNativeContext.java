@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -62,10 +63,15 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class GraalHPyNativeContext implements TruffleObject {
@@ -85,6 +91,23 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     protected abstract void initNativeContext() throws Exception;
 
     protected abstract void finalizeNativeContext();
+
+    protected abstract Object loadExtensionLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException;
+
+    /**
+     * Execute an HPy extension's init function and return the raw result value.
+     *
+     * @param extLib The HPy extension's shared library object (received from
+     *            {@link #loadExtensionLibrary(Node, PythonContext, TruffleString, TruffleString)}).
+     * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
+     * @param name The HPy extension's name as requested by the user.
+     * @param path The HPy extension's shared library path.
+     * @param debug Flags indicating if the HPy extension should be initialized in debug mode.
+     * @return The bare (unconverted) result of the HPy extension's init function. This will be a
+     *         handle that was created with the given {@code hpyContext}.
+     */
+    protected abstract Object initHPyModule(Object extLib, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException;
 
     protected abstract HPyUpcall[] getUpcalls();
 
