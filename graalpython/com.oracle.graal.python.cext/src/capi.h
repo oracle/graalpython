@@ -114,6 +114,9 @@ typedef struct {
     BUILTIN(PyCapsule_SetName, int, PyObject*, const char*) \
     BUILTIN(PyCapsule_SetPointer, int, PyObject*, void*) \
     BUILTIN(PyClassMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyCode_Addr2Line, int, PyCodeObject*, int) \
+    BUILTIN(PyCode_GetFileName, PyObject*, PyCodeObject*) \
+    BUILTIN(PyCode_GetName, PyObject*, PyCodeObject*) \
     BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
     BUILTIN(PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
     BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
@@ -146,8 +149,8 @@ typedef struct {
     BUILTIN(PyErr_PrintEx, void, int) \
     BUILTIN(PyErr_Restore, void, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyErr_SetExcInfo, void, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyErr_WarnExplicit, int, PyObject*, const char*, const char*, int, const char*, PyObject*) \
     BUILTIN(PyEval_GetBuiltins, PyObject*) \
+    BUILTIN(PyEval_GetFrame, PyFrameObject*) \
     BUILTIN(PyEval_RestoreThread, void, PyThreadState*) \
     BUILTIN(PyEval_SaveThread, PyThreadState*) \
     BUILTIN(PyException_GetCause, PyObject*, PyObject*) \
@@ -157,6 +160,13 @@ typedef struct {
     BUILTIN(PyException_SetTraceback, int, PyObject*, PyObject*) \
     BUILTIN(PyFile_WriteObject, int, PyObject*, PyObject*, int) \
     BUILTIN(PyFloat_FromDouble, PyObject*, double) \
+    BUILTIN(PyFrame_GetBack, PyFrameObject*, PyFrameObject*) \
+    BUILTIN(PyFrame_GetBuiltins, PyObject*, PyFrameObject*) \
+    BUILTIN(PyFrame_GetCode, PyCodeObject*, PyFrameObject*) \
+    BUILTIN(PyFrame_GetGlobals, PyObject*, PyFrameObject*) \
+    BUILTIN(PyFrame_GetLasti, int, PyFrameObject*) \
+    BUILTIN(PyFrame_GetLineNumber, int, PyFrameObject*) \
+    BUILTIN(PyFrame_GetLocals, PyObject*, PyFrameObject*) \
     BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
     BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
     BUILTIN(PyGILState_Check, int) \
@@ -302,6 +312,7 @@ typedef struct {
     BUILTIN(PyTruffleDict_Next, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffleErr_Fetch, PyObject*) \
     BUILTIN(PyTruffleErr_GetExcInfo, PyObject*) \
+    BUILTIN(PyTruffleErr_WarnExplicit, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyTruffleFloat_AsDouble, double, PyObject*) \
     BUILTIN(PyTruffleHash_InitSecret, void, void*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
@@ -353,7 +364,7 @@ typedef struct {
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
-    BUILTIN(PyTruffle_Object_Free, int, void*) \
+    BUILTIN(PyTruffle_Object_Free, void, void*) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
     BUILTIN(PyTruffle_Set_SulongType, void*, PyTypeObject*, void*) \

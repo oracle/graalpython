@@ -111,6 +111,8 @@ void unimplemented(const char* name) {
 #undef PyCell_Set
 #undef PyClassMethod_New
 #undef PyCode_Addr2Line
+#undef PyCode_GetFileName
+#undef PyCode_GetName
 #undef PyCode_New
 #undef PyCode_NewEmpty
 #undef PyCode_NewWithPosOnlyArgs
@@ -283,8 +285,12 @@ void unimplemented(const char* name) {
 #undef PyFrame_FastToLocals
 #undef PyFrame_FastToLocalsWithError
 #undef PyFrame_GetBack
+#undef PyFrame_GetBuiltins
 #undef PyFrame_GetCode
+#undef PyFrame_GetGlobals
+#undef PyFrame_GetLasti
 #undef PyFrame_GetLineNumber
+#undef PyFrame_GetLocals
 #undef PyFrame_LocalsToFast
 #undef PyFrame_New
 #undef PyFrozenSet_New
@@ -728,6 +734,7 @@ void unimplemented(const char* name) {
 #undef PyTruffleDict_Next
 #undef PyTruffleErr_Fetch
 #undef PyTruffleErr_GetExcInfo
+#undef PyTruffleErr_WarnExplicit
 #undef PyTruffleFloat_AsDouble
 #undef PyTruffleFrame_New
 #undef PyTruffleHash_InitSecret
@@ -1894,7 +1901,16 @@ PyAPI_FUNC(PyObject*) PyClassMethod_New(PyObject* a) {
     return result;
 }
 PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject* a, int b) {
-    unimplemented("PyCode_Addr2Line"); exit(-1);
+    int result = (int) GraalPyCode_Addr2Line(a, b);
+    return result;
+}
+PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* a) {
+    PyObject* result = (PyObject*) GraalPyCode_GetFileName(a);
+    return result;
+}
+PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* a) {
+    PyObject* result = (PyObject*) GraalPyCode_GetName(a);
+    return result;
 }
 PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, int n, PyObject* o) {
     PyCodeObject* result = (PyCodeObject*) GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
@@ -2285,17 +2301,6 @@ PyAPI_FUNC(void) PyErr_SyntaxLocationEx(const char* a, int b, int c) {
 PyAPI_FUNC(void) PyErr_SyntaxLocationObject(PyObject* a, int b, int c) {
     unimplemented("PyErr_SyntaxLocationObject"); exit(-1);
 }
-int (*__target__PyErr_WarnExplicit)(PyObject*, const char*, const char*, int, const char*, PyObject*) = NULL;
-PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
-    int result = (int) __target__PyErr_WarnExplicit(a, b, c, d, e, f);
-    return result;
-}
-PyAPI_FUNC(int) PyErr_WarnExplicitFormat(PyObject* a, const char* b, int c, const char* d, PyObject* e, const char* f, ...) {
-    unimplemented("PyErr_WarnExplicitFormat"); exit(-1);
-}
-PyAPI_FUNC(int) PyErr_WarnExplicitObject(PyObject* a, PyObject* b, PyObject* c, int d, PyObject* e, PyObject* f) {
-    unimplemented("PyErr_WarnExplicitObject"); exit(-1);
-}
 void (*__target__PyErr_WriteUnraisable)(PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_WriteUnraisable(PyObject* a) {
     __target__PyErr_WriteUnraisable(a);
@@ -2338,7 +2343,8 @@ PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
     return result;
 }
 PyAPI_FUNC(PyFrameObject*) PyEval_GetFrame() {
-    unimplemented("PyEval_GetFrame"); exit(-1);
+    PyFrameObject* result = (PyFrameObject*) GraalPyEval_GetFrame();
+    return result;
 }
 PyAPI_FUNC(const char*) PyEval_GetFuncDesc(PyObject* a) {
     unimplemented("PyEval_GetFuncDesc"); exit(-1);
@@ -2465,13 +2471,32 @@ PyAPI_FUNC(int) PyFrame_FastToLocalsWithError(PyFrameObject* a) {
     unimplemented("PyFrame_FastToLocalsWithError"); exit(-1);
 }
 PyAPI_FUNC(PyFrameObject*) PyFrame_GetBack(PyFrameObject* a) {
-    unimplemented("PyFrame_GetBack"); exit(-1);
+    PyFrameObject* result = (PyFrameObject*) GraalPyFrame_GetBack(a);
+    return result;
+}
+PyAPI_FUNC(PyObject*) PyFrame_GetBuiltins(PyFrameObject* a) {
+    PyObject* result = (PyObject*) GraalPyFrame_GetBuiltins(a);
+    return result;
 }
 PyAPI_FUNC(PyCodeObject*) PyFrame_GetCode(PyFrameObject* a) {
-    unimplemented("PyFrame_GetCode"); exit(-1);
+    PyCodeObject* result = (PyCodeObject*) GraalPyFrame_GetCode(a);
+    return result;
+}
+PyAPI_FUNC(PyObject*) PyFrame_GetGlobals(PyFrameObject* a) {
+    PyObject* result = (PyObject*) GraalPyFrame_GetGlobals(a);
+    return result;
+}
+PyAPI_FUNC(int) PyFrame_GetLasti(PyFrameObject* a) {
+    int result = (int) GraalPyFrame_GetLasti(a);
+    return result;
 }
 PyAPI_FUNC(int) PyFrame_GetLineNumber(PyFrameObject* a) {
-    unimplemented("PyFrame_GetLineNumber"); exit(-1);
+    int result = (int) GraalPyFrame_GetLineNumber(a);
+    return result;
+}
+PyAPI_FUNC(PyObject*) PyFrame_GetLocals(PyFrameObject* a) {
+    PyObject* result = (PyObject*) GraalPyFrame_GetLocals(a);
+    return result;
 }
 PyAPI_FUNC(void) PyFrame_LocalsToFast(PyFrameObject* a, int b) {
     unimplemented("PyFrame_LocalsToFast"); exit(-1);
@@ -3227,9 +3252,6 @@ PyAPI_FUNC(void) PyObject_CallFinalizer(PyObject* a) {
 }
 PyAPI_FUNC(int) PyObject_CallFinalizerFromDealloc(PyObject* a) {
     unimplemented("PyObject_CallFinalizerFromDealloc"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) PyObject_CallNoArgs(PyObject* a) {
-    unimplemented("PyObject_CallNoArgs"); exit(-1);
 }
 PyAPI_FUNC(void*) PyObject_Calloc(size_t a, size_t b) {
     unimplemented("PyObject_Calloc"); exit(-1);
@@ -6254,7 +6276,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyErr_SetNone = getAPI("PyErr_SetNone");
     __target__PyErr_SetObject = getAPI("PyErr_SetObject");
     __target__PyErr_SetString = getAPI("PyErr_SetString");
-    __target__PyErr_WarnExplicit = getAPI("PyErr_WarnExplicit");
     __target__PyErr_WriteUnraisable = getAPI("PyErr_WriteUnraisable");
     __target__PyEval_CallObjectWithKeywords = getAPI("PyEval_CallObjectWithKeywords");
     __target__PyEval_EvalCode = getAPI("PyEval_EvalCode");
