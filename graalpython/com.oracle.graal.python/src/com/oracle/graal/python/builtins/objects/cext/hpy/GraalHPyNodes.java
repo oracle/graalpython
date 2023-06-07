@@ -193,6 +193,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -338,6 +339,42 @@ public class GraalHPyNodes {
                 transformExceptionToNativeNode.execute(frame, nativeContext, p);
             }
             return errorValue;
+        }
+    }
+
+    /**
+     * A node interface for creating a TruffleString from a {@code char *}. The implementation
+     * depends on the HPy backend. This is the reason why this node takes the HPy context as
+     * construction parameter. The recommended usage of this node is
+     *
+     * <pre>
+     * &#064;Specialization
+     * Object doSomething(GraalHPyContext hpyContext,
+     *                 &#064;Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode) {
+     *     // ...
+     * }
+     * </pre>
+     */
+    public abstract static class HPyFromCharPointerNode extends Node {
+
+        public final TruffleString execute(GraalHPyContext hpyContext, Object charPtr, boolean copy) {
+            return execute(hpyContext, charPtr, -1, Encoding.UTF_8, copy);
+        }
+
+        public final TruffleString execute(GraalHPyContext hpyContext, Object charPtr, Encoding encoding) {
+            return execute(hpyContext, charPtr, -1, encoding, true);
+        }
+
+        public abstract TruffleString execute(GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, boolean copy);
+
+        public abstract TruffleString execute(GraalHPyContext hpyContext, long charPtr, int n, Encoding encoding, boolean copy);
+
+        public static HPyFromCharPointerNode create(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().createFromCharPointerNode();
+        }
+
+        public static HPyFromCharPointerNode getUncached(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().getUncachedFromCharPointerNode();
         }
     }
 

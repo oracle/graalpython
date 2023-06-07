@@ -269,6 +269,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseH
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
@@ -1933,9 +1934,9 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeDecodeCharset extends HPyBinaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr,
-                        @Cached FromCharPointerNode fromCharPointerNode) {
-            return fromCharPointerNode.execute(charPtr, getFSDefault());
+        static Object doGeneric(GraalHPyContext hpyContext, Object charPtr,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode) {
+            return fromCharPointerNode.execute(hpyContext, charPtr, getFSDefault());
         }
 
         @TruffleBoundary
@@ -1949,12 +1950,11 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeDecodeCharsetAndSize extends HPyTernaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr, long lsize,
-                        @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
+        static Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long lsize,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode) {
             Encoding fsDefault = GraalHPyUnicodeDecodeCharset.getFSDefault();
             try {
-                int size = PInt.intValueExact(lsize);
-                return fromNativePointerNode.execute(charPtr, 0, size, fsDefault, true);
+                return fromCharPointerNode.execute(hpyContext, charPtr, PInt.intValueExact(lsize), fsDefault, true);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1968,7 +1968,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long size, Object errorsPtr,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
-                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode,
                         @Cached PCallHPyFunction callHPyFunction,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached GetByteArrayNode getByteArrayNode,
@@ -1978,7 +1978,7 @@ public abstract class GraalHPyContextFunctions {
             if (interopLib.isNull(errorsPtr)) {
                 errorAction = CodingErrorAction.REPORT;
             } else {
-                TruffleString errors = fromCharPointerNode.execute(errorsPtr, false);
+                TruffleString errors = fromCharPointerNode.execute(hpyContext, errorsPtr, false);
                 errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors, equalNode);
             }
             if (!interopLib.hasArrayElements(charPtr)) {
@@ -2014,14 +2014,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeDecodeLatin1 extends HPyQuaternaryContextFunction {
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr, long lsize, @SuppressWarnings("unused") Object errorsPtr,
-                        @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
+        Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long lsize, @SuppressWarnings("unused") Object errorsPtr,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode) {
             if (PInt.isIntRange(lsize)) {
                 /*
                  * If we have ISO-8859-1, we can just force the encoding and short-circuit the error
                  * reading etc since there cannot be an invalid byte
                  */
-                return fromNativePointerNode.execute(charPtr, 0, (int) lsize, Encoding.ISO_8859_1, true);
+                return fromCharPointerNode.execute(hpyContext, charPtr, (int) lsize, Encoding.ISO_8859_1, true);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

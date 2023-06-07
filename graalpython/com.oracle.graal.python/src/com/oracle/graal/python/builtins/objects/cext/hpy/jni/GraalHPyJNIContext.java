@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -433,6 +435,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return GraalHPyJNICallHelperFunctionNode.UNCACHED;
     }
 
+    @Override
+    public HPyFromCharPointerNode createFromCharPointerNode() {
+        throw CompilerDirectives.shouldNotReachHere("cached HPyJNIFromCharPointerNode is not available");
+    }
+
+    @Override
+    public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
+        return HPyJNIFromCharPointerNode.UNCACHED;
+    }
+
     /* JNI helper functions */
 
     @TruffleBoundary
@@ -762,7 +774,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * {@code void *}; represented as Java {@code long}). This will throw a
      * {@link CannotCastException} if that is not possible
      */
-    private static long expectPointer(Object value) throws CannotCastException {
+    public static long expectPointer(Object value) throws CannotCastException {
         if (value instanceof Long) {
             return (long) value;
         }

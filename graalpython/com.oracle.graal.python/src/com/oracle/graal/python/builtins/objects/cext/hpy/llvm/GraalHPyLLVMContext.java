@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyDummyToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -317,6 +319,16 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public HPyCallHelperFunctionNode getUncachedCallHelperFunctionNode() {
         return GraalHPyLLVMCallHelperFunctionNodeGen.getUncached();
+    }
+
+    @Override
+    public HPyFromCharPointerNode createFromCharPointerNode() {
+        return HPyLLVMFromCharPointerNodeGen.create();
+    }
+
+    @Override
+    public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
+        return HPyLLVMFromCharPointerNodeGen.getUncached();
     }
 
     @ExportMessage

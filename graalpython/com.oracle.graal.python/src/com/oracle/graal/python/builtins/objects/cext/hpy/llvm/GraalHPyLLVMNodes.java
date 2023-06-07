@@ -38,55 +38,173 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
+package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
-import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
-abstract class GraalHPyJNINodes {
+import sun.misc.Unsafe;
 
-    private GraalHPyJNINodes() {
+abstract class GraalHPyLLVMNodes {
+
+    private GraalHPyLLVMNodes() {
     }
 
-    static final class HPyJNIFromCharPointerNode extends HPyFromCharPointerNode {
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMFromCharPointerNode extends HPyFromCharPointerNode {
 
-        static final HPyJNIFromCharPointerNode UNCACHED = new HPyJNIFromCharPointerNode();
-
-        @Override
-        @TruffleBoundary
-        public TruffleString execute(GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, boolean copy) {
-            return execute(hpyContext, GraalHPyJNIContext.expectPointer(charPtr), n, encoding, copy);
+        @Specialization
+        @SuppressWarnings("unused")
+        static TruffleString doCStringWrapper(GraalHPyContext hpyContext, CStringWrapper cStringWrapper, int n, Encoding encoding, boolean copy) {
+            return cStringWrapper.getString();
         }
 
-        @Override
-        @TruffleBoundary
-        public TruffleString execute(GraalHPyContext hpyContext, long charPtr, int n, Encoding encoding, boolean copy) {
+        @Specialization
+        static TruffleString doCByteArrayWrapper(@SuppressWarnings("unused") GraalHPyContext hpyContext, CByteArrayWrapper cByteArrayWrapper, int n, Encoding encoding, boolean copy,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
+            byte[] byteArray = cByteArrayWrapper.getByteArray();
+            int length = n < 0 ? byteArray.length : n;
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, length, encoding, copy), TS_ENCODING);
+        }
+
+        @Specialization
+        static TruffleString doSequenceArrayWrapper(@SuppressWarnings("unused") GraalHPyContext hpyContext, PySequenceArrayWrapper obj, int n, Encoding encoding, boolean copy,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
+            Object delegate = obj.getDelegate();
+            boolean needs_copy;
+            if (delegate instanceof PBytes) {
+                // 'bytes' objects are immutable, so we can safely avoid a copy of the content
+                needs_copy = false;
+            } else if (delegate instanceof PByteArray) {
+                needs_copy = copy;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+            int length = n < 0 ? bytes.length : n;
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, length, encoding, needs_copy), TS_ENCODING);
+        }
+
+        @Specialization(guards = {"!isCArrayWrapper(charPtr)", "isPointer(lib, charPtr)"})
+        static TruffleString doPointer(GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, boolean copy,
+                        @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached TruffleString.FromNativePointerNode fromNative) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
+            long pointer;
+            try {
+                pointer = lib.asPointer(charPtr);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
             int length;
             if (n < 0) {
                 length = 0;
-                while (UNSAFE.getByte(charPtr + length) != 0) {
+                /*
+                 * We use 'PythonContext.getUnsafe()' here to ensure that native access is allowed
+                 * because this specialization can be reached if 'charPtr' is not a CArrayWrapper
+                 * but a pointer. An attacker could create a TruffleObject that answers
+                 * 'isPointer()' with 'true' (but isn't really a native pointer).
+                 */
+                Unsafe unsafe = hpyContext.getContext().getUnsafe();
+                while (unsafe.getByte(pointer + length) != 0) {
                     length++;
                 }
             } else {
                 length = n;
             }
-            return TruffleString.FromNativePointerNode.getUncached().execute(charPtr, 0, length, encoding, copy);
+            return fromNative.execute(charPtr, 0, length, encoding, copy);
         }
 
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
+        @Specialization(guards = {"!isCArrayWrapper(charPtr)", "!isPointer(lib, charPtr)"})
+        static TruffleString doForeignArray(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, @SuppressWarnings("unused") boolean copy,
+                        @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib,
+                        @Cached GraalHPyLLVMCallHelperFunctionNode callHelperFunctionNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
+
+            Object typedCharPtr;
+            int length;
+            try {
+                if (!lib.hasArrayElements(charPtr)) {
+                    /*
+                     * If the foreign object does not have array elements, we assume it is an LLVM
+                     * pointer where we can attach a type. We use size 'n' if available, otherwise
+                     * we determine the size by looking for the zero-byte.
+                     */
+                    int size = n < 0 ? Integer.MAX_VALUE : n;
+                    typedCharPtr = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, size);
+                    if (n < 0) {
+                        length = 0;
+                        while (elementLib.asByte(lib.readArrayElement(typedCharPtr, length)) != 0) {
+                            length++;
+                        }
+                    } else {
+                        length = n;
+                    }
+                } else {
+                    /*
+                     * Simple case: the foreign object has array elements, so just use the array
+                     * size and read the elements.
+                     */
+                    typedCharPtr = charPtr;
+                    length = n < 0 ? PInt.intValueExact(lib.getArraySize(charPtr)) : n;
+                }
+                assert lib.hasArrayElements(typedCharPtr);
+                assert length >= 0;
+                byte[] bytes = getByteArrayNode.execute(typedCharPtr, length);
+                // since we created a fresh byte array, we don't need to copy it
+                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, encoding, false), TS_ENCODING);
+            } catch (InteropException | OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
-        @Override
-        public boolean isAdoptable() {
-            return false;
+        static boolean isCArrayWrapper(Object object) {
+            return object instanceof CArrayWrapper || object instanceof PySequenceArrayWrapper;
+        }
+
+        static boolean isPointer(InteropLibrary lib, Object object) {
+            return lib.isPointer(object);
         }
     }
 }
