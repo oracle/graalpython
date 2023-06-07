@@ -315,7 +315,7 @@ public final class PythonCextCapsuleBuiltins {
     @CApiBuiltin(ret = Pointer, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
     abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(TruffleString name, int noBlock,
+        Object doGeneric(TruffleString name, @SuppressWarnings("unused") int noBlock,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
@@ -332,14 +332,10 @@ public final class PythonCextCapsuleBuiltins {
                     trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
                 }
                 if (object == null) {
-                    if (noBlock == 1) {
-                        // object = PyImport_ImportModuleNoBlock(trace);
-                        throw raise(SystemError, NOT_IMPLEMENTED);
-                    } else {
-                        object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
-                        if (object == PNone.NO_VALUE) {
-                            throw raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
-                        }
+                    // noBlock has no effect anymore since 3.3
+                    object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
+                    if (object == PNone.NO_VALUE) {
+                        throw raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
                     }
                 } else {
                     object = getAttrNode.execute(object, trace);
