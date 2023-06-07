@@ -2052,6 +2052,9 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-Dpolyglot.python.PosixModuleBackend=native'
             ],
             language='python',
+            default_vm_args=[
+                '--vm.Xss16777216', # request 16M of stack
+            ],
         )
     ],
     priority=5,
