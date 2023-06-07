@@ -206,6 +206,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFrameBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFuncBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextGenericAliasBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltins;
@@ -1118,9 +1119,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFrame_BlockSetup", ret = Void, args = {PyFrameObject, Int, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocals", ret = Void, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocalsWithError", ret = Int, args = {PyFrameObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetBack", ret = PyFrameObject, args = {PyFrameObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetCode", ret = PyCodeObject, args = {PyFrameObjectTransfer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetLineNumber", ret = Int, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_LocalsToFast", ret = Void, args = {PyFrameObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFunction_GetAnnotations", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFunction_GetClosure", ret = PyObject, args = {PyObject}, call = NotImplemented)
@@ -1401,6 +1399,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextErrBuiltins.class);
         addCApiBuiltins(result, PythonCextFileBuiltins.class);
         addCApiBuiltins(result, PythonCextFloatBuiltins.class);
+        addCApiBuiltins(result, PythonCextFrameBuiltins.class);
         addCApiBuiltins(result, PythonCextFuncBuiltins.class);
         addCApiBuiltins(result, PythonCextGenericAliasBuiltins.class);
         addCApiBuiltins(result, PythonCextHashBuiltins.class);

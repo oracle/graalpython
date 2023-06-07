@@ -97,6 +97,8 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Child private DictNode getDictNode;
 
+        public abstract Object execute(VirtualFrame frame, PFrame self);
+
         @Specialization
         Object get(VirtualFrame curFrame, PFrame self) {
             PythonObject globals = self.getGlobals();
@@ -110,17 +112,29 @@ public final class FrameBuiltins extends PythonBuiltins {
                 return globals != null ? globals : factory().createDict();
             }
         }
+
+        @NeverDefault
+        public static GetGlobalsNode create() {
+            return FrameBuiltinsFactory.GetGlobalsNodeFactory.create(null);
+        }
     }
 
     @Builtin(name = "f_builtins", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PFrame self);
+
         @Child private DictNode dictNode = ObjectBuiltinsFactory.DictNodeGen.create();
 
         @Specialization
         Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {
             // TODO: builtins can be set per frame
             return dictNode.execute(frame, getContext().getBuiltins(), PNone.NO_VALUE);
+        }
+
+        @NeverDefault
+        public static GetBuiltinsNode create() {
+            return FrameBuiltinsFactory.GetBuiltinsNodeFactory.create(null);
         }
     }
 
@@ -153,7 +167,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
     @Builtin(name = "f_lasti", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetLastiNode extends PythonBuiltinNode {
+    public abstract static class GetLastiNode extends PythonUnaryBuiltinNode {
         @Specialization
         int get(PFrame self) {
             return self.getLasti();
@@ -243,6 +257,8 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_back", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PFrame self);
+
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Bind("this") Node inliningTarget,
@@ -307,6 +323,11 @@ public final class FrameBuiltins extends PythonBuiltins {
                 assert false : "could not find frame of backref on the stack";
             }
             return backref.getPyFrame();
+        }
+
+        @NeverDefault
+        public static GetBackrefNode create() {
+            return FrameBuiltinsFactory.GetBackrefNodeFactory.create(null);
         }
     }
 
