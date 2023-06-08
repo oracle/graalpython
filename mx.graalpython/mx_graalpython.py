@@ -425,6 +425,7 @@ def retag_unittests(args):
     parser.add_argument('--inspect', action='store_true')
     parser.add_argument('-debug-java', action='store_true')
     parser.add_argument('--jvm', action='store_true')
+    parser.add_argument('--timeout')
     parsed_args, remaining_args = parser.parse_known_args(args)
     env = os.environ.copy()
     env.update(
@@ -444,6 +445,8 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
+    if parsed_args.timeout:
+        args += [f'--timeout={parsed_args.timeout}']
     vm = python_svm() if not parsed_args.jvm else python_gvm()
     if parsed_args.jvm:
         args += ['-ea']
@@ -1682,25 +1685,11 @@ def update_import_cmd(args):
         vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
         current_branch = vc.active_branch(SUITE.dir)
 
-    suite_py_files = []
-    local_names = []
-    repos = []
-
-    # find all relevant other repos that may need updating
-    for sibling in os.listdir(os.path.join(SUITE.dir, "..")):
-        if sibling.startswith("graalpython"):
-            dd = os.path.join(SUITE.dir, "..", sibling)
-            jsonnetfile = os.path.join(dd, "ci.jsonnet")
-            if os.path.exists(jsonnetfile):
-                local_names.append(sibling)
-                repos.append(dd)
-                for dirpath, dirnames, filenames in os.walk(dd):
-                    mx_dirs = list(filter(lambda x: x.startswith("mx."), dirnames))
-                    if mx_dirs:
-                        dirnames[:] = mx_dirs # don't go deeper once we found some mx dirs
-                    dirnames[:] = list(filter(lambda x: not (x.startswith(".") or x.startswith("__")), dirnames))
-                    if "suite.py" in filenames:
-                        suite_py_files.append(join(dirpath, "suite.py"))
+    local_names = ["graalpython", "graalpython-apptests"]
+    repos = [os.path.join(SUITE.dir, "..", name) for name in local_names]
+    suite_py_files = [os.path.join(SUITE.dir, "..", name, f"mx.{name}", "suite.py") for name in local_names]
+    for suite_py in suite_py_files:
+        assert os.path.isfile(suite_py), f"Cannot find {suite_py}"
 
     # make sure all other repos are clean and on the same branch
     for d in repos:
