@@ -119,14 +119,12 @@ void _PyObject_Free(void* ptr) {
 		return;
 	}
 	if(points_to_py_handle_space(ptr) || polyglot_is_value(ptr)) {
-		if(GraalPyTruffle_Object_Free(ptr)) {
-		    /* If 1 is returned, the upcall function already took care of freeing */
-		    return;
-		}
+	    GraalPyTruffle_Object_Free(ptr);
+	} else {
+        mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
+        PyTruffle_FreeMemory(ptr_with_head->size);
+        free(ptr_with_head);
 	}
-    mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
-    PyTruffle_FreeMemory(ptr_with_head->size);
-    free(ptr_with_head);
 }
 
 void* PyObject_Malloc(size_t size) {
