@@ -61,6 +61,7 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
@@ -103,6 +104,9 @@ public class Py2BinLauncher {
             .option("python.InputFilePath", PROJ_PREFIX)
             .option("python.PythonHome", HOME_PREFIX)
             .option("python.CheckHashPycsMode", "never");
+        if(ImageInfo.inImageRuntimeCode()) {
+            builder.option("engine.WarnInterpreterOnly", "false");
+        }
         try (var context = builder.build()) {
             try {
                 var src = Source.newBuilder("python", "__graalpython__.run_path()", "<internal>").internal(true).build();
