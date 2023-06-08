@@ -49,8 +49,8 @@ Disassembly of docompute:
   7:17  -   7:18       71 LOAD_BYTE_I                       1                                      can quicken
   7:12  -   7:18       73 BINARY_OP                         1    (INPLACE_ADD)                     can quicken, generalizes: 71, 69
   7:12  -   7:13       75 STORE_FAST                        3    (j)                               generalizes: 73
-  5:8   -   7:18       77 JUMP_BACKWARD                     58   (to 19)
-  5:8   -   7:18  >>   79 JUMP_BACKWARD                     72   (to 7)
+  7:12  -   7:13       77 JUMP_BACKWARD                     58   (to 19)
+  7:12  -   7:13  >>   79 JUMP_BACKWARD                     72   (to 7)
   9:11  -   9:15  >>   81 LOAD_FAST                         2    (sum_)
   9:4   -   9:15       83 RETURN_VALUE
 
