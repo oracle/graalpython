@@ -2895,9 +2895,9 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Bind("this") Node inliningTarget,
-                        @Cached EnsureCapacityNode ensureCapacity,
-                        @Cached SetLenNode setLenNode,
-                        @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached EnsureCapacityNode ensureCapacity,
+                        @Shared @Cached SetLenNode setLenNode,
+                        @Shared @Cached SetItemScalarNode setItemNode,
                         @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
             int len = s.length();
             int newLen = len + 1;
@@ -2923,7 +2923,20 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        // TODO native sequence storage
+        @Specialization
+        static SequenceStorage doNative(NativeSequenceStorage s, Object val, @SuppressWarnings("unused") GenNodeSupplier genNodeSupplier,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached EnsureCapacityNode ensureCapacity,
+                        @Shared @Cached SetLenNode setLenNode,
+                        @Shared @Cached SetItemScalarNode setItemNode) {
+            assert s.getElementType() == Generic;
+            int index = s.length();
+            int newLength = s.length() + 1;
+            SequenceStorage resized = ensureCapacity.execute(inliningTarget, s, newLength);
+            setLenNode.execute(resized, newLength);
+            setItemNode.execute(resized, index, val);
+            return resized;
+        }
 
         @NeverDefault
         public static AppendNode create() {
