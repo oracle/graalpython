@@ -1629,6 +1629,10 @@ PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
 PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
     GraalPyErr_SetExcInfo(a, b, c);
 }
+#undef PyErr_WarnExplicit
+PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
+    return GraalPyErr_WarnExplicit(a, truffleString(b), truffleString(c), d, truffleString(e), f);
+}
 #undef PyEval_GetBuiltins
 PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
     return GraalPyEval_GetBuiltins();

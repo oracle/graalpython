@@ -2284,8 +2284,10 @@ PyAPI_FUNC(void) PyErr_SyntaxLocationEx(const char* a, int b, int c) {
 PyAPI_FUNC(void) PyErr_SyntaxLocationObject(PyObject* a, int b, int c) {
     unimplemented("PyErr_SyntaxLocationObject"); exit(-1);
 }
+int (*__target__PyErr_WarnExplicit)(PyObject*, const char*, const char*, int, const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
-    unimplemented("PyErr_WarnExplicit"); exit(-1);
+    int result = (int) __target__PyErr_WarnExplicit(a, b, c, d, e, f);
+    return result;
 }
 PyAPI_FUNC(int) PyErr_WarnExplicitFormat(PyObject* a, const char* b, int c, const char* d, PyObject* e, const char* f, ...) {
     unimplemented("PyErr_WarnExplicitFormat"); exit(-1);
@@ -6245,6 +6247,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyErr_SetNone = getAPI("PyErr_SetNone");
     __target__PyErr_SetObject = getAPI("PyErr_SetObject");
     __target__PyErr_SetString = getAPI("PyErr_SetString");
+    __target__PyErr_WarnExplicit = getAPI("PyErr_WarnExplicit");
     __target__PyErr_WriteUnraisable = getAPI("PyErr_WriteUnraisable");
     __target__PyEval_CallObjectWithKeywords = getAPI("PyEval_CallObjectWithKeywords");
     __target__PyEval_EvalCode = getAPI("PyEval_EvalCode");

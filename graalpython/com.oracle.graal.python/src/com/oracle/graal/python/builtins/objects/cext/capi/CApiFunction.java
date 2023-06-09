@@ -1085,7 +1085,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_SyntaxLocation", ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationEx", ret = Void, args = {ConstCharPtrAsTruffleString, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationObject", ret = Void, args = {PyObject, Int, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicit", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
                     VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = NotImplemented)

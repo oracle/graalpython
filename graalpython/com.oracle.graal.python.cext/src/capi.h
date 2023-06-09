@@ -145,6 +145,7 @@ typedef struct {
     BUILTIN(PyErr_PrintEx, void, int) \
     BUILTIN(PyErr_Restore, void, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyErr_SetExcInfo, void, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_WarnExplicit, int, PyObject*, const char*, const char*, int, const char*, PyObject*) \
     BUILTIN(PyEval_GetBuiltins, PyObject*) \
     BUILTIN(PyEval_RestoreThread, void, PyThreadState*) \
     BUILTIN(PyEval_SaveThread, PyThreadState*) \
