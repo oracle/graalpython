@@ -215,6 +215,10 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 	return Graal_PyTruffleObject_Call1(callable, args, NULL, 0);
 }
 
+PyObject* PyObject_CallNoArgs(PyObject* callable) {
+    return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
+}
+
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
 	    return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
