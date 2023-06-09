@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -54,7 +52,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,21 +74,14 @@ public final class PythonCextWarnBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    abstract static class PyErr_WarnExplicit extends CApi6BuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = Ignored)
+    abstract static class PyTruffleErr_WarnExplicit extends CApi6BuiltinNode {
         @Specialization
         Object warn(Object category, Object message, Object filename, int lineno, Object module, Object registry,
-                        @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            Object callable = lookupNode.execute(null, getCore().lookupBuiltinModule(T__WARNINGS), WarningsModuleBuiltins.T_WARN_EXPLICIT);
-            if (module == PNone.NO_VALUE) {
-                callNode.execute(callable, message, category, filename, lineno);
-            } else if (registry == PNone.NO_VALUE) {
-                callNode.execute(callable, message, category, filename, lineno, module);
-            } else {
-                callNode.execute(callable, message, category, filename, lineno, module, registry);
-            }
-            return 0;
+            Object attribute = getCore().lookupBuiltinModule(T__WARNINGS).getAttribute(WarningsModuleBuiltins.T_WARN_EXPLICIT);
+            callNode.execute(attribute, message, category, filename, lineno, module, registry);
+            return PNone.NONE;
         }
     }
 }

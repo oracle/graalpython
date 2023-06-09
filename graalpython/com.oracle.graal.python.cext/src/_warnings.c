@@ -54,6 +54,12 @@ MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ss
     return 0;
 }
 
+MUST_INLINE static PyObject* warn_explicit(PyObject *category, PyObject *message,
+              PyObject *filename, int lineno,
+              PyObject *module, PyObject *registry) {
+    return GraalPyTruffleErr_WarnExplicit(category, message, filename, lineno, module, registry);
+}
+
 // taken from CPython "Python/_warnings.c"
 int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
     PyObject *message = PyUnicode_FromString(text);
@@ -83,4 +89,91 @@ int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *
     Py_DECREF(message);
     return ret;
 }
+
+// Adapted from CPython
+int PyErr_WarnExplicitObject(PyObject *category, PyObject *message,
+                         PyObject *filename, int lineno,
+                         PyObject *module, PyObject *registry)
+{
+    PyObject *res;
+    if (category == NULL)
+        category = PyExc_RuntimeWarning;
+    res = warn_explicit(category, message, filename, lineno,
+                        module, registry);
+    if (res == NULL)
+        return -1;
+    Py_DECREF(res);
+    return 0;
+}
+
+// Adapted from CPython
+int PyErr_WarnExplicit(PyObject *category, const char *text,
+                   const char *filename_str, int lineno,
+                   const char *module_str, PyObject *registry)
+{
+    PyObject *message = PyUnicode_FromString(text);
+    PyObject *filename = PyUnicode_DecodeFSDefault(filename_str);
+    PyObject *module = NULL;
+    int ret = -1;
+
+    if (message == NULL || filename == NULL)
+        goto exit;
+    if (module_str != NULL) {
+        module = PyUnicode_FromString(module_str);
+        if (module == NULL)
+            goto exit;
+    }
+
+    ret = PyErr_WarnExplicitObject(category, message, filename, lineno,
+                                   module, registry);
+
+ exit:
+    Py_XDECREF(message);
+    Py_XDECREF(module);
+    Py_XDECREF(filename);
+    return ret;
+}
+
+// Adapted from CPython
+int PyErr_WarnExplicitFormat(PyObject *category,
+                         const char *filename_str, int lineno,
+                         const char *module_str, PyObject *registry,
+                         const char *format, ...)
+{
+    PyObject *message;
+    PyObject *module = NULL;
+    PyObject *filename = PyUnicode_DecodeFSDefault(filename_str);
+    int ret = -1;
+    va_list vargs;
+
+    if (filename == NULL)
+        goto exit;
+    if (module_str != NULL) {
+        module = PyUnicode_FromString(module_str);
+        if (module == NULL)
+            goto exit;
+    }
+
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    message = PyUnicode_FromFormatV(format, vargs);
+    if (message != NULL) {
+        PyObject *res = warn_explicit(category, message, filename, lineno,
+                            module, registry);
+        Py_DECREF(message);
+        if (res != NULL) {
+            Py_DECREF(res);
+            ret = 0;
+        }
+    }
+    va_end(vargs);
+exit:
+    Py_XDECREF(module);
+    Py_XDECREF(filename);
+    return ret;
+}
+
 

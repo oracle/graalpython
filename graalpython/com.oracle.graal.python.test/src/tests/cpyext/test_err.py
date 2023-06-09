@@ -388,6 +388,30 @@ class TestPyErr(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyErr_WarnExplicitObject = CPyExtFunctionVoid(
+        lambda args: warnings.warn_explicit(args[1], args[0], args[2], args[3], args[4]),
+        lambda: (
+            (UserWarning, "custom warning", "filename.py", 1, "module", None),
+        ),
+        resultspec="O",
+        argspec='OOOiOO',
+        arguments=["PyObject* category", "PyObject* text", "PyObject* filename_str", "int lineno", "PyObject* module_str", "PyObject* registry"],
+        stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_WarnExplicit = CPyExtFunctionVoid(
+        lambda args: warnings.warn_explicit(args[1], args[0], args[2], args[3], args[4]),
+        lambda: (
+            (UserWarning, "custom warning", "filename.py", 1, "module", None),
+        ),
+        resultspec="O",
+        argspec='OssisO',
+        arguments=["PyObject* category", "const char* text", "const char* filename_str", "int lineno", "const char* module_str", "PyObject* registry"],
+        stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyErr_NoMemory = CPyExtFunctionVoid(
         _reference_nomemory,
         lambda: (

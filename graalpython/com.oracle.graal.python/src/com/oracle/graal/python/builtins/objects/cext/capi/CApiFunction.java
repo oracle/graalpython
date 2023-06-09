@@ -298,6 +298,10 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_ResourceWarning", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnEx", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnFormat", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicit", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
+                    VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Calloc", ret = Pointer, args = {SIZE_T, SIZE_T}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Free", ret = Void, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Malloc", ret = Pointer, args = {SIZE_T}, call = CImpl)
@@ -1085,9 +1089,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_SyntaxLocation", ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationEx", ret = Void, args = {ConstCharPtrAsTruffleString, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationObject", ret = Void, args = {PyObject, Int, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
-                    VARARGS}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_AcquireLock", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_AcquireThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_CallFunction", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
