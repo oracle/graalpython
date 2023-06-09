@@ -974,7 +974,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyWeakref_GetWeakrefCount", ret = Py_ssize_t, args = {PYWEAKREFERENCE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "Py_AddPendingCall", ret = Int, args = {func_intvoidptr, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "Py_BytesMain", ret = Int, args = {Int, CHAR_PTR_LIST}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_CompileString", ret = PyObject, args = {ConstCharPtr, ConstCharPtr, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_CompileStringExFlags", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_CompileStringObject", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_DecodeLocale", ret = WCHAR_T_PTR, args = {ConstCharPtrAsTruffleString, SIZE_T_PTR}, call = NotImplemented)

@@ -4522,8 +4522,10 @@ PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
 PyAPI_FUNC(int) Py_BytesMain(int a, char** b) {
     unimplemented("Py_BytesMain"); exit(-1);
 }
+PyObject* (*__target__Py_CompileString)(const char*, const char*, int) = NULL;
 PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
-    unimplemented("Py_CompileString"); exit(-1);
+    PyObject* result = (PyObject*) __target__Py_CompileString(a, b, c);
+    return result;
 }
 PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int c, PyCompilerFlags* d, int e) {
     unimplemented("Py_CompileStringExFlags"); exit(-1);
@@ -6400,6 +6402,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_InternInPlace = getAPI("PyUnicode_InternInPlace");
     __target__PyUnicode_New = getAPI("PyUnicode_New");
     __target__PyVectorcall_Call = getAPI("PyVectorcall_Call");
+    __target__Py_CompileString = getAPI("Py_CompileString");
     __target__Py_GetBuildInfo = getAPI("Py_GetBuildInfo");
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");

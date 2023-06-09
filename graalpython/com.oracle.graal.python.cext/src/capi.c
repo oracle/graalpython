@@ -2285,6 +2285,10 @@ PyAPI_FUNC(PyObject*) PyWeakref_NewRef(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
     return GraalPy_AtExit(a);
 }
+#undef Py_CompileString
+PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
+    return GraalPy_CompileString(truffleString(a), truffleString(b), c);
+}
 #undef Py_EnterRecursiveCall
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
     return GraalPy_EnterRecursiveCall(a);
