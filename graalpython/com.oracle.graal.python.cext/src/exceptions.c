@@ -112,6 +112,7 @@ PyObject * PyExc_FutureWarning = NULL;
 PyObject * PyExc_ImportWarning = NULL;
 PyObject * PyExc_UnicodeWarning = NULL;
 PyObject * PyExc_BytesWarning = NULL;
+PyObject * PyExc_EncodingWarning = NULL;
 PyObject * PyExc_ResourceWarning = NULL;
 
 void initialize_exceptions() {
@@ -182,6 +183,7 @@ void initialize_exceptions() {
     PyExc_ImportWarning = PY_EXCEPTION("ImportWarning");
     PyExc_UnicodeWarning = PY_EXCEPTION("UnicodeWarning");
     PyExc_BytesWarning = PY_EXCEPTION("BytesWarning");
+    PyExc_EncodingWarning = PY_EXCEPTION("EncodingWarning");
     PyExc_ResourceWarning = PY_EXCEPTION("ResourceWarning");
 }
 
