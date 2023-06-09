@@ -1341,8 +1341,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_Translate", ret = PyObject, args = {PyObject, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_TranslateCharmap", ret = PyObject, args = {CONST_PY_UNICODE, Py_ssize_t, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_WriteChar", ret = Int, args = {PyObject, Py_ssize_t, PY_UCS4}, call = NotImplemented)
-    @CApiBuiltin(name = "PyUnicodeDecodeError_Create", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, Py_ssize_t,
-                    ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEnd", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetObject", ret = PyObject, args = {PyObject}, call = NotImplemented)

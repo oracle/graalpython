@@ -2221,6 +2221,10 @@ PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
     return GraalPyType_IsSubtype(a, b);
 }
+#undef PyUnicodeDecodeError_Create
+PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
+    return GraalPyUnicodeDecodeError_Create(truffleString(a), b, c, d, e, truffleString(f));
+}
 #undef PyUnicode_AsEncodedString
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedString(PyObject* a, const char* b, const char* c) {
     return GraalPyUnicode_AsEncodedString(a, truffleString(b), truffleString(c));

@@ -380,6 +380,7 @@ typedef struct {
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
+    BUILTIN(PyUnicodeDecodeError_Create, PyObject*, const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) \
     BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Compare, int, PyObject*, PyObject*) \

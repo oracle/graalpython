@@ -4038,8 +4038,10 @@ PyAPI_FUNC(int) PyType_Ready(PyTypeObject* a) {
     int result = (int) __target__PyType_Ready(a);
     return result;
 }
+PyObject* (*__target__PyUnicodeDecodeError_Create)(const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
-    unimplemented("PyUnicodeDecodeError_Create"); exit(-1);
+    PyObject* result = (PyObject*) __target__PyUnicodeDecodeError_Create(a, b, c, d, e, f);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_GetEncoding(PyObject* a) {
     unimplemented("PyUnicodeDecodeError_GetEncoding"); exit(-1);
@@ -6376,6 +6378,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyType_GetSlot = getAPI("PyType_GetSlot");
     __target__PyType_Modified = getAPI("PyType_Modified");
     __target__PyType_Ready = getAPI("PyType_Ready");
+    __target__PyUnicodeDecodeError_Create = getAPI("PyUnicodeDecodeError_Create");
     __target__PyUnicode_Append = getAPI("PyUnicode_Append");
     __target__PyUnicode_AppendAndDel = getAPI("PyUnicode_AppendAndDel");
     __target__PyUnicode_AsASCIIString = getAPI("PyUnicode_AsASCIIString");

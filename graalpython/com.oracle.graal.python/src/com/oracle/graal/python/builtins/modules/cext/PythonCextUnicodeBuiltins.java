@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeDecodeError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
@@ -125,11 +127,13 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -1001,6 +1005,31 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetErrorHandlerNode getErrorHandlerNode) {
             return getErrorHandlerNode.execute(inliningTarget, errors).getNativeValue();
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtr, Py_ssize_t, Py_ssize_t, Py_ssize_t, ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class PyUnicodeDecodeError_Create extends CApi6BuiltinNode {
+        @Specialization
+        Object doit(Object encoding, Object object, int length, int start, int end, Object reason,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isUnicodeDecode,
+                        @Cached PConstructAndRaiseNode raiseNode,
+                        @Cached GetByteArrayNode getByteArrayNode) {
+            PBytes bytes;
+            try {
+                bytes = factory().createBytes(getByteArrayNode.execute(object, length));
+            } catch (InteropException e) {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+            } catch (OverflowException e) {
+                throw raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+            }
+            try {
+                throw raiseNode.executeWithArgsOnly(null, UnicodeDecodeError, new Object[]{encoding, bytes, start, end, reason});
+            } catch (PException e) {
+                e.expect(inliningTarget, UnicodeDecodeError, isUnicodeDecode);
+                return e.getEscapedException();
+            }
         }
     }
 }
