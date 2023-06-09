@@ -2106,7 +2106,8 @@ PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
     return result;
 }
 PyAPI_FUNC(PyObject*) PyDict_Items(PyObject* a) {
-    unimplemented("PyDict_Items"); exit(-1);
+    PyObject* result = (PyObject*) GraalPyDict_Items(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyDict_Keys(a);

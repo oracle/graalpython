@@ -1073,7 +1073,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDescr_NewMember", ret = PyObject, args = {PyTypeObject, PyMemberDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewWrapper", ret = PyObject, args = {PyTypeObject, WRAPPERBASE, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyDict_Items", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_MergeFromSeq2", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramText", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramTextObject", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)

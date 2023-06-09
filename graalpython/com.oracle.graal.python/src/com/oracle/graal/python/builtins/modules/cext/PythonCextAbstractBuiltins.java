@@ -825,6 +825,7 @@ public final class PythonCextAbstractBuiltins {
         return listNode.execute(frame, callNode.execute(frame, attr));
     }
 
+    @CApiBuiltin(name = "PyDict_Items", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
         @Specialization

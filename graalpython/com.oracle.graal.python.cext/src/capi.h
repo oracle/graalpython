@@ -129,6 +129,7 @@ typedef struct {
     BUILTIN(PyDict_DelItem, int, PyObject*, PyObject*) \
     BUILTIN(PyDict_GetItem, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyDict_GetItemWithError, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Items, PyObject*, PyObject*) \
     BUILTIN(PyDict_Keys, PyObject*, PyObject*) \
     BUILTIN(PyDict_Merge, int, PyObject*, PyObject*, int) \
     BUILTIN(PyDict_New, PyObject*) \

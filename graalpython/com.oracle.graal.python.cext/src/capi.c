@@ -1565,6 +1565,10 @@ PyAPI_FUNC(PyObject*) PyDict_GetItem(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
     return GraalPyDict_GetItemWithError(a, b);
 }
+#undef PyDict_Items
+PyAPI_FUNC(PyObject*) PyDict_Items(PyObject* a) {
+    return GraalPyDict_Items(a);
+}
 #undef PyDict_Keys
 PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
     return GraalPyDict_Keys(a);
