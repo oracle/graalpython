@@ -163,7 +163,7 @@ public final class ReadCallerFrameNode extends Node {
         PFrame.Reference currentFrame = startFrameInfo;
         for (int i = 0; i <= level;) {
             PFrame.Reference callerInfo = currentFrame.getCallerInfo();
-            if (cachedCallerFrameProfile.profile(callerInfo == null)) {
+            if (cachedCallerFrameProfile.profile(callerInfo == null || callerInfo.getPyFrame() == null)) {
                 Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, selector, level);
                 if (callerFrame != null) {
                     // At this point, we must 'materialize' the frame. Actually, the Truffle frame
