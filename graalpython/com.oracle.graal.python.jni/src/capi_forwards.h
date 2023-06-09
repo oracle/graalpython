@@ -2386,7 +2386,8 @@ PyAPI_FUNC(const char*) PyExceptionClass_Name(PyObject* a) {
     unimplemented("PyExceptionClass_Name"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) PyException_GetCause(PyObject* a) {
-    unimplemented("PyException_GetCause"); exit(-1);
+    PyObject* result = (PyObject*) GraalPyException_GetCause(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyException_GetContext(a);

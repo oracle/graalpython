@@ -1641,6 +1641,10 @@ PyAPI_FUNC(void) PyEval_RestoreThread(PyThreadState* a) {
 PyAPI_FUNC(PyThreadState*) PyEval_SaveThread() {
     return GraalPyEval_SaveThread();
 }
+#undef PyException_GetCause
+PyAPI_FUNC(PyObject*) PyException_GetCause(PyObject* a) {
+    return GraalPyException_GetCause(a);
+}
 #undef PyException_GetContext
 PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
     return GraalPyException_GetContext(a);

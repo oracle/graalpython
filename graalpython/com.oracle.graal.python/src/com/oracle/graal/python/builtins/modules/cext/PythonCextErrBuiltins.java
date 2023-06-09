@@ -619,6 +619,15 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyException_GetCause extends CApiUnaryBuiltinNode {
+        @Specialization
+        Object getCause(Object exc,
+                        @Cached PyObjectGetAttr getAttrNode) {
+            return getAttrNode.execute(exc, T___CAUSE__);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyException_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object setCause(Object exc,

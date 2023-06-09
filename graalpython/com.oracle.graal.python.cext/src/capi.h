@@ -148,6 +148,7 @@ typedef struct {
     BUILTIN(PyEval_GetBuiltins, PyObject*) \
     BUILTIN(PyEval_RestoreThread, void, PyThreadState*) \
     BUILTIN(PyEval_SaveThread, PyThreadState*) \
+    BUILTIN(PyException_GetCause, PyObject*, PyObject*) \
     BUILTIN(PyException_GetContext, PyObject*, PyObject*) \
     BUILTIN(PyException_SetCause, void, PyObject*, PyObject*) \
     BUILTIN(PyException_SetContext, void, PyObject*, PyObject*) \
