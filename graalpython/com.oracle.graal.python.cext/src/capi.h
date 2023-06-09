@@ -245,15 +245,19 @@ typedef struct {
     BUILTIN(PySequence_Check, int, PyObject*) \
     BUILTIN(PySequence_Concat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PySequence_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PySequence_Count, Py_ssize_t, PyObject*, PyObject*) \
     BUILTIN(PySequence_DelItem, int, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_DelSlice, int, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PySequence_GetItem, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PySequence_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PySequence_InPlaceConcat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PySequence_InPlaceRepeat, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_Index, Py_ssize_t, PyObject*, PyObject*) \
     BUILTIN(PySequence_Length, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_List, PyObject*, PyObject*) \
     BUILTIN(PySequence_Repeat, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PySequence_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PySequence_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_Tuple, PyObject*, PyObject*) \
     BUILTIN(PySet_Add, int, PyObject*, PyObject*) \

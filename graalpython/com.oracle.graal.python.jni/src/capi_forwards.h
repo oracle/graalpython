@@ -3530,14 +3530,16 @@ PyAPI_FUNC(int) PySequence_Contains(PyObject* a, PyObject* b) {
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Count(PyObject* a, PyObject* b) {
-    unimplemented("PySequence_Count"); exit(-1);
+    Py_ssize_t result = (Py_ssize_t) GraalPySequence_Count(a, b);
+    return result;
 }
 PyAPI_FUNC(int) PySequence_DelItem(PyObject* a, Py_ssize_t b) {
     int result = (int) GraalPySequence_DelItem(a, b);
     return result;
 }
 PyAPI_FUNC(int) PySequence_DelSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    unimplemented("PySequence_DelSlice"); exit(-1);
+    int result = (int) GraalPySequence_DelSlice(a, b, c);
+    return result;
 }
 PyObject* (*__target__PySequence_Fast)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Fast(PyObject* a, const char* b) {
@@ -3564,7 +3566,8 @@ PyAPI_FUNC(PyObject*) PySequence_InPlaceRepeat(PyObject* a, Py_ssize_t b) {
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Index(PyObject* a, PyObject* b) {
-    unimplemented("PySequence_Index"); exit(-1);
+    Py_ssize_t result = (Py_ssize_t) GraalPySequence_Index(a, b);
+    return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Length(PyObject* a) {
     Py_ssize_t result = (Py_ssize_t) GraalPySequence_Length(a);
@@ -3583,7 +3586,8 @@ PyAPI_FUNC(int) PySequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
     return result;
 }
 PyAPI_FUNC(int) PySequence_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
-    unimplemented("PySequence_SetSlice"); exit(-1);
+    int result = (int) GraalPySequence_SetSlice(a, b, c, d);
+    return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Size(PyObject* a) {
     Py_ssize_t result = (Py_ssize_t) GraalPySequence_Size(a);

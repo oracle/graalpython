@@ -82,15 +82,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
                     @Cached(parameters = "Contains") LookupSpecialMethodSlotNode lookupContains,
                     @Cached IsBuiltinObjectProfile noContainsProfile,
                     @Cached CallBinaryMethodNode callContains,
-                    @Cached PyObjectGetIter getIter,
-                    @Cached IsBuiltinObjectProfile noIterProfile,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached InlinedGetClassNode getIterClass,
-                    @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupIternext,
-                    @Cached IsBuiltinObjectProfile noNextProfile,
-                    @Cached CallUnaryMethodNode callNext,
-                    @Cached PyObjectRichCompareBool.EqNode eqNode,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Cached PySequenceIterSearchNode iterSearch,
                     @Cached PyObjectIsTrueNode isTrue) {
         Object type = getReceiverClass.execute(inliningTarget, container);
         Object contains = PNone.NO_VALUE;
@@ -104,42 +96,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
             result = callContains.executeObject(frame, contains, container, key);
         }
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            Object iterator;
-            try {
-                iterator = getIter.execute(frame, container);
-            } catch (PException e) {
-                e.expectTypeError(inliningTarget, noIterProfile);
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, container);
-            }
-            Object next = PNone.NO_VALUE;
-            try {
-                next = lookupIternext.execute(frame, getIterClass.execute(inliningTarget, iterator), iterator);
-            } catch (PException e) {
-                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, noNextProfile);
-            }
-            if (next instanceof PNone) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
-            }
-            int i = 0;
-            while (true) {
-                if (CompilerDirectives.hasNextTier()) {
-                    i++;
-                }
-                try {
-                    if (eqNode.execute(frame, callNext.executeObject(frame, next, iterator), key)) {
-                        if (CompilerDirectives.hasNextTier()) {
-                            LoopNode.reportLoopCount(this, i);
-                        }
-                        return true;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopIterationProfile);
-                    if (CompilerDirectives.hasNextTier()) {
-                        LoopNode.reportLoopCount(this, i);
-                    }
-                    return false;
-                }
-            }
+            return iterSearch.execute(frame, container, key, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
         } else {
             return isTrue.execute(frame, result);
         }

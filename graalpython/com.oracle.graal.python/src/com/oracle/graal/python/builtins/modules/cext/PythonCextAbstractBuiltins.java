@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins.PyErr_Restore;
@@ -112,12 +113,15 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
@@ -536,8 +540,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static int contains(Object haystack, Object needle,
-                        @Cached ContainsNode containsNode) {
-            return PInt.intValue((boolean) containsNode.executeObject(null, needle, haystack));
+                        @Cached PySequenceContainsNode containsNode) {
+            return PInt.intValue(containsNode.execute(haystack, needle));
         }
     }
 
@@ -700,6 +704,48 @@ public final class PythonCextAbstractBuiltins {
             } finally {
                 IndirectCallContext.exit(null, this, state);
             }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct)
+    abstract static class PySequence_SetSlice extends CApiQuaternaryBuiltinNode {
+        @Specialization
+        static int setSlice(Object sequence, Object iLow, Object iHigh, Object s,
+                        @Cached("create(SetItem)") LookupAndCallTernaryNode setItemNode,
+                        @Cached PySliceNew sliceNode) {
+            setItemNode.execute(null, sequence, sliceNode.execute(iLow, iHigh, PNone.NONE), s);
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
+    abstract static class PySequence_DelSlice extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int setSlice(Object sequence, Object iLow, Object iHigh,
+                        @Cached("create(DelItem)") LookupAndCallBinaryNode delItemNode,
+                        @Cached PySliceNew sliceNode) {
+            delItemNode.executeObject(null, sequence, sliceNode.execute(iLow, iHigh, PNone.NONE));
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PySequence_Count extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static int contains(Object haystack, Object needle,
+                        @Cached PySequenceIterSearchNode searchNode) {
+            return searchNode.execute(haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PySequence_Index extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static int contains(Object haystack, Object needle,
+                        @Cached PySequenceIterSearchNode searchNode) {
+            return searchNode.execute(haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_INDEX);
         }
     }
 

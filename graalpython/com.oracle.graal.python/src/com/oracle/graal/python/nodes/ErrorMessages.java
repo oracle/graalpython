@@ -1518,4 +1518,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
     public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
     public static final TruffleString MEMORY_LEAK_IN_CALLBACK_FUNCTION = tsLiteral("memory leak in callback function.");
+
+    public static final TruffleString INDEX_EXCEEDS_INT = tsLiteral("index exceeds integer size");
+    public static final TruffleString X_NOT_IN_SEQUENCE = tsLiteral("sequence.index(x): x not in sequence");
 }
