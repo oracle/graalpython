@@ -49,7 +49,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PAsyncGen extends PGenerator {
     private boolean closed = false;
-    private boolean hooksCalled = false;
+    private boolean hookCalled = false;
     private boolean runningAsync = false;
 
     public static PAsyncGen create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
@@ -69,12 +69,12 @@ public final class PAsyncGen extends PGenerator {
         this.closed = true;
     }
 
-    public boolean isHooksCalled() {
-        return hooksCalled;
+    public boolean isHookCalled() {
+        return hookCalled;
     }
 
-    public void setHooksCalled(boolean hooksCalled) {
-        this.hooksCalled = hooksCalled;
+    public void setHookCalled(boolean hookCalled) {
+        this.hookCalled = hookCalled;
     }
 
     public boolean isRunningAsync() {

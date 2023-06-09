@@ -301,6 +301,11 @@ public final class PythonContext extends Python3Core {
         Object runningEventLoop;
 
         /*
+         * A callable that should be called for the first iteration of an async generators.
+         */
+        Object asyncgenFirstIter;
+
+        /*
          * Counter for C-level recursion depth used for Py_(Enter/Leave)RecursiveCall.
          */
         public int recursionDepth;
@@ -476,6 +481,14 @@ public final class PythonContext extends Python3Core {
 
         public void profilingStop() {
             this.profiling = false;
+        }
+
+        public Object getAsyncgenFirstIter() {
+            return asyncgenFirstIter;
+        }
+
+        public void setAsyncgenFirstIter(Object asyncgenFirstIter) {
+            this.asyncgenFirstIter = asyncgenFirstIter;
         }
     }
 
