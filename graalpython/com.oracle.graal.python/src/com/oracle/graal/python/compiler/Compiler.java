@@ -1007,6 +1007,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Await node) {
         // TODO if !IS_TOP_LEVEL_AWAIT
+        // TODO handle await in comprehension correctly (currently, it is always allowed)
         if (!unit.scope.isFunction()) {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside function");
         }
