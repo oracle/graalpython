@@ -269,6 +269,46 @@ index 8e1ca3b1..b150ac3f 100644
    }
  
    Py_INCREF(obj);
+diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
+index 8c9ed1d7..5183a325 100644
+--- a/torch/csrc/autograd/python_variable_indexing.cpp
++++ b/torch/csrc/autograd/python_variable_indexing.cpp
+@@ -141,26 +141,28 @@ static inline void checkUnpackSlice(
+ }
+ 
+ static inline void recordSliceTrace(PyObject* obj) {
+-  PySliceObject* sliceobj = (PySliceObject*)obj;
+-  if (THPVariable_Check(sliceobj->start)) {
++  PyObject* slicestart = PySlice_Start(obj);
++  if (THPVariable_Check(slicestart)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("start"),
+         1,
+-        THPVariable_Unpack(sliceobj->start),
++        THPVariable_Unpack(slicestart),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->stop)) {
++  PyObject* slicestop = PySlice_Stop(obj);
++  if (THPVariable_Check(slicestop)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("end"),
+         1,
+-        THPVariable_Unpack(sliceobj->stop),
++        THPVariable_Unpack(slicestop),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->step)) {
++  PyObject* slicestep = PySlice_Step(obj);
++  if (THPVariable_Check(slicestep)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("step"),
+         1,
+-        THPVariable_Unpack(sliceobj->step),
++        THPVariable_Unpack(slicestep),
+         torch::jit::IntType::get());
+   }
+ }
 diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
 index 78676e2e..ecc76ea9 100644
 --- a/torch/csrc/jit/python/python_tracer.cpp
