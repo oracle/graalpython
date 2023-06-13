@@ -123,7 +123,7 @@ static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, j
     jsize next_handle;
     if (unclosedHandleTop > 0) {
         uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
-        LOG("%llu", recycled)
+        LOG("%llu", (unsigned long long)recycled)
         assert(recycled < INT32_MAX);
         next_handle = (jsize) recycled;
     } else {
@@ -447,7 +447,7 @@ JNIEXPORT jint JNICALL JNI_HELPER(initJNINativeFastPaths)(JNIEnv *env, jclass cl
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(setNativeSpaceFunction)(JNIEnv *env, jclass clazz, jlong uctxPointer, jlong cachePtr) {
-    LOG("%p %p", uctxPointer, cachePtr);
+    LOG("%ld %ld", uctxPointer, cachePtr);
     HPyContext *ctx = (HPyContext *) uctxPointer;
     ctx->_private = (void *) cachePtr;
     return 0;

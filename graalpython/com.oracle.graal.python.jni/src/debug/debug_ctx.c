@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -82,11 +82,10 @@ void hpy_debug_close_handle(HPyContext *dctx, HPy dh)
 
 // this function is supposed to be called from gdb: it tries to determine
 // whether a handle is universal or debug by looking at the last bit
-extern struct _HPyContext_s g_universal_ctx;
 #ifndef _MSC_VER
 __attribute__((unused))
 #endif
-static void hpy_magic_dump(HPy h)
+static void hpy_magic_dump(HPyContext *uctx, HPy h)
 {
     int universal = h._i & 1;
     if (universal)
@@ -100,7 +99,7 @@ static void hpy_magic_dump(HPy h)
     fprintf(stderr, "raw value: %lx (%ld)\n", h._i, h._i);
 #endif
     if (universal)
-        _HPy_Dump(&g_universal_ctx, h);
+        _HPy_Dump(uctx, h);
     else {
         DebugHandle *dh = as_DebugHandle(h);
 #ifdef _MSC_VER
@@ -108,7 +107,7 @@ static void hpy_magic_dump(HPy h)
 #else
         fprintf(stderr, "dh->uh: %lx\n", dh->uh._i);
 #endif
-        _HPy_Dump(&g_universal_ctx, dh->uh);
+        _HPy_Dump(uctx, dh->uh);
     }
 }
 
