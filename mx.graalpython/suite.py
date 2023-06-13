@@ -519,6 +519,30 @@ suite = {
             },
         },
 
+        "python-libzsupport": {
+            "subDir": "graalpython",
+            "native": "shared_lib",
+            "deliverable": "zsupport",
+            "buildDependencies": [],
+            "cflags": [
+                "-DNDEBUG", "-g", "-O3", "-Werror",
+            ],
+            "ldlibs": ["-lz"],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild" : True,
+                    },
+                },
+            },
+        },
+
         "python-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3",
@@ -714,6 +738,7 @@ suite = {
             ],
             "dependencies": [
                 "com.oracle.graal.python.cext",
+                "python-libzsupport",
             ],
             "os_arch": {
                 "windows": {
@@ -731,6 +756,11 @@ suite = {
                                 {
                                     "source_type": "dependency",
                                     "dependency": "graalpython:com.oracle.graal.python.cext",
+                                    "path": "*",
+                                },
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:python-libzsupport",
                                     "path": "*",
                                 },
                             ],
@@ -760,6 +790,11 @@ suite = {
                                     "dependency": "graalpython:com.oracle.graal.python.cext",
                                     "path": "*",
                                     "exclude": ["CEXT-WINDOWS-README.md"],
+                                },
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:python-libzsupport",
+                                    "path": "*",
                                 },
                             ],
                             "./lib/graalpy<graal_ver:major_minor_nodot>/modules/graalpy_virtualenv": [

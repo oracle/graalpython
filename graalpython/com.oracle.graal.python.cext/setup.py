@@ -630,10 +630,6 @@ def build(capi_home):
             return # TODO: ...
         build_libposix(capi_home)
         build_nativelibsupport(capi_home,
-                                subdir="zlib",
-                                libname="libzsupport",
-                                libs=['z'])
-        build_nativelibsupport(capi_home,
                                 subdir="bz2",
                                 libname="libbz2support",
                                 deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
