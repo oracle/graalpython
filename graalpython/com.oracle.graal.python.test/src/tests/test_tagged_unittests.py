@@ -54,6 +54,16 @@ TIMEOUT = 90 * 60
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
 LINE = "=" * 80
 
+# some CI platforms are more unstable then others when it comes to tests
+# involving many files, sockets, or threads. We skip some tests on some
+# platforms
+SKIPLIST = (
+    ("darwin", None, "test_smtplib"),
+    ("darwin", None, "test_imaplib"),
+    (None, "arm", "test_multiprocessing_spawn"),
+    (None, "aarch64", "test_multiprocessing_spawn"),
+)
+
 
 def grouper(iterable, n):
     args = [iter(iterable)] * n
@@ -166,7 +176,17 @@ def make_tests_class():
             selection = set(s.strip() for s in selection.split(","))
             working_tests = [x for x in working_tests if x[0] in selection]
 
+    this_os = sys.platform
+    this_machine = os.uname().machine
     for idx, working_test in enumerate(working_tests):
+        if os.environ.get("CI", None) and any(
+            (os is None or os in this_os)
+            and (machine is None or machine in this_machine)
+            and test == working_test[0]
+            for os, machine, test in SKIPLIST
+        ):
+            print("Skipping test from skiplist for this platform:", working_test[0])
+            continue
         fn = make_test_function(working_test)
         fn.__name__ = "%s[%d/%d]" % (fn.__name__, idx + 1, len(working_tests))
         fn.__qualname__ = "%s.%s" % (TestTaggedUnittests.__name__, fn.__name__)
