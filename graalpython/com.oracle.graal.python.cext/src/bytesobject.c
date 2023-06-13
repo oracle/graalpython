@@ -243,7 +243,7 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     	}
     	GraalPyTuple_SetItem(args, i, entry);
     }
-    PyObject* result = GraalPyTruffleBytes_FromFormat(truffleString(format), args);
+    PyObject* result = GraalPyTruffleBytes_FromFormat(format, args);
   	Py_DecRef(args);
     return result;
 }

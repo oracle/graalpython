@@ -47,7 +47,7 @@ PY_EXCEPTIONS
 #undef EXCEPTION
 
 void initialize_exceptions() {
-#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyTruffle_Type(truffleString(#NAME));
+#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyTruffle_Type(#NAME);
 	PY_EXCEPTIONS
 #undef EXCEPTION
 }

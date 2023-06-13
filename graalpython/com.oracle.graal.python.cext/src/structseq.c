@@ -95,7 +95,7 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
 
 PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
     // we create the new type managed
-	return GraalPyTruffleStructSequence_NewType(truffleString(desc->name), truffleString(desc->doc), desc->fields, desc->n_in_sequence);
+	return GraalPyTruffleStructSequence_NewType(desc->name, desc->doc, desc->fields, desc->n_in_sequence);
 }
 
 // taken from CPython "Objects/structseq.c"

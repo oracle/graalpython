@@ -779,11 +779,6 @@ static inline int get_method_flags_wrapper(int flags) {
     return JWRAPPER_UNSUPPORTED;
 }
 
-MUST_INLINE
-const char* truffleString(const char* string) {
-	return string /* == NULL ? NULL : polyglot_from_string(string, SRC_CS)*/;
-}
-
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & 0x8000000000000000L) != 0)
 
 PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, const char* name);

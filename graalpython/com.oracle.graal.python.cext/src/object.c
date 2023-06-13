@@ -243,25 +243,25 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), NULL, 0);
+        return Graal_PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), args, is_single_arg(fmt));
+    return Graal_PyTruffleObject_CallMethod1(object, method, args, is_single_arg(fmt));
 }
 
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), NULL, 0);
+        return Graal_PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = _Py_VaBuildValue_SizeT(fmt, va);
     va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), args, is_single_arg(fmt));
+    return Graal_PyTruffleObject_CallMethod1(object, method, args, is_single_arg(fmt));
 }
 
 

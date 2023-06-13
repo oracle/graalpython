@@ -151,8 +151,11 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -832,7 +835,7 @@ public final class PythonCextBuiltins {
     public enum CApiCallPath {
         /**
          * The Java code of this builtin can be called without any intermediate C code - a call stub
-         * will be generated as appropriate.
+         * will be generated.
          */
         Direct,
         /**
@@ -841,16 +844,11 @@ public final class PythonCextBuiltins {
          */
         CImpl,
         /**
-         * This builtin has an explicit C implementation that needs to be executed in Sulong - an
-         * automatic stub will be generated for native calls.
-         */
-        PolyglotImpl,
-        /**
          * This builtin is not implemented - create an empty stub that raises an error.
          */
         NotImplemented,
         /**
-         * This builtin is not part of the Python C API, no proxy is generated.
+         * This builtin is not part of the Python C API, no call stub is generated.
          */
         Ignored,
     }
@@ -898,12 +896,6 @@ public final class PythonCextBuiltins {
          * @see CApiCallPath
          */
         CApiCallPath call();
-
-        /**
-         * Specifies a va_list function that this builtin can be forwarded to, e.g., "PyErr_FormatV"
-         * for "PyErr_Format".
-         */
-        String forwardsTo() default "";
 
         /**
          * Comment to explain, e.g., why a builtin is ignored.
@@ -1811,6 +1803,11 @@ public final class PythonCextBuiltins {
                 if (!PGuards.isNullOrZero(as_buffer, lib)) {
                     writeAttr.execute(clazz, TypeBuiltins.TYPE_AS_BUFFER, as_buffer);
                 }
+
+                // initialize flags:
+                long flags = GetTypeFlagsNode.getUncached().execute(clazz);
+                flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+                SetTypeFlagsNode.getUncached().execute(clazz, flags);
 
                 wrapper.initializeBuiltinType(pointer);
                 return PNone.NO_VALUE;

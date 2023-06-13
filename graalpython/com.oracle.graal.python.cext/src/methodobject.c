@@ -58,14 +58,14 @@ PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
 
 PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
     return GraalPyTruffleCMethod_NewEx(ml,
-                                               truffleString(PyMethodDef_ml_name(ml)),
+                                               PyMethodDef_ml_name(ml),
 											   PyMethodDef_ml_meth(ml),
 											   PyMethodDef_ml_flags(ml),
 											   get_method_flags_wrapper(PyMethodDef_ml_flags(ml)),
                                                self,
                                                module,
                                                cls,
-											   truffleString(PyMethodDef_ml_doc(ml)));
+											   PyMethodDef_ml_doc(ml));
 }
 
 PyCFunction PyCFunction_GetFunction(PyObject *func) {

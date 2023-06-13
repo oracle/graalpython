@@ -43,7 +43,7 @@
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
     int flags = PyMethodDef_ml_flags(method);
     return GraalPyTruffleDescr_NewClassMethod(method,
-                    truffleString(PyMethodDef_ml_name(method)),
+                    PyMethodDef_ml_name(method),
 					PyMethodDef_ml_doc(method),
                     flags,
                     get_method_flags_wrapper(flags),
@@ -54,7 +54,7 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
 PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
     getter getter_fun = PyGetSetDef_get(getset);
     setter setter_fun = PyGetSetDef_set(getset);
-    return GraalPyTruffleDescr_NewGetSet(truffleString(PyGetSetDef_name(getset)),
+    return GraalPyTruffleDescr_NewGetSet(PyGetSetDef_name(getset),
                     type,
                     getter_fun,
                     setter_fun,

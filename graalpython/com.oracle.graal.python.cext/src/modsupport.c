@@ -116,7 +116,7 @@ Py_ssize_t convertbuffer(PyObject *arg, const void **p) {
 int PyArg_VaParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va) {
 	va_list lva;
 	va_copy(lva, va);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, truffleString(format), kwdnames, &lva);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, &lva);
     va_end(lva);
     return result;
 }
@@ -124,7 +124,7 @@ int PyArg_VaParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *fo
 int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va) {
 	va_list lva;
 	va_copy(lva, va);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, truffleString(format), kwdnames, &lva);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, &lva);
     va_end(lva);
     return result;
 }
@@ -132,7 +132,7 @@ int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const c
 int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     va_list __vl;
     va_start(__vl, kwdnames);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((argv), (kwds), truffleString((format)), kwdnames, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, &__vl);
     va_end(__vl);
     return result;
 }
@@ -141,7 +141,7 @@ int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *form
 int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     va_list __vl;
     va_start(__vl, kwdnames);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((argv), (kwds), truffleString((format)), kwdnames, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, format, kwdnames, &__vl);
     va_end(__vl);
     return result;
 }
@@ -150,7 +150,7 @@ NO_INLINE
 int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords((args), (nargs), NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(args, nargs, NULL, format, NULL, &__vl);
     va_end(__vl);
     return result;
 }
@@ -159,7 +159,7 @@ NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords((args), (nargs), NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(args, nargs, NULL, format, NULL, &__vl);
     va_end(__vl);
     return result;
 }
@@ -175,7 +175,7 @@ int _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, s
 int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
     va_list __vl;
     va_start(__vl, parser);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((args), (kwargs), truffleString((parser->format)), parser->keywords, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, kwargs, parser->format, parser->keywords, &__vl);
     va_end(__vl);
     return result;
 }
@@ -183,7 +183,7 @@ int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _P
 int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
     va_list __vl;
     va_start(__vl, parser);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((args), (kwargs), truffleString((parser->format)), parser->keywords, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, kwargs, parser->format, parser->keywords, &__vl);
     va_end(__vl);
     return result;
 }
@@ -193,7 +193,7 @@ NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((args), NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, NULL, format, NULL, &__vl);
     va_end(__vl);
 	return result;
 }
@@ -202,7 +202,7 @@ NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords((args), NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, NULL, format, NULL, &__vl);
     va_end(__vl);
 	return result;
 }
@@ -219,7 +219,7 @@ NO_INLINE
 int PyArg_Parse(PyObject *args, const char *format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, format, NULL, &__vl);
     va_end(__vl);
 	return result;
 }
@@ -228,7 +228,7 @@ NO_INLINE
 int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
     va_list __vl;
     va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, truffleString((format)), NULL, &__vl);
+    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, format, NULL, &__vl);
     va_end(__vl);
     return result;
 }

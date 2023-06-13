@@ -593,9 +593,7 @@ class TestObject(object):
                               static PyTypeObject* datetime_type = NULL;
                                 
                               PyObject* TestSlotsInitialized_new(PyTypeObject* self, PyObject* args, PyObject* kwargs) {
-                                  PyObject* result =  datetime_type->tp_new(self, args, kwargs);
-                                  Py_XINCREF(result);
-                                  return result;
+                                  return Py_XNewRef(datetime_type->tp_new(self, args, kwargs));
                               }
                               ''',
                               includes='#include "datetime.h"',

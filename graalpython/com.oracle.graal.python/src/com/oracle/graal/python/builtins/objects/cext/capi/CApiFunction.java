@@ -381,7 +381,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_Clear", ret = Void, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_ExceptionMatches", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_Fetch", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
-    @CApiBuiltin(name = "PyErr_Format", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyErr_FormatV", call = CImpl)
+    @CApiBuiltin(name = "PyErr_Format", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_FormatV", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyErr_GetExcInfo", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyErr_NoMemory", ret = PyObject, args = {}, call = CImpl)
@@ -440,7 +440,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyOS_string_to_double", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyOS_strtol", ret = Long, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, Int}, call = CImpl)
     @CApiBuiltin(name = "PyOS_strtoul", ret = UNSIGNED_LONG, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, Int}, call = CImpl)
-    @CApiBuiltin(name = "PyOS_snprintf", ret = Int, args = {CHAR_PTR, SIZE_T, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyOS_vsnprintf", call = CImpl)
+    @CApiBuiltin(name = "PyOS_snprintf", ret = Int, args = {CHAR_PTR, SIZE_T, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyOS_vsnprintf", ret = Int, args = {CHAR_PTR, SIZE_T, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "_Py_parse_inf_or_nan", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST}, call = CImpl)
     @CApiBuiltin(name = "_Py_string_to_number_with_underscores", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PyObject, Pointer, func_objcharsizevoidptr}, call = CImpl)
@@ -621,22 +621,19 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyCFunction_GetMethodDef", ret = PyMethodDef, args = {PyObject}, call = CImpl)
 
     @CApiBuiltin(name = "_PyArg_ParseStack_SizeT", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast_SizeT", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR,
-                    VARARGS}, forwardsTo = "_PyArg_VaParseTupleAndKeywordsFast_SizeT", call = CImpl)
+    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast_SizeT", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywordsFast_SizeT", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_VaParse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_Parse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "_PyArg_ParseTuple_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = CImpl)
-    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
-                    VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = CImpl)
-    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VARARGS}, forwardsTo = "_PyArg_VaParseTupleAndKeywordsFast", call = CImpl)
+    @CApiBuiltin(name = "_PyArg_ParseTuple_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VA_LIST}, call = CImpl)
 
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = CImpl)
-    @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
-                    VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = CImpl)
+    @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_VaParse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyArg_VaParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyType_Ready", ret = Int, args = {PyTypeObject}, call = CImpl)
@@ -673,7 +670,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_DecodeUTF32", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, INT_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_DecodeUTF8", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_DecodeUTF8Stateful", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, PY_SSIZE_T_PTR}, call = CImpl)
-    @CApiBuiltin(name = "PyUnicode_FromFormat", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyUnicode_FromFormatV", call = CImpl)
+    @CApiBuiltin(name = "PyUnicode_FromFormat", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromFormatV", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromKindAndData", ret = PyObject, args = {Int, CONST_VOID_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
@@ -1383,7 +1380,7 @@ public final class CApiFunction {
         ArrayList<CApiBuiltinDesc> result = new ArrayList<>();
         CApiBuiltins builtins = Dummy.class.getAnnotation(CApiBuiltins.class);
         for (var builtin : builtins.value()) {
-            result.add(new CApiBuiltinDesc(builtin.name(), builtin.inlined(), builtin.ret(), builtin.args(), builtin.call(), builtin.forwardsTo(), null));
+            result.add(new CApiBuiltinDesc(builtin.name(), builtin.inlined(), builtin.ret(), builtin.args(), builtin.call(), null));
         }
         return result;
     }
@@ -1481,7 +1478,7 @@ public final class CApiFunction {
                             }
                         }
                         verifyNodeClass(clazz, annotation);
-                        result.add(new CApiBuiltinDesc(name, annotation.inlined(), annotation.ret(), annotation.args(), annotation.call(), annotation.forwardsTo(), gen.getCanonicalName()));
+                        result.add(new CApiBuiltinDesc(name, annotation.inlined(), annotation.ret(), annotation.args(), annotation.call(), gen.getCanonicalName()));
                     }
                 } catch (Throwable t) {
                     throw new RuntimeException("while processing " + clazz, t);

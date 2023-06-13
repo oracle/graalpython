@@ -295,7 +295,7 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
 }
 
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return GraalPyTruffleObject_GetItemString(o, truffleString(key));
+    return GraalPyTruffleObject_GetItemString(o, key);
 }
 
 // downcall for native python objects

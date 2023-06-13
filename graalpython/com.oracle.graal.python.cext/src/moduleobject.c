@@ -28,11 +28,11 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     for (PyMethodDef* def = methods; def->ml_name != NULL; def++) {
         GraalPyTruffleModule_AddFunctionToModule(def,
                        mod,
-                       truffleString(def->ml_name),
+                       def->ml_name,
                        def->ml_meth,
                        def->ml_flags,
                        get_method_flags_wrapper(def->ml_flags),
-					   truffleString(def->ml_doc));
+					   def->ml_doc);
     }
     return 0;
 }
@@ -47,7 +47,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyModuleObject* mod = Graal_PyTruffleModule_CreateInitialized_PyModule_New(truffleString(PyModuleDef_m_name(moduledef)));
+    PyModuleObject* mod = Graal_PyTruffleModule_CreateInitialized_PyModule_New(PyModuleDef_m_name(moduledef));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(PyModuleDef_m_size(moduledef));

@@ -504,14 +504,14 @@ PyAPI_FUNC(double) ReadDoubleMember(void* object, Py_ssize_t offset) {
 PyAPI_FUNC(void*) ReadStringMember(void* object, Py_ssize_t offset) {
     char *ptr = ReadMember(object, offset, char*);
     if (ptr != NULL) {
-    	return truffleString(ReadMember(object, offset, char*));
+    	return ReadMember(object, offset, char*);
     }
     return NULL;
 }
 
 PyAPI_FUNC(void*) ReadStringInPlaceMember(void* object, Py_ssize_t offset) {
     char *addr = (char*) (((char*)object) + offset);
-    return truffleString(addr);
+    return addr;
 }
 
 PyAPI_FUNC(void*) ReadPointerMember(void* object, Py_ssize_t offset) {
@@ -809,10 +809,9 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-
 TruffleContext* TRUFFLE_CONTEXT;
 
-PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id), int is_sulong) {
+PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id)) {
 	clock_t t = clock();
 
 	if (env) {
@@ -836,6 +835,12 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
 
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
+
+static void unimplemented(const char* name) {
+	printf("Function not implemented in GraalPy: %s\n", name);
+}
+
+#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); exit(-1);
 
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see CApiCodeGen

@@ -100,7 +100,7 @@ find_signature(const char *name, const char *doc)
 }
 
 static void pytruffle_trace_type(PyTypeObject* type) {
-    GraalPyTruffle_Trace_Type(type, type->tp_name != NULL ? truffleString(type->tp_name) : NULL);
+    GraalPyTruffle_Trace_Type(type, type->tp_name != NULL);
 }
 
 #define SIGNATURE_END_MARKER         ")\n--\n\n"
@@ -137,7 +137,7 @@ _PyType_DocWithoutSignature(const char *name, const char *internal_doc)
 }
 
 void PyType_Modified(PyTypeObject* type) {
-	GraalPyTruffle_Type_Modified(type, truffleString(type->tp_name), type->tp_mro);
+	GraalPyTruffle_Type_Modified(type, type->tp_name, type->tp_mro);
 }
 
 unsigned long PyType_GetFlags(struct _typeobject *type) {
@@ -422,7 +422,7 @@ int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter
     /* do not convert the closure, it is handed to the getter and setter as-is */
     return GraalPyTruffleType_AddGetSet(cls,
                         type_dict,
-                        truffleString(name),
+                        name,
                         getter_fun,
                         setter_fun,
                         doc,
@@ -433,7 +433,7 @@ static void add_method(PyTypeObject* cls, PyObject* type_dict, PyMethodDef* def)
         GraalPyTruffleType_AddFunctionToType(def,
                        cls,
                        type_dict,
-                       truffleString(def->ml_name),
+                       def->ml_name,
                        def->ml_meth,
                        def->ml_flags,
                        get_method_flags_wrapper(def->ml_flags),
@@ -444,7 +444,7 @@ static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* m
     if (meth) {
         GraalPyTruffleType_AddSlot(cls,
                 type_dict,
-                truffleString(name),
+                name,
                 meth,
                 flags,
                 (signature != 0 ? signature : get_method_flags_wrapper(flags)),
@@ -602,7 +602,7 @@ type_add_members(PyTypeObject *type, PyObject *dict)
         int i = 0;
         PyMemberDef member = members[i];
         while (member.name != NULL) {
-            add_member(type, dict, truffleString(member.name), member.type, member.offset, member.flags, member.doc);
+            add_member(type, dict, member.name, member.type, member.offset, member.flags, member.doc);
             member = members[++i];
         }
     }
@@ -1013,7 +1013,7 @@ PyType_Ready(PyTypeObject *type)
     type->tp_flags = (type->tp_flags & ~Py_TPFLAGS_READYING ) | Py_TPFLAGS_READY;
 
     // it may be that the type was used uninitialized
-	GraalPyTruffle_Type_Modified(type, truffleString(type->tp_name), NULL);
+	GraalPyTruffle_Type_Modified(type, type->tp_name, NULL);
 
 	// Truffle-specific decref (for reason, see first call to Py_INCREF in this function)
 	Py_DECREF(type);

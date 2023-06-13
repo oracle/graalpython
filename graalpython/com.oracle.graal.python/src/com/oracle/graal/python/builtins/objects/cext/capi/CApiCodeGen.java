@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VARARGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
 import static java.util.stream.Collectors.joining;
@@ -56,7 +55,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -95,76 +93,16 @@ public final class CApiCodeGen {
         public final ArgDescriptor[] arguments;
         public final ArgDescriptor returnType;
         public final CApiCallPath call;
-        public final String forwardsTo;
         public final String factory;
         public int id;
 
-        public CApiBuiltinDesc(String name, boolean inlined, ArgDescriptor returnType, ArgDescriptor[] arguments, CApiCallPath call, String forwardsTo, String factory) {
+        public CApiBuiltinDesc(String name, boolean inlined, ArgDescriptor returnType, ArgDescriptor[] arguments, CApiCallPath call, String factory) {
             this.name = name;
             this.inlined = inlined;
             this.returnType = returnType;
             this.arguments = arguments;
             this.call = call;
-            this.forwardsTo = forwardsTo;
             this.factory = factory;
-        }
-
-        boolean hasVarargs() {
-            return Arrays.stream(arguments).anyMatch(a -> a == ArgDescriptor.VARARGS);
-        }
-
-        private void generateFunctionHeader(List<String> lines) {
-            lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
-                            "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
-        }
-
-        private String getTargetDefinition() {
-            return returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;";
-        }
-
-        void generateUnimplemented(List<String> lines) {
-            generateFunctionHeader(lines);
-            lines.add("    unimplemented(\"" + name + "\"); exit(-1);");
-            lines.add("}");
-        }
-
-        void generateForward(List<String> lines, boolean direct) {
-            generateFunctionHeader(lines);
-            String line = "    ";
-            if (!returnType.isVoid()) {
-                line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
-            }
-            String target = direct ? "Graal" + name : targetName();
-            lines.add(line + target + "(" + mapArgs(i -> argName(i), ", ") + ");");
-
-            if (returnType.isVoid()) {
-                if (returnType == VoidNoReturn) {
-                    lines.add("    abort();");
-                }
-            } else {
-                lines.add("    return result;");
-            }
-            lines.add("}");
-        }
-
-        private void generateVarargForward(List<String> lines, String forwardFunction) {
-            generateFunctionHeader(lines);
-            lines.add("    va_list args;");
-            lines.add("    va_start(args, " + argName(arguments.length - 2) + ");");
-            String line = "    ";
-            if (!returnType.isVoid()) {
-                line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
-            }
-            lines.add(line + forwardFunction + "(" + mapArgs(i -> i == arguments.length - 1 ? "args" : argName(i), ", ") + ");");
-            lines.add("    va_end(args);");
-            if (returnType.isVoid()) {
-                if (returnType == VoidNoReturn) {
-                    lines.add("    abort();");
-                }
-            } else {
-                lines.add("    return result;");
-            }
-            lines.add("}");
         }
 
         public static String getArgSignatureWithName(ArgDescriptor arg, int i) {
@@ -180,14 +118,6 @@ public final class CApiCodeGen {
             } else {
                 return arg.getCSignature() + " " + argName(i);
             }
-        }
-
-        private String mapArgs(IntFunction<String> fun, String delim) {
-            return IntStream.range(0, arguments.length).mapToObj(fun).collect(joining(delim));
-        }
-
-        private String targetName() {
-            return "__target__" + name;
         }
     }
 
@@ -280,74 +210,6 @@ public final class CApiCodeGen {
         return builtins.stream().filter(n -> n.name.equals(name)).findFirst();
     }
 
-    private static List<String> MANUAL_VARARGS = Arrays.asList("PyArg_Parse", "PyObject_CallFunctionObjArgs", "PyObject_CallMethodObjArgs", "PyTuple_Pack", "_PyArg_ParseStack_SizeT",
-                    "_PyArg_Parse_SizeT", "_PyObject_CallMethodIdObjArgs");
-
-    /**
-     * Generates all the forwards in capi_forwards.h, either outputting an "unimplemented" message,
-     * forwarding to a "Va" version of a builtin (for varargs builtins), or simply forwarding to the
-     * builtin in Sulong-executed C code.
-     */
-    private static boolean generateCForwards(List<CApiBuiltinDesc> builtins) throws IOException {
-        List<String> lines = new ArrayList<>();
-
-        lines.add("// explicit #undef, some existing functions are redefined by macros and we need to export precise names:");
-        for (CApiBuiltinDesc function1 : builtins) {
-            lines.add("#undef " + function1.name);
-        }
-
-        TreeSet<String> missingVarargForwards = new TreeSet<>();
-        LinkedHashMap<CApiBuiltinDesc, String> forwards = new LinkedHashMap<>();
-        ArrayList<CApiBuiltinDesc> toBeResolved = new ArrayList<>();
-        for (CApiBuiltinDesc function : builtins) {
-            if (function.call == Ignored || function.call == CImpl) {
-                // nothing to be done
-            } else if (function.call == CApiCallPath.NotImplemented) {
-                function.generateUnimplemented(lines);
-            } else if (function.hasVarargs()) {
-                String name = function.forwardsTo;
-                Optional<CApiBuiltinDesc> existing = findBuiltin(builtins, name);
-                if (existing.isPresent()) {
-                    CApiBuiltinDesc va = existing.get();
-                    // check the target: it needs to have the same signature, but with VA_LIST
-                    ArgDescriptor[] argMod = function.arguments.clone();
-                    argMod[argMod.length - 1] = ArgDescriptor.VA_LIST;
-                    compareFunction(name, function.returnType, va.returnType, argMod, va.arguments);
-                    forwards.put(function, name);
-                } else {
-                    if (function.call != NotImplemented && !MANUAL_VARARGS.contains(function.name)) {
-                        missingVarargForwards.add(function.name);
-                    }
-                }
-            } else if (function.call == Direct && Arrays.stream(function.arguments).noneMatch(arg -> arg == ConstCharPtrAsTruffleString)) {
-                function.generateForward(lines, true);
-            } else {
-                lines.add(function.getTargetDefinition());
-                function.generateForward(lines, false);
-                toBeResolved.add(function);
-            }
-        }
-
-        // insert varargs forwards at the end (targets may not be defined in header files)
-        forwards.forEach((k, v) -> k.generateVarargForward(lines, v));
-        if (!missingVarargForwards.isEmpty()) {
-            System.out.println("""
-                            Missing forwards for VARARG functions ('...' cannot cross NFI boundary,
-                            so these functions either need to be implemented manually in capi_native.c,
-                            or they need to use CApiBuiltin.forwardsTo to call a "Va"-style builtin)
-                            """);
-            System.out.println("    " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
-        }
-
-        lines.add("void initializeCAPIForwards(void* (*getAPI)(const char*)) {");
-        for (CApiBuiltinDesc function2 : toBeResolved) {
-            lines.add("    " + function2.targetName() + " = getAPI(\"" + function2.name + "\");");
-        }
-        lines.add("}");
-
-        return !missingVarargForwards.isEmpty() | writeGenerated(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"), lines);
-    }
-
     /**
      * Generates the functions in capi.c that forward {@link CApiCallPath#Direct} builtins to their
      * associated Java implementations.
@@ -357,7 +219,7 @@ public final class CApiCodeGen {
         for (var entry : javaBuiltins) {
             String name = entry.name;
             CApiBuiltinDesc value = entry;
-            if (value.call == Direct) {
+            if (value.call == Direct || value.call == NotImplemented) {
                 lines.add("#undef " + name);
                 String line = "PyAPI_FUNC(" + value.returnType.cSignature + ") " + name + "(";
                 for (int i = 0; i < value.arguments.length; i++) {
@@ -365,12 +227,16 @@ public final class CApiCodeGen {
                 }
                 line += ") {";
                 lines.add(line);
-                line = "    " + (value.returnType == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
-                for (int i = 0; i < value.arguments.length; i++) {
-                    line += (i == 0 ? "" : ", ");
-                    line += argName(i);
+                if (value.call == Direct) {
+                    line = "    " + (value.returnType == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
+                    for (int i = 0; i < value.arguments.length; i++) {
+                        line += (i == 0 ? "" : ", ");
+                        line += argName(i);
+                    }
+                    line += ");";
+                } else {
+                    line = "    FUNC_NOT_IMPLEMENTED";
                 }
-                line += ");";
                 lines.add(line);
                 lines.add("}");
             }
@@ -584,8 +450,7 @@ public final class CApiCodeGen {
         Collections.sort(allBuiltins, (a, b) -> a.name.compareTo(b.name));
 
         boolean changed = false;
-        changed |= generateCForwards(allBuiltins);
-        changed |= generateCApiSource(javaBuiltins);
+        changed |= generateCApiSource(allBuiltins);
         changed |= generateCApiHeader(javaBuiltins);
         changed |= generateBuiltinRegistry(javaBuiltins);
         changed |= checkImports(allBuiltins);
@@ -618,13 +483,13 @@ public final class CApiCodeGen {
                 }
             }
             if (hasMember) {
-                if (function.call == CImpl || function.call == CApiCallPath.PolyglotImpl || function.call == CApiCallPath.Direct) {
+                if (function.call == CImpl || function.call == CApiCallPath.Direct || function.call == NotImplemented) {
                     // ok
                 } else {
                     messages.add("unexpected C impl: " + function.name);
                 }
             } else {
-                if (function.call == NotImplemented || function.call == Ignored) {
+                if (function.call == Ignored) {
                     // ok
                 } else {
                     messages.add("missing implementation: " + function.name);

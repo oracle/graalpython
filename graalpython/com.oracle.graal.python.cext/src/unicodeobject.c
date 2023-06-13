@@ -24,11 +24,11 @@ static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS4(const Py_UCS4 *s, Py_ssize_t size);
 
 static MUST_INLINE const char* convert_errors(const char *errors) {
-    return errors != NULL ? truffleString(errors) : truffleString("strict");
+    return errors != NULL ? errors : "strict";
 }
 
 static MUST_INLINE const char* convert_encoding(const char *errors) {
-    return errors != NULL ? truffleString(errors) : truffleString("utf-8");
+    return errors != NULL ? errors : "utf-8";
 }
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
@@ -428,7 +428,7 @@ PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding
     if (!mv) {
         return NULL;
     }
-	return GraalPyTruffleUnicode_Decode(mv, truffleString(encoding), convert_errors(errors));
+	return GraalPyTruffleUnicode_Decode(mv, encoding, convert_errors(errors));
 }
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
