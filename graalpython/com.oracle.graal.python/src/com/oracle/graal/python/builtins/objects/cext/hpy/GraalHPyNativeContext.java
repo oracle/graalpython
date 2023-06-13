@@ -145,7 +145,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     public void toNative() {
         try {
             toNativeInternal();
-            if (context.useNativeFastPaths) {
+            if (useNativeFastPaths()) {
                 initNativeFastPaths();
                 /*
                  * Allocate a native array for the native space pointers of HPy objects and

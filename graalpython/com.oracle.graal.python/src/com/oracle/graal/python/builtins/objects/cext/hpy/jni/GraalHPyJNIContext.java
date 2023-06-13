@@ -319,27 +319,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
          * because they rely on 'initJNI' being called. In future, we might also want to use the
          * native fast path functions for the NFI backend.
          */
-        if (useNativeFastPaths()) {
-            initJNINativeFastPaths(nativePointer);
-// PythonContext context = getContext();
-// SignatureLibrary signatures = SignatureLibrary.getUncached();
-// try {
-// Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " +
-// PythonContext.J_PYTHON_JNI_LIBRARY_NAME);
-// InteropLibrary interop = InteropLibrary.getUncached(rlib);
-//
-// Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
-// Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
-// signatures.call(augmentSignature, augmentFunction, nativePointer);
-//
-// Object setNativeSpaceSignature = evalNFI(context, "(POINTER, SINT64):VOID", "hpy-nfi-signature");
-// setNativeSpaceFunction = signatures.bind(setNativeSpaceSignature, interop.readMember(rlib,
-// "setHPyContextNativeSpace"));
-// } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException |
-// UnknownIdentifierException e) {
-// throw CompilerDirectives.shouldNotReachHere();
-// }
-        }
+        assert useNativeFastPaths();
+        initJNINativeFastPaths(nativePointer);
     }
 
     public static void loadJNIBackend() {
