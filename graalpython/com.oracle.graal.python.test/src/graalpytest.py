@@ -74,13 +74,13 @@ SERIAL_TESTS = [
     'test_int',
 ]
 
-
 # A list of tests with minor transient issues, which can be retried once
 TRANSIENTS = [
     'test_multiprocessing_spawn',
     'test_weakref',
     'test_ssl',
     'test_threading',
+    'test_asyncio',
 ]
 
 os = sys.modules.get("posix", sys.modules.get("nt", None))
