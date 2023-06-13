@@ -761,12 +761,21 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
                 w(f'    increment(HPyJNIUpcall.{fname});')
                 return_result = '' if rettype == 'void' else 'return '
                 arr_type = 'long' if all_longs else 'Object'
+                arity = len(java_param_names)
                 args = ', '.join(java_param_names)
                 if rettype == 'int' or rettype == 'void':
                     prefix = 'Int'
                 elif rettype == 'long':
                     prefix = 'Long'
-                w(f'    {return_result}execute{prefix}ContextFunction({HPY_CONTEXT_MEMBER_CLASS}.{ctx_enum}, new {arr_type}[]{{{args}}});')
+                arity_name = ''
+                arg_s = args
+                if arity == 1:
+                    arity_name = 'Binary'
+                elif arity == 2:
+                    arity_name = 'Ternary'
+                else:
+                    arg_s = f'new {arr_type}[]{{{args}}}'
+                w(f'    {return_result}execute{prefix}{arity_name}ContextFunction({HPY_CONTEXT_MEMBER_CLASS}.{ctx_enum}, {arg_s});')
                 w('}')
                 w('')
         return '\n'.join(lines)

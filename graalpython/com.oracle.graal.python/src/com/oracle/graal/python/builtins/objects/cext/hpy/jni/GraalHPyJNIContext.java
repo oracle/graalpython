@@ -82,6 +82,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyBinaryContextFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyTernaryContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
@@ -1513,122 +1515,122 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxModuleCreate(long def) {
         increment(HPyJNIUpcall.HPyModuleCreate);
-        return executeLongContextFunction(HPyContextMember.CTX_MODULE_CREATE, new long[]{def});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_MODULE_CREATE, def);
     }
 
     public long ctxLongFromUnsignedLong(long value) {
         increment(HPyJNIUpcall.HPyLongFromUnsignedLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG, new long[]{value});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG, value);
     }
 
     public long ctxLongFromLongLong(long v) {
         increment(HPyJNIUpcall.HPyLongFromLongLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMLONGLONG, new long[]{v});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMLONGLONG, v);
     }
 
     public long ctxLongFromUnsignedLongLong(long v) {
         increment(HPyJNIUpcall.HPyLongFromUnsignedLongLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG, new long[]{v});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG, v);
     }
 
     public long ctxLongFromSizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSizet);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMSIZE_T, new long[]{value});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMSIZE_T, value);
     }
 
     public long ctxLongFromSsizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSsizet);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_FROMSSIZE_T, new long[]{value});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMSSIZE_T, value);
     }
 
     public long ctxLongAsUnsignedLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONG, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONG, h);
     }
 
     public long ctxLongAsUnsignedLongMask(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongMask);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK, h);
     }
 
     public long ctxLongAsLongLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsLongLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASLONGLONG, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASLONGLONG, h);
     }
 
     public long ctxLongAsUnsignedLongLong(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG, h);
     }
 
     public long ctxLongAsUnsignedLongLongMask(long h) {
         increment(HPyJNIUpcall.HPyLongAsUnsignedLongLongMask);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK, h);
     }
 
     public long ctxLongAsSizet(long h) {
         increment(HPyJNIUpcall.HPyLongAsSizet);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASSIZE_T, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASSIZE_T, h);
     }
 
     public long ctxLongAsSsizet(long h) {
         increment(HPyJNIUpcall.HPyLongAsSsizet);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASSSIZE_T, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASSSIZE_T, h);
     }
 
     public long ctxLongAsVoidPtr(long h) {
         increment(HPyJNIUpcall.HPyLongAsVoidPtr);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG_ASVOIDPTR, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASVOIDPTR, h);
     }
 
     public long ctxBoolFromLong(long v) {
         increment(HPyJNIUpcall.HPyBoolFromLong);
-        return executeLongContextFunction(HPyContextMember.CTX_BOOL_FROMLONG, new long[]{v});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BOOL_FROMLONG, v);
     }
 
     public int ctxSequenceCheck(long h) {
         increment(HPyJNIUpcall.HPySequenceCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_SEQUENCE_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_SEQUENCE_CHECK, h);
     }
 
     public long ctxAdd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyAdd);
-        return executeLongContextFunction(HPyContextMember.CTX_ADD, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_ADD, h1, h2);
     }
 
     public long ctxSubtract(long h1, long h2) {
         increment(HPyJNIUpcall.HPySubtract);
-        return executeLongContextFunction(HPyContextMember.CTX_SUBTRACT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_SUBTRACT, h1, h2);
     }
 
     public long ctxMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyMultiply);
-        return executeLongContextFunction(HPyContextMember.CTX_MULTIPLY, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_MULTIPLY, h1, h2);
     }
 
     public long ctxMatrixMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyMatrixMultiply);
-        return executeLongContextFunction(HPyContextMember.CTX_MATRIXMULTIPLY, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_MATRIXMULTIPLY, h1, h2);
     }
 
     public long ctxFloorDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyFloorDivide);
-        return executeLongContextFunction(HPyContextMember.CTX_FLOORDIVIDE, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_FLOORDIVIDE, h1, h2);
     }
 
     public long ctxTrueDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyTrueDivide);
-        return executeLongContextFunction(HPyContextMember.CTX_TRUEDIVIDE, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_TRUEDIVIDE, h1, h2);
     }
 
     public long ctxRemainder(long h1, long h2) {
         increment(HPyJNIUpcall.HPyRemainder);
-        return executeLongContextFunction(HPyContextMember.CTX_REMAINDER, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_REMAINDER, h1, h2);
     }
 
     public long ctxDivmod(long h1, long h2) {
         increment(HPyJNIUpcall.HPyDivmod);
-        return executeLongContextFunction(HPyContextMember.CTX_DIVMOD, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_DIVMOD, h1, h2);
     }
 
     public long ctxPower(long h1, long h2, long h3) {
@@ -1638,97 +1640,97 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxNegative(long h1) {
         increment(HPyJNIUpcall.HPyNegative);
-        return executeLongContextFunction(HPyContextMember.CTX_NEGATIVE, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_NEGATIVE, h1);
     }
 
     public long ctxPositive(long h1) {
         increment(HPyJNIUpcall.HPyPositive);
-        return executeLongContextFunction(HPyContextMember.CTX_POSITIVE, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_POSITIVE, h1);
     }
 
     public long ctxAbsolute(long h1) {
         increment(HPyJNIUpcall.HPyAbsolute);
-        return executeLongContextFunction(HPyContextMember.CTX_ABSOLUTE, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_ABSOLUTE, h1);
     }
 
     public long ctxInvert(long h1) {
         increment(HPyJNIUpcall.HPyInvert);
-        return executeLongContextFunction(HPyContextMember.CTX_INVERT, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_INVERT, h1);
     }
 
     public long ctxLshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyLshift);
-        return executeLongContextFunction(HPyContextMember.CTX_LSHIFT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_LSHIFT, h1, h2);
     }
 
     public long ctxRshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyRshift);
-        return executeLongContextFunction(HPyContextMember.CTX_RSHIFT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_RSHIFT, h1, h2);
     }
 
     public long ctxAnd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyAnd);
-        return executeLongContextFunction(HPyContextMember.CTX_AND, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_AND, h1, h2);
     }
 
     public long ctxXor(long h1, long h2) {
         increment(HPyJNIUpcall.HPyXor);
-        return executeLongContextFunction(HPyContextMember.CTX_XOR, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_XOR, h1, h2);
     }
 
     public long ctxOr(long h1, long h2) {
         increment(HPyJNIUpcall.HPyOr);
-        return executeLongContextFunction(HPyContextMember.CTX_OR, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_OR, h1, h2);
     }
 
     public long ctxIndex(long h1) {
         increment(HPyJNIUpcall.HPyIndex);
-        return executeLongContextFunction(HPyContextMember.CTX_INDEX, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_INDEX, h1);
     }
 
     public long ctxLong(long h1) {
         increment(HPyJNIUpcall.HPyLong);
-        return executeLongContextFunction(HPyContextMember.CTX_LONG, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG, h1);
     }
 
     public long ctxFloat(long h1) {
         increment(HPyJNIUpcall.HPyFloat);
-        return executeLongContextFunction(HPyContextMember.CTX_FLOAT, new long[]{h1});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_FLOAT, h1);
     }
 
     public long ctxInPlaceAdd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceAdd);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEADD, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEADD, h1, h2);
     }
 
     public long ctxInPlaceSubtract(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceSubtract);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACESUBTRACT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACESUBTRACT, h1, h2);
     }
 
     public long ctxInPlaceMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceMultiply);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEMULTIPLY, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEMULTIPLY, h1, h2);
     }
 
     public long ctxInPlaceMatrixMultiply(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceMatrixMultiply);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEMATRIXMULTIPLY, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEMATRIXMULTIPLY, h1, h2);
     }
 
     public long ctxInPlaceFloorDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceFloorDivide);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEFLOORDIVIDE, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEFLOORDIVIDE, h1, h2);
     }
 
     public long ctxInPlaceTrueDivide(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceTrueDivide);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACETRUEDIVIDE, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACETRUEDIVIDE, h1, h2);
     }
 
     public long ctxInPlaceRemainder(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceRemainder);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEREMAINDER, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEREMAINDER, h1, h2);
     }
 
     public long ctxInPlacePower(long h1, long h2, long h3) {
@@ -1738,32 +1740,32 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxInPlaceLshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceLshift);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACELSHIFT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACELSHIFT, h1, h2);
     }
 
     public long ctxInPlaceRshift(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceRshift);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACERSHIFT, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACERSHIFT, h1, h2);
     }
 
     public long ctxInPlaceAnd(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceAnd);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEAND, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEAND, h1, h2);
     }
 
     public long ctxInPlaceXor(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceXor);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEXOR, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEXOR, h1, h2);
     }
 
     public long ctxInPlaceOr(long h1, long h2) {
         increment(HPyJNIUpcall.HPyInPlaceOr);
-        return executeLongContextFunction(HPyContextMember.CTX_INPLACEOR, new long[]{h1, h2});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_INPLACEOR, h1, h2);
     }
 
     public int ctxCallableCheck(long h) {
         increment(HPyJNIUpcall.HPyCallableCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_CALLABLE_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_CALLABLE_CHECK, h);
     }
 
     public long ctxCallTupleDict(long callable, long args, long kw) {
@@ -1773,22 +1775,22 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public void ctxFatalError(long message) {
         increment(HPyJNIUpcall.HPyFatalError);
-        executeIntContextFunction(HPyContextMember.CTX_FATALERROR, new long[]{message});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_FATALERROR, message);
     }
 
     public void ctxErrSetString(long h_type, long message) {
         increment(HPyJNIUpcall.HPyErrSetString);
-        executeIntContextFunction(HPyContextMember.CTX_ERR_SETSTRING, new long[]{h_type, message});
+        executeIntTernaryContextFunction(HPyContextMember.CTX_ERR_SETSTRING, h_type, message);
     }
 
     public void ctxErrSetObject(long h_type, long h_value) {
         increment(HPyJNIUpcall.HPyErrSetObject);
-        executeIntContextFunction(HPyContextMember.CTX_ERR_SETOBJECT, new long[]{h_type, h_value});
+        executeIntTernaryContextFunction(HPyContextMember.CTX_ERR_SETOBJECT, h_type, h_value);
     }
 
     public long ctxErrSetFromErrnoWithFilename(long h_type, long filename_fsencoded) {
         increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilename);
-        return executeLongContextFunction(HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAME, new long[]{h_type, filename_fsencoded});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAME, h_type, filename_fsencoded);
     }
 
     public void ctxErrSetFromErrnoWithFilenameObjects(long h_type, long filename1, long filename2) {
@@ -1803,7 +1805,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public int ctxErrExceptionMatches(long exc) {
         increment(HPyJNIUpcall.HPyErrExceptionMatches);
-        return executeIntContextFunction(HPyContextMember.CTX_ERR_EXCEPTIONMATCHES, new long[]{exc});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_ERR_EXCEPTIONMATCHES, exc);
     }
 
     public void ctxErrNoMemory() {
@@ -1833,37 +1835,37 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public void ctxErrWriteUnraisable(long obj) {
         increment(HPyJNIUpcall.HPyErrWriteUnraisable);
-        executeIntContextFunction(HPyContextMember.CTX_ERR_WRITEUNRAISABLE, new long[]{obj});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_ERR_WRITEUNRAISABLE, obj);
     }
 
     public int ctxIsTrue(long h) {
         increment(HPyJNIUpcall.HPyIsTrue);
-        return executeIntContextFunction(HPyContextMember.CTX_ISTRUE, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_ISTRUE, h);
     }
 
     public long ctxTypeFromSpec(long spec, long params) {
         increment(HPyJNIUpcall.HPyTypeFromSpec);
-        return executeLongContextFunction(HPyContextMember.CTX_TYPE_FROMSPEC, new long[]{spec, params});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_TYPE_FROMSPEC, spec, params);
     }
 
     public long ctxGetAttr(long obj, long name) {
         increment(HPyJNIUpcall.HPyGetAttr);
-        return executeLongContextFunction(HPyContextMember.CTX_GETATTR, new long[]{obj, name});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_GETATTR, obj, name);
     }
 
     public long ctxMaybeGetAttrs(long obj, long name) {
         increment(HPyJNIUpcall.HPyMaybeGetAttrs);
-        return executeLongContextFunction(HPyContextMember.CTX_MAYBEGETATTR_S, new long[]{obj, name});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_MAYBEGETATTR_S, obj, name);
     }
 
     public int ctxHasAttr(long obj, long name) {
         increment(HPyJNIUpcall.HPyHasAttr);
-        return executeIntContextFunction(HPyContextMember.CTX_HASATTR, new long[]{obj, name});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_HASATTR, obj, name);
     }
 
     public int ctxHasAttrs(long obj, long name) {
         increment(HPyJNIUpcall.HPyHasAttrs);
-        return executeIntContextFunction(HPyContextMember.CTX_HASATTR_S, new long[]{obj, name});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_HASATTR_S, obj, name);
     }
 
     public int ctxSetAttr(long obj, long name, long value) {
@@ -1878,47 +1880,47 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxGetItem(long obj, long key) {
         increment(HPyJNIUpcall.HPyGetItem);
-        return executeLongContextFunction(HPyContextMember.CTX_GETITEM, new long[]{obj, key});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_GETITEM, obj, key);
     }
 
     public int ctxContains(long container, long key) {
         increment(HPyJNIUpcall.HPyContains);
-        return executeIntContextFunction(HPyContextMember.CTX_CONTAINS, new long[]{container, key});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_CONTAINS, container, key);
     }
 
     public int ctxSetType(long obj, long type) {
         increment(HPyJNIUpcall.HPySetType);
-        return executeIntContextFunction(HPyContextMember.CTX_SETTYPE, new long[]{obj, type});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_SETTYPE, obj, type);
     }
 
     public int ctxTypeIsSubtype(long sub, long type) {
         increment(HPyJNIUpcall.HPyTypeIsSubtype);
-        return executeIntContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE, new long[]{sub, type});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE, sub, type);
     }
 
     public long ctxAsStructLegacy(long h) {
         increment(HPyJNIUpcall.HPyAsStructLegacy);
-        return executeLongContextFunction(HPyContextMember.CTX_ASSTRUCTLEGACY, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCTLEGACY, h);
     }
 
     public long ctxRepr(long obj) {
         increment(HPyJNIUpcall.HPyRepr);
-        return executeLongContextFunction(HPyContextMember.CTX_REPR, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_REPR, obj);
     }
 
     public long ctxStr(long obj) {
         increment(HPyJNIUpcall.HPyStr);
-        return executeLongContextFunction(HPyContextMember.CTX_STR, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_STR, obj);
     }
 
     public long ctxASCII(long obj) {
         increment(HPyJNIUpcall.HPyASCII);
-        return executeLongContextFunction(HPyContextMember.CTX_ASCII, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASCII, obj);
     }
 
     public long ctxBytes(long obj) {
         increment(HPyJNIUpcall.HPyBytes);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES, obj);
     }
 
     public long ctxRichCompare(long v, long w, int op) {
@@ -1933,97 +1935,97 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxHash(long obj) {
         increment(HPyJNIUpcall.HPyHash);
-        return executeLongContextFunction(HPyContextMember.CTX_HASH, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_HASH, obj);
     }
 
     public long ctxSeqIterNew(long seq) {
         increment(HPyJNIUpcall.HPySeqIterNew);
-        return executeLongContextFunction(HPyContextMember.CTX_SEQITER_NEW, new long[]{seq});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_SEQITER_NEW, seq);
     }
 
     public int ctxBytesCheck(long h) {
         increment(HPyJNIUpcall.HPyBytesCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_BYTES_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_BYTES_CHECK, h);
     }
 
     public long ctxBytesSize(long h) {
         increment(HPyJNIUpcall.HPyBytesSize);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_SIZE, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES_SIZE, h);
     }
 
     public long ctxBytesGETSIZE(long h) {
         increment(HPyJNIUpcall.HPyBytesGETSIZE);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_GET_SIZE, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES_GET_SIZE, h);
     }
 
     public long ctxBytesAsString(long h) {
         increment(HPyJNIUpcall.HPyBytesAsString);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_ASSTRING, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES_ASSTRING, h);
     }
 
     public long ctxBytesASSTRING(long h) {
         increment(HPyJNIUpcall.HPyBytesASSTRING);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_AS_STRING, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES_AS_STRING, h);
     }
 
     public long ctxBytesFromString(long v) {
         increment(HPyJNIUpcall.HPyBytesFromString);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_FROMSTRING, new long[]{v});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_BYTES_FROMSTRING, v);
     }
 
     public long ctxBytesFromStringAndSize(long v, long len) {
         increment(HPyJNIUpcall.HPyBytesFromStringAndSize);
-        return executeLongContextFunction(HPyContextMember.CTX_BYTES_FROMSTRINGANDSIZE, new long[]{v, len});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_BYTES_FROMSTRINGANDSIZE, v, len);
     }
 
     public long ctxUnicodeFromString(long utf8) {
         increment(HPyJNIUpcall.HPyUnicodeFromString);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_FROMSTRING, new long[]{utf8});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_FROMSTRING, utf8);
     }
 
     public int ctxUnicodeCheck(long h) {
         increment(HPyJNIUpcall.HPyUnicodeCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_UNICODE_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_UNICODE_CHECK, h);
     }
 
     public long ctxUnicodeAsASCIIString(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsASCIIString);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASASCIISTRING, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_ASASCIISTRING, h);
     }
 
     public long ctxUnicodeAsLatin1String(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsLatin1String);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASLATIN1STRING, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_ASLATIN1STRING, h);
     }
 
     public long ctxUnicodeAsUTF8String(long h) {
         increment(HPyJNIUpcall.HPyUnicodeAsUTF8String);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8STRING, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8STRING, h);
     }
 
     public long ctxUnicodeAsUTF8AndSize(long h, long size) {
         increment(HPyJNIUpcall.HPyUnicodeAsUTF8AndSize);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE, new long[]{h, size});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE, h, size);
     }
 
     public long ctxUnicodeDecodeFSDefault(long v) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefault);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT, new long[]{v});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT, v);
     }
 
     public long ctxUnicodeDecodeFSDefaultAndSize(long v, long size) {
         increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefaultAndSize);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE, new long[]{v, size});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE, v, size);
     }
 
     public long ctxUnicodeEncodeFSDefault(long h) {
         increment(HPyJNIUpcall.HPyUnicodeEncodeFSDefault);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_ENCODEFSDEFAULT, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_ENCODEFSDEFAULT, h);
     }
 
     public int ctxUnicodeReadChar(long h, long index) {
         increment(HPyJNIUpcall.HPyUnicodeReadChar);
-        return executeIntContextFunction(HPyContextMember.CTX_UNICODE_READCHAR, new long[]{h, index});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_UNICODE_READCHAR, h, index);
     }
 
     public long ctxUnicodeDecodeASCII(long s, long size, long errors) {
@@ -2043,7 +2045,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxUnicodeInternFromString(long str) {
         increment(HPyJNIUpcall.HPyUnicodeInternFromString);
-        return executeLongContextFunction(HPyContextMember.CTX_UNICODE_INTERNFROMSTRING, new long[]{str});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_INTERNFROMSTRING, str);
     }
 
     public long ctxUnicodeSubstring(long obj, long start, long end) {
@@ -2053,27 +2055,27 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public int ctxListAppend(long h_list, long h_item) {
         increment(HPyJNIUpcall.HPyListAppend);
-        return executeIntContextFunction(HPyContextMember.CTX_LIST_APPEND, new long[]{h_list, h_item});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_LIST_APPEND, h_list, h_item);
     }
 
     public int ctxDictCheck(long h) {
         increment(HPyJNIUpcall.HPyDictCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_DICT_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_DICT_CHECK, h);
     }
 
     public long ctxDictKeys(long h) {
         increment(HPyJNIUpcall.HPyDictKeys);
-        return executeLongContextFunction(HPyContextMember.CTX_DICT_KEYS, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_DICT_KEYS, h);
     }
 
     public long ctxDictGetItem(long op, long key) {
         increment(HPyJNIUpcall.HPyDictGetItem);
-        return executeLongContextFunction(HPyContextMember.CTX_DICT_GETITEM, new long[]{op, key});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_DICT_GETITEM, op, key);
     }
 
     public int ctxTupleCheck(long h) {
         increment(HPyJNIUpcall.HPyTupleCheck);
-        return executeIntContextFunction(HPyContextMember.CTX_TUPLE_CHECK, new long[]{h});
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_TUPLE_CHECK, h);
     }
 
     public int ctxSliceUnpack(long slice, long start, long stop, long step) {
@@ -2083,22 +2085,22 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxContextVarNew(long name, long default_value) {
         increment(HPyJNIUpcall.HPyContextVarNew);
-        return executeLongContextFunction(HPyContextMember.CTX_CONTEXTVAR_NEW, new long[]{name, default_value});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_CONTEXTVAR_NEW, name, default_value);
     }
 
     public long ctxContextVarSet(long context_var, long value) {
         increment(HPyJNIUpcall.HPyContextVarSet);
-        return executeLongContextFunction(HPyContextMember.CTX_CONTEXTVAR_SET, new long[]{context_var, value});
+        return executeLongTernaryContextFunction(HPyContextMember.CTX_CONTEXTVAR_SET, context_var, value);
     }
 
     public long ctxImportImportModule(long name) {
         increment(HPyJNIUpcall.HPyImportImportModule);
-        return executeLongContextFunction(HPyContextMember.CTX_IMPORT_IMPORTMODULE, new long[]{name});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_IMPORT_IMPORTMODULE, name);
     }
 
     public int ctxCapsuleIsValid(long capsule, long name) {
         increment(HPyJNIUpcall.HPyCapsuleIsValid);
-        return executeIntContextFunction(HPyContextMember.CTX_CAPSULE_ISVALID, new long[]{capsule, name});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_CAPSULE_ISVALID, capsule, name);
     }
 
     public int ctxCapsuleSet(long capsule, int key, long value) {
@@ -2108,17 +2110,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxFromPyObject(long obj) {
         increment(HPyJNIUpcall.HPyFromPyObject);
-        return executeLongContextFunction(HPyContextMember.CTX_FROMPYOBJECT, new long[]{obj});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_FROMPYOBJECT, obj);
     }
 
     public long ctxAsPyObject(long h) {
         increment(HPyJNIUpcall.HPyAsPyObject);
-        return executeLongContextFunction(HPyContextMember.CTX_ASPYOBJECT, new long[]{h});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASPYOBJECT, h);
     }
 
     public long ctxListBuilderNew(long initial_size) {
         increment(HPyJNIUpcall.HPyListBuilderNew);
-        return executeLongContextFunction(HPyContextMember.CTX_LISTBUILDER_NEW, new long[]{initial_size});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LISTBUILDER_NEW, initial_size);
     }
 
     public void ctxListBuilderSet(long builder, long index, long h_item) {
@@ -2128,17 +2130,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxListBuilderBuild(long builder) {
         increment(HPyJNIUpcall.HPyListBuilderBuild);
-        return executeLongContextFunction(HPyContextMember.CTX_LISTBUILDER_BUILD, new long[]{builder});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LISTBUILDER_BUILD, builder);
     }
 
     public void ctxListBuilderCancel(long builder) {
         increment(HPyJNIUpcall.HPyListBuilderCancel);
-        executeIntContextFunction(HPyContextMember.CTX_LISTBUILDER_CANCEL, new long[]{builder});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_LISTBUILDER_CANCEL, builder);
     }
 
     public long ctxTupleBuilderNew(long initial_size) {
         increment(HPyJNIUpcall.HPyTupleBuilderNew);
-        return executeLongContextFunction(HPyContextMember.CTX_TUPLEBUILDER_NEW, new long[]{initial_size});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_TUPLEBUILDER_NEW, initial_size);
     }
 
     public void ctxTupleBuilderSet(long builder, long index, long h_item) {
@@ -2148,17 +2150,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxTupleBuilderBuild(long builder) {
         increment(HPyJNIUpcall.HPyTupleBuilderBuild);
-        return executeLongContextFunction(HPyContextMember.CTX_TUPLEBUILDER_BUILD, new long[]{builder});
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_TUPLEBUILDER_BUILD, builder);
     }
 
     public void ctxTupleBuilderCancel(long builder) {
         increment(HPyJNIUpcall.HPyTupleBuilderCancel);
-        executeIntContextFunction(HPyContextMember.CTX_TUPLEBUILDER_CANCEL, new long[]{builder});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_TUPLEBUILDER_CANCEL, builder);
     }
 
     public void ctxReenterPythonExecution(long state) {
         increment(HPyJNIUpcall.HPyReenterPythonExecution);
-        executeIntContextFunction(HPyContextMember.CTX_REENTERPYTHONEXECUTION, new long[]{state});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_REENTERPYTHONEXECUTION, state);
     }
 
     public long ctxLeavePythonExecution() {
@@ -2168,12 +2170,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public void ctxDump(long h) {
         increment(HPyJNIUpcall.HPyDump);
-        executeIntContextFunction(HPyContextMember.CTX_DUMP, new long[]{h});
+        executeIntBinaryContextFunction(HPyContextMember.CTX_DUMP, h);
     }
 
     public int ctxTypeCheckSlot(long type, long value) {
         increment(HPyJNIUpcall.HPyTypeCheckSlot);
-        return executeIntContextFunction(HPyContextMember.CTX_TYPE_CHECKSLOT, new long[]{type, value});
+        return executeIntTernaryContextFunction(HPyContextMember.CTX_TYPE_CHECKSLOT, type, value);
     }
     // {{end ctx funcs}}
 
@@ -2305,6 +2307,23 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return GraalHPyContextFunction.getUncached(member).execute(argCast);
     }
 
+    private Object executeBinaryContextFunction(HPyContextMember member, long larg0) {
+        HPyContextSignature signature = member.getSignature();
+        HPyContextSignatureType[] argTypes = signature.parameterTypes();
+        assert argTypes.length - 1 == 1;
+        Object arg0 = convertLongArg(argTypes[1], larg0);
+        return ((HPyBinaryContextFunction) GraalHPyContextFunction.getUncached(member)).execute(context, arg0);
+    }
+
+    private Object executeTernaryContextFunction(HPyContextMember member, long larg0, long larg1) {
+        HPyContextSignature signature = member.getSignature();
+        HPyContextSignatureType[] argTypes = signature.parameterTypes();
+        assert argTypes.length - 1 == 2;
+        Object arg0 = convertLongArg(argTypes[1], larg0);
+        Object arg1 = convertLongArg(argTypes[2], larg1);
+        return ((HPyTernaryContextFunction) GraalHPyContextFunction.getUncached(member)).execute(context, arg0, arg1);
+    }
+
     private Object executeContextFunction(HPyContextMember member, Object[] arguments) {
         HPyContextSignature signature = member.getSignature();
         HPyContextSignatureType[] argTypes = signature.parameterTypes();
@@ -2329,17 +2348,61 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
+    private long executeLongBinaryContextFunction(HPyContextMember member, long arg0) {
+        try {
+            Object result = executeBinaryContextFunction(member, arg0);
+            return convertLongRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getLongErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private long executeLongTernaryContextFunction(HPyContextMember member, long arg0, long arg1) {
+        try {
+            Object result = executeTernaryContextFunction(member, arg0, arg1);
+            return convertLongRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getLongErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
     private int executeIntContextFunction(HPyContextMember member, long[] arguments) {
         try {
             Object result = executeContextFunction(member, arguments);
             return convertIntRet(member.getSignature().returnType(), result);
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(e);
-            return switch (member.getSignature().returnType()) {
-                case Int, HPy_UCS4 -> -1;
-                case CVoid -> 0;
-                default -> throw CompilerDirectives.shouldNotReachHere();
-            };
+            return getIntErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private int executeIntBinaryContextFunction(HPyContextMember member, long arg0) {
+        try {
+            Object result = executeBinaryContextFunction(member, arg0);
+            return convertIntRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getIntErrorValue(member.getSignature().returnType());
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
+        }
+    }
+
+    private int executeIntTernaryContextFunction(HPyContextMember member, long arg0, long arg1) {
+        try {
+            Object result = executeTernaryContextFunction(member, arg0, arg1);
+            return convertIntRet(member.getSignature().returnType(), result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return getIntErrorValue(member.getSignature().returnType());
         } catch (Throwable t) {
             throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
         }
@@ -2363,10 +2426,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return convertIntRet(member.getSignature().returnType(), result);
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(e);
-            return switch (member.getSignature().returnType()) {
-                case Int, HPy_UCS4 -> -1;
-                default -> throw CompilerDirectives.shouldNotReachHere();
-            };
+            return getIntErrorValue(member.getSignature().returnType());
         } catch (Throwable t) {
             throw checkThrowableBeforeNative(t, "HPy context function", member.getName());
         }
@@ -2413,6 +2473,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr, HPyListBuilder, HPyTupleBuilder, HPyThreadState -> 0;
             case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
+            default -> throw CompilerDirectives.shouldNotReachHere();
+        };
+    }
+
+    private int getIntErrorValue(HPyContextSignatureType type) {
+        return switch (type) {
+            case Int, HPy_UCS4 -> -1;
+            case CVoid -> 0;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
