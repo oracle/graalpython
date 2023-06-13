@@ -40,8 +40,8 @@
  */
 
 
-#ifndef CTX_TRACKER_H_
-#define CTX_TRACKER_H_
+#ifndef HPY_NATIVE_FAST_PATHS_H_
+#define HPY_NATIVE_FAST_PATHS_H_
 
 //*************************
 // BOXING
@@ -91,21 +91,4 @@ static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
 
 void init_native_fast_paths(HPyContext *context);
 
-_HPy_HIDDEN HPyTracker
-augment_Tracker_New(HPyContext *ctx, HPy_ssize_t capacity);
-
-/* Very much like 'augment_Tracker_Add' but doesn't do special handling for
-   boxed values and immutable handles */
-_HPy_HIDDEN int
-raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
-
-_HPy_HIDDEN int
-augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
-
-_HPy_HIDDEN void
-augment_Tracker_ForgetAll(HPyContext *ctx, HPyTracker ht);
-
-_HPy_HIDDEN void
-augment_Tracker_Close(HPyContext *ctx, HPyTracker ht);
-
-#endif /* CTX_TRACKER_H_ */
+#endif /* HPY_NATIVE_FAST_PATHS_H_ */

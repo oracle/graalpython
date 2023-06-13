@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,20 +41,14 @@
 
 #include "hpy_jni.h"
 #include "hpy_log.h"
+#include "hpy_native_fast_paths.h"
 #include "hpy_native_cache.h"
 
 #include <stdint.h>
 
-/* definitions for HPyTracker */
-#include "hpy/runtime/ctx_funcs.h"
-
 #define MAX_UNCLOSED_HANDLES 32
 static int32_t unclosedHandleTop = 0;
 static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
-
-static inline jsize get_handle_table_size(HPyContext *ctx) {
-    return HANDLE_TABLE_SIZE(ctx->_private);
-}
 
 //*************************
 // BOXING

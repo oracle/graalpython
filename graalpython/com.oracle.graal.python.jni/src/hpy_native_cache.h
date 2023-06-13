@@ -55,7 +55,7 @@
 #ifndef SRC_HPY_NATIVE_CACHE_H_
 #define SRC_HPY_NATIVE_CACHE_H_
 
-#include "hpy_jni.h"
+#include "hpy_native_fast_paths.h"
 #include "hpy_log.h"
 
 #define HANDLE_MIRROR_OFFSET 1

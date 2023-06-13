@@ -170,6 +170,18 @@ _HPy_HIDDEN HPy upcallSequenceFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
 
+_HPy_HIDDEN HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
+
+/* Very much like 'augment_Tracker_Add' but doesn't do special handling for
+   boxed values and immutable handles */
+_HPy_HIDDEN int raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
+
+_HPy_HIDDEN void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
+
 _HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
 
 _HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);

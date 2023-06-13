@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -82,12 +82,11 @@
  */
 
 #include "hpy_jni.h"
-#include "hpy_native_fast_paths.h"
 
 static const HPy_ssize_t HPYTRACKER_INITIAL_CAPACITY = 5;
 
 _HPy_HIDDEN HPyTracker
-augment_Tracker_New(HPyContext *ctx, HPy_ssize_t capacity)
+ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity)
 {
     _HPyTracker_s *hp;
     if (capacity == 0) {
@@ -151,7 +150,7 @@ raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 }
 
 _HPy_HIDDEN int
-augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
+ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     uint64_t bits = toBits(h);
     if (!isBoxedHandle(bits) || bits < IMMUTABLE_HANDLES) {
@@ -161,14 +160,14 @@ augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 }
 
 _HPy_HIDDEN void
-augment_Tracker_ForgetAll(HPyContext *ctx, HPyTracker ht)
+ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     hp->length = 0;
 }
 
 _HPy_HIDDEN void
-augment_Tracker_Close(HPyContext *ctx, HPyTracker ht)
+ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     HPy_ssize_t i;
