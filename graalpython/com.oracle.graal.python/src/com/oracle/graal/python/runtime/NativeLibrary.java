@@ -258,7 +258,7 @@ public class NativeLibrary {
     private static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
         TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-        TruffleFile file = homePath.resolve(name + context.getSoAbi().toJavaStringUncached());
+        TruffleFile file = homePath.resolve(name);
         return file.getPath();
     }
 

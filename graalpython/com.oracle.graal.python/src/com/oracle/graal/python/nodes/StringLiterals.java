@@ -162,8 +162,12 @@ public abstract class StringLiterals {
     public static final String J_TYPE_ID = "_typeid";
     public static final TruffleString T_TYPE_ID = tsLiteral(J_TYPE_ID);
 
-    public static final TruffleString T_EXT_SO = tsLiteral(".so");
-    public static final TruffleString T_EXT_PYD = tsLiteral(".pyd");
+    public static final String J_EXT_SO = ".so";
+    public static final TruffleString T_EXT_SO = tsLiteral(J_EXT_SO);
+    public static final String J_EXT_PYD = ".pyd";
+    public static final TruffleString T_EXT_PYD = tsLiteral(J_EXT_PYD);
+    public static final String J_EXT_DYLIB = ".dylib";
+    public static final TruffleString T_EXT_DYLIB = tsLiteral(J_EXT_DYLIB);
 
     public static final TruffleString T_NATIVE = tsLiteral("native");
 

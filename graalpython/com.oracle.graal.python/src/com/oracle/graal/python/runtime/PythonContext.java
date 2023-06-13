@@ -39,6 +39,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_PYD;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -2474,6 +2477,15 @@ public final class PythonContext extends Python3Core {
 
     public long getDeserializationId(TruffleString fileName) {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public static String getSupportExt() {
+        return switch (getPythonOS()) {
+            case PLATFORM_DARWIN -> J_EXT_DYLIB;
+            case PLATFORM_WIN32 -> J_EXT_PYD;
+            default -> J_EXT_SO;
+        };
     }
 
     @TruffleBoundary
