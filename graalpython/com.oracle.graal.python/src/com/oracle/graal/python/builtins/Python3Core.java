@@ -723,11 +723,9 @@ public abstract class Python3Core {
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
         }
-        if (!ImageInfo.inImageRuntimeCode()) {
-            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
-            for (PythonBuiltins builtin : providers) {
-                builtins.add(builtin);
-            }
+        ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+        for (PythonBuiltins builtin : providers) {
+            builtins.add(builtin);
         }
         filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
