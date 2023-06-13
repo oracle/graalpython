@@ -55,6 +55,9 @@ final class GraalHPyJNICallHelperFunctionNode extends HPyCallHelperFunctionNode 
 
     static final GraalHPyJNICallHelperFunctionNode UNCACHED = new GraalHPyJNICallHelperFunctionNode();
 
+    private GraalHPyJNICallHelperFunctionNode() {
+    }
+
     @Override
     protected Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args) {
         assert context.getBackend() instanceof GraalHPyJNIContext;
@@ -67,11 +70,11 @@ final class GraalHPyJNICallHelperFunctionNode extends HPyCallHelperFunctionNode 
 
     @Override
     public NodeCost getCost() {
-        return this == UNCACHED ? NodeCost.MEGAMORPHIC : NodeCost.NONE;
+        return NodeCost.MONOMORPHIC;
     }
 
     @Override
     public boolean isAdoptable() {
-        return this != UNCACHED;
+        return false;
     }
 }

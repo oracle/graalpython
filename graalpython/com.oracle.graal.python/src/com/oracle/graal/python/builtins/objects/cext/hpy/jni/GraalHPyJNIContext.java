@@ -487,7 +487,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @Override
     public HPyCallHelperFunctionNode createCallHelperFunctionNode() {
-        return new GraalHPyJNICallHelperFunctionNode();
+        return GraalHPyJNICallHelperFunctionNode.UNCACHED;
     }
 
     @Override
@@ -497,7 +497,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @Override
     public HPyFromCharPointerNode createFromCharPointerNode() {
-        throw CompilerDirectives.shouldNotReachHere("cached HPyJNIFromCharPointerNode is not available");
+        return HPyJNIFromCharPointerNode.UNCACHED;
     }
 
     @Override
