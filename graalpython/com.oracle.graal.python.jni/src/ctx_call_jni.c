@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,36 +39,44 @@
  * SOFTWARE.
  */
 
+#include "hpy_jni.h"
+#include "com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNITrampolines.h"
 
-#ifndef CTX_TRACKER_H_
-#define CTX_TRACKER_H_
+#define TRAMPOLINE(name) Java_com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNITrampolines_ ## name
 
-typedef struct {
-    HPy_ssize_t capacity;  // allocated handles
-    HPy_ssize_t length;    // used handles
-    HPy *handles;
-} _HPyTracker_s;
 
-static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
-    return (_HPyTracker_s *) (ht)._i;
+/*******************************************************************
+ *                        MANUAL TRAMPOLINES                       *
+ *******************************************************************/
+
+JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;
+    DHPy_buffer dbuffer;
+    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+    jint result = f(dctx, dh_arg1, &dbuffer, (int) arg3);
+    DHPy_close_and_check(dctx, dh_arg1);
+    _buffer_d2u(dctx, &dbuffer, (UHPy_buffer *) arg2);
+    DHPy_close(dctx, dbuffer.obj);
+    return result;
 }
-static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
-    return (HPyTracker) {(HPy_ssize_t) (hp)};
+
+JNIEXPORT void JNICALL TRAMPOLINE(executeDebugReleasebufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_releasebufferproc f = (HPyFunc_releasebufferproc) target;
+    DHPy_buffer dbuf;
+    _buffer_u2d(dctx, (UHPy_buffer *) arg2, &dbuf);
+    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+    f(dctx, dh_arg1, &dbuf);
+    DHPy_close_and_check(dctx, dh_arg1);
+    // TODO(fa): should we use DHPy_close_and_check ?
+    DHPy_close(dctx, dbuf.obj);
 }
 
-_HPy_HIDDEN HPyTracker
-ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
+JNIEXPORT void JNICALL TRAMPOLINE(executeDestroyfunc)(JNIEnv *env, jclass clazz, jlong target, jlong dataptr)
+{
+    HPyFunc_destroyfunc f = (HPyFunc_destroyfunc)target;
+    f((void *)dataptr);
+}
 
-_HPy_HIDDEN int
-raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
-
-_HPy_HIDDEN int
-ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
-
-_HPy_HIDDEN void
-ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
-
-_HPy_HIDDEN void
-ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
-
-#endif /* CTX_TRACKER_H_ */
+#undef TRAMPOLINE

@@ -143,6 +143,8 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_ASCII_UPPERCASE = tsLiteral("ASCII");
 
+    public static final TruffleString T_ISO_8859_1 = tsLiteral("ISO-8859-1");
+
     public static final TruffleString T_TRUE = tsLiteral("True");
 
     public static final TruffleString T_FALSE = tsLiteral("False");
@@ -160,7 +162,6 @@ public abstract class StringLiterals {
     public static final String J_TYPE_ID = "_typeid";
     public static final TruffleString T_TYPE_ID = tsLiteral(J_TYPE_ID);
 
-    public static final TruffleString T_HPY_SUFFIX = tsLiteral(".hpy.so");
     public static final TruffleString T_EXT_SO = tsLiteral(".so");
     public static final TruffleString T_EXT_PYD = tsLiteral(".pyd");
 
@@ -188,6 +189,8 @@ public abstract class StringLiterals {
     public static final String J_LLVM_LANGUAGE = "llvm";
     public static final TruffleString T_LLVM_LANGUAGE = tsLiteral(J_LLVM_LANGUAGE);
 
+    public static final String J_NFI_LANGUAGE = "nfi";
+
     public static final TruffleString T_ID = tsLiteral("id");
 
     public static final TruffleString T_SITE = tsLiteral("site");
@@ -205,5 +208,4 @@ public abstract class StringLiterals {
     public static final TruffleString T_EXEC = tsLiteral("exec");
 
     public static final TruffleString T_EVAL = tsLiteral("eval");
-
 }

@@ -65,6 +65,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -671,7 +672,7 @@ public final class PythonCextBuiltins {
                     }
                     signature.append("):").append(ret.getNFISignature());
 
-                    Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
+                    Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, signature.toString(), "exec").build()).call();
                     Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
                     InteropLibrary.getUncached().toNative(closure);
                     try {

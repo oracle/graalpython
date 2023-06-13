@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.PGuards.isTruffleString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -2680,7 +2681,7 @@ public abstract class CExtNodes {
                 try {
                     Object result;
                     if (!interopLib.isExecutable(createFunction)) {
-                        Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder("nfi", "(POINTER,POINTER):SINT64", "exec").build()).call();
+                        Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER):SINT64", "exec").build()).call();
                         result = interopLib.execute(SignatureLibrary.getUncached().bind(signature, createFunction), cArguments);
                         result = PCallCapiFunction.getUncached().call(capiContext, NativeCAPISymbol.FUN_PTR_CONVERT, result);
                     } else {
@@ -2808,7 +2809,7 @@ public abstract class CExtNodes {
                         case SLOT_PY_MOD_EXEC:
                             Object execFunction = interopLib.readMember(slotDefinition, J_MODULEDEF_VALUE);
                             if (!U.isExecutable(execFunction)) {
-                                Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder("nfi", "(POINTER):SINT32", "exec").build()).call();
+                                Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER):SINT32", "exec").build()).call();
                                 execFunction = SignatureLibrary.getUncached().bind(signature, execFunction);
                             }
                             Object result = interopLib.execute(execFunction, PythonToNativeNode.executeUncached(module));

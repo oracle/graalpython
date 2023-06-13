@@ -57,10 +57,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -145,7 +145,7 @@ public class CodecsJPModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
-                        @Cached PythonCextCapsuleBuiltins.NameMatchesNode nameMatchesNode) {
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
 
             if (!unicodeCheckNode.execute(encoding)) {
                 throw raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
@@ -157,7 +157,7 @@ public class CodecsJPModuleBuiltins extends PythonBuiltins {
             }
 
             PyCapsule codecobj = factory().createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
-            return createCodec(codecobj, nameMatchesNode, factory(), getRaiseNode());
+            return createCodec(this, codecobj, nameMatchesNode, factory(), getRaiseNode());
         }
     }
 

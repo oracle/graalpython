@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -83,43 +83,6 @@ import com.oracle.truffle.api.strings.TruffleString.GetInternalNativePointerNode
 
 public final class PythonCextCapsuleBuiltins {
 
-    public abstract static class NameMatchesNode extends Node {
-        abstract boolean execute(Object name1, Object name2);
-
-        @Specialization(guards = "ignoredName2 == null")
-        static boolean common(@SuppressWarnings("unused") PNone ignoredName1, @SuppressWarnings("unused") Object ignoredName2) {
-            return true;
-        }
-
-        @Specialization
-        static boolean ts(TruffleString n1, TruffleString n2,
-                        @Cached TruffleString.EqualNode equalNode) {
-            if (n1 == null && n2 == null) {
-                return true;
-            }
-            if (n1 == null || n2 == null) {
-                return false;
-            }
-            return equalNode.execute(n1, n2, TS_ENCODING);
-        }
-
-        @Fallback
-        static boolean fallback(Object name1, Object name2,
-                        @Cached CExtNodes.FromCharPointerNode fromCharPtr,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached TruffleString.EqualNode equalNode) {
-            TruffleString n1 = name1 instanceof TruffleString ? (TruffleString) name1 : null;
-            TruffleString n2 = name2 instanceof TruffleString ? (TruffleString) name2 : null;
-            if (n1 == null) {
-                n1 = lib.isNull(name1) ? null : fromCharPtr.execute(name1, false);
-            }
-            if (n2 == null) {
-                n2 = lib.isNull(name2) ? null : fromCharPtr.execute(name2, false);
-            }
-            return ts(n1, n2, equalNode);
-        }
-    }
-
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
@@ -137,11 +100,12 @@ public final class PythonCextCapsuleBuiltins {
     public abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         public static int doCapsule(PyCapsule o, TruffleString name,
-                        @Cached NameMatchesNode nameMatchesNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             if (o.getPointer() == null) {
                 return 0;
             }
-            if (!nameMatchesNode.execute(name, o.getName())) {
+            if (!nameMatchesNode.execute(inliningTarget, name, o.getName())) {
                 return 0;
             }
             return 1;
@@ -157,11 +121,11 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o, Object name,
-                        @Cached NameMatchesNode nameMatchesNode) {
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             if (o.getPointer() == null) {
                 throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
             }
-            if (!nameMatchesNode.execute(name, o.getName())) {
+            if (!nameMatchesNode.execute(this, name, o.getName())) {
                 throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
             }
             return o.getPointer();
@@ -352,7 +316,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(TruffleString name, int noBlock,
-                        @Cached NameMatchesNode nameMatchesNode,
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
@@ -385,7 +349,7 @@ public final class PythonCextCapsuleBuiltins {
 
             /* compare attribute name to module.name by hand */
             PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
-            if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, name, nameMatchesNode) == 1) {
+            if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, name, this, nameMatchesNode) == 1) {
                 return capsule.getPointer();
             } else {
                 throw raise(AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);

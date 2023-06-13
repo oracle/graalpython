@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -345,7 +346,7 @@ public final class NFIPosixSupport extends PosixSupport {
             String backend = posix.nfiBackend.toJavaStringUncached();
             String withClause = backend.equals("native") ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
-            Source loadSrc = Source.newBuilder("nfi", src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
+            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
 
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(String.format("Loading native library: %s", src));
@@ -365,7 +366,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 SignatureLibrary sigs = SignatureLibrary.getUncached();
 
                 String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
-                Source sigSrc = Source.newBuilder("nfi", sig, "posix-nfi-signature").internal(true).build();
+                Source sigSrc = Source.newBuilder(J_NFI_LANGUAGE, sig, "posix-nfi-signature").internal(true).build();
                 Object signature = posix.context.getEnv().parseInternal(sigSrc).call();
 
                 unbound = interop.readMember(library, function.name());

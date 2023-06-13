@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
-import static com.oracle.graal.python.nodes.StringLiterals.T_HPY_SUFFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
@@ -813,7 +812,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
         Object run() {
-            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), T_HPY_SUFFIX, T_EXT_SO, T_EXT_PYD});
+            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
         }
     }
 

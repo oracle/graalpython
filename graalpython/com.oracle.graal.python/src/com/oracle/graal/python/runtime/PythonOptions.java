@@ -120,7 +120,8 @@ public final class PythonOptions {
 
     public enum HPyBackendMode {
         NFI,
-        JNI
+        JNI,
+        LLVM
     }
 
     static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend", s -> {
@@ -263,7 +264,7 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", usageSyntax = "jni|nfi", stability = OptionStability.EXPERIMENTAL) //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", usageSyntax = "jni|nfi|llvm", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<HPyBackendMode> HPyBackend = new OptionKey<>(HPyBackendMode.JNI, HPY_BACKEND_TYPE);
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +

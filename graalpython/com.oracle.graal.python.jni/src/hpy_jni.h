@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,47 +39,151 @@
  * SOFTWARE.
  */
 
+#ifndef SRC_HPY_JNI_H_
+#define SRC_HPY_JNI_H_
+
 #include <hpy.h>
 #include <jni.h>
 #include <stdint.h>
 
+#if defined(_MSC_VER)
+# include <malloc.h>   /* for alloca() */
+#endif
+
 #include "debug_internal.h"
-#include "ctx_tracker.h"
+#include "hpy_native_fast_paths.h"
 
-//*************************
-// BOXING
+#define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
+#define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_HPY0(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
+#define DO_UPCALL_HPYTRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_HPYTHREADSTATE0(jni_ctx, name) ((HPyThreadState){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
+#define DO_UPCALL_HPYLISTBUILDER(jni_ctx, name, ...) ((HPyListBuilder){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
+#define DO_UPCALL_INTPTR_T(jni_ctx, name, ...) (intptr_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_INT0(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
+#define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_LONG(jni_ctx, name, ...) (long) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_VOID(jni_ctx, name, ...) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_VOID0(jni_ctx, name) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
+#define DO_UPCALL_HPY_SSIZE_T DO_UPCALL_LONG
+#define DO_UPCALL_HPY_HASH_T DO_UPCALL_LONG
+#define DO_UPCALL_HPY_UCS4 DO_UPCALL_INT
+#define DO_UPCALL_UNSIGNED_LONG DO_UPCALL_LONG
+#define DO_UPCALL_LONG_LONG DO_UPCALL_LONG
+#define DO_UPCALL_UNSIGNED_LONG_LONG DO_UPCALL_LONG
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+#define HPY_UP(_h) ((jlong)((_h)._i))
+#define PTR_UP(_h) ((jlong)_h)
+#define INT_UP(_h) ((jint)_h)
+#define LONG_UP(_h) ((jlong)_h)
+#define DOUBLE_UP(_h) ((jdouble)_h)
+#define SIZE_T_UP(_h) ((jlong)_h)
+#define HPY_TRACKER_UP(_h) ((jlong)((_h)._i))
+#define HPY_LIST_BUILDER_UP(_h) ((jlong)((_h)._lst))
+#define HPY_THREAD_STATE_UP(_h) ((jlong)((_h)._i))
+#define HPY_GLOBAL_UP(_h) ((jlong)((_h)._i))
+#define HPY_FIELD_UP(_h) ((jlong)((_h)._i))
 
-// Some singleton Python objects are guaranteed to be always represented by
-// those handles, so that we do not have to upcall to unambiguously check if
-// a handle represents one of those
-#define SINGLETON_HANDLES_MAX (3)
+static inline HPy _jlong2h(jlong obj) {
+    return (HPy){(HPy_ssize_t)obj};
+}
 
-#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
-#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
-#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+static inline jlong _h2jlong(HPy h) {
+    return (jlong)(h._i);
+}
 
-#define unboxHandle(value) (value)
-#define boxHandle(handle) (handle)
+static inline DHPy _jlong2dh(HPyContext *dctx, jlong obj)
+{
+    return DHPy_open(dctx, _jlong2h(obj));
+}
 
-#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
-#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
-#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
-#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+static inline jlong _dh2jlong(HPyContext *dctx, DHPy dh)
+{
+    return _h2jlong(DHPy_unwrap(dctx, dh));
+}
 
-#define toBits(ptr) ((uint64_t) ((ptr)._i))
-#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+static inline jlong from_dh(HPyContext *dctx, DHPy dh_result)
+{
+    jlong result = _dh2jlong(dctx, dh_result);
+    DHPy_close(dctx, dh_result);
+    return result;
+}
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
+#define _ARR_JLONG2DH(DCTX, DST, ARGS, NARGS) \
+    DHPy *DST = (DHPy *)alloca((NARGS) * sizeof(DHPy)); \
+    for (HPy_ssize_t i = 0; i < (NARGS); i++) { \
+        DST[i] = _jlong2dh(DCTX, ((jlong *)(ARGS))[i]); \
+    } \
+
+#define _ARR_DH_CLOSE(DCTX, DH_ARR, NARGS) \
+    for (HPy_ssize_t i = 0; i < (NARGS); i++) { \
+        DHPy_close_and_check((DCTX), (DH_ARR)[i]); \
+    } \
+
+/* just for better readability */
+typedef HPy_buffer DHPy_buffer;
+typedef HPy_buffer UHPy_buffer;
+
+/* Copies everything from 'src' to 'dest' and unwraps the 'obj' debug handle. */
+static inline void
+_buffer_d2u(HPyContext *dctx, const DHPy_buffer *src, UHPy_buffer *dest)
+{
+    dest->buf = src->buf;
+    dest->obj = DHPy_unwrap(dctx, src->obj);
+    dest->len = src->len;
+    dest->itemsize = src->itemsize;
+    dest->readonly = src->readonly;
+    dest->ndim = src->ndim;
+    dest->format = src->format;
+    dest->shape = src->shape;
+    dest->strides = src->strides;
+    dest->suboffsets = src->suboffsets;
+    dest->internal = src->internal;
+}
+
+/* Copies everything from 'src' to 'dest' and opens a debug handle for 'obj'. */
+static inline void
+_buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
+{
+    dest->buf = src->buf;
+    dest->obj = DHPy_open(dctx, src->obj);
+    dest->len = src->len;
+    dest->itemsize = src->itemsize;
+    dest->readonly = src->readonly;
+    dest->ndim = src->ndim;
+    dest->format = src->format;
+    dest->shape = src->shape;
+    dest->strides = src->strides;
+    dest->suboffsets = src->suboffsets;
+    dest->internal = src->internal;
+}
+
+#define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_backend))
+
+_HPy_HIDDEN extern JNIEnv* jniEnv;
+
+_HPy_HIDDEN HPy upcallSequenceFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal, bool create_list);
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+
+_HPy_HIDDEN HPyTracker ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
+
+/* Very much like 'augment_Tracker_Add' but doesn't do special handling for
+   boxed values and immutable handles */
+_HPy_HIDDEN int raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN int ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN void ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
+
+_HPy_HIDDEN void ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
 
 _HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
 
 _HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);
+
+#endif /* SRC_HPY_JNI_H_ */

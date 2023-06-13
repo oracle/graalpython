@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,16 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
+package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -59,9 +65,11 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-public class HPyArrayWrappers {
+public abstract class HPyArrayWrappers {
 
     /**
      * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
@@ -69,7 +77,7 @@ public class HPyArrayWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-    static final class HPyArrayWrapper implements TruffleObject {
+    public static final class HPyArrayWrapper implements TruffleObject {
 
         private static final int UNINITIALIZED = 0;
         private static final int INVALIDATED = -1;
@@ -79,7 +87,7 @@ public class HPyArrayWrappers {
         final Object[] delegate;
         private long nativePointer = UNINITIALIZED;
 
-        HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
+        public HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
             this.hpyContext = hpyContext;
             this.delegate = delegate;
         }
@@ -141,7 +149,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedCountingConditionProfile isHandleProfile,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws InvalidArrayIndexException {
             if (index < 0 || index > delegate.length) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -149,7 +158,7 @@ public class HPyArrayWrappers {
             }
             int i = (int) index;
             Object object = delegate[i];
-            if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
+            if (!isHandleProfile.profile(inliningTarget, object instanceof GraalHPyHandle)) {
                 object = asHandleNode.execute(object);
                 delegate[i] = object;
             }
@@ -188,51 +197,56 @@ public class HPyArrayWrappers {
         @ExportMessage
         @SuppressWarnings("static-method")
         boolean hasNativeType() {
-            return true;
+            return hpyContext.getBackend() instanceof GraalHPyLLVMContext;
         }
 
         @ExportMessage
         Object getNativeType() {
-            return hpyContext.getHPyArrayNativeType();
+            if (hpyContext.getBackend() instanceof GraalHPyLLVMContext llvmContext) {
+                return llvmContext.getHPyArrayNativeType();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    abstract static class HPyCloseArrayWrapperNode extends Node {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HPyCloseArrayWrapperNode extends Node {
 
-        public abstract void execute(HPyArrayWrapper wrapper);
+        public abstract void execute(Node inliningTarget, HPyArrayWrapper wrapper);
 
         @Specialization(guards = {"cachedLen == wrapper.delegate.length", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop
-        static void doCachedLen(HPyArrayWrapper wrapper,
+        static void doCachedLen(Node inliningTarget, HPyArrayWrapper wrapper,
                         @Cached("wrapper.delegate.length") int cachedLen,
-                        @Cached HPyCloseHandleNode closeHandleNode,
+                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
-                        @Cached ConditionProfile isPointerProfile) {
+                        @Shared @Cached InlinedConditionProfile isPointerProfile) {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
                 if (profiles[i].profile(element instanceof GraalHPyHandle)) {
                     closeHandleNode.execute(element);
                 }
             }
-            if (isPointerProfile.profile(wrapper.isPointer())) {
+            if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
                 wrapper.hpyContext.freeNativeArgumentsArray(wrapper.delegate.length);
                 wrapper.setNativePointer(HPyArrayWrapper.INVALIDATED);
             }
         }
 
         @Specialization(replaces = "doCachedLen")
-        static void doLoop(HPyArrayWrapper wrapper,
-                        @Cached HPyCloseHandleNode closeHandleNode,
-                        @Cached ConditionProfile profile,
-                        @Cached ConditionProfile isPointerProfile) {
+        static void doLoop(Node inliningTarget, HPyArrayWrapper wrapper,
+                        @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
+                        @Exclusive @Cached InlinedConditionProfile profile,
+                        @Shared @Cached InlinedConditionProfile isPointerProfile) {
             int n = wrapper.delegate.length;
             for (int i = 0; i < n; i++) {
                 Object element = wrapper.delegate[i];
-                if (profile.profile(element instanceof GraalHPyHandle)) {
+                if (profile.profile(inliningTarget, element instanceof GraalHPyHandle)) {
                     closeHandleNode.execute(element);
                 }
             }
-            if (isPointerProfile.profile(wrapper.isPointer())) {
+            if (isPointerProfile.profile(inliningTarget, wrapper.isPointer())) {
                 wrapper.hpyContext.freeNativeArgumentsArray(wrapper.delegate.length);
                 wrapper.setNativePointer(HPyArrayWrapper.INVALIDATED);
             }

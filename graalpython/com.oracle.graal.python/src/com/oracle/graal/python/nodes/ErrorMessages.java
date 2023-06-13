@@ -829,7 +829,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = tsLiteral("Alternate form (#) not allowed in string format specifier");
     public static final TruffleString CAPI_LOAD_ERROR = tsLiteral("Could not load C API from %s.");
     public static final TruffleString NATIVE_ACCESS_NOT_ALLOWED = tsLiteral("Cannot run any C extensions because native access is not allowed.");
-    public static final TruffleString HPY_LOAD_ERROR = tsLiteral("Could not load HPy C API from %s.");
+    public static final TruffleString HPY_LOAD_ERROR = tsLiteral("Could not load HPy C API.");
     public static final TruffleString CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = tsLiteral("can't convert negative value to unsigned int");
     public static final TruffleString SEND_NON_NONE_TO_UNSTARTED_GENERATOR = tsLiteral("can't send non-None value to a just-started generator");
     public static final TruffleString UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = tsLiteral("unsupported format string passed to %p.__format__");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 
 #include "debug_internal.h"
-#include "../ctx_tracker.h"
+#include "../hpy_jni.h"
 
 /* ~~~ debug mode implementation of HPyTracker ~~~
 
@@ -71,7 +71,7 @@ HPyTracker debug_ctx_Tracker_New(HPyContext *dctx, HPy_ssize_t size)
 _HPy_HIDDEN int
 debug_ctx_Tracker_Add(HPyContext *dctx, HPyTracker ht, DHPy h)
 {
-    return raw_Tracker_Add_jni(dctx, ht, h);
+    return raw_Tracker_Add(dctx, ht, h);
 }
 
 void debug_ctx_Tracker_ForgetAll(HPyContext *dctx, HPyTracker ht)

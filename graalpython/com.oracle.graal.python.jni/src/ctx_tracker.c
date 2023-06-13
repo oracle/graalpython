@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -82,7 +82,6 @@
  */
 
 #include "hpy_jni.h"
-#include "ctx_tracker.h"
 
 static const HPy_ssize_t HPYTRACKER_INITIAL_CAPACITY = 5;
 
@@ -139,7 +138,7 @@ tracker_resize(HPyContext *ctx, _HPyTracker_s *hp, HPy_ssize_t capacity)
 }
 
 _HPy_HIDDEN int
-raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
+raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     _HPyTracker_s *hp =  _ht2hp(ht);
     hp->handles[hp->length++] = h;
@@ -157,7 +156,7 @@ ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
     if (!isBoxedHandle(bits) || bits < IMMUTABLE_HANDLES) {
         return 0;
     }
-    return raw_Tracker_Add_jni(ctx, ht, h);
+    return raw_Tracker_Add(ctx, ht, h);
 }
 
 _HPy_HIDDEN void

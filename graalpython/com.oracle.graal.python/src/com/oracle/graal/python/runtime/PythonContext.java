@@ -2403,7 +2403,7 @@ public final class PythonContext extends Python3Core {
         return hPyContext != null;
     }
 
-    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws Exception {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
         GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
         this.hPyContext = hpyContext;

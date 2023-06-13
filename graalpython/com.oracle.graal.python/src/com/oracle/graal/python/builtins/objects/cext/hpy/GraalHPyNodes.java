@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMTyp
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.GraalHPyJNIFunctionPointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
@@ -106,13 +105,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyCloseArrayWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIFunctionPointer;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyCloseArrayWrapperNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -168,6 +168,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -183,6 +185,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -190,10 +193,41 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class GraalHPyNodes {
+
+    /**
+     * A node interface for calling (native) helper functions. The implementation depends on the HPy
+     * backend. This is the reason why this node takes the HPy context as construction parameter.
+     * The recommended usage of this node is
+     * 
+     * <pre>
+     * &#064;Specialization
+     * Object doSomething(GraalHPyContext hpyContext,
+     *                 &#064;Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode) {
+     *     // ...
+     * }
+     * </pre>
+     */
+    public abstract static class HPyCallHelperFunctionNode extends Node {
+        public final Object call(GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
+            return execute(context, name, args);
+        }
+
+        protected abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
+
+        public static HPyCallHelperFunctionNode create(GraalHPyContext context) {
+            return context.getBackend().createCallHelperFunctionNode();
+        }
+
+        public static HPyCallHelperFunctionNode getUncached(GraalHPyContext context) {
+            return context.getBackend().getUncachedCallHelperFunctionNode();
+        }
+    }
+
     @GenerateUncached
     public abstract static class PCallHPyFunction extends PNodeWithContext {
 
@@ -201,7 +235,7 @@ public class GraalHPyNodes {
             return execute(context, name, args);
         }
 
-        abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
+        public abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
 
         @Specialization
         static Object doIt(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
@@ -234,8 +268,16 @@ public class GraalHPyNodes {
             execute(null, nativeContext, e);
         }
 
+        public final void execute(PException e) {
+            execute(null, PythonContext.get(this).getHPyContext(), e);
+        }
+
         public static void executeUncached(GraalHPyContext nativeContext, PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(nativeContext, e);
+        }
+
+        public static void executeUncached(PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(PythonContext.get(null).getHPyContext(), e);
         }
 
         @Specialization
@@ -297,6 +339,42 @@ public class GraalHPyNodes {
                 transformExceptionToNativeNode.execute(frame, nativeContext, p);
             }
             return errorValue;
+        }
+    }
+
+    /**
+     * A node interface for creating a TruffleString from a {@code char *}. The implementation
+     * depends on the HPy backend. This is the reason why this node takes the HPy context as
+     * construction parameter. The recommended usage of this node is
+     *
+     * <pre>
+     * &#064;Specialization
+     * Object doSomething(GraalHPyContext hpyContext,
+     *                 &#064;Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode) {
+     *     // ...
+     * }
+     * </pre>
+     */
+    public abstract static class HPyFromCharPointerNode extends Node {
+
+        public final TruffleString execute(GraalHPyContext hpyContext, Object charPtr, boolean copy) {
+            return execute(hpyContext, charPtr, -1, Encoding.UTF_8, copy);
+        }
+
+        public final TruffleString execute(GraalHPyContext hpyContext, Object charPtr, Encoding encoding) {
+            return execute(hpyContext, charPtr, -1, encoding, true);
+        }
+
+        public abstract TruffleString execute(GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, boolean copy);
+
+        public abstract TruffleString execute(GraalHPyContext hpyContext, long charPtr, int n, Encoding encoding, boolean copy);
+
+        public static HPyFromCharPointerNode create(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().createFromCharPointerNode();
+        }
+
+        public static HPyFromCharPointerNode getUncached(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().getUncachedFromCharPointerNode();
         }
     }
 
@@ -995,18 +1073,17 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
-    public abstract static class HPyAsContextNode extends PNodeWithContext {
-
-        public abstract GraalHPyContext execute(Object object);
+    public abstract static class HPyAsContextNode extends CExtToJavaNode {
 
         @Specialization
-        static GraalHPyContext doHandle(GraalHPyContext hpyContext) {
-            return hpyContext;
+        static GraalHPyContext doHandle(GraalHPyNativeContext hpyContext) {
+            return hpyContext.context;
         }
 
-        // n.b. we could actually accept anything else, but we have specializations to be more
-        // strict
-        // about what we expect
+        /*
+         * n.b. we could actually accept anything else, but we have specializations to be more *
+         * strict about what we expect
+         */
 
         @Specialization
         GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {
@@ -1353,6 +1430,33 @@ public class GraalHPyNodes {
         }
     }
 
+    public static final class HPyDummyToJavaNode extends CExtToJavaNode {
+        private static final HPyDummyToJavaNode UNCACHED = new HPyDummyToJavaNode();
+
+        public static HPyDummyToJavaNode create() {
+            return new HPyDummyToJavaNode();
+        }
+
+        public static HPyDummyToJavaNode getUncached() {
+            return UNCACHED;
+        }
+
+        @Override
+        public Object execute(Object object) {
+            return object;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return this != UNCACHED;
+        }
+    }
+
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
@@ -1453,10 +1557,11 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
             closeHandleNode.execute(dest[destOffset]);
-            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
+            closeArrayWrapperNode.execute(inliningTarget, (HPyArrayWrapper) dest[destOffset + 1]);
         }
     }
 
@@ -1497,11 +1602,12 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] dest, int destOffset,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
             closeFirstHandleNode.execute(dest[destOffset]);
-            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
+            closeArrayWrapperNode.execute(inliningTarget, (HPyArrayWrapper) dest[destOffset + 1]);
             closeSecondHandleNode.execute(dest[destOffset + 3]);
         }
     }
@@ -1807,45 +1913,42 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class HPyLongFromLong extends Node {
-        public abstract Object execute(int value, boolean signed);
+        public abstract Object execute(Node inliningTarget, int value, boolean signed);
 
-        public abstract Object execute(long value, boolean signed);
+        public abstract Object execute(Node inliningTarget, long value, boolean signed);
 
-        public abstract Object execute(Object value, boolean signed);
+        public abstract Object execute(Node inliningTarget, Object value, boolean signed);
 
         @Specialization(guards = "signed")
-        static Object doSignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static int doSignedInt(int n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = "!signed")
-        static Object doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+        static long doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed) {
             if (n < 0) {
-                return asHandleNode.execute(n & 0xFFFFFFFFL);
+                return n & 0xFFFFFFFFL;
             }
-            return asHandleNode.execute(n);
+            return n;
         }
 
         @Specialization(guards = "signed")
-        static Object doSignedLong(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static long doSignedLong(long n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = {"!signed", "n >= 0"})
-        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(n);
+        static long doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed) {
+            return n;
         }
 
         @Specialization(guards = {"!signed", "n < 0"})
         static Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(factory.createInt(convertToBigInteger(n)));
+            return factory.createInt(convertToBigInteger(n));
         }
 
         @TruffleBoundary
@@ -1855,9 +1958,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
-                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(factory.createNativeVoidPtr(n.getPtr()));
+            return factory.createNativeVoidPtr(n.getPtr());
         }
     }
 

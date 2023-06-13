@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CONVERTBUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -955,7 +956,7 @@ public abstract class CExtParseArgumentsNode {
      */
     abstract static class ExecuteConverterNode extends Node {
 
-        private static final Source NFI_SIGNATURE = Source.newBuilder("nfi", "(POINTER,POINTER):SINT32", "exec").build();
+        private static final Source NFI_SIGNATURE = Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER):SINT32", "exec").build();
 
         public abstract void execute(Object converter, Object inputArgument, Object outputArgument);
 

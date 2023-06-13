@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,17 +45,17 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GetHPyHandleForSingleton;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -192,37 +192,19 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasNativeType() {
-        return true;
+    boolean hasNativeType(@Bind("$node") Node node) {
+        return PythonContext.get(node).getHPyContext().getBackend() instanceof GraalHPyLLVMContext;
     }
 
     @ExportMessage
-    static class GetNativeType {
-
-        @Specialization(guards = "isSingleContext(lib)")
-        @SuppressWarnings("unused")
-        static Object doSingleContext(GraalHPyHandle handle,
-                        @CachedLibrary("handle") InteropLibrary lib,
-                        @Cached("getHPyNativeType(lib)") Object hpyNativeType) {
-            return hpyNativeType;
+    Object getNativeType(@Bind("$node") Node node) {
+        if (PythonContext.get(node).getHPyContext().getBackend() instanceof GraalHPyLLVMContext backend) {
+            return backend.getHPyNativeType();
         }
-
-        @Specialization(replaces = "doSingleContext")
-        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @CachedLibrary("handle") InteropLibrary lib) {
-            return PythonContext.get(lib).getHPyContext().getHPyNativeType();
-        }
-
-        static Object getHPyNativeType(Node node) {
-            return PythonContext.get(node).getHPyContext().getHPyNativeType();
-        }
-
-        static boolean isSingleContext(Node node) {
-            return PythonLanguage.get(node).isSingleContext();
-        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
-    Object getDelegate() {
+    public Object getDelegate() {
         return delegate;
     }
 

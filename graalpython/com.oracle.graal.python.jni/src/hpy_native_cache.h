@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,7 @@
 #ifndef SRC_HPY_NATIVE_CACHE_H_
 #define SRC_HPY_NATIVE_CACHE_H_
 
-#include "hpy_jni.h"
+#include "hpy_native_fast_paths.h"
 #include "hpy_log.h"
 
 #define HANDLE_MIRROR_OFFSET 1
@@ -93,7 +93,7 @@ load_global_native_data_pointer(HPyContext *ctx, uint64_t g_bits, uint64_t h_bit
     void** space = (void**)ctx->_private;
     uint64_t n_handle_table = (uint64_t)space[0];
     void *g_data_ptr = space[GLOBAL_DATAPTR_INDEX(n_handle_table, g_bits)];
-    LOG("%llu %llu %p", g_bits, h_bits, g_data_ptr)
+    LOG("%llu %llu %p", (unsigned long long)g_bits, (unsigned long long)h_bits, g_data_ptr)
     space[HANDLE_DATAPTR_INDEX(h_bits)] = g_data_ptr;
 }
 

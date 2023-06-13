@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Objects;
@@ -202,7 +203,7 @@ public class NativeLibrary {
     }
 
     private Object parseSignature(PythonContext context, String signature) {
-        Source sigSource = Source.newBuilder("nfi", nfiBackend.withClause + signature, "python-nfi-signature").build();
+        Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, nfiBackend.withClause + signature, "python-nfi-signature").build();
         return context.getEnv().parseInternal(sigSource).call();
     }
 
@@ -225,7 +226,7 @@ public class NativeLibrary {
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
             }
-            Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
+            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
             try {
                 return context.getEnv().parseInternal(loadSrc).call();
             } catch (RuntimeException ex) {

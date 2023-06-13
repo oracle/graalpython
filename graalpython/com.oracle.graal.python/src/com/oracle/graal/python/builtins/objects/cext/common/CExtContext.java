@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -58,8 +59,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -83,7 +84,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
@@ -104,13 +104,6 @@ public abstract class CExtContext {
         }
         return LOGGER;
     }
-
-    public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
-        @Override
-        protected Store initializeSymbolCache() {
-            return null;
-        }
-    };
 
     protected static final TruffleString T_HPY_INIT = tsLiteral("HPyInit_");
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
@@ -313,7 +306,7 @@ public abstract class CExtContext {
     }
 
     /**
-     * This method loads a C extension module (C API or HPy API) and will initialize the
+     * This method loads a C extension module (C API) and will initialize the
      * corresponding native contexts if necessary.
      *
      * @param location The node that's requesting this operation. This is required for reporting
@@ -337,7 +330,6 @@ public abstract class CExtContext {
 
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
         Object library = null;
 
         if (cApiContext.supportsNativeBackend) {
@@ -346,14 +338,15 @@ public abstract class CExtContext {
             if (loaded) {
                 String name = spec.name.toJavaStringUncached();
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                    GraalHPyContext.loadJNIBackend();
+                    GraalHPyJNIContext.loadJNIBackend();
                     getLogger().config("loading module " + spec.path + " as native");
                     String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
                     if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                         loadExpr = "with panama " + loadExpr;
                     }
                     try {
-                        library = GraalHPyContext.evalNFI(context, loadExpr, "load " + spec.name);
+                        Source src = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
+                        library = context.getEnv().parseInternal(src).call();
                     } catch (AbstractTruffleException e) {
                         if (e instanceof PException pe) {
                             throw pe;
@@ -387,19 +380,7 @@ public abstract class CExtContext {
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
-        TruffleString hpyInitFuncName = spec.getInitFunctionName(true);
         try {
-            if (llvmInteropLib.isMemberExisting(library, hpyInitFuncName.toJavaStringUncached())) {
-                try {
-                    // try reading - NFI says "yes" to all isMemberExisting
-                    llvmInteropLib.readMember(library, hpyInitFuncName.toJavaStringUncached());
-
-                    GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
-                    return hpyContext.initHPyModule(context, library, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
-                } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                    // not hpy...
-                }
-            }
             return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
@@ -410,7 +391,7 @@ public abstract class CExtContext {
         return "_mmap".equals(name) || "_cpython_struct".equals(name);
     }
 
-    protected static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
+    public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
         Env env = context.getEnv();
         try {
             TruffleString extSuffix = context.getSoAbi();
