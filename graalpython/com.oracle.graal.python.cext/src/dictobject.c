@@ -79,7 +79,6 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
     	}
     	return 0;
     }
-    (*ppos)++;
     if (pkey != NULL) {
     	*pkey = PyTuple_GetItem(tresult, 0);
     }
@@ -89,6 +88,7 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
     if (phash != NULL) {
     	*phash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 2));
     }
+    *ppos = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 3));
     Py_DECREF(tresult);
     return 1;
 

@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
@@ -68,9 +69,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
@@ -94,11 +95,8 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -108,6 +106,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
@@ -124,10 +123,12 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     abstract static class PyTruffleDict_Next extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "pos < size(dict, sizeNode)", limit = "1")
+        @Specialization
         Object run(PDict dict, long pos,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @Cached InlinedBranchProfile needsRewriteProfile,
+                        @Cached InlinedBranchProfile economicMapProfile,
+                        @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
@@ -135,55 +136,79 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached PromoteBorrowedValue promoteKeyNode,
                         @Cached PromoteBorrowedValue promoteValueNode,
-                        @Cached SetItemNode setItemNode,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Cached HashingStorageSetItem setItem) {
+            /*
+             * We need to promote primitive values and strings to object types for borrowing to work
+             * correctly. This is very hard to do mid-iteration, so we do all the promotion for the
+             * whole dict at once in the first call (which is required to start with position 0). In
+             * order to not violate the ordering, we construct a completely new storage.
+             */
+            if (pos == 0) {
+                HashingStorage storage = dict.getDictStorage();
+                int len = lenNode.execute(storage);
+                if (len > 0) {
+                    boolean needsRewrite = false;
+                    if (storage instanceof EconomicMapStorage) {
+                        economicMapProfile.enter(inliningTarget);
+                        HashingStorageIterator it = getIterator.execute(storage);
+                        while (itNext.execute(storage, it)) {
+                            if (promoteKeyNode.execute(itKey.execute(storage, it)) != null || promoteValueNode.execute(itValue.execute(storage, it)) != null) {
+                                needsRewrite = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        /*
+                         * Other storages always have string keys or have complex iterators, just
+                         * convert them to economic map
+                         */
+                        needsRewrite = true;
+                    }
+                    if (needsRewrite) {
+                        needsRewriteProfile.enter(inliningTarget);
+                        EconomicMapStorage newStorage = EconomicMapStorage.create(len);
+                        HashingStorageIterator it = getIterator.execute(storage);
+                        while (itNext.execute(storage, it)) {
+                            Object key = itKey.execute(storage, it);
+                            Object value = itValue.execute(storage, it);
+                            Object promotedKey = promoteKeyNode.execute(key);
+                            if (promotedKey != null) {
+                                key = promotedKey;
+                            }
+                            Object promotedValue = promoteValueNode.execute(value);
+                            if (promotedValue != null) {
+                                value = promotedValue;
+                            }
+                            setItem.execute(null, newStorage, key, value);
+                        }
+                        dict.setDictStorage(newStorage);
+                    }
+                }
+            }
 
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageNodes.HashingStorageIterator it = getIterator.execute(storage);
-            loopProfile.profileCounted(pos);
-            for (int i = 0; loopProfile.inject(i <= pos); i++) {
-                if (!itNext.execute(storage, it)) {
-                    return getNativeNull();
-                }
+            HashingStorageIterator it = getIterator.execute(storage);
+            /*
+             * The iterator index starts from -1, but pos starts from 0, so we subtract 1 here and
+             * add it back later when computing new pos.
+             */
+            it.setState((int) pos - 1);
+            boolean hasNext = itNext.execute(storage, it);
+            if (!hasNext) {
+                return getNativeNull();
             }
             Object key = itKey.execute(storage, it);
             Object value = itValue.execute(storage, it);
-            Object promotedKey = promoteKeyNode.execute(key);
-            Object promotedValue = promoteValueNode.execute(value);
-            if (promotedKey != null) {
-                key = promotedKey;
-                // TODO: replace key with promoted value (also, re-enable
-                // 'test_capi.py::test_dict_iteration' once fixed)
-            }
-            if (promotedValue != null) {
-                setItemNode.execute(null, inliningTarget, dict, key, value = promotedValue);
-            }
-            return factory().createTuple(new Object[]{key, value, itKeyHash.execute(storage, it)});
+            assert promoteKeyNode.execute(key) == null;
+            assert promoteValueNode.execute(value) == null;
+            long hash = itKeyHash.execute(storage, it);
+            int newPos = it.getState() + 1;
+            return factory().createTuple(new Object[]{key, value, hash, newPos});
         }
 
-        @Specialization(guards = "isGreaterPosOrNative(inliningTarget, pos, dict, sizeNode, getClassNode, isSubtypeNode)", limit = "1")
-        Object run(@SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") long pos,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+        @Fallback
+        Object run(@SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object pos) {
             return getNativeNull();
-        }
-
-        protected boolean isGreaterPosOrNative(Node inliningTarget, long pos, Object obj, PyObjectSizeNode sizeNode, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return (isDict(obj) && pos >= size(obj, sizeNode)) || (!isDict(obj) && !isDictSubtype(inliningTarget, obj, getClassNode, isSubtypeNode));
-        }
-
-        protected boolean isDict(Object obj) {
-            return obj instanceof PDict;
-        }
-
-        protected int size(Object dict, PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, dict);
-        }
-
-        protected boolean isDictSubtype(Node inliningTarget, Object obj, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict);
         }
     }
 
@@ -465,7 +490,7 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageSetItemWithHash setAItem,
                         @Cached LoopConditionProfile loopProfile) {
             HashingStorage bStorage = b.getDictStorage();
-            HashingStorageNodes.HashingStorageIterator bIt = getBIter.execute(bStorage);
+            HashingStorageIterator bIt = getBIter.execute(bStorage);
             HashingStorage aStorage = a.getDictStorage();
             while (loopProfile.profile(itBNext.execute(bStorage, bIt))) {
                 Object key = itBKey.execute(bStorage, bIt);
