@@ -108,8 +108,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -623,37 +621,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public GraalHPyNativeContext getBackend() {
         return backend;
-    }
-
-    /**
-     * Encodes a long value such that it responds to {@link InteropLibrary#isPointer(Object)}
-     * messages.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    public static final class HPyContextNativePointer implements TruffleObject {
-
-        private final long pointer;
-
-        public HPyContextNativePointer(long pointer) {
-            this.pointer = pointer;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean isPointer() {
-            return true;
-        }
-
-        @ExportMessage
-        long asPointer() {
-            return pointer;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        void toNative() {
-            // nothing to do
-        }
     }
 
     @SuppressWarnings("static-method")
