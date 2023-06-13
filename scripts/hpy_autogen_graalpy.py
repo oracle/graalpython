@@ -534,14 +534,14 @@ class autogen_wrappers_jni(GraalPyAutoGenFile):
 
         # initialize context handles
         w('')
-        w('    jlong *ctx_handles = (*env)->GetLongArrayElements(env, jctx_handles, NULL);')
+        w('    jlong *ctx_handles = (*env)->GetPrimitiveArrayCritical(env, jctx_handles, NULL);')
         w('    if (ctx_handles == NULL) {')
         w(f'        LOGS("ERROR: Could not access Java context handle array elements\\n");')
         w('        return 1;')
         w('    }')
         for var in self.api.variables:
             w(f'    {UCTX_ARG}->{var.ctx_name()} = _jlong2h(ctx_handles[{var.ctx_index}]);')
-        w('    (*env)->ReleaseLongArrayElements(env, jctx_handles, ctx_handles, JNI_ABORT);')
+        w('    (*env)->ReleasePrimitiveArrayCritical(env, jctx_handles, ctx_handles, JNI_ABORT);')
         w('')
 
         # initialize context function pointers

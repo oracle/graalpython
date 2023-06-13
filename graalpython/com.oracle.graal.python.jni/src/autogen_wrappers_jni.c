@@ -377,7 +377,7 @@ static int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value);
 _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx, jlongArray jctx_handles)
 {
 
-    jlong *ctx_handles = (*env)->GetLongArrayElements(env, jctx_handles, NULL);
+    jlong *ctx_handles = (*env)->GetPrimitiveArrayCritical(env, jctx_handles, NULL);
     if (ctx_handles == NULL) {
         LOGS("ERROR: Could not access Java context handle array elements\n");
         return 1;
@@ -464,7 +464,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
     ctx->h_MemoryViewType = _jlong2h(ctx_handles[231]);
     ctx->h_CapsuleType = _jlong2h(ctx_handles[232]);
     ctx->h_SliceType = _jlong2h(ctx_handles[233]);
-    (*env)->ReleaseLongArrayElements(env, jctx_handles, ctx_handles, JNI_ABORT);
+    (*env)->ReleasePrimitiveArrayCritical(env, jctx_handles, ctx_handles, JNI_ABORT);
 
     jniMethod_ctx_Module_Create = (*env)->GetMethodID(env, clazz, "ctxModuleCreate", "(J)J");
     if (jniMethod_ctx_Module_Create == NULL) {
