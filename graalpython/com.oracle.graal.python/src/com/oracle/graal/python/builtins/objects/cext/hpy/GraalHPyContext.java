@@ -315,7 +315,8 @@ public final class GraalHPyContext extends CExtContext {
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
         HPyBackendMode backendMode;
         if (!context.getEnv().isNativeAccessAllowed()) {
-            // TODO(fa): We should just fail and the launcher should set the backend appropriately.
+            // TODO(fa): We should just fail and the launcher should set the backend appropriately
+            // (GR-46631).
             backendMode = HPyBackendMode.LLVM;
         } else {
             backendMode = context.getOption(PythonOptions.HPyBackend);
@@ -789,14 +790,12 @@ public final class GraalHPyContext extends CExtContext {
         public abstract int execute(Object delegateObject);
 
         @Specialization(guards = "isNoValue(x)")
-        static int doNoValue(PNone x) {
-            assert x == PNone.NO_VALUE;
+        static int doNoValue(@SuppressWarnings("unused") PNone x) {
             return 0;
         }
 
         @Specialization(guards = "!isNoValue(x)")
-        static int doNone(PNone x) {
-            assert x == PNone.NONE;
+        static int doNone(@SuppressWarnings("unused") PNone x) {
             return SINGLETON_HANDLE_NONE;
         }
 
