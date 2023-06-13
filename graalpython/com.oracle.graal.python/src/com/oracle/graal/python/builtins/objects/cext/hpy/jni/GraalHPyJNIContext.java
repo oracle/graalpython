@@ -449,9 +449,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @Override
     @TruffleBoundary
     public PythonModule getHPyDebugModule() throws ImportException {
-        if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
-            throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
-        }
+        assert getContext().getEnv().isNativeAccessAllowed();
+        assert getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI;
 
         // force the universal context to native; we need a real pointer for JNI
         try {
