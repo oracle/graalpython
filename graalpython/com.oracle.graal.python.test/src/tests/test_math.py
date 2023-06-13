@@ -1026,9 +1026,10 @@ class MathTests(unittest.TestCase):
         # This fails on some platforms - so check it here
         self.ftest('floor(1.23e167)', math.floor(1.23e167), 1.23e167)
         self.ftest('floor(-1.23e167)', math.floor(-1.23e167), -1.23e167)
-        #self.assertEqual(math.ceil(INF), INF)
-        #self.assertEqual(math.ceil(NINF), NINF)
-        #self.assertTrue(math.isnan(math.floor(NAN)))
+        for fn in (math.floor, math.ceil):
+            self.assertRaises(OverflowError, fn, INF)
+            self.assertRaises(OverflowError, fn, NINF)
+            self.assertRaises(ValueError, fn, NAN)
 
         t = TestNoFloor()
         t.__floor__ = lambda *args: args
@@ -1046,7 +1047,7 @@ class MathTests(unittest.TestCase):
         class MyFloorFloat():
             def __floor__(self):
                 return 12
-            def __float(self):
+            def __float__(self):
                 return 112
         self.assertEqual(math.floor(MyFloorFloat()), 12)
 

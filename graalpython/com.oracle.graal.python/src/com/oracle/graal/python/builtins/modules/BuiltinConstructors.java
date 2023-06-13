@@ -138,8 +138,6 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
-import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
-import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -185,6 +183,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -1414,14 +1413,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
+        @SuppressWarnings("truffle-static-method")
         Object createInt(Object cls, double arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Cached("createFloatInt()") FloatBuiltins.IntNode floatToIntNode,
+                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode,
                         @Shared @Cached InlinedBranchProfile bigIntegerProfile,
                         @Shared @Cached InlinedBranchProfile primitiveIntProfile,
                         @Shared @Cached InlinedBranchProfile fullIntProfile) {
-            Object result = floatToIntNode.executeWithDouble(arg);
+            Object result = pyLongFromDoubleNode.execute(inliningTarget, arg);
             return createInt(cls, result, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
@@ -1687,11 +1687,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         protected static boolean isHandledType(Object obj) {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
-        }
-
-        @NeverDefault
-        protected static FloatBuiltins.IntNode createFloatInt() {
-            return FloatBuiltinsFactory.IntNodeFactory.create();
         }
 
         private Object callIndex(VirtualFrame frame, Object obj) {
