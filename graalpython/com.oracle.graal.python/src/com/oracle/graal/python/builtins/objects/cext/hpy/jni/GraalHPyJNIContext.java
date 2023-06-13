@@ -55,6 +55,8 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -188,6 +190,21 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private long nativeArgumentsStack = 0;
     private int nativeArgumentStackPos = 0;
 
+    /**
+     * This list holds a strong reference to all loaded extension libraries to keep the library
+     * objects alive. This is necessary because NFI will {@code dlclose} the library (and thus
+     * {@code munmap} all code) if the library object is no longer reachable. However, it can happen
+     * that we still store raw function pointers (as Java {@code long} values) in
+     * {@link GraalHPyJNIFunctionPointer} objects which are invoked <it>asynchronously</it>. For
+     * example, destroy functions will be executed on a different thread some time after the object
+     * died. Buffer release functions run on the main thread but like an async action at some
+     * unknown point in time after the buffer owner died.
+     * 
+     * Since we have no control over the execution order of those cleaners, we need to ensure that
+     * the code is still mapped.
+     */
+    private final List<Object> loadedExtensions = new LinkedList<>();
+
     public GraalHPyJNIContext(GraalHPyContext context, boolean traceUpcalls) {
         super(context, traceUpcalls);
         this.slowPathFactory = context.getContext().factory();
@@ -204,9 +221,15 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         CompilerAsserts.neverPartOfCompilation();
         TruffleFile extLibFile = context.getPublicTruffleFileRelaxed(path, context.getSoAbi());
         try {
+            /*
+             * Even in the JNI backend, we load the library with NFI (instead of using
+             * 'System.load') because NFI may take care of additional security checks.
+             */
             String src = "load \"" + extLibFile + '"';
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
-            return context.getEnv().parseInternal(loadSrc).call();
+            Object extLib = context.getEnv().parseInternal(loadSrc).call();
+            loadedExtensions.add(extLib);
+            return extLib;
         } catch (SecurityException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
         }
@@ -224,10 +247,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             initHPyDebugContext();
         }
 
-        /*
-         * Even in the JNI backend, we load the library with NFI (instead of using 'System.load')
-         * because NFI may take care of additional security checks.
-         */
         Object initFunction;
         try {
             InteropLibrary lib = InteropLibrary.getUncached(extLib);
@@ -356,12 +375,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @Override
     protected void finalizeNativeContext() {
         finalizeJNIContext(nativePointer);
+        nativePointer = 0;
         if (hPyDebugContext != 0) {
             finalizeJNIDebugContext(hPyDebugContext);
+            hPyDebugContext = 0;
         }
         if (nativeArgumentsStack != 0) {
             UNSAFE.freeMemory(nativeArgumentsStack);
+            nativeArgumentsStack = 0;
         }
+        loadedExtensions.clear();
     }
 
     @Override
