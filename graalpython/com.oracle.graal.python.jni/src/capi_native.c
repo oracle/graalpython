@@ -50,11 +50,15 @@
 #include <pycore_pymem.h>
 #include <pycore_moduleobject.h>
 
+#include <trufflenfi.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 
 #define MUST_INLINE __attribute__((always_inline)) inline
+
+TruffleContext* TRUFFLE_CONTEXT;
 
 #define PY_TYPE_OBJECTS(OBJECT) \
 OBJECT(PyAsyncGen_Type, async_generator) \
@@ -299,13 +303,15 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
+PyAPI_FUNC(int) initNativeForward(TruffleEnv* env, void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
     if (initNativeForwardCalled) {
     	return 0;
     }
     initNativeForwardCalled = 1;
     clock_t t;
     t = clock();
+
+    TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
 
 #define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) setTypeStore(#TYPENAME, (void*) &NAME);
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
@@ -457,6 +463,19 @@ void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
 void finalizeCAPI() {
 	GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
 	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
+}
+
+PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
+    (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+    int res = PyTruffleGILState_Ensure();
+    return res ? PyGILState_LOCKED : PyGILState_UNLOCKED;
+}
+
+PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
+    if (state == PyGILState_LOCKED) {
+        PyTruffleGILState_Release();
+        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
+    }
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {

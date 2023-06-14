@@ -1006,7 +1006,7 @@ public final class CApiContext extends CExtContext {
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
                 Object initializeNativeLocations = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "initialize_native_locations");
                 Object signature = env.parseInternal(
-                                Source.newBuilder(J_NFI_LANGUAGE, "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32",
+                                Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32",
                                                 "exec").build()).call();
                 Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore(), initializeNativeLocations);
                 if (InteropLibrary.getUncached().asInt(result) == 0) {

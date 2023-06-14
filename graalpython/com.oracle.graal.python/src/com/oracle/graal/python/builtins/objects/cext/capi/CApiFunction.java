@@ -96,6 +96,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPLEX;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GEN_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GIL_STATE_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_IDENTIFIER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_LOCK_STATUS;
@@ -367,6 +368,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyGILState_Ensure", ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = CImpl)
+    @CApiBuiltin(name = "PyGILState_Release", ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
