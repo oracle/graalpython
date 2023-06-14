@@ -94,7 +94,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1496,61 +1494,6 @@ public abstract class HPyExternalFunctionNodes {
             }
             target = PExternalFunctionWrapper.ensureExecutable(pythonContext, target, PExternalFunctionWrapper.SETTER, InteropLibrary.getUncached());
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
-        }
-    }
-
-    static final class HPyGetSetDescriptorNotWritableRootNode extends HPyGetSetDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("$self", "value"), null, true);
-
-        @Child private PRaiseNode raiseNode;
-        @Child private GetClassNode getClassNode;
-        @Child private GetNameNode getNameNode;
-
-        private HPyGetSetDescriptorNotWritableRootNode(PythonLanguage language, TruffleString name) {
-            super(language, name);
-        }
-
-        @Override
-        protected Object[] createArguments(VirtualFrame frame, Object closure) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            Object type = getClassNode.execute(PArguments.getArgument(frame, 0));
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, getName(), getNameNode.execute(type));
-        }
-
-        @Override
-        protected HPyConvertArgsToSulongNode createArgumentConversionNode() {
-            // not required since the 'createArguments' method will throw an error
-            return null;
-        }
-
-        @Override
-        protected HPyCheckFunctionResultNode createResultConversionNode() {
-            // not required since the 'createArguments' method will throw an error
-            return null;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @TruffleBoundary
-        public static PBuiltinFunction createFunction(PythonContext context, Object enclosingType, TruffleString propertyName) {
-            PythonLanguage lang = context.getLanguage();
-            RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorNotWritableRootNode(l, propertyName), HPyGetSetDescriptorNotWritableRootNode.class, propertyName);
-            PythonObjectFactory factory = context.factory();
-            return factory.createBuiltinFunction(propertyName, enclosingType, 0, 0, callTarget);
         }
     }
 
