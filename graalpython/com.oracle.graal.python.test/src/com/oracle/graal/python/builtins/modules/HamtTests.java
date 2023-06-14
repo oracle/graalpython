@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.After;
@@ -49,6 +50,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.contextvars.Hamt;
+import com.oracle.graal.python.builtins.objects.contextvars.HamtIterator;
 import com.oracle.graal.python.test.PythonTests;
 
 public class HamtTests {
@@ -174,6 +176,26 @@ public class HamtTests {
         for (int i = 0; i < limit; ++i) {
             assertEquals(i, hamt.size());
             hamt = hamt.withEntry(new Hamt.Entry(i, i % 2 == 0 ? String.valueOf(i).hashCode() : 0, i + 1));
+        }
+    }
+
+    @Test
+    public void testHamtIterator() {
+        int limit = 100;
+        boolean[] seen = new boolean[limit];
+        Hamt hamt = new Hamt();
+        for (int i = 0; i < limit; ++i) {
+            hamt = hamt.withEntry(new Hamt.Entry(i, String.valueOf(i).hashCode(), String.valueOf(i)));
+        }
+        HamtIterator hi = new HamtIterator(hamt);
+        Hamt.Entry el = hi.next();
+        while (el != null) {
+            seen[(int) el.key] = true;
+            assertEquals(String.valueOf(el.key), el.value);
+            el = hi.next();
+        }
+        for (int i = 0; i < limit; ++i) {
+            assertTrue("failed at " + i, seen[i]);
         }
     }
 
