@@ -54,7 +54,6 @@ cflags_warnings = [ "-Wno-int-to-pointer-cast"
                   , "-Wno-deprecated-declarations"
                   ]
 libpython_name = "libpython"
-libhpy_name = "libhpy"
 libposix_name = "libposix"
 
 MACOS = sys.platform == "darwin"
@@ -513,24 +512,6 @@ def build_libpython(capi_home):
             get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_WINDOWS"] + llvm_libs
 
 
-def build_libhpy(capi_home):
-    src_dir = os.path.join(__dir__, "hpy")
-    files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
-    module = Extension(libhpy_name,
-                       sources=files,
-                       define_macros=[("HPY_UNIVERSAL_ABI", 1)],
-                       extra_compile_args=cflags_warnings,
-    )
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
-    setup(
-        script_name='setup' + libhpy_name,
-        script_args=args,
-        name=libhpy_name,
-        version='1.0',
-        description="Graal Python's HPy C API",
-        ext_modules=[module],
-    )
-
 def build_nativelibsupport(capi_home, subdir, libname, deps=[], **kwargs):
     if not is_managed:
         src_dir = os.path.join(__dir__, subdir)
@@ -602,7 +583,6 @@ def build(capi_home):
     try:
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
-        build_libhpy(capi_home)
         if WIN32:
             return # TODO: ...
         build_nativelibsupport(capi_home,
