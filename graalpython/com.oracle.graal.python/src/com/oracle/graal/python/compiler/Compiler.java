@@ -41,6 +41,7 @@
 package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
+import static com.oracle.graal.python.compiler.OpCodes.ASYNCGEN_WRAP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.BUILD_SLICE;
@@ -63,6 +64,7 @@ import static com.oracle.graal.python.compiler.OpCodes.DELETE_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.DUP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.END_ASYNC_FOR;
 import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_AWITH;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
@@ -70,6 +72,8 @@ import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AEXIT_CORO;
+import static com.oracle.graal.python.compiler.OpCodes.GET_AITER;
+import static com.oracle.graal.python.compiler.OpCodes.GET_ANEXT;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
@@ -1003,6 +1007,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Await node) {
         // TODO if !IS_TOP_LEVEL_AWAIT
+        // TODO handle await in comprehension correctly (currently, it is always allowed)
         if (!unit.scope.isFunction()) {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside function");
         }
@@ -1507,8 +1512,25 @@ public class Compiler implements SSTreeVisitor<Void> {
             exitScope();
             makeClosure(code, 0);
             generators[0].iter.accept(this);
-            addOp(GET_ITER);
+            if (generators[0].isAsync) {
+                addOp(GET_AITER);
+            } else {
+                addOp(GET_ITER);
+            }
             addOp(CALL_COMPREHENSION);
+            // a genexpr will create an asyncgen, which we cannot await
+            if (type != ComprehensionType.GENEXPR) {
+                for (ComprehensionTy gen : generators) {
+                    // if we have a non-genexpr async comprehension, the call will produce a
+                    // coroutine which we need to await
+                    if (gen.isAsync) {
+                        addOp(GET_AWAITABLE);
+                        addOp(LOAD_NONE);
+                        addYieldFrom();
+                        break;
+                    }
+                }
+            }
             return null;
         } finally {
             setLocation(savedLocation);
@@ -1523,14 +1545,33 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else {
             /* Create the iterator for nested iteration */
             gen.iter.accept(this);
-            addOp(GET_ITER);
+            if (gen.isAsync) {
+                addOp(GET_AITER);
+            } else {
+                addOp(GET_ITER);
+            }
         }
         Block start = new Block();
         Block ifCleanup = new Block();
         Block anchor = new Block();
+        Block asyncForTry = gen.isAsync ? new Block() : null;
+        Block asyncForExcept = gen.isAsync ? new Block() : null;
+        Block asyncForBody = gen.isAsync ? new Block() : null;
         unit.useNextBlock(start);
-        addOp(FOR_ITER, anchor);
-        gen.target.accept(this);
+        if (gen.isAsync) {
+            addOp(DUP_TOP);
+            unit.useNextBlock(asyncForTry);
+            unit.pushBlock(new BlockInfo.AsyncForLoopExit(asyncForTry, asyncForExcept));
+            addOp(GET_ANEXT);
+            addOp(LOAD_NONE);
+            addYieldFrom();
+            unit.popBlock();
+            unit.useNextBlock(asyncForBody);
+            gen.target.accept(this);
+        } else {
+            addOp(FOR_ITER, anchor);
+            gen.target.accept(this);
+        }
         for (ExprTy ifExpr : gen.ifs) {
             jumpIf(ifExpr, ifCleanup, false);
         }
@@ -1546,6 +1587,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 collectionStackDepth++;
             }
             if (type == ComprehensionType.GENEXPR) {
+                if (generators[i].isAsync) {
+                    addOp(ASYNCGEN_WRAP);
+                }
                 addOp(YIELD_VALUE);
                 addOp(RESUME_YIELD);
                 addOp(POP_TOP);
@@ -1562,6 +1606,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         unit.useNextBlock(ifCleanup);
         addOp(JUMP_BACKWARD, start);
+        if (gen.isAsync) {
+            unit.useNextBlock(asyncForExcept);
+            addOp(END_ASYNC_FOR);
+        }
         unit.useNextBlock(anchor);
     }
 
@@ -1849,6 +1897,10 @@ public class Compiler implements SSTreeVisitor<Void> {
             } else {
                 addOp(LOAD_NONE);
             }
+            if (unit.scopeType == CompilationScope.AsyncFunction) {
+                // Async generator
+                addOp(ASYNCGEN_WRAP);
+            }
             addOp(YIELD_VALUE);
             addOp(RESUME_YIELD);
             return null;
@@ -2072,8 +2124,51 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFor node) {
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async for' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async for' outside async function");
+        }
+        visitAsyncFor(node);
+        return null;
+    }
+
+    private void visitAsyncFor(StmtTy.AsyncFor node) {
         setLocation(node);
-        return emitNotImplemented("async for");
+        Block head = new Block();
+        Block body = new Block();
+        Block end = new Block();
+        Block except = new Block();
+        Block loopTry = new Block();
+        Block orelse = node.orElse != null ? new Block() : null;
+        node.iter.accept(this);
+        addOp(GET_AITER);
+        unit.useNextBlock(head);
+        unit.pushBlock(new BlockInfo.AsyncForLoop(head, end));
+        addOp(DUP_TOP);
+        addOp(GET_ANEXT);
+        unit.useNextBlock(loopTry);
+        unit.pushBlock(new BlockInfo.AsyncForLoopExit(loopTry, except));
+        addOp(LOAD_NONE);
+        addYieldFrom();
+        unit.popBlock();
+        unit.useNextBlock(body);
+        try {
+            node.target.accept(this);
+            visitSequence(node.body);
+            addOp(JUMP_BACKWARD, head);
+        } finally {
+            unit.popBlock();
+        }
+        addOp(JUMP_FORWARD, node.orElse != null ? orelse : end);
+        unit.useNextBlock(except);
+        addOp(END_ASYNC_FOR);
+        if (node.orElse != null) {
+            unit.useNextBlock(orelse);
+            visitSequence(node.orElse);
+        }
+        unit.useNextBlock(end);
     }
 
     // TODO temporary helper so that stuff that's not implemented can compile into stubs
@@ -3670,6 +3765,19 @@ public class Compiler implements SSTreeVisitor<Void> {
                         addOp(ROT_TWO);
                     }
                     addOp(POP_TOP);
+                } else if (info instanceof BlockInfo.AsyncForLoop) {
+                    // AsyncForLoopExit cannot have a return, break, or continue in it, so no need
+                    // to check it.
+                    if (type == UnwindType.CONTINUE) {
+                        return (BlockInfo.Loop) info;
+                    }
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_TWO);
+                    }
+                    addOp(POP_TOP);
+                    if (type == UnwindType.BREAK) {
+                        return (BlockInfo.Loop) info;
+                    }
                 }
                 info = info.outer;
             }

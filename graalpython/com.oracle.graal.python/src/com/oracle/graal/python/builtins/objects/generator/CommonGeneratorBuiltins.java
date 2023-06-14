@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopAsyncIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -143,6 +144,12 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
     private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
         if (self.isFinished()) {
+            if (self.isAsyncGen()) {
+                throw node.raise(StopAsyncIteration);
+            }
+            if (self.isCoroutine()) {
+                throw node.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+            }
             throw node.raiseStopIteration();
         }
         if (self.isRunning()) {
@@ -160,6 +167,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
                         @Cached InlinedBranchProfile returnProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile profile,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -188,7 +196,8 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached GenericInvokeNode call,
                         @Cached InlinedBranchProfile returnProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached IsBuiltinObjectProfile profile) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -212,11 +221,17 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             return handleResult(self, result);
         }
 
-        private PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile errorProfile, PRaiseNode raiseNode, PException e) {
+        private PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile profile, PRaiseNode raiseNode, PException e) {
             self.markAsFinished();
+            if (self.isAsyncGen()) {
+                // Async generators need to wrap StopAsyncIteration in a runtime error
+                if (profile.profileException(inliningTarget, e, StopAsyncIteration)) {
+                    throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
+                }
+            }
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
-            e.expectStopIteration(inliningTarget, errorProfile);
+            e.expectStopIteration(inliningTarget, profile);
             throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
@@ -227,6 +242,9 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
         private static PException handleReturn(PGenerator self, GeneratorReturnException e, PRaiseNode raiseNode) {
             self.markAsFinished();
+            if (self.isAsyncGen()) {
+                throw raiseNode.raise(StopAsyncIteration);
+            }
             if (e.value != PNone.NONE) {
                 throw raiseNode.raise(StopIteration, new Object[]{e.value});
             } else {
@@ -250,6 +268,8 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
+            // even though this isn't a builtin for async generators, SendNode is used on async
+            // generators by PAsyncGenSend
             checkResumable(this, self);
             if (!self.isStarted() && value != PNone.NONE) {
                 throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
@@ -398,6 +418,9 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
         private Object doThrow(VirtualFrame frame, ResumeGeneratorNode resumeGeneratorNode, PGenerator self, PBaseException instance, PythonLanguage language) {
             instance.setContext(null); // Will be filled when caught
+            if (self.isCoroutine() && self.isFinished()) {
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+            }
             if (self.isStarted() && !self.isFinished()) {
                 instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location

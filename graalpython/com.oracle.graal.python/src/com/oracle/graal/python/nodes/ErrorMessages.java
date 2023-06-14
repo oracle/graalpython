@@ -296,7 +296,6 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
     public static final TruffleString EXPECTED_CHARACTER_BUT_STRING_FOUND = tsLiteral("%s expected a character, but string of length %d found");
     public static final TruffleString EXPECTED_CONVERSION = tsLiteral("expected conversion");
-    public static final TruffleString EXPECTED_EXCEPTION_ON_THE_STACK = tsLiteral("expected exception on the stack");
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_P_GOT_P = tsLiteral("expected object of type %p, got %p");
@@ -1486,9 +1485,10 @@ public abstract class ErrorMessages {
     public static final TruffleString PY_CAPSULE_SET_POINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
     public static final TruffleString PY_CAPSULE_IMPORT_COULD_NOT_IMPORT_MODULE_S = tsLiteral("PyCapsule_Import could not import module \"%s\"");
     public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
-    public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
 
     // asyncio
+
+    public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
     public static final TruffleString AWAIT_RETURN_COROUTINE = tsLiteral("__await__() returned a coroutine");
     public static final TruffleString AWAIT_RETURN_NON_ITER = tsLiteral("__await__() returned non-iterator of type '%s'");
     public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
@@ -1521,4 +1521,16 @@ public abstract class ErrorMessages {
 
     public static final TruffleString INDEX_EXCEEDS_INT = tsLiteral("index exceeds integer size");
     public static final TruffleString X_NOT_IN_SEQUENCE = tsLiteral("sequence.index(x): x not in sequence");
+    public static final TruffleString ASYNC_FOR_NO_AITER = tsLiteral("'async for' requires object with __aiter__ method, got %s");
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %s");
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %p");
+
+    public static final TruffleString CANNOT_REUSE_ASEND = tsLiteral("cannot reuse already awaited __anext__()/asend()");
+    public static final TruffleString OBJECT_NOT_ASYNCGEN = tsLiteral("'%s' object is not an async generator");
+    public static final TruffleString CANNOT_REUSE_ATHROW = tsLiteral("cannot reuse already awaited aclose()/athrow()");
+    public static final TruffleString CANNOT_REUSE_CORO = tsLiteral("cannot reuse already awaited coroutine");
+    public static final TruffleString AGEN_ALREADY_RUNNING = tsLiteral("anext(): asynchronous generator is already running");
+    public static final TruffleString CORO_ALREADY_AWAITED = tsLiteral("coroutine is being awaited already");
+    public static final TruffleString ANEXT_INVALID_OBJECT = tsLiteral("'async for' received an invalid object from __anext__: %p");
+    public static final TruffleString ASYNCGEN_RAISED_ASYNCSTOPITER = tsLiteral("async generator raised StopAsyncIteration");
 }

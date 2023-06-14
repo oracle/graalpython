@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,12 +84,12 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"}, constructsClass = PythonBuiltinClassType.ContextVar)
     @GenerateNodeFactory
     public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isNoValue(def)")
         protected Object construct(Object cls, TruffleString name, @SuppressWarnings("unused") PNone def) {
             return constructDef(cls, name, PContextVar.NO_DEFAULT);
         }
 
-        @Specialization(guards = "!isPNone(def)")
+        @Specialization(guards = "!isNoValue(def)")
         protected Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def) {
             return factory().createContextVar(name, def);
         }

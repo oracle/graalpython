@@ -95,8 +95,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         } else if (rootNode.getCodeUnit().isCoroutine()) {
             return factory.createCoroutine(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
-            // TODO populate
-            return factory.createAsyncGenerator();
+            return factory.createAsyncGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         }
         throw CompilerDirectives.shouldNotReachHere("Unknown generator/coroutine type");
     }

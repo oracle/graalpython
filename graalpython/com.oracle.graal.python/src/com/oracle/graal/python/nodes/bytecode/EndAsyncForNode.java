@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,55 +40,54 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
-public abstract class ExitAWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop, boolean rootNodeVisible);
+@ImportStatic(PythonBuiltinClassType.class)
+public abstract class EndAsyncForNode extends PNodeWithContext {
+    public abstract void execute(Object exception, boolean rootNodeVisible);
+
+    public static EndAsyncForNode getUncached() {
+        return EndAsyncForNodeGen.getUncached();
+    }
+
+    public static EndAsyncForNode create() {
+        return EndAsyncForNodeGen.create();
+    }
 
     @Specialization
-    int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
-                    @Cached PyObjectIsTrueNode isTrueNode,
-                    @Cached PRaiseNode raiseNode) {
-        int stackTop = stackTopIn;
-        Object result = virtualFrame.getObject(stackTop);
-        virtualFrame.setObject(stackTop--, null);
-        Object exception = virtualFrame.getObject(stackTop);
-        virtualFrame.setObject(stackTop--, null);
-        PException savedExcState = PArguments.getException(virtualFrame);
-        try {
-            if (!isTrueNode.execute(virtualFrame, result) && exception != PNone.NONE) {
-                if (exception instanceof PException) {
-                    throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
-                } else if (exception instanceof AbstractTruffleException) {
-                    throw (AbstractTruffleException) exception;
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
-                }
-            }
-        } finally {
-            PArguments.setException(virtualFrame, savedExcState);
+    public void doPException(PException exception, boolean rootNodeVisible,
+                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinClassProfile isStopAsyncIteration) {
+        if (!isStopAsyncIteration.profileException(exception, PythonBuiltinClassType.StopAsyncIteration)) {
+            throw exception.getExceptionForReraise(rootNodeVisible);
         }
-        return stackTop;
     }
 
-    public static ExitAWithNode create() {
-        return ExitAWithNodeGen.create();
-    }
+    @Specialization(replaces = "doPException")
+    public void doGeneric(Object exception, boolean rootNodeVisible,
+                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinClassProfile isStopAsyncIteration) {
+        if (exception == PNone.NONE) {
+            return;
+        }
+        if (!isStopAsyncIteration.profileObject(exception, PythonBuiltinClassType.StopAsyncIteration)) {
+            if (exception instanceof PException) {
+                throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
+            } else if (exception instanceof AbstractTruffleException) {
+                throw (AbstractTruffleException) exception;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
+            }
 
-    public static ExitAWithNode getUncached() {
-        return ExitAWithNodeGen.getUncached();
+        }
     }
 }

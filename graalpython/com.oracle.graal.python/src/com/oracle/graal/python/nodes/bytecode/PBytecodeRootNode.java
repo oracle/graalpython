@@ -311,6 +311,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final GetAExitCoroNode UNCACHED_GET_AEXIT_CORO_NODE = GetAExitCoroNode.getUncached();
     private static final NodeSupplier<GetAExitCoroNode> NODE_GET_AEXIT_CORO = GetAExitCoroNode::create;
     private static final ExitAWithNode UNCACHED_EXIT_AWITH_NODE = ExitAWithNode.getUncached();
+    private static final GetAIterNode UNCACHED_GET_AITER = GetAIterNode.getUncached();
+    private static final NodeSupplier<GetAIterNode> NODE_GET_AITER = GetAIterNode::create;
+    private static final GetANextNode UNCACHED_GET_ANEXT = GetANextNode.getUncached();
+    private static final NodeSupplier<GetANextNode> NODE_GET_ANEXT = GetANextNode::create;
+    private static final EndAsyncForNode UNCACHED_END_ASYNC_FOR = EndAsyncForNode.getUncached();
+    private static final NodeSupplier<EndAsyncForNode> NODE_END_ASYNC_FOR = EndAsyncForNode::create;
     private static final NodeSupplier<ExitAWithNode> NODE_EXIT_AWITH = ExitAWithNode::create;
     private static final ImportFromNode UNCACHED_IMPORT_FROM = ImportFromNode.getUncached();
     private static final NodeSupplier<ImportFromNode> NODE_IMPORT_FROM = ImportFromNode::create;
@@ -2178,6 +2184,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeExitAWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
+                    case OpCodesConstants.GET_AITER: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeGetAIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.GET_ANEXT: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeGetANext(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.END_ASYNC_FOR: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeEndAsyncFor(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.ASYNCGEN_WRAP: {
+                        bytecodeAsyncGenWrap(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
                     case OpCodesConstants.PUSH_EXC_INFO: {
                         bytecodePushExcInfo(virtualFrame, arguments, mutableData, stackTop++);
                         break;
@@ -2334,6 +2359,35 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             }
         }
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeAsyncGenWrap(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        virtualFrame.setObject(stackTop, factory.createAsyncGeneratorWrappedValue(virtualFrame.getObject(stackTop)));
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetAIter(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int bci) {
+        GetAIterNode node = insertChildNode(localNodes, bci, UNCACHED_GET_AITER, GetAIterNodeGen.class, NODE_GET_AITER, useCachedNodes);
+        virtualFrame.setObject(stackTop, node.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetANext(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int bci) {
+        GetANextNode node = insertChildNode(localNodes, bci, UNCACHED_GET_ANEXT, GetANextNodeGen.class, NODE_GET_ANEXT, useCachedNodes);
+        virtualFrame.setObject(stackTop, node.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeEndAsyncFor(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int bci) {
+        EndAsyncForNode node = insertChildNode(localNodes, bci, UNCACHED_END_ASYNC_FOR, EndAsyncForNodeGen.class, NODE_END_ASYNC_FOR, useCachedNodes);
+        node.execute(virtualFrame.getObject(stackTop), frameIsVisibleToPython());
+        virtualFrame.setObject(stackTop, null); // pop the exception
+        virtualFrame.setObject(stackTop - 1, null); // the coroutine that raised the exception
+        virtualFrame.setObject(stackTop - 2, null); // the async iterator
+        return stackTop - 3;
     }
 
     @BytecodeInterpreterSwitch
@@ -4596,8 +4650,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else if (exception instanceof AbstractTruffleException) {
             throw (AbstractTruffleException) exception;
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_EXCEPTION_ON_THE_STACK);
+            throw CompilerDirectives.shouldNotReachHere("Exception not on stack");
         }
     }
 

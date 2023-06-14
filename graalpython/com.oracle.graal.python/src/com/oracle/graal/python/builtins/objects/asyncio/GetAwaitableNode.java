@@ -53,7 +53,6 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -67,20 +66,26 @@ public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(Frame frame, Object arg);
 
     @Specialization
-    static Object doGenerator(PGenerator generator,
-                    @Shared("notInAwait") @Cached PRaiseNode raise) {
+    public static Object doGenerator(PGenerator generator,
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raise,
+                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseReusedCoro) {
         if (generator.isCoroutine()) {
-            return generator;
+            if (generator.getYieldFrom() != null) {
+                throw raiseReusedCoro.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
+            } else {
+                return generator;
+            }
         } else {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
         }
     }
 
     @Specialization
-    static Object doGeneric(Frame frame, Object awaitable,
+    public static Object doGeneric(Frame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
-                    @Shared("notInAwait") @Cached PRaiseNode raiseNoAwait,
-                    @Cached.Exclusive @Cached PRaiseNode raiseNotIter,
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raiseNoAwait,
+                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached InlinedGetClassNode getAwaitableType,
@@ -90,7 +95,7 @@ public abstract class GetAwaitableNode extends Node {
         Object type = getAwaitableType.execute(inliningTarget, awaitable);
         Object getter = findAwait.execute(frame, type, awaitable);
         if (getter == PNone.NO_VALUE) {
-            throw raiseNoAwait.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(type));
+            throw raiseNoAwait.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(type));
         }
         Object iterator = callAwait.executeObject(getter, awaitable);
         if (iterCheck.execute(inliningTarget, iterator)) {
@@ -98,9 +103,9 @@ public abstract class GetAwaitableNode extends Node {
         }
         Object itType = getIteratorType.execute(inliningTarget, iterator);
         if (itType == PythonBuiltinClassType.PCoroutine) {
-            throw raiseNotIter.raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
+            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         } else {
-            throw raiseNotIter.raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(itType));
+            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(itType));
         }
     }
 

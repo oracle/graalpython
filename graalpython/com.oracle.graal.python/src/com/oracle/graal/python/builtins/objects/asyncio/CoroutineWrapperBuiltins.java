@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,16 @@ public class CoroutineWrapperBuiltins extends PythonBuiltins {
         public Object doThrow(VirtualFrame frame, PCoroutineWrapper self, Object typ, Object val, Object tp,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode) {
             return throwNode.execute(frame, self.coroutine, typ, val, tp);
+        }
+    }
+
+    @Builtin(name = "close", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class CloseNode extends PythonBuiltinNode {
+        @Specialization
+        public Object doThrow(VirtualFrame frame, PCoroutineWrapper self,
+                        @Cached CommonGeneratorBuiltins.CloseNode closeNode) {
+            return closeNode.execute(frame, self.coroutine);
         }
     }
 }

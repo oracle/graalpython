@@ -73,6 +73,10 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenAThrow;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.asyncio.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -876,9 +880,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCoroutineWrapper(getLanguage(), generator));
     }
 
-    public final Object createAsyncGenerator() {
-        // TODO implement this properly, this is just a placeholder so that typing stuff works
-        return createPythonObject(PythonBuiltinClassType.PAsyncGenerator);
+    public final PAsyncGen createAsyncGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PAsyncGen.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
 
     public final PMappingproxy createMappingproxy(Object object) {
@@ -1514,4 +1517,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new MultibyteCodecObject(type, getShape(type), codec));
     }
 
+    public PAsyncGenASend createAsyncGeneratorASend(PAsyncGen receiver, Object message) {
+        return trace(new PAsyncGenASend(getLanguage(), receiver, message));
+    }
+
+    public PAsyncGenAThrow createAsyncGeneratorAThrow(PAsyncGen receiver, Object arg1, Object arg2, Object arg3) {
+        return trace(new PAsyncGenAThrow(getLanguage(), receiver, arg1, arg2, arg3));
+    }
+
+    public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
+        return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
+    }
 }

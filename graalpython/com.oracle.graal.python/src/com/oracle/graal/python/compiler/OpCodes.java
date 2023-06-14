@@ -46,6 +46,7 @@ import com.oracle.graal.python.annotations.GenerateEnumConstants;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 
 /**
  * Operation codes of our bytecode interpreter. They are similar to CPython's, but not the same. Our
@@ -128,6 +129,22 @@ public enum OpCodes {
      * Pushes: awaitable
      */
     GET_AWAITABLE(0, 1, 1),
+    /**
+     * Gets the async iterator of an object - error if a coroutine is returned
+     *
+     * Pops: object
+     *
+     * Pushes: async iterator
+     */
+    GET_AITER(0, 1, 1),
+    /**
+     * Get the awaitable that will return the next element of an async iterator
+     *
+     * Pops: object
+     *
+     * Pushes: awaitable
+     */
+    GET_ANEXT(0, 1, 1),
     /**
      * Pushes: {@code __build_class__} builtin
      */
@@ -688,6 +705,13 @@ public enum OpCodes {
      */
     YIELD_VALUE(0, 1, 0),
     /**
+     * Wrap value from the stack in a {@link PAsyncGenWrappedValue}. CPython 3.11 opcode, used here
+     * to avoid a runtime check
+     *
+     * Pops: an object Pushes: async_generator_wrapped_value
+     */
+    ASYNCGEN_WRAP(0, 1, 1),
+    /**
      * Resume after yield. Will raise exception passed by {@code throw} if any.
      *
      * Pushes: value received from {@code send} or {@code None}.
@@ -714,6 +738,13 @@ public enum OpCodes {
      * Pushes (if jumping): the generator return value
      */
     THROW(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
+    /**
+     * Exception handler for async for loops. If the current exception is StopAsyncIteration, handle
+     * it, otherwise, reraise.
+     *
+     * Pops: exception, then the anext coroutine, then the async iterator
+     */
+    END_ASYNC_FOR(0, 3, 0),
 
     // with statements
     /**

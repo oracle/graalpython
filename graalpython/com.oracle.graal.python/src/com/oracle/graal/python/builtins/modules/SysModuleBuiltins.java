@@ -1136,6 +1136,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
         Object setAsyncgenHooks(Object firstIter, Object finalizer) {
+            if (firstIter != PNone.NO_VALUE && firstIter != PNone.NONE) {
+                getContext().getThreadState(getLanguage()).setAsyncgenFirstIter(firstIter);
+            } else if (firstIter == PNone.NONE) {
+                getContext().getThreadState(getLanguage()).setAsyncgenFirstIter(null);
+            }
+            // Ignore finalizer, since we don't have a useful place to call it
             return PNone.NONE;
         }
     }
@@ -1146,7 +1152,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object setAsyncgenHooks() {
             // TODO: use asyncgen_hooks object
-            return factory().createTuple(new Object[]{PNone.NONE, PNone.NONE});
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            Object firstiter = threadState.getAsyncgenFirstIter();
+            return factory().createTuple(new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,62 +40,63 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ANEXT_INVALID_OBJECT;
+import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_ITERATION;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class SetupAwithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+public abstract class GetANextNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object receiver);
+
+    public static GetANextNode getUncached() {
+        return GetANextNodeGen.getUncached();
+    }
+
+    public static GetANextNode create() {
+        return GetANextNodeGen.create();
+    }
 
     @Specialization
-    static int setup(VirtualFrame frame, int stackTopIn,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupAEnter,
-                    @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupAExit,
-                    @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
-                    @Cached PRaiseNode raiseNode) {
-        int stackTop = stackTopIn;
-        Object contextManager = frame.getObject(stackTop);
-        Object type = getClassNode.execute(contextManager);
-        Object enter = lookupAEnter.execute(frame, type, contextManager);
-        if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___AENTER__});
+    Object doGeneric(Frame frame, Object receiver,
+                    @Bind("this") Node inliningTarget,
+                    @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
+                    @Cached InlinedGetClassNode getAsyncIterType,
+                    @Cached PRaiseNode raiseNoANext,
+                    @Cached InlinedBranchProfile errorProfile,
+                    @Cached CallUnaryMethodNode callANext,
+                    @Cached PRaiseNode raiseInvalidObject,
+                    @Cached(neverDefault = true) GetAwaitableNode getAwaitable) {
+        Object type = getAsyncIterType.execute(inliningTarget, receiver);
+        Object getter = getANext.execute(frame, type, receiver);
+        if (getter == PNone.NO_VALUE) {
+            errorProfile.enter(inliningTarget);
+            throw raiseNoANext.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, receiver);
         }
-        Object exit = lookupAExit.execute(frame, type, contextManager);
-        if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
+        Object anext = callANext.executeObject(frame, getter, receiver);
+        try {
+            return getAwaitable.execute(frame, anext);
+        } catch (PException e) {
+            errorProfile.enter(inliningTarget);
+            throw raiseInvalidObject.raise(PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
         }
-        Object res = callEnter.executeObject(frame, enter, contextManager);
-        frame.setObject(++stackTop, exit);
-        frame.setObject(++stackTop, res);
-        return stackTop;
-    }
-
-    public static SetupAwithNode create() {
-        return SetupAwithNodeGen.create();
-    }
-
-    public static SetupAwithNode getUncached() {
-        return SetupAwithNodeGen.getUncached();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,17 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_AITER;
+import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_INITIAL;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -56,46 +59,43 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class SetupAwithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+public abstract class GetAIterNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object receiver);
+
+    public static GetAIterNode getUncached() {
+        return GetAIterNodeGen.getUncached();
+    }
+
+    public static GetAIterNode create() {
+        return GetAIterNodeGen.create();
+    }
 
     @Specialization
-    static int setup(VirtualFrame frame, int stackTopIn,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupAEnter,
-                    @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupAExit,
-                    @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
-                    @Cached PRaiseNode raiseNode) {
-        int stackTop = stackTopIn;
-        Object contextManager = frame.getObject(stackTop);
-        Object type = getClassNode.execute(contextManager);
-        Object enter = lookupAEnter.execute(frame, type, contextManager);
-        if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___AENTER__});
-        }
-        Object exit = lookupAExit.execute(frame, type, contextManager);
-        if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
-        }
-        Object res = callEnter.executeObject(frame, enter, contextManager);
-        frame.setObject(++stackTop, exit);
-        frame.setObject(++stackTop, res);
-        return stackTop;
-    }
+    Object doGeneric(Frame frame, Object receiver,
+                    @Cached(parameters = "AIter") LookupSpecialMethodSlotNode getAIter,
+                    @Cached GetClassNode getAsyncIterType,
+                    @Cached PRaiseNode raiseNoAIter,
+                    @Cached TypeNodes.GetNameNode getName,
+                    @Cached InlinedBranchProfile errorProfile,
+                    @Cached CallUnaryMethodNode callAIter,
+                    @Cached LookupInheritedAttributeNode.Dynamic lookupANext) {
 
-    public static SetupAwithNode create() {
-        return SetupAwithNodeGen.create();
-    }
-
-    public static SetupAwithNode getUncached() {
-        return SetupAwithNodeGen.getUncached();
+        Object type = getAsyncIterType.execute(receiver);
+        Object getter = getAIter.execute(frame, type, receiver);
+        if (getter == PNone.NO_VALUE) {
+            errorProfile.enter(this);
+            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(type));
+        }
+        Object asyncIterator = callAIter.executeObject(frame, getter, receiver);
+        Object anext = lookupANext.execute(asyncIterator, T___ANEXT__);
+        if (anext == PNone.NO_VALUE) {
+            errorProfile.enter(this);
+            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(type));
+        }
+        return asyncIterator;
     }
 }

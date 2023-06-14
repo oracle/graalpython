@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -237,6 +237,9 @@ public final class CodeUnit {
         }
         if (isCoroutine()) {
             flagNames.add("CO_COROUTINE");
+        }
+        if (isAsyncGenerator()) {
+            flagNames.add("CO_ASYNC_GENERATOR");
         }
         if (!flagNames.isEmpty()) {
             sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");

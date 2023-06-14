@@ -43,7 +43,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PGenerator extends PythonBuiltinObject {
+public class PGenerator extends PythonBuiltinObject {
 
     private TruffleString name;
     private TruffleString qualname;
@@ -63,13 +63,14 @@ public final class PGenerator extends PythonBuiltinObject {
     private final FrameInfo frameInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
-
     private final boolean isCoroutine;
+    private final boolean isAsyncGen;
 
     // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
     // via types.coroutine)
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
                     PythonBuiltinClassType cls, boolean isIterableCoroutine) {
+        // note: also done in PAsyncGen.create
         rootNode.createGeneratorFrame(arguments);
         return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls, isIterableCoroutine);
     }
@@ -79,7 +80,7 @@ public final class PGenerator extends PythonBuiltinObject {
         return create(lang, name, qualname, rootNode, callTargets, arguments, cls, false);
     }
 
-    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
+    protected PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
                     boolean isIterableCoroutine) {
         super(cls, cls.getInstanceShape(lang));
         this.name = name;
@@ -91,9 +92,10 @@ public final class PGenerator extends PythonBuiltinObject {
         this.bytecodeRootNode = rootNode;
         this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
         this.isCoroutine = isIterableCoroutine || cls == PythonBuiltinClassType.PCoroutine;
+        this.isAsyncGen = cls == PythonBuiltinClassType.PAsyncGenerator;
     }
 
-    public void handleResult(PythonLanguage language, GeneratorYieldResult result) {
+    public final void handleResult(PythonLanguage language, GeneratorYieldResult result) {
         currentCallTarget = result.resumeBci;
         if (callTargets[currentCallTarget] == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -107,11 +109,11 @@ public final class PGenerator extends PythonBuiltinObject {
      * a generator call target returns through a yield, the generator should be updated with the
      * next yield index to use via {@link #handleResult}
      */
-    public RootCallTarget getCurrentCallTarget() {
+    public final RootCallTarget getCurrentCallTarget() {
         return callTargets[currentCallTarget];
     }
 
-    public Object getYieldFrom() {
+    public final Object getYieldFrom() {
         if (running || finished) {
             return null;
         }
@@ -122,11 +124,11 @@ public final class PGenerator extends PythonBuiltinObject {
         return (PBytecodeGeneratorRootNode) getCurrentCallTarget().getRootNode();
     }
 
-    public boolean isStarted() {
+    public final boolean isStarted() {
         return currentCallTarget != 0 && !running;
     }
 
-    public int getBci() {
+    public final int getBci() {
         if (!isStarted()) {
             return -1;
         } else if (finished) {
@@ -136,24 +138,24 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    public Object[] getArguments() {
+    public final Object[] getArguments() {
         return arguments;
     }
 
-    public boolean isFinished() {
+    public final boolean isFinished() {
         return finished;
     }
 
-    public void markAsFinished() {
+    public final void markAsFinished() {
         finished = true;
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "<generator object " + name + " at " + hashCode() + ">";
     }
 
-    public PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile, PythonObjectFactory factory) {
+    public final PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile, PythonObjectFactory factory) {
         if (hasCodeProfile.profile(inliningTarget, code == null)) {
             RootCallTarget callTarget;
             callTarget = bytecodeRootNode.getCallTarget();
@@ -162,32 +164,36 @@ public final class PGenerator extends PythonBuiltinObject {
         return code;
     }
 
-    public boolean isRunning() {
+    public final boolean isRunning() {
         return running;
     }
 
-    public void setRunning(boolean running) {
+    public final void setRunning(boolean running) {
         assert !running || !this.running : "Attempted to set an already running generator as running";
         this.running = running;
     }
 
-    public TruffleString getName() {
+    public final TruffleString getName() {
         return name;
     }
 
-    public void setName(TruffleString name) {
+    public final void setName(TruffleString name) {
         this.name = name;
     }
 
-    public TruffleString getQualname() {
+    public final TruffleString getQualname() {
         return qualname;
     }
 
-    public void setQualname(TruffleString qualname) {
+    public final void setQualname(TruffleString qualname) {
         this.qualname = qualname;
     }
 
-    public boolean isCoroutine() {
+    public final boolean isCoroutine() {
         return isCoroutine;
+    }
+
+    public final boolean isAsyncGen() {
+        return isAsyncGen;
     }
 }
