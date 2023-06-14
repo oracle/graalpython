@@ -562,29 +562,6 @@ def build_nativelibsupport(capi_home, subdir, libname, deps=[], **kwargs):
             ext_modules=[module],
         )
 
-def build_libposix(capi_home):
-    src_dir = os.path.join(__dir__, "posix")
-    files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
-    no_gnu_source = get_config_var("USE_GNU_SOURCE")
-    if no_gnu_source:
-        get_config_vars()["CFLAGS"] = get_config_var("CFLAGS_DEFAULT")
-    module = Extension(libposix_name,
-                       sources=files,
-                       libraries=['crypt'] if not darwin_native else [],
-                       extra_compile_args=cflags_warnings + ['-Wall', '-Werror'])
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
-    setup(
-        script_name='setup' + libposix_name,
-        script_args=args,
-        name=libposix_name,
-        version='1.0',
-        description="Graal Python's Native support for the POSIX library",
-        ext_modules=[module],
-    )
-    if no_gnu_source:
-        get_config_vars()["CFLAGS"] = get_config_var("CFLAGS_DEFAULT") + " " + get_config_var("USE_GNU_SOURCE")
-
-
 def build_builtin_exts(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean", "--all"]
     distutil_exts = [(ext, ext()) for ext in builtin_exts]
@@ -628,7 +605,6 @@ def build(capi_home):
         build_libhpy(capi_home)
         if WIN32:
             return # TODO: ...
-        build_libposix(capi_home)
         build_nativelibsupport(capi_home,
                                 subdir="bz2",
                                 libname="libbz2support",

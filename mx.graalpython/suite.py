@@ -543,6 +543,35 @@ suite = {
             },
         },
 
+        "python-libposix": {
+            "subDir": "graalpython",
+            "native": "shared_lib",
+            "deliverable": "posix",
+            "buildDependencies": [],
+            "cflags": [
+                "-DNDEBUG", "-g", "-O3", "-Wall", "-Werror",
+            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        "defaultBuild": False,
+                    },
+                },
+                "darwin": {
+                    "<others>": {
+                        "defaultBuild": True,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "ldlibs": ["-lcrypt"],
+                        "defaultBuild" : True,
+                    },
+                },
+            },
+        },
+
         "python-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3",
@@ -739,6 +768,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.cext",
                 "python-libzsupport",
+                "python-libposix",
             ],
             "os_arch": {
                 "windows": {
@@ -761,6 +791,11 @@ suite = {
                                 {
                                     "source_type": "dependency",
                                     "dependency": "graalpython:python-libzsupport",
+                                    "path": "*",
+                                },
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:python-libposix",
                                     "path": "*",
                                 },
                             ],
@@ -794,6 +829,11 @@ suite = {
                                 {
                                     "source_type": "dependency",
                                     "dependency": "graalpython:python-libzsupport",
+                                    "path": "*",
+                                },
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:python-libposix",
                                     "path": "*",
                                 },
                             ],

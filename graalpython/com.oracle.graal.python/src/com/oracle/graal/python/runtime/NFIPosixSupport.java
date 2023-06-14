@@ -335,7 +335,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // Temporary - will be replaced with something else when we move this to Truffle
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
-            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached();
+            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt();
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();

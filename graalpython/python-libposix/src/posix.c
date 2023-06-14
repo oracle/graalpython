@@ -908,7 +908,7 @@ int32_t set_sockaddr_un_members(int8_t *addr, int8_t *path, int32_t pathLen) {
 int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     const char *result = crypt(word, salt);
     if (result == NULL) {
-        return NULL;
+        return 0;
     }
     *len = strlen(result);
     return (int64_t)(uintptr_t)result;
