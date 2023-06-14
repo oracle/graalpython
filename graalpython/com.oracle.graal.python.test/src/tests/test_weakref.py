@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -107,3 +107,19 @@ def test_weakref_hash():
             assert False, "could compute hash for r3 but should have failed"
 
         assert r1_hash == do_hash(r1)
+
+def test_weakref_reuse():
+    from weakref import ref
+    class A:
+        pass
+    a = A()
+    assert ref(a) == ref(a)
+
+def test_weakref_object_type_support():
+    from weakref import ref
+    try:
+        ref(42)
+    except TypeError as e:
+        pass
+    else:
+        assert False, "should throw TypeError for unsupported objects"
