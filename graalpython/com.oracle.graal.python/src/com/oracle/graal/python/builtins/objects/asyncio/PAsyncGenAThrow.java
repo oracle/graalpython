@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.Aw
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PAsyncGen;
 
 public final class PAsyncGenAThrow extends PythonBuiltinObject {
     public final PAsyncGen receiver;

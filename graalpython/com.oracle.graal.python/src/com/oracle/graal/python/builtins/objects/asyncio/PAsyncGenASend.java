@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PAsyncGen;
 
 public final class PAsyncGenASend extends PythonBuiltinObject {
     public AwaitableState getState() {
