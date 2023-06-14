@@ -359,6 +359,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyObject_CallMethod_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
@@ -972,7 +974,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyWeakref_GetWeakrefCount", ret = Py_ssize_t, args = {PYWEAKREFERENCE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "Py_AddPendingCall", ret = Int, args = {func_intvoidptr, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "Py_BytesMain", ret = Int, args = {Int, CHAR_PTR_LIST}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_CompileString", ret = PyObject, args = {ConstCharPtr, ConstCharPtr, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_CompileStringExFlags", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_CompileStringObject", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_DecodeLocale", ret = WCHAR_T_PTR, args = {ConstCharPtrAsTruffleString, SIZE_T_PTR}, call = NotImplemented)
@@ -1021,10 +1022,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {PY_BUFFER, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_SizeFromFormat", ret = Py_ssize_t, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, PY_BUFFER, Py_ssize_t, CHAR}, call = NotImplemented)
-    @CApiBuiltin(name = "PyByteArray_AsString", ret = CHAR_PTR, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,
                     ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_Repr", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
@@ -1074,7 +1073,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDescr_NewMember", ret = PyObject, args = {PyTypeObject, PyMemberDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewWrapper", ret = PyObject, args = {PyTypeObject, WRAPPERBASE, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyDict_Items", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_MergeFromSeq2", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramText", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramTextObject", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
@@ -1086,7 +1084,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_SyntaxLocation", ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationEx", ret = Void, args = {ConstCharPtrAsTruffleString, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationObject", ret = Void, args = {PyObject, Int, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicit", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
                     VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = NotImplemented)
@@ -1105,7 +1102,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_ReleaseThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetProfile", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_SetTrace", ret = Void, args = {PY_TRACEFUNC, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyException_GetCause", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyException_GetTraceback", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyExceptionClass_Name", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_FromFd", ret = PyObject, args = {Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString,
@@ -1240,11 +1236,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyRun_SimpleString", ret = Int, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyRun_SimpleStringFlags", ret = Int, args = {ConstCharPtrAsTruffleString, PY_COMPILER_FLAGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyRun_String", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PySequence_Count", ret = Py_ssize_t, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PySequence_DelSlice", ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PySequence_In", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PySequence_Index", ret = Py_ssize_t, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PySequence_SetSlice", ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PySignal_SetWakeupFd", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "PySlice_GetIndices", ret = Int, args = {PyObject, Py_ssize_t, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PySlice_GetIndicesEx", ret = Int, args = {PyObject, Py_ssize_t, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR}, call = NotImplemented)
@@ -1348,8 +1340,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_Translate", ret = PyObject, args = {PyObject, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_TranslateCharmap", ret = PyObject, args = {CONST_PY_UNICODE, Py_ssize_t, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_WriteChar", ret = Int, args = {PyObject, Py_ssize_t, PY_UCS4}, call = NotImplemented)
-    @CApiBuiltin(name = "PyUnicodeDecodeError_Create", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, Py_ssize_t,
-                    ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEnd", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetObject", ret = PyObject, args = {PyObject}, call = NotImplemented)

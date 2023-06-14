@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -147,8 +148,13 @@ public abstract class ManagedMethodWrappers {
                     Object starArgs = toJavaNode.execute(arguments[1]);
                     Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                    Object[] pArgs;
+                    if (starArgs != PNone.NO_VALUE) {
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                        pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                    } else {
+                        pArgs = new Object[]{receiver};
+                    }
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 
                     // execute

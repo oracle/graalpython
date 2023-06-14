@@ -1723,9 +1723,6 @@ PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
 PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, Py_buffer* b, Py_ssize_t c, char d) {
     unimplemented("PyBuffer_ToContiguous"); exit(-1);
 }
-PyAPI_FUNC(char*) PyByteArray_AsString(PyObject* a) {
-    unimplemented("PyByteArray_AsString"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) PyByteArray_Concat(PyObject* a, PyObject* b) {
     unimplemented("PyByteArray_Concat"); exit(-1);
 }
@@ -1740,9 +1737,6 @@ PyAPI_FUNC(PyObject*) PyByteArray_FromStringAndSize(const char* a, Py_ssize_t b)
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
     int result = (int) GraalPyByteArray_Resize(a, b);
     return result;
-}
-PyAPI_FUNC(Py_ssize_t) PyByteArray_Size(PyObject* a) {
-    unimplemented("PyByteArray_Size"); exit(-1);
 }
 char* (*__target__PyBytes_AsString)(PyObject*) = NULL;
 PyAPI_FUNC(char*) PyBytes_AsString(PyObject* a) {
@@ -2112,7 +2106,8 @@ PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
     return result;
 }
 PyAPI_FUNC(PyObject*) PyDict_Items(PyObject* a) {
-    unimplemented("PyDict_Items"); exit(-1);
+    PyObject* result = (PyObject*) GraalPyDict_Items(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyDict_Keys(a);
@@ -2290,8 +2285,10 @@ PyAPI_FUNC(void) PyErr_SyntaxLocationEx(const char* a, int b, int c) {
 PyAPI_FUNC(void) PyErr_SyntaxLocationObject(PyObject* a, int b, int c) {
     unimplemented("PyErr_SyntaxLocationObject"); exit(-1);
 }
+int (*__target__PyErr_WarnExplicit)(PyObject*, const char*, const char*, int, const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
-    unimplemented("PyErr_WarnExplicit"); exit(-1);
+    int result = (int) __target__PyErr_WarnExplicit(a, b, c, d, e, f);
+    return result;
 }
 PyAPI_FUNC(int) PyErr_WarnExplicitFormat(PyObject* a, const char* b, int c, const char* d, PyObject* e, const char* f, ...) {
     unimplemented("PyErr_WarnExplicitFormat"); exit(-1);
@@ -2392,7 +2389,8 @@ PyAPI_FUNC(const char*) PyExceptionClass_Name(PyObject* a) {
     unimplemented("PyExceptionClass_Name"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) PyException_GetCause(PyObject* a) {
-    unimplemented("PyException_GetCause"); exit(-1);
+    PyObject* result = (PyObject*) GraalPyException_GetCause(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyException_GetContext(a);
@@ -3533,14 +3531,16 @@ PyAPI_FUNC(int) PySequence_Contains(PyObject* a, PyObject* b) {
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Count(PyObject* a, PyObject* b) {
-    unimplemented("PySequence_Count"); exit(-1);
+    Py_ssize_t result = (Py_ssize_t) GraalPySequence_Count(a, b);
+    return result;
 }
 PyAPI_FUNC(int) PySequence_DelItem(PyObject* a, Py_ssize_t b) {
     int result = (int) GraalPySequence_DelItem(a, b);
     return result;
 }
 PyAPI_FUNC(int) PySequence_DelSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    unimplemented("PySequence_DelSlice"); exit(-1);
+    int result = (int) GraalPySequence_DelSlice(a, b, c);
+    return result;
 }
 PyObject* (*__target__PySequence_Fast)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Fast(PyObject* a, const char* b) {
@@ -3567,7 +3567,8 @@ PyAPI_FUNC(PyObject*) PySequence_InPlaceRepeat(PyObject* a, Py_ssize_t b) {
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Index(PyObject* a, PyObject* b) {
-    unimplemented("PySequence_Index"); exit(-1);
+    Py_ssize_t result = (Py_ssize_t) GraalPySequence_Index(a, b);
+    return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Length(PyObject* a) {
     Py_ssize_t result = (Py_ssize_t) GraalPySequence_Length(a);
@@ -3586,7 +3587,8 @@ PyAPI_FUNC(int) PySequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
     return result;
 }
 PyAPI_FUNC(int) PySequence_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
-    unimplemented("PySequence_SetSlice"); exit(-1);
+    int result = (int) GraalPySequence_SetSlice(a, b, c, d);
+    return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Size(PyObject* a) {
     Py_ssize_t result = (Py_ssize_t) GraalPySequence_Size(a);
@@ -4037,8 +4039,10 @@ PyAPI_FUNC(int) PyType_Ready(PyTypeObject* a) {
     int result = (int) __target__PyType_Ready(a);
     return result;
 }
+PyObject* (*__target__PyUnicodeDecodeError_Create)(const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
-    unimplemented("PyUnicodeDecodeError_Create"); exit(-1);
+    PyObject* result = (PyObject*) __target__PyUnicodeDecodeError_Create(a, b, c, d, e, f);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_GetEncoding(PyObject* a) {
     unimplemented("PyUnicodeDecodeError_GetEncoding"); exit(-1);
@@ -4528,8 +4532,10 @@ PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
 PyAPI_FUNC(int) Py_BytesMain(int a, char** b) {
     unimplemented("Py_BytesMain"); exit(-1);
 }
+PyObject* (*__target__Py_CompileString)(const char*, const char*, int) = NULL;
 PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
-    unimplemented("Py_CompileString"); exit(-1);
+    PyObject* result = (PyObject*) __target__Py_CompileString(a, b, c);
+    return result;
 }
 PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int c, PyCompilerFlags* d, int e) {
     unimplemented("Py_CompileStringExFlags"); exit(-1);
@@ -6248,6 +6254,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyErr_SetNone = getAPI("PyErr_SetNone");
     __target__PyErr_SetObject = getAPI("PyErr_SetObject");
     __target__PyErr_SetString = getAPI("PyErr_SetString");
+    __target__PyErr_WarnExplicit = getAPI("PyErr_WarnExplicit");
     __target__PyErr_WriteUnraisable = getAPI("PyErr_WriteUnraisable");
     __target__PyEval_CallObjectWithKeywords = getAPI("PyEval_CallObjectWithKeywords");
     __target__PyEval_EvalCode = getAPI("PyEval_EvalCode");
@@ -6372,6 +6379,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyType_GetSlot = getAPI("PyType_GetSlot");
     __target__PyType_Modified = getAPI("PyType_Modified");
     __target__PyType_Ready = getAPI("PyType_Ready");
+    __target__PyUnicodeDecodeError_Create = getAPI("PyUnicodeDecodeError_Create");
     __target__PyUnicode_Append = getAPI("PyUnicode_Append");
     __target__PyUnicode_AppendAndDel = getAPI("PyUnicode_AppendAndDel");
     __target__PyUnicode_AsASCIIString = getAPI("PyUnicode_AsASCIIString");
@@ -6406,6 +6414,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_InternInPlace = getAPI("PyUnicode_InternInPlace");
     __target__PyUnicode_New = getAPI("PyUnicode_New");
     __target__PyVectorcall_Call = getAPI("PyVectorcall_Call");
+    __target__Py_CompileString = getAPI("Py_CompileString");
     __target__Py_GetBuildInfo = getAPI("Py_GetBuildInfo");
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");

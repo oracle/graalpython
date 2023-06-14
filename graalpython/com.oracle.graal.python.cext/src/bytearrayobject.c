@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,14 @@ char _PyByteArray_empty_string[] = "";
 
 char* _PyByteArray_Start(PyObject* obj) {
 	return PyByteArrayObject_ob_start(obj);
+}
+
+char* PyByteArray_AsString(PyObject* obj) {
+    return PyByteArray_AS_STRING(obj);
+}
+
+Py_ssize_t PyByteArray_Size(PyObject *self) {
+    return PyByteArray_GET_SIZE(self);
 }
 
 // taken from CPython 3.7.0 "Objects/bytearrayobject.c"

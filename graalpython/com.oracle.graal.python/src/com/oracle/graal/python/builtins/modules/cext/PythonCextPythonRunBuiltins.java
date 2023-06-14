@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isString;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
@@ -67,14 +68,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextPythonRunBuiltins {
+    // from compile.h
+    private static final int Py_single_input = 256;
+    private static final int Py_file_input = 257;
+    private static final int Py_eval_input = 258;
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject, PY_COMPILER_FLAGS}, call = Direct)
     abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
-
-        // from compile.h
-        private static final int Py_single_input = 256;
-        private static final int Py_file_input = 257;
-        private static final int Py_eval_input = 258;
 
         @Specialization(guards = "checkArgs(source, globals, locals, isMapping)")
         Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
@@ -113,6 +113,33 @@ public final class PythonCextPythonRunBuiltins {
 
         protected boolean checkArgs(Object source, Object globals, Object locals, PyMappingCheckNode isMapping) {
             return isString(source) && isDict(globals) && isMapping.execute(locals);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
+    abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
+        @Specialization(guards = {"isString(source)", "isString(filename)"})
+        Object compile(Object source, Object filename, int type,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode) {
+            PythonModule builtins = getCore().getBuiltins();
+            Object compileCallable = lookupNode.execute(null, builtins, T_COMPILE);
+            TruffleString stype;
+            if (type == Py_single_input) {
+                stype = StringLiterals.T_SINGLE;
+            } else if (type == Py_file_input) {
+                stype = StringLiterals.T_EXEC;
+            } else if (type == Py_eval_input) {
+                stype = StringLiterals.T_EVAL;
+            } else {
+                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            return callNode.execute(compileCallable, source, filename, stype);
+        }
+
+        @Specialization(guards = "!isString(source) || !isString(filename)")
+        Object fail(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object filename, @SuppressWarnings("unused") int type) {
+            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 }

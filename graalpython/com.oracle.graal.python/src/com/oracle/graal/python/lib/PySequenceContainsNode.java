@@ -40,27 +40,21 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -82,15 +76,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
                     @Cached(parameters = "Contains") LookupSpecialMethodSlotNode lookupContains,
                     @Cached IsBuiltinObjectProfile noContainsProfile,
                     @Cached CallBinaryMethodNode callContains,
-                    @Cached PyObjectGetIter getIter,
-                    @Cached IsBuiltinObjectProfile noIterProfile,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached InlinedGetClassNode getIterClass,
-                    @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupIternext,
-                    @Cached IsBuiltinObjectProfile noNextProfile,
-                    @Cached CallUnaryMethodNode callNext,
-                    @Cached PyObjectRichCompareBool.EqNode eqNode,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Cached PySequenceIterSearchNode iterSearch,
                     @Cached PyObjectIsTrueNode isTrue) {
         Object type = getReceiverClass.execute(inliningTarget, container);
         Object contains = PNone.NO_VALUE;
@@ -104,42 +90,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
             result = callContains.executeObject(frame, contains, container, key);
         }
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            Object iterator;
-            try {
-                iterator = getIter.execute(frame, container);
-            } catch (PException e) {
-                e.expectTypeError(inliningTarget, noIterProfile);
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, container);
-            }
-            Object next = PNone.NO_VALUE;
-            try {
-                next = lookupIternext.execute(frame, getIterClass.execute(inliningTarget, iterator), iterator);
-            } catch (PException e) {
-                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, noNextProfile);
-            }
-            if (next instanceof PNone) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
-            }
-            int i = 0;
-            while (true) {
-                if (CompilerDirectives.hasNextTier()) {
-                    i++;
-                }
-                try {
-                    if (eqNode.execute(frame, callNext.executeObject(frame, next, iterator), key)) {
-                        if (CompilerDirectives.hasNextTier()) {
-                            LoopNode.reportLoopCount(this, i);
-                        }
-                        return true;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopIterationProfile);
-                    if (CompilerDirectives.hasNextTier()) {
-                        LoopNode.reportLoopCount(this, i);
-                    }
-                    return false;
-                }
-            }
+            return iterSearch.execute(frame, container, key, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
         } else {
             return isTrue.execute(frame, result);
         }

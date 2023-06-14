@@ -1565,6 +1565,10 @@ PyAPI_FUNC(PyObject*) PyDict_GetItem(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
     return GraalPyDict_GetItemWithError(a, b);
 }
+#undef PyDict_Items
+PyAPI_FUNC(PyObject*) PyDict_Items(PyObject* a) {
+    return GraalPyDict_Items(a);
+}
 #undef PyDict_Keys
 PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
     return GraalPyDict_Keys(a);
@@ -1629,6 +1633,10 @@ PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
 PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
     GraalPyErr_SetExcInfo(a, b, c);
 }
+#undef PyErr_WarnExplicit
+PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
+    return GraalPyErr_WarnExplicit(a, truffleString(b), truffleString(c), d, truffleString(e), f);
+}
 #undef PyEval_GetBuiltins
 PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
     return GraalPyEval_GetBuiltins();
@@ -1640,6 +1648,10 @@ PyAPI_FUNC(void) PyEval_RestoreThread(PyThreadState* a) {
 #undef PyEval_SaveThread
 PyAPI_FUNC(PyThreadState*) PyEval_SaveThread() {
     return GraalPyEval_SaveThread();
+}
+#undef PyException_GetCause
+PyAPI_FUNC(PyObject*) PyException_GetCause(PyObject* a) {
+    return GraalPyException_GetCause(a);
 }
 #undef PyException_GetContext
 PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
@@ -2021,9 +2033,17 @@ PyAPI_FUNC(PyObject*) PySequence_Concat(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) PySequence_Contains(PyObject* a, PyObject* b) {
     return GraalPySequence_Contains(a, b);
 }
+#undef PySequence_Count
+PyAPI_FUNC(Py_ssize_t) PySequence_Count(PyObject* a, PyObject* b) {
+    return GraalPySequence_Count(a, b);
+}
 #undef PySequence_DelItem
 PyAPI_FUNC(int) PySequence_DelItem(PyObject* a, Py_ssize_t b) {
     return GraalPySequence_DelItem(a, b);
+}
+#undef PySequence_DelSlice
+PyAPI_FUNC(int) PySequence_DelSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
+    return GraalPySequence_DelSlice(a, b, c);
 }
 #undef PySequence_GetItem
 PyAPI_FUNC(PyObject*) PySequence_GetItem(PyObject* a, Py_ssize_t b) {
@@ -2041,6 +2061,10 @@ PyAPI_FUNC(PyObject*) PySequence_InPlaceConcat(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) PySequence_InPlaceRepeat(PyObject* a, Py_ssize_t b) {
     return GraalPySequence_InPlaceRepeat(a, b);
 }
+#undef PySequence_Index
+PyAPI_FUNC(Py_ssize_t) PySequence_Index(PyObject* a, PyObject* b) {
+    return GraalPySequence_Index(a, b);
+}
 #undef PySequence_Length
 PyAPI_FUNC(Py_ssize_t) PySequence_Length(PyObject* a) {
     return GraalPySequence_Length(a);
@@ -2056,6 +2080,10 @@ PyAPI_FUNC(PyObject*) PySequence_Repeat(PyObject* a, Py_ssize_t b) {
 #undef PySequence_SetItem
 PyAPI_FUNC(int) PySequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
     return GraalPySequence_SetItem(a, b, c);
+}
+#undef PySequence_SetSlice
+PyAPI_FUNC(int) PySequence_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
+    return GraalPySequence_SetSlice(a, b, c, d);
 }
 #undef PySequence_Size
 PyAPI_FUNC(Py_ssize_t) PySequence_Size(PyObject* a) {
@@ -2197,6 +2225,10 @@ PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
     return GraalPyType_IsSubtype(a, b);
 }
+#undef PyUnicodeDecodeError_Create
+PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
+    return GraalPyUnicodeDecodeError_Create(truffleString(a), b, c, d, e, truffleString(f));
+}
 #undef PyUnicode_AsEncodedString
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedString(PyObject* a, const char* b, const char* c) {
     return GraalPyUnicode_AsEncodedString(a, truffleString(b), truffleString(c));
@@ -2284,6 +2316,10 @@ PyAPI_FUNC(PyObject*) PyWeakref_NewRef(PyObject* a, PyObject* b) {
 #undef Py_AtExit
 PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
     return GraalPy_AtExit(a);
+}
+#undef Py_CompileString
+PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
+    return GraalPy_CompileString(truffleString(a), truffleString(b), c);
 }
 #undef Py_EnterRecursiveCall
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {

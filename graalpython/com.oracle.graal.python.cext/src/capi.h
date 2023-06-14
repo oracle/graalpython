@@ -129,6 +129,7 @@ typedef struct {
     BUILTIN(PyDict_DelItem, int, PyObject*, PyObject*) \
     BUILTIN(PyDict_GetItem, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyDict_GetItemWithError, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Items, PyObject*, PyObject*) \
     BUILTIN(PyDict_Keys, PyObject*, PyObject*) \
     BUILTIN(PyDict_Merge, int, PyObject*, PyObject*, int) \
     BUILTIN(PyDict_New, PyObject*) \
@@ -145,9 +146,11 @@ typedef struct {
     BUILTIN(PyErr_PrintEx, void, int) \
     BUILTIN(PyErr_Restore, void, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyErr_SetExcInfo, void, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_WarnExplicit, int, PyObject*, const char*, const char*, int, const char*, PyObject*) \
     BUILTIN(PyEval_GetBuiltins, PyObject*) \
     BUILTIN(PyEval_RestoreThread, void, PyThreadState*) \
     BUILTIN(PyEval_SaveThread, PyThreadState*) \
+    BUILTIN(PyException_GetCause, PyObject*, PyObject*) \
     BUILTIN(PyException_GetContext, PyObject*, PyObject*) \
     BUILTIN(PyException_SetCause, void, PyObject*, PyObject*) \
     BUILTIN(PyException_SetContext, void, PyObject*, PyObject*) \
@@ -243,15 +246,19 @@ typedef struct {
     BUILTIN(PySequence_Check, int, PyObject*) \
     BUILTIN(PySequence_Concat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PySequence_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PySequence_Count, Py_ssize_t, PyObject*, PyObject*) \
     BUILTIN(PySequence_DelItem, int, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_DelSlice, int, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PySequence_GetItem, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PySequence_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PySequence_InPlaceConcat, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PySequence_InPlaceRepeat, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_Index, Py_ssize_t, PyObject*, PyObject*) \
     BUILTIN(PySequence_Length, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_List, PyObject*, PyObject*) \
     BUILTIN(PySequence_Repeat, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PySequence_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PySequence_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PySequence_Tuple, PyObject*, PyObject*) \
     BUILTIN(PySet_Add, int, PyObject*, PyObject*) \
@@ -374,6 +381,7 @@ typedef struct {
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
+    BUILTIN(PyUnicodeDecodeError_Create, PyObject*, const char*, const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t, const char*) \
     BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_Compare, int, PyObject*, PyObject*) \
@@ -396,6 +404,7 @@ typedef struct {
     BUILTIN(PyWeakref_GetObject, PyObject*, PyObject*) \
     BUILTIN(PyWeakref_NewRef, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_AtExit, int, void (*)(void)) \
+    BUILTIN(Py_CompileString, PyObject*, const char*, const char*, int) \
     BUILTIN(Py_EnterRecursiveCall, int, const char*) \
     BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_LeaveRecursiveCall, void) \
