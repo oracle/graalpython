@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapp
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNode.InitializeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -1734,7 +1735,8 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         @Specialization
         Object set(TruffleString tsName, Object pointer,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached InitializeTypeNode initializeNode) {
             try {
                 LOGGER.fine(() -> "initializing built-in class " + tsName + " at " + PythonUtils.formatPointer(pointer));
                 Python3Core core = getCore();
@@ -1809,7 +1811,7 @@ public final class PythonCextBuiltins {
                 flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
                 SetTypeFlagsNode.getUncached().execute(clazz, flags);
 
-                wrapper.initializeBuiltinType(pointer);
+                initializeNode.execute(wrapper, pointer);
                 return PNone.NO_VALUE;
             } catch (PException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

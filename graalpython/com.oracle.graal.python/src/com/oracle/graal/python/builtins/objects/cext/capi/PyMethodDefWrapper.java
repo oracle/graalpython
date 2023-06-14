@@ -197,11 +197,9 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Cached AllocateNode alloc) {
         if (!isNative()) {
-            if (!isNative()) {
-                setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-                long ptr = coerceToLong(alloc.execute(getDelegate()), lib);
-                CApiTransitions.firstToNative(this, ptr);
-            }
+            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+            long ptr = coerceToLong(alloc.execute(getDelegate()), lib);
+            CApiTransitions.firstToNative(this, ptr);
         }
     }
 }

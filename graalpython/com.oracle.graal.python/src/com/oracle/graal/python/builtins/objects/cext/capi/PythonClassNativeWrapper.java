@@ -95,7 +95,9 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     @ExportMessage
     protected void toNative(
                     @Cached ToNativeTypeNode toNativeNode) {
-        toNativeNode.execute(this);
+        if (!isNative()) {
+            toNativeNode.execute(this);
+        }
     }
 
     @Override

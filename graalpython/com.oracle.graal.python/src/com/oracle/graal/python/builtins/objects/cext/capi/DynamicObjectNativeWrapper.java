@@ -46,90 +46,40 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_alloc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dealloc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructs.PyMemoryViewObject;
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ALLOC;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile.profileClassSlowPath;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeI64MemberInMRONodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeMemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemSizeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNodeGen;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONodeGen;
-import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
-import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -148,7 +98,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
@@ -345,206 +294,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 long ptr = coerceToLong(mem, lib);
                 CApiTransitions.firstToNative(obj, ptr);
             }
-        }
-    }
-
-    @GenerateUncached
-    abstract static class ToNativeTypeNode extends Node {
-        public abstract void execute(PythonNativeWrapper obj);
-
-        static Object allocateType() {
-            return CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
-        }
-
-        static Object lookup(PythonManagedClass clazz, CFields member, HiddenKey hiddenName) {
-            Object result = LookupNativeMemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
-            if (result == PNone.NO_VALUE) {
-                return PythonContext.get(null).getNativeNull().getPtr();
-            }
-            return result;
-        }
-
-        static long lookupSize(PythonManagedClass clazz, CFields member, HiddenKey hiddenName) {
-            return LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, member, hiddenName);
-        }
-
-        static Object lookup(PythonManagedClass obj, SlotMethodDef slot) {
-            return LookupNativeSlotNode.executeUncached(obj, slot);
-        }
-
-        static boolean hasSlot(PythonManagedClass clazz, SlotMethodDef slot) {
-            return LookupNativeSlotNode.executeUncached(clazz, slot) != PythonContext.get(null).getNativeNull().getPtr();
-        }
-
-        private static long getBasicSizeAttribute(PythonManagedClass clazz, Object name) {
-            PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNodeGen.getUncached();
-            Object val = ReadAttributeFromObjectNode.getUncached().execute(clazz, name);
-            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : CStructs.PyObject.size();
-        }
-
-        private static long getSizeAttribute(PythonManagedClass clazz, TruffleString name) {
-            PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNodeGen.getUncached();
-            PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
-
-            Object val = getAttrNode.execute(clazz, name);
-            // If the attribute does not exist, this means that we take, e.g., 'tp_itemsize' from
-            // the base object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : 0L;
-        }
-
-        static void populateType(PythonNativeWrapper obj, PythonManagedClass clazz, Object mem, boolean isType) {
-            CompilerAsserts.neverPartOfCompilation();
-            ToSulongNode toSulong = ToSulongNode.getUncached();
-            PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
-            PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
-            IsBuiltinClassProfile isBuiltin = IsBuiltinClassProfile.getUncached();
-            LookupAttributeInMRONode.Dynamic lookupAttrNode = LookupAttributeInMRONodeGen.DynamicNodeGen.getUncached();
-            PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNodeGen.getUncached();
-            PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
-            CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
-            CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
-            CStructAccess.WriteLongNode writeI64Node = CStructAccessFactory.WriteLongNodeGen.getUncached();
-            CStructAccess.WriteIntNode writeI32Node = CStructAccessFactory.WriteIntNodeGen.getUncached();
-            GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
-            PyMappingMethodsWrapper.AllocateNode allocMapping = PyMappingMethodsWrapperFactory.AllocateNodeGen.getUncached();
-            PySequenceMethodsWrapper.AllocateNode allocSequence = PySequenceMethodsWrapperFactory.AllocateNodeGen.getUncached();
-            PyNumberMethodsWrapper.AllocateNode allocNumber = PyNumberMethodsWrapperFactory.AllocateNodeGen.getUncached();
-
-            GetMroStorageNode getMroStorageNode = GetMroStorageNode.getUncached();
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
-
-            writeI64Node.write(mem, PyObject__ob_refcnt, obj.getRefCount());
-            if (isType) {
-                // self-reference
-                writePtrNode.write(mem, PyObject__ob_type, mem);
-            } else {
-                writePtrNode.write(mem, PyObject__ob_type, toSulong.execute(GetClassNode.getUncached().execute(clazz)));
-            }
-
-            Object superClass = GetSuperClassNodeGen.getUncached().execute(clazz);
-            if (superClass == null) {
-                superClass = PythonContext.get(null).getNativeNull();
-            } else if (superClass instanceof PythonBuiltinClassType builtinClass) {
-                superClass = PythonContext.get(null).lookupType(builtinClass);
-            }
-
-            writeI64Node.write(mem, CFields.PyVarObject__ob_size, 0L);
-
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNodeGen.getUncached().execute(null, clazz));
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNodeGen.getUncached().execute(null, clazz));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, isBuiltin.profileClass(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocNumber.execute(clazz));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocSequence.execute(clazz) : nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocMapping.execute(clazz) : nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_getattro, LookupNativeGetattroSlotNodeGen.getUncached().execute(clazz));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_setattro, lookup(clazz, SlotMethodDef.TP_SETATTRO));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, lookup(clazz, PyTypeObject__tp_as_buffer, TypeBuiltins.TYPE_AS_BUFFER));
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, getTypeFlagsNode.execute(clazz));
-
-            // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            Object docObj = getAttrNode.execute(clazz, SpecialAttributeNames.T___DOC__);
-            if (docObj instanceof TruffleString) {
-                docObj = new CStringWrapper((TruffleString) docObj);
-            } else if (docObj instanceof PString) {
-                docObj = new CStringWrapper(castToStringNode.execute(docObj));
-            }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, toSulong.execute(docObj));
-            // TODO: return a proper traverse/clear function, or at least a dummy
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
-            Object val = lookupAttrNode.execute(clazz, T___WEAKLISTOFFSET__);
-            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
-            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, val == PNone.NO_VALUE ? 0L : asSizeNode.executeExact(null, val));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_members, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);
-            if (!isType) {
-                // "object" base needs to be initialized explicitly in capi.c
-                writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(superClass));
-            }
-
-            GetOrCreateDictNode getDict = GetOrCreateDictNode.getUncached();
-            HashingStorageAddAllToOther addAllToOtherNode = HashingStorageAddAllToOther.getUncached();
-            // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PDict dict = getDict.execute(clazz);
-            if (!(dict instanceof StgDictObject)) {
-                HashingStorage dictStorage = dict.getDictStorage();
-                if (!(dictStorage instanceof DynamicObjectStorage)) {
-                    HashingStorage storage = new DynamicObjectStorage(clazz.getStorage());
-                    dict.setDictStorage(storage);
-                    if (dictStorage != null) {
-                        // copy all mappings to the new storage
-                        addAllToOtherNode.execute(null, dictStorage, dict);
-                    }
-                }
-            }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_descr_get, lookup(clazz, SlotMethodDef.TP_DESCR_GET));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_descr_set, lookup(clazz, SlotMethodDef.TP_DESCR_SET));
-
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNodeGen.getUncached().execute(null, clazz));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_init, lookup(clazz, SlotMethodDef.TP_INIT));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, TYPE_ALLOC));
-            // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
-            // expects to get the function
-            Object newFunction = getAttrNode.execute(clazz, T___NEW__);
-            if (newFunction instanceof PDecoratedMethod) {
-                newFunction = ((PDecoratedMethod) newFunction).getCallable();
-            }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, TypeBuiltins.TYPE_FREE));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
-            if (clazz.basesTuple == null) {
-                clazz.basesTuple = factory.createTuple(GetBaseClassesNodeGen.getUncached().execute(clazz));
-            }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
-            if (clazz.mroStore == null) {
-                clazz.mroStore = factory.createTuple(getMroStorageNode.execute(clazz));
-            }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(factory.createDict()));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_weaklist, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, TypeBuiltins.TYPE_DEL));
-            writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_finalize, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_vectorcall, nullValue);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void doPythonNativeWrapper(DynamicObjectNativeWrapper obj) {
-            if (!obj.isNative()) {
-                assert !(obj.getDelegate() instanceof PythonBuiltinClass) || IsSubtypeNode.getUncached().execute(obj.getDelegate(), PythonBuiltinClassType.PBaseException);
-                Object ptr = allocateType();
-
-                obj.initializeBuiltinType(ptr);
-            }
-        }
-
-    }
-
-    public void initializeBuiltinType(Object ptr) {
-        setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-        boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(getDelegate(), PythonBuiltinClassType.PythonClass);
-        ToNativeTypeNode.populateType(this, (PythonManagedClass) getDelegate(), ptr, isType);
-        if (!isNative()) {
-            CApiTransitions.firstToNative(this, coerceToLong(ptr, InteropLibrary.getUncached()));
         }
     }
 

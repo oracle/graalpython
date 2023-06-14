@@ -81,7 +81,7 @@ public class CExtContextTest {
 
     private static class TestCExtContext extends CExtContext {
         public TestCExtContext(PythonContext context, Object llvmLibrary) {
-            super(context, llvmLibrary);
+            super(context, llvmLibrary, false);
         }
 
         @Override
