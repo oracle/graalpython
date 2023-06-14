@@ -121,7 +121,7 @@ public final class PythonMapScope implements TruffleObject {
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnsupportedMessageException {
-        int length = lengthProfile.profile(null, names.length);
+        int length = lengthProfile.profile(inliningTarget, names.length);
         Object[] keys = new Object[length - scopeIndex];
         for (int i = scopeIndex; i < length; i++) {
             keys[i - scopeIndex] = interop.getMembers(objects[i]);
