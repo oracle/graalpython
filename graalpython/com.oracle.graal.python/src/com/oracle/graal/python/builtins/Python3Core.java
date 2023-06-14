@@ -55,9 +55,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -202,6 +199,9 @@ import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -211,6 +211,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
@@ -519,9 +520,12 @@ public abstract class Python3Core {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new TracemallocModuleBuiltins(),
+                        // contextvars
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
                         new TokenBuiltins(),
+                        new ContextIteratorBuiltins(),
+
                         new GenericAliasBuiltins(),
                         new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions

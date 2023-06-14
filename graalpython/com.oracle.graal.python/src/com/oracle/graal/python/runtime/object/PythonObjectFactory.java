@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextIterator;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
@@ -1461,6 +1462,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PContextVarsContext createContextVarsContext() {
         return trace(new PContextVarsContext(PythonBuiltinClassType.ContextVarsContext, getShape(PythonBuiltinClassType.ContextVarsContext)));
+    }
+
+    public final PContextIterator createContextIterator(PContextVarsContext ctx, PContextIterator.ItemKind kind) {
+        return trace(new PContextIterator(PythonBuiltinClassType.ContextIterator, getShape(PythonBuiltinClassType.ContextIterator), ctx, kind));
     }
 
     public final PContextVarsContext copyContextVarsContext(PContextVarsContext original) {
