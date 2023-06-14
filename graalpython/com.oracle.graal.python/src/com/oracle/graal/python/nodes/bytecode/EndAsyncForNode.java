@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,10 +73,9 @@ public abstract class EndAsyncForNode extends PNodeWithContext {
         }
     }
 
-    @Specialization
+    @Specialization(replaces = "doPException")
     public void doGeneric(Object exception, boolean rootNodeVisible,
-                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinClassProfile isStopAsyncIteration,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached @Cached.Shared("IsStopAsyncIteration") IsBuiltinClassProfile isStopAsyncIteration) {
         if (exception == PNone.NONE) {
             return;
         }

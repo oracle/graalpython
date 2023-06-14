@@ -88,13 +88,13 @@ public abstract class GetAIterNode extends PNodeWithContext {
         Object getter = getAIter.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(type));
+            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(type));
         }
         Object asyncIterator = callAIter.executeObject(frame, getter, receiver);
         Object anext = lookupANext.execute(asyncIterator, T___ANEXT__);
         if (anext == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(type));
+            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(type));
         }
         return asyncIterator;
     }

@@ -317,8 +317,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<GetANextNode> NODE_GET_ANEXT = GetANextNode::create;
     private static final EndAsyncForNode UNCACHED_END_ASYNC_FOR = EndAsyncForNode.getUncached();
     private static final NodeSupplier<EndAsyncForNode> NODE_END_ASYNC_FOR = EndAsyncForNode::create;
-    private static final AsyncGenWrapNode UNCACHED_ASYNC_GEN_WRAP = AsyncGenWrapNode.getUncached();
-    private static final NodeSupplier<AsyncGenWrapNode> NODE_ASYNC_GEN_WRAP = AsyncGenWrapNode::create;
     private static final NodeSupplier<ExitAWithNode> NODE_EXIT_AWITH = ExitAWithNode::create;
     private static final ImportFromNode UNCACHED_IMPORT_FROM = ImportFromNode.getUncached();
     private static final NodeSupplier<ImportFromNode> NODE_IMPORT_FROM = ImportFromNode::create;
@@ -2365,8 +2363,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private void bytecodeAsyncGenWrap(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
-        AsyncGenWrapNode node = insertChildNode(localNodes, beginBci, UNCACHED_ASYNC_GEN_WRAP, AsyncGenWrapNodeGen.class, NODE_ASYNC_GEN_WRAP, useCachedNodes);
-        virtualFrame.setObject(stackTop, node.execute(virtualFrame.getObject(stackTop)));
+        virtualFrame.setObject(stackTop, factory.createAsyncGeneratorWrappedValue(virtualFrame.getObject(stackTop)));
     }
 
     @BytecodeInterpreterSwitch
