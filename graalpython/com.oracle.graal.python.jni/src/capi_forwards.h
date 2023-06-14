@@ -1361,6 +1361,7 @@ void unimplemented(const char* name) {
 #undef _PyInterpreterState_SetEvalFrameFunc
 #undef _PyList_DebugMallocStats
 #undef _PyList_Extend
+#undef _PyList_SET_ITEM
 #undef _PyLong_AsByteArray
 #undef _PyLong_AsInt
 #undef _PyLong_AsTime_t
@@ -5162,6 +5163,9 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     PyObject* result = (PyObject*) Graal_PyList_Extend(a, b);
     return result;
+}
+PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    Graal_PyList_SET_ITEM(a, b, c);
 }
 PyAPI_FUNC(time_t) _PyLong_AsTime_t(PyObject* a) {
     unimplemented("_PyLong_AsTime_t"); exit(-1);

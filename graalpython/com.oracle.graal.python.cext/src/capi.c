@@ -2397,6 +2397,10 @@ PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     return Graal_PyList_Extend(a, b);
 }
+#undef _PyList_SET_ITEM
+PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    Graal_PyList_SET_ITEM(a, b, c);
+}
 #undef _PyLong_Sign
 PyAPI_FUNC(int) _PyLong_Sign(PyObject* a) {
     return Graal_PyLong_Sign(a);

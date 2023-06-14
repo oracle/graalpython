@@ -40,4 +40,6 @@
  */
 #include "capi.h"
 
-
+void* PyTruffle_NativeListItems(PyListObject* list) {
+    return polyglot_from_PyObjectPtr_array(list->ob_item, list->ob_base.ob_size);
+}
