@@ -58,7 +58,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -69,39 +68,34 @@ public abstract class GetAwaitableNode extends Node {
     @Specialization
     public static Object doGenerator(PGenerator generator,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode raise,
-                    @Cached.Exclusive @Cached PRaiseNode raiseReusedCoro,
-                    @Cached.Shared("errors") @Cached InlinedBranchProfile errorProfile) {
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raise,
+                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseReusedCoro) {
         if (generator.isCoroutine()) {
             if (generator.getYieldFrom() != null) {
-                errorProfile.enter(inliningTarget);
-                throw raiseReusedCoro.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
+                throw raiseReusedCoro.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
             } else {
                 return generator;
             }
         } else {
-            errorProfile.enter(inliningTarget);
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
         }
     }
 
     @Specialization
     public static Object doGeneric(Frame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode raiseNoAwait,
-                    @Cached.Exclusive @Cached PRaiseNode raiseNotIter,
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raiseNoAwait,
+                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached InlinedGetClassNode getAwaitableType,
                     @Cached InlinedGetClassNode getIteratorType,
                     @Cached CallUnaryMethodNode callAwait,
-                    @Cached.Shared("errors") @Cached InlinedBranchProfile errorProfile,
                     @Cached PyIterCheckNode iterCheck) {
         Object type = getAwaitableType.execute(inliningTarget, awaitable);
         Object getter = findAwait.execute(frame, type, awaitable);
         if (getter == PNone.NO_VALUE) {
-            errorProfile.enter(inliningTarget);
-            throw raiseNoAwait.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(type));
+            throw raiseNoAwait.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(type));
         }
         Object iterator = callAwait.executeObject(getter, awaitable);
         if (iterCheck.execute(inliningTarget, iterator)) {
@@ -109,11 +103,9 @@ public abstract class GetAwaitableNode extends Node {
         }
         Object itType = getIteratorType.execute(inliningTarget, iterator);
         if (itType == PythonBuiltinClassType.PCoroutine) {
-            errorProfile.enter(inliningTarget);
-            throw raiseNotIter.raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
+            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         } else {
-            errorProfile.enter(inliningTarget);
-            throw raiseNotIter.raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(itType));
+            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(itType));
         }
     }
 

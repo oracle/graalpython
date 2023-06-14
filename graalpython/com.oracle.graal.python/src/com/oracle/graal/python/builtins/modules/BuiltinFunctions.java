@@ -2595,14 +2595,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
                         @Cached InlinedGetClassNode getAsyncIterType,
-                        @Cached PRaiseNode raiseNoANext,
+                        @Cached PRaiseNode.Lazy raiseNoANext,
                         @Cached CallUnaryMethodNode callANext,
                         @Cached TypeNodes.GetNameNode getName) {
             // TODO: two argument anext
             Object type = getAsyncIterType.execute(inliningTarget, asyncIter);
             Object getter = getANext.execute(frame, type, asyncIter);
             if (getter == NO_VALUE) {
-                throw raiseNoANext.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, getName.execute(type));
+                throw raiseNoANext.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, getName.execute(type));
             }
             return callANext.executeObject(frame, getter, asyncIter);
         }

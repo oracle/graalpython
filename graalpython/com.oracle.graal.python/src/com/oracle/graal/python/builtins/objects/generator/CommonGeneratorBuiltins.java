@@ -267,7 +267,6 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object send(VirtualFrame frame, PGenerator self, Object value,
-                        @Bind("this") Node inliningTarget,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
