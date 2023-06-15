@@ -105,7 +105,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         return WeakRefModuleBuiltinsFactory.getFactories();
     }
 
-    private static long getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
+    public static int getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
         // @formatter:off
         return switch (cls) {
             case PythonObject, // object
@@ -393,7 +393,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(this, obj);
             boolean allowed = true;
             if (clazz instanceof PythonBuiltinClassType type) {
-                allowed = getBuiltinTypeWeaklistoffset(type) != 0;
+                allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
                 throw raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
