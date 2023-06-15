@@ -206,6 +206,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextFrameBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFuncBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextGenericAliasBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltins;
@@ -297,6 +298,10 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_ResourceWarning", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnEx", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnFormat", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicit", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
+                    VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Calloc", ret = Pointer, args = {SIZE_T, SIZE_T}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Free", ret = Void, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Malloc", ret = Pointer, args = {SIZE_T}, call = CImpl)
@@ -354,6 +359,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyOS_mystrnicmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallObject", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_CallNoArgs", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyObject_CallFunction", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallMethod_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
@@ -1031,7 +1037,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCell_New", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCell_Set", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCFunction_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCode_Addr2Line", ret = Int, args = {PyCodeObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyCode_Optimize", ret = PyObject, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_BackslashReplaceErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_Decode", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
@@ -1084,16 +1089,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_SyntaxLocation", ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationEx", ret = Void, args = {ConstCharPtrAsTruffleString, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_SyntaxLocationObject", ret = Void, args = {PyObject, Int, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicitFormat", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Int, ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString,
-                    VARARGS}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_AcquireLock", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_AcquireThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_CallFunction", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_EvalFrame", ret = PyObject, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_EvalFrameEx", ret = PyObject, args = {PyFrameObject, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyEval_GetFrame", ret = PyFrameObjectTransfer, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncDesc", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetGlobals", ret = PyObject, args = {}, call = NotImplemented)
@@ -1119,9 +1120,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFrame_BlockSetup", ret = Void, args = {PyFrameObject, Int, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocals", ret = Void, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocalsWithError", ret = Int, args = {PyFrameObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetBack", ret = PyFrameObject, args = {PyFrameObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetCode", ret = PyCodeObject, args = {PyFrameObjectTransfer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_GetLineNumber", ret = Int, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_LocalsToFast", ret = Void, args = {PyFrameObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFunction_GetAnnotations", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFunction_GetClosure", ret = PyObject, args = {PyObject}, call = NotImplemented)
@@ -1188,7 +1186,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_AsWriteBuffer", ret = Int, args = {PyObject, VOID_PTR_LIST, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyObject_CallFinalizer", ret = Void, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyObject_CallFinalizerFromDealloc", ret = Int, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyObject_CallNoArgs", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyObject_Calloc", ret = Pointer, args = {SIZE_T, SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "PyObject_CheckReadBuffer", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyObject_CopyData", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
@@ -1402,6 +1399,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextErrBuiltins.class);
         addCApiBuiltins(result, PythonCextFileBuiltins.class);
         addCApiBuiltins(result, PythonCextFloatBuiltins.class);
+        addCApiBuiltins(result, PythonCextFrameBuiltins.class);
         addCApiBuiltins(result, PythonCextFuncBuiltins.class);
         addCApiBuiltins(result, PythonCextGenericAliasBuiltins.class);
         addCApiBuiltins(result, PythonCextHashBuiltins.class);

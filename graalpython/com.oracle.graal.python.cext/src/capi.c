@@ -1505,6 +1505,18 @@ PyAPI_FUNC(int) PyCapsule_SetPointer(PyObject* a, void* b) {
 PyAPI_FUNC(PyObject*) PyClassMethod_New(PyObject* a) {
     return GraalPyClassMethod_New(a);
 }
+#undef PyCode_Addr2Line
+PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject* a, int b) {
+    return GraalPyCode_Addr2Line(a, b);
+}
+#undef PyCode_GetFileName
+PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* a) {
+    return GraalPyCode_GetFileName(a);
+}
+#undef PyCode_GetName
+PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* a) {
+    return GraalPyCode_GetName(a);
+}
 #undef PyCode_New
 PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, int n, PyObject* o) {
     return GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
@@ -1633,13 +1645,13 @@ PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
 PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
     GraalPyErr_SetExcInfo(a, b, c);
 }
-#undef PyErr_WarnExplicit
-PyAPI_FUNC(int) PyErr_WarnExplicit(PyObject* a, const char* b, const char* c, int d, const char* e, PyObject* f) {
-    return GraalPyErr_WarnExplicit(a, truffleString(b), truffleString(c), d, truffleString(e), f);
-}
 #undef PyEval_GetBuiltins
 PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
     return GraalPyEval_GetBuiltins();
+}
+#undef PyEval_GetFrame
+PyAPI_FUNC(PyFrameObject*) PyEval_GetFrame() {
+    return GraalPyEval_GetFrame();
 }
 #undef PyEval_RestoreThread
 PyAPI_FUNC(void) PyEval_RestoreThread(PyThreadState* a) {
@@ -1676,6 +1688,34 @@ PyAPI_FUNC(int) PyFile_WriteObject(PyObject* a, PyObject* b, int c) {
 #undef PyFloat_FromDouble
 PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
     return GraalPyFloat_FromDouble(a);
+}
+#undef PyFrame_GetBack
+PyAPI_FUNC(PyFrameObject*) PyFrame_GetBack(PyFrameObject* a) {
+    return GraalPyFrame_GetBack(a);
+}
+#undef PyFrame_GetBuiltins
+PyAPI_FUNC(PyObject*) PyFrame_GetBuiltins(PyFrameObject* a) {
+    return GraalPyFrame_GetBuiltins(a);
+}
+#undef PyFrame_GetCode
+PyAPI_FUNC(PyCodeObject*) PyFrame_GetCode(PyFrameObject* a) {
+    return GraalPyFrame_GetCode(a);
+}
+#undef PyFrame_GetGlobals
+PyAPI_FUNC(PyObject*) PyFrame_GetGlobals(PyFrameObject* a) {
+    return GraalPyFrame_GetGlobals(a);
+}
+#undef PyFrame_GetLasti
+PyAPI_FUNC(int) PyFrame_GetLasti(PyFrameObject* a) {
+    return GraalPyFrame_GetLasti(a);
+}
+#undef PyFrame_GetLineNumber
+PyAPI_FUNC(int) PyFrame_GetLineNumber(PyFrameObject* a) {
+    return GraalPyFrame_GetLineNumber(a);
+}
+#undef PyFrame_GetLocals
+PyAPI_FUNC(PyObject*) PyFrame_GetLocals(PyFrameObject* a) {
+    return GraalPyFrame_GetLocals(a);
 }
 #undef PyFrame_New
 PyAPI_FUNC(PyFrameObject*) PyFrame_New(PyThreadState* a, PyCodeObject* b, PyObject* c, PyObject* d) {

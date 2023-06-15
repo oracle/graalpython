@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -138,6 +138,10 @@ PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno);
    in this code object.  If you just need the line number of a frame,
    use PyFrame_GetLineNumber() instead. */
 PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject *, int);
+
+/* GraalPy specific to avoid direct field access. Used by (at least) pytorch */
+PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* code);
+PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* code);
 
 /* for internal use only */
 struct _opaque {

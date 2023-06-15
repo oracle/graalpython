@@ -194,6 +194,19 @@ index a0b5de15..5a1f0c64 100644
  class gil_scoped_acquire {
      PyGILState_STATE state;
  
+diff --git a/third_party/pybind11/include/pybind11/pytypes.h b/third_party/pybind11/include/pybind11/pytypes.h
+index db8f2401..bac3c0d9 100644
+--- a/third_party/pybind11/include/pybind11/pytypes.h
++++ b/third_party/pybind11/include/pybind11/pytypes.h
+@@ -492,7 +492,7 @@ struct error_fetch_and_normalize {
+ 
+         bool have_trace = false;
+         if (m_trace) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+             auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
+ 
+             // Get the deepest trace possible.
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
 index 8e1ca3b1..b150ac3f 100644
 --- a/torch/csrc/Module.cpp
@@ -256,3 +269,71 @@ index 8e1ca3b1..b150ac3f 100644
    }
  
    Py_INCREF(obj);
+diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
+index 8c9ed1d7..5183a325 100644
+--- a/torch/csrc/autograd/python_variable_indexing.cpp
++++ b/torch/csrc/autograd/python_variable_indexing.cpp
+@@ -141,26 +141,28 @@ static inline void checkUnpackSlice(
+ }
+ 
+ static inline void recordSliceTrace(PyObject* obj) {
+-  PySliceObject* sliceobj = (PySliceObject*)obj;
+-  if (THPVariable_Check(sliceobj->start)) {
++  PyObject* slicestart = PySlice_Start(obj);
++  if (THPVariable_Check(slicestart)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("start"),
+         1,
+-        THPVariable_Unpack(sliceobj->start),
++        THPVariable_Unpack(slicestart),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->stop)) {
++  PyObject* slicestop = PySlice_Stop(obj);
++  if (THPVariable_Check(slicestop)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("end"),
+         1,
+-        THPVariable_Unpack(sliceobj->stop),
++        THPVariable_Unpack(slicestop),
+         torch::jit::IntType::get());
+   }
+-  if (THPVariable_Check(sliceobj->step)) {
++  PyObject* slicestep = PySlice_Step(obj);
++  if (THPVariable_Check(slicestep)) {
+     torch::jit::tracer::ArgumentStash::stashValue(
+         std::string("step"),
+         1,
+-        THPVariable_Unpack(sliceobj->step),
++        THPVariable_Unpack(slicestep),
+         torch::jit::IntType::get());
+   }
+ }
+diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
+index 78676e2e..ecc76ea9 100644
+--- a/torch/csrc/jit/python/python_tracer.cpp
++++ b/torch/csrc/jit/python/python_tracer.cpp
+@@ -33,8 +33,8 @@ std::vector<StackEntry> _pythonCallstack() {
+   while (nullptr != frame) {
+     auto code = THPCodeObjectPtr(PyFrame_GetCode(frame));
+     size_t line = PyCode_Addr2Line(code.get(), PyFrame_GetLasti(frame));
+-    std::string filename = THPUtils_unpackString(code->co_filename);
+-    std::string funcname = THPUtils_unpackString(code->co_name);
++    std::string filename = THPUtils_unpackString(PyCode_GetFileName(code));
++    std::string funcname = THPUtils_unpackString(PyCode_GetName(code));
+     auto source = std::make_shared<Source>(funcname, filename, line);
+     entries.emplace_back(
+         StackEntry{funcname, SourceRange(source, 0, funcname.size())});
+diff --git a/torch/csrc/utils/python_compat.h b/torch/csrc/utils/python_compat.h
+index 44911527..d3ad9c54 100644
+--- a/torch/csrc/utils/python_compat.h
++++ b/torch/csrc/utils/python_compat.h
+@@ -96,7 +96,7 @@ static inline void _Py_SET_TYPE(PyObject* ob, PyTypeObject* type) {
+ //#define Py_SET_TYPE(ob, type) _Py_SET_TYPE((PyObject*)(ob), type)
+ #endif
+ 
+-#if PY_VERSION_HEX < ((3 << 24) | (11 << 16) | (0 << 8) | (0xA << 4) | (4 << 0))
++#if (PY_VERSION_HEX < ((3 << 24) | (11 << 16) | (0 << 8) | (0xA << 4) | (4 << 0))) && !defined(GRAALVM_PYTHON)
+ static inline PyObject* PyFrame_GetLocals(PyFrameObject* frame) {
+   PyFrame_FastToLocals(frame);
+   auto res = frame->f_locals;

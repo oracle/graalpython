@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -52,8 +54,10 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi15BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi16BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -117,6 +121,30 @@ public final class PythonCextCodeBuiltins {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
                             EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
                             EMPTY_TRUFFLESTRING_ARRAY, filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyCodeObject, Int}, call = Direct)
+    abstract static class PyCode_Addr2Line extends CApiBinaryBuiltinNode {
+        @Specialization
+        static int addr2line(PCode code, int bci) {
+            return code.bciToLine(bci);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCodeObject}, call = Direct)
+    abstract static class PyCode_GetName extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PCode code) {
+            return code.getName();
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCodeObject}, call = Direct)
+    abstract static class PyCode_GetFileName extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(PCode code) {
+            return code.getFilename();
         }
     }
 }

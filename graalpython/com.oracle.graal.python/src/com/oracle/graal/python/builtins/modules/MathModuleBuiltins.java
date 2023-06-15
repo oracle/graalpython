@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -60,7 +61,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -76,6 +79,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
@@ -248,49 +252,31 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "ceil", minNumOfPositionalArgs = 1)
-    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class CeilNode extends MathUnaryBuiltinNode {
-        public abstract Object execute(VirtualFrame frame, double value);
-
-        @Specialization(guards = {"fitLong(value)"})
-        public long ceilLong(double value) {
-            return (long) Math.ceil(value);
-        }
-
-        @Specialization(guards = {"!fitLong(value)"})
-        @TruffleBoundary
-        public PInt ceil(double value) {
-            return factory().createInt(BigDecimal.valueOf(Math.ceil(value)).toBigInteger());
-        }
 
         @Specialization
-        public int ceil(int value) {
-            return value;
+        static Object ceilDouble(double value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(value));
         }
 
-        @Specialization
-        public long ceil(long value) {
-            return value;
-        }
-
-        @Specialization
-        public int ceil(boolean value) {
-            return value ? 1 : 0;
-        }
-
-        @Specialization
-        public Object ceil(VirtualFrame frame, Object value,
+        @Fallback
+        static Object ceil(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached("create(T___CEIL__)") LookupSpecialMethodNode lookupCeil,
+                        @Cached CallUnaryMethodNode callCeil,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached("create(T___CEIL__)") LookupAndCallUnaryNode dispatchCeil,
-                        @Cached CeilNode recursive) {
-            Object result = dispatchCeil.executeObject(frame, value);
-            if (result == PNone.NO_VALUE) {
-                return recursive.execute(frame, asDoubleNode.execute(frame, value));
+                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            Object method = lookupCeil.execute(frame, getClassNode.execute(inliningTarget, value), value);
+            if (method != PNone.NO_VALUE) {
+                return callCeil.executeObject(frame, method, value);
             }
-            return result;
+            double doubleValue = asDoubleNode.execute(frame, value);
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(doubleValue));
         }
-
     }
 
     @Builtin(name = "copysign", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"magnitude", "sign"})
@@ -522,51 +508,30 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "floor", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ImportStatic(MathGuards.class)
     public abstract static class FloorNode extends PythonUnaryBuiltinNode {
-        public abstract Object execute(VirtualFrame frame, double value);
-
-        @Specialization(guards = {"fitLong(value)"})
-        public long floorDL(double value) {
-            return (long) Math.floor(value);
-        }
-
-        @Specialization(guards = {"!fitLong(value)"})
-        @TruffleBoundary
-        public PInt floorD(double value) {
-            return factory().createInt(BigDecimal.valueOf(Math.floor(value)).toBigInteger());
-        }
 
         @Specialization
-        public int floorI(int value) {
-            return value;
+        static Object floorDouble(double value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(value));
         }
 
-        @Specialization
-        public long floorL(long value) {
-            return value;
-        }
-
-        @Specialization
-        public int floorB(boolean value) {
-            if (value) {
-                return 1;
-            }
-            return 0;
-        }
-
-        @Specialization
-        public Object floor(VirtualFrame frame, Object value,
-                        @Cached("create(T___FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
+        @Fallback
+        static Object floor(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached("create(T___FLOOR__)") LookupSpecialMethodNode lookupFloor,
+                        @Cached CallUnaryMethodNode callFloor,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached FloorNode recursiveNode) {
-            Object result = dispatchFloor.executeObject(frame, value);
-            if (PNone.NO_VALUE == result) {
-                return recursiveNode.execute(frame, asDoubleNode.execute(frame, value));
+                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            Object method = lookupFloor.execute(frame, getClassNode.execute(inliningTarget, value), value);
+            if (method != PNone.NO_VALUE) {
+                return callFloor.executeObject(frame, method, value);
             }
-            return result;
+            double doubleValue = asDoubleNode.execute(frame, value);
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(doubleValue));
         }
-
     }
 
     @Builtin(name = "fmod", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"left", "right"})

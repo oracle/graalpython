@@ -199,6 +199,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = tsLiteral("%s: cannot use fd and follow_symlinks together");
+    public static final TruffleString CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER = tsLiteral("cannot convert float infinity to integer");
+    public static final TruffleString CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER = tsLiteral("cannot convert float NaN to integer");
     public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
     public static final TruffleString CANT_CONCAT_P_TO_S = tsLiteral("can't concat %p to %s");
     public static final TruffleString CANT_CONVERT_TO_STR_IMPLICITLY = tsLiteral("Can't convert '%p' object to str implicitly");

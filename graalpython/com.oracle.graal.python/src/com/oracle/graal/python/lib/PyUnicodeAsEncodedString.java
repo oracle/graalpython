@@ -109,13 +109,14 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
     }
 
     @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"}, limit = "1")
-    Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
+    static Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Shared @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
 
     @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"}, limit = "1")
+    @SuppressWarnings("truffle-static-method")
     Object doRegistry(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
@@ -139,13 +140,13 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
     }
 
     @Specialization(guards = {"isString(unicode)", "isNoValue(encoding)"})
-    Object doNoEncoding(VirtualFrame frame, Object unicode, @SuppressWarnings("unused") PNone encoding, Object errors,
+    static Object doNoEncoding(VirtualFrame frame, Object unicode, @SuppressWarnings("unused") PNone encoding, Object errors,
                     @Shared @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
         return encodeNode.execute(frame, unicode, ENC_UTF8, errors);
     }
 
     @Specialization(guards = "!isString(unicode)")
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "truffle-static-method"})
     Object doGeneric(VirtualFrame frame, Object unicode, Object encoding, Object errors) {
         throw raiseBadInternalCall();
     }

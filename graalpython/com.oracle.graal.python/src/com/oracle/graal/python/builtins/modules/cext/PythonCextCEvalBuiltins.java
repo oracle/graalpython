@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -77,6 +79,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -136,6 +140,17 @@ public final class PythonCextCEvalBuiltins {
                         @Cached GetDictIfExistsNode getDictNode) {
             PythonModule cext = getCore().getBuiltins();
             return getDictNode.execute(cext);
+        }
+    }
+
+    @CApiBuiltin(ret = PyFrameObjectTransfer, args = {}, call = Direct)
+    abstract static class PyEval_GetFrame extends CApiNullaryBuiltinNode {
+        @Specialization
+        Object getFrame(
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
+            PFrame.Reference reference = getCurrentFrameRef.execute(null);
+            return readCallerFrameNode.executeWith(reference, 0);
         }
     }
 

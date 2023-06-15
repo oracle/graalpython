@@ -9,5 +9,5 @@ Disassembly of <module>:
   1:0   -   1:12       10 BINARY_OP                         1    (INPLACE_ADD)                     generalizes: 8, 7
   1:0   -   1:4        12 ROT_THREE
   1:0   -   1:4        13 STORE_SUBSCR
-  1:0   -   1:12       14 LOAD_NONE
-  1:0   -   1:12       15 RETURN_VALUE
+  1:0   -   1:4        14 LOAD_NONE
+  1:0   -   1:4        15 RETURN_VALUE

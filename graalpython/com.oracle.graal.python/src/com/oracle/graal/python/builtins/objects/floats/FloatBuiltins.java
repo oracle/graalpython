@@ -26,15 +26,16 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETFORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
@@ -70,7 +71,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProvid
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -224,39 +225,14 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = J___INT__, minNumOfPositionalArgs = 1)
     @Builtin(name = J___TRUNC__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class IntNode extends PythonUnaryBuiltinNode {
+    abstract static class IntNode extends PythonUnaryBuiltinNode {
 
-        public abstract Object executeWithDouble(double self);
-
-        @Specialization(guards = "fitInt(self)")
-        static int doIntRange(double self) {
-            return (int) self;
-        }
-
-        @Specialization(guards = "fitLong(self)")
-        static long doLongRange(double self) {
-            return (long) self;
-        }
-
-        @Specialization(guards = "!fitLong(self)", rewriteOn = NumberFormatException.class)
-        PInt doDoubleGeneric(double self) {
-            return factory().createInt(fromDouble(self));
-        }
-
-        @Specialization(guards = "!fitLong(self)", replaces = "doDoubleGeneric")
-        PInt doDoubleGenericError(double self) {
-            try {
-                return factory().createInt(fromDouble(self));
-            } catch (NumberFormatException e) {
-                throw raise(Double.isNaN(self) ? ValueError : OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_F_TO_INT, self);
-            }
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private static BigInteger fromDouble(double self) {
-            return new BigDecimal(self, MathContext.UNLIMITED).toBigInteger();
+        @Specialization
+        static Object doDouble(double self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            return pyLongFromDoubleNode.execute(inliningTarget, self);
         }
     }
 
@@ -1624,8 +1600,32 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J___FLOOR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FloorNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object floor(double self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(self));
+        }
+    }
+
+    @Builtin(name = J___CEIL__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CeilNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object ceil(double self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(self));
+        }
+    }
+
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
+    @GenerateNodeFactory
     abstract static class RealNode extends PythonBuiltinNode {
 
         @Specialization
@@ -1799,7 +1799,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean trunc(PFloat pValue) {
+        static boolean isInteger(PFloat pValue) {
             return isInteger(pValue.getValue());
         }
 

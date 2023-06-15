@@ -2895,9 +2895,9 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Bind("this") Node inliningTarget,
-                        @Cached EnsureCapacityNode ensureCapacity,
-                        @Cached SetLenNode setLenNode,
-                        @Cached SetItemScalarNode setItemNode,
+                        @Shared @Cached EnsureCapacityNode ensureCapacity,
+                        @Shared @Cached SetLenNode setLenNode,
+                        @Shared @Cached SetItemScalarNode setItemNode,
                         @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
             int len = s.length();
             int newLen = len + 1;
@@ -2923,7 +2923,20 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        // TODO native sequence storage
+        @Specialization
+        static SequenceStorage doNative(NativeSequenceStorage s, Object val, @SuppressWarnings("unused") GenNodeSupplier genNodeSupplier,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached EnsureCapacityNode ensureCapacity,
+                        @Shared @Cached SetLenNode setLenNode,
+                        @Shared @Cached SetItemScalarNode setItemNode) {
+            assert s.getElementType() == Generic;
+            int index = s.length();
+            int newLength = s.length() + 1;
+            SequenceStorage resized = ensureCapacity.execute(inliningTarget, s, newLength);
+            setLenNode.execute(resized, newLength);
+            setItemNode.execute(resized, index, val);
+            return resized;
+        }
 
         @NeverDefault
         public static AppendNode create() {
@@ -3161,16 +3174,48 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(Node node, SequenceStorage s);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass", "!isNativeStorage(s)"})
         static SequenceStorage doSpecial(SequenceStorage s,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             return CompilerDirectives.castExact(CompilerDirectives.castExact(s, cachedClass).copy(), cachedClass);
         }
 
-        @Specialization(replaces = "doSpecial")
+        @Specialization(guards = "isNativeBytesStorage(s)")
+        static SequenceStorage doNativeBytes(NativeSequenceStorage s,
+                        @Shared @Cached GetNativeItemScalarNode getItem) {
+            byte[] bytes = new byte[s.length()];
+            for (int i = 0; i < s.length(); i++) {
+                bytes[i] = (byte) (int) getItem.execute(s, i);
+            }
+            return new ByteSequenceStorage(bytes);
+        }
+
+        @Specialization(guards = "isNativeObjectsStorage(s)")
+        static SequenceStorage doNativeObjects(NativeSequenceStorage s,
+                        @Shared @Cached GetNativeItemScalarNode getItem) {
+            Object[] objects = new Object[s.length()];
+            for (int i = 0; i < s.length(); i++) {
+                objects[i] = getItem.execute(s, i);
+            }
+            return new ObjectSequenceStorage(objects);
+        }
+
+        @Specialization(guards = "!isNativeStorage(s)", replaces = "doSpecial")
         @TruffleBoundary
         static SequenceStorage doGeneric(SequenceStorage s) {
             return s.copy();
+        }
+
+        protected static boolean isNativeStorage(SequenceStorage storage) {
+            return storage instanceof NativeSequenceStorage;
+        }
+
+        protected static boolean isNativeBytesStorage(NativeSequenceStorage storage) {
+            return storage.getElementType() == Byte;
+        }
+
+        protected static boolean isNativeObjectsStorage(NativeSequenceStorage storage) {
+            return storage.getElementType() == Generic;
         }
     }
 

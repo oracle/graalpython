@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -254,6 +255,11 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
             }
         } else {
             assert currentType instanceof PythonManagedClass;
+            if (slot.methodFlag != 0 && currentType instanceof PythonBuiltinClass builtinClass) {
+                if ((builtinClass.getType().getMethodsFlags() & slot.methodFlag) == 0) {
+                    return null;
+                }
+            }
             Object value = readNode.execute(currentType, slot.methodName);
             if (value != PNone.NO_VALUE) {
                 return wrapManagedMethod((PythonManagedClass) currentType, value);

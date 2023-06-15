@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins.PyErr_Restore;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -919,13 +918,11 @@ public final class PythonCextAbstractBuiltins {
         Object check(Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached NextNode nextNode,
-                        @Cached PyErr_Restore restoreNode,
                         @Cached IsBuiltinObjectProfile isClassProfile) {
             try {
                 return nextNode.execute(null, object, PNone.NO_VALUE);
             } catch (PException e) {
                 if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
-                    restoreNode.execute(PNone.NONE, PNone.NONE, PNone.NONE);
                     return getNativeNull();
                 } else {
                     throw e;

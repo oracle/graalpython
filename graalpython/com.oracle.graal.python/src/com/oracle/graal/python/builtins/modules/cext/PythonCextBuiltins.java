@@ -1332,13 +1332,13 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
     abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
-        static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
+        static PNone doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
             // if (nativeWrapper.getRefCount() > 0) {
@@ -1351,21 +1351,19 @@ public final class PythonCextBuiltins {
             clearNativeWrapperNode.execute(delegate, nativeWrapper);
 
             doNativeWrapper(nativeWrapper, callReleaseHandleNode);
-            return 1;
+            return PNone.NO_VALUE;
         }
 
         @Specialization
-        static int arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
+        static PNone arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
             // It's a pointer to a managed object but doesn't need special handling, so we just
             // ignore it.
-            return 1;
+            return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)")
-        static int doOther(@SuppressWarnings("unused") Object object) {
-            // It's a pointer to a managed object but none of our wrappers, so we just ignore
-            // it.
-            return 0;
+        static PNone doOther(@SuppressWarnings("unused") Object object) {
+            throw CompilerDirectives.shouldNotReachHere("Attempted to free a managed object");
         }
 
         protected static boolean isCArrayWrapper(Object obj) {

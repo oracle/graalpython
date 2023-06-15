@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -20,6 +20,12 @@ typedef struct _frame PyFrameObject;
 PyAPI_FUNC(int) PyFrame_GetLineNumber(PyFrameObject *);
 
 PyAPI_FUNC(PyCodeObject *) PyFrame_GetCode(PyFrameObject *frame);
+
+#ifndef Py_LIMITED_API
+#  define Py_CPYTHON_PYFRAME_H
+#  include "cpython/pyframe.h"
+#  undef Py_CPYTHON_PYFRAME_H
+#endif
 
 #ifdef __cplusplus
 }
