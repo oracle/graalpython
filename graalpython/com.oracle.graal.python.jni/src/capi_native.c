@@ -465,15 +465,27 @@ void finalizeCAPI() {
 	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
 }
 
+#define _PYGILSTATE_LOCKED   0x1
+#define _PYGILSTATE_ATTACHED 0x2
+
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
-    int res = PyTruffleGILState_Ensure();
-    return res ? PyGILState_LOCKED : PyGILState_UNLOCKED;
+    int result = 0;
+    if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+        (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+        result |= _PYGILSTATE_ATTACHED;
+    }
+    int locked = PyTruffleGILState_Ensure();
+    if (locked) {
+        result |= _PYGILSTATE_LOCKED;
+    }
+    return result;
 }
 
 PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
-    if (state == PyGILState_LOCKED) {
+    if (state & _PYGILSTATE_LOCKED) {
         PyTruffleGILState_Release();
+    }
+    if (state & _PYGILSTATE_ATTACHED) {
         (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
 }
