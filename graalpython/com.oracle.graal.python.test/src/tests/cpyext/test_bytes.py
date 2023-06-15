@@ -61,6 +61,9 @@ def _as_string(args):
         return TypeError()
     return args[0].decode()
 
+def _as_string_ba(args):
+    return args[0].decode()
+
 def _as_string_and_size(args):
     if not isinstance(args[0], bytes):
         return TypeError()
@@ -85,6 +88,17 @@ BytesSubclass = CPyExtType(
     struct_base='PyBytesObject bytes',
     tp_itemsize='sizeof(char)',
     tp_base='&PyBytes_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
+ByteArraySubclass = CPyExtType(
+    "ByteArraySubclass",
+    '',
+    struct_base='PyByteArrayObject bytes',
+    tp_itemsize='sizeof(char)',
+    tp_base='&PyByteArray_Type',
     tp_new='0',
     tp_alloc='0',
     tp_free='0',
@@ -140,6 +154,20 @@ class TestPyBytes(CPyExtTestCase):
             (BytesSubclass(b"hello"),),
             (list(),),
             ("hello",)
+        ),
+        resultspec="s",
+        argspec="O",
+        arguments=["PyObject* arg"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyByteArray_AsString
+    test_PyByteArray_AsString = CPyExtFunction(
+        _as_string_ba,
+        lambda: (
+            (bytearray(b"hello"),),
+            (bytearray(b"world"),),
+            (ByteArraySubclass(b"hello"),),
         ),
         resultspec="s",
         argspec="O",
@@ -205,6 +233,20 @@ class TestPyBytes(CPyExtTestCase):
             (b"hello world",),
             (b"",),
             (BytesSubclass(b"hello"),),
+        ),
+        resultspec="n",
+        argspec="O",
+        arguments=["PyObject* arg"],
+    )
+
+    # PyByteArray_Size
+    test_PyByteArray_Size = CPyExtFunction(
+        lambda b: len(b[0]),
+        lambda: (
+            (bytearray(b"hello"),),
+            (bytearray(b"hello world"),),
+            (bytearray(b""),),
+            (ByteArraySubclass(b"hello"),),
         ),
         resultspec="n",
         argspec="O",

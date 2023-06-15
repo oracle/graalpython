@@ -40,28 +40,10 @@
  */
 #include "capi.h"
 
-char _PyByteArray_empty_string[] = "";
-
-
-char* _PyByteArray_Start(PyObject* obj) {
-	return PyByteArrayObject_ob_start(obj);
+char* PyByteArray_AsString(PyObject* obj) {
+    return PyByteArray_AS_STRING(obj);
 }
 
-// taken from CPython 3.7.0 "Objects/bytearrayobject.c"
-int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
-    void *ptr;
-    if (view == NULL) {
-        PyErr_SetString(PyExc_BufferError,
-            "bytearray_getbuffer: view==NULL argument is obsolete");
-        return -1;
-    }
-    ptr = (void *) PyByteArray_AS_STRING(obj);
-    /* cannot fail if view != NULL and readonly == 0 */
-    (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
-    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) + 1);
-    return 0;
-}
-
-void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
-    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) - 1);
+Py_ssize_t PyByteArray_Size(PyObject *self) {
+    return PyByteArray_GET_SIZE(self);
 }
