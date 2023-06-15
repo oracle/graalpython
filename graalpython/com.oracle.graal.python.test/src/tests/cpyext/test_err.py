@@ -47,16 +47,38 @@ def _reference_setstring(args):
     raise args[0](args[1])
 
 
-def _reference_setobject(args):
-    exc_type, value = args
+def _normalize_exception(exc_type, value):
     if issubclass(exc_type, BaseException):
         if isinstance(value, exc_type):
-            raise value
+            return value
         if value is None:
-            raise exc_type
+            return exc_type()
         if isinstance(value, tuple):
-            raise exc_type(*value)
-        raise exc_type(value)
+            return exc_type(*value)
+        return exc_type(value)
+
+
+def _reference_setobject(args):
+    exc_type, value = args
+    raise _normalize_exception(exc_type, value)
+
+
+def _reference_restore(args):
+    exc_type, value, tb = args
+    exc = _normalize_exception(exc_type, value)
+    if tb:
+        exc.__traceback__ = tb
+    raise exc
+
+
+def compare_restore_result(x, y):
+    return (
+        isinstance(x, BaseException) and
+        type(x) == type(y) and
+        # Compare str because different exceptions are not equal
+        str(x.args) == str(y.args) and
+        (x.__traceback__ is example_traceback) == (y.__traceback__ is example_traceback)
+    )
 
 
 def _new_ex_result_check(x, y):
@@ -156,6 +178,20 @@ def _reference_nomemory(args):
 
 class Dummy:
     pass
+
+
+def raise_erorr():
+    raise NameError
+
+
+try:
+    raise_erorr()
+except NameError as e:
+    example_traceback = e.__traceback__
+else:
+    assert False
+
+assert example_traceback
 
 
 class TestPyErr(CPyExtTestCase):
@@ -462,6 +498,39 @@ class TestPyErr(CPyExtTestCase):
         callfunction="wrap_PyErr_WriteUnraisableMsg",
         stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_Restore = CPyExtFunctionVoid(
+        _reference_restore,
+        lambda: (
+            (RuntimeError, None, None),
+            (RuntimeError, RuntimeError("error"), None),
+            (ValueError, "hello", None),
+            (TypeError, "world", None),
+            (KeyError, "key", None),
+            (RuntimeError, ValueError(), None),
+            (OSError, (2, "error"), None),
+            (NameError, None, example_traceback),
+        ),
+        # Note on CPython all the exception creation happens not in PyErr_Restore, but when leaving the function and
+        # normalizing the exception in the caller. So this really test both of these mechanisms together.
+        code="""PyObject* wrap_PyErr_Restore(PyObject* typ, PyObject* val, PyObject* tb) {
+            if (typ == Py_None) typ = NULL;
+            if (val == Py_None) val = NULL;
+            if (tb == Py_None) tb = NULL;
+            Py_XINCREF(typ);
+            Py_XINCREF(val);
+            Py_XINCREF(tb);
+            PyErr_Restore(typ, val, tb);
+            return NULL;
+        }
+        """,
+        resultspec="O",
+        argspec='OOO',
+        arguments=["PyObject* typ", "PyObject* val", "PyObject* tb"],
+        resultval="NULL",
+        callfunction="wrap_PyErr_Restore",
+        cmpfunc=compare_restore_result
     )
 
     test_PyErr_Fetch = CPyExtFunction(
