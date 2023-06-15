@@ -170,8 +170,6 @@ typedef struct {
     BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
     BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
     BUILTIN(PyGILState_Check, int) \
-    BUILTIN(PyGILState_Ensure, PyGILState_STATE) \
-    BUILTIN(PyGILState_Release, void, PyGILState_STATE) \
     BUILTIN(PyImport_GetModuleDict, PyObject*) \
     BUILTIN(PyImport_Import, PyObject*, PyObject*) \
     BUILTIN(PyImport_ImportModule, PyObject*, const char*) \
@@ -314,6 +312,8 @@ typedef struct {
     BUILTIN(PyTruffleErr_GetExcInfo, PyObject*) \
     BUILTIN(PyTruffleErr_WarnExplicit, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyTruffleFloat_AsDouble, double, PyObject*) \
+    BUILTIN(PyTruffleGILState_Ensure, int) \
+    BUILTIN(PyTruffleGILState_Release, void) \
     BUILTIN(PyTruffleHash_InitSecret, void, void*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, const char*, int, int) \
