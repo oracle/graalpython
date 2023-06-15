@@ -383,18 +383,6 @@
 //	return NULL;
 //}
 //
-//
-///*
-// * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.
-// * The length is determined using 'wcslen' if 'len == -1'.
-// */
-//int8_t* graal_hpy_i8_from_wchar_array(wchar_t *arr, uint64_t len) {
-//    if (len == -1) {
-//        len = (uint64_t) (wcslen(arr) * sizeof(wchar_t));
-//    }
-//	return polyglot_from_i8_array((int8_t *) arr, len);
-//}
-//
 //typedef void* VoidPtr;
 //POLYGLOT_DECLARE_TYPE(VoidPtr);
 //

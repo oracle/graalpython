@@ -340,13 +340,6 @@ PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
     return NULL;
 }
 
-PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
-    if (size == -1) {
-        size = wcslen(u);
-    }
-	return GraalPyTruffle_Unicode_FromWchar((void*) u, size, sizeof(wchar_t));
-}
-
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
     return GraalPyTruffleUnicode_FromUCS((int8_t *)u, size, PyUnicode_1BYTE_KIND);
 }

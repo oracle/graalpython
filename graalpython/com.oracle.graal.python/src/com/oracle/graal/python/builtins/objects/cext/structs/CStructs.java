@@ -82,14 +82,16 @@ public enum CStructs {
     PyMemberDef,
     PyThreadState,
     wchar_t,
+    long__long,
+    Py_ssize_t,
     ;
 
     @CompilationFinal(dimensions = 1) public static final CStructs[] VALUES = values();
 
-    @CompilationFinal private long size = -1;
+    @CompilationFinal private int size = -1;
 
-    public long size() {
-        long o = size;
+    public int size() {
+        int o = size;
         if (o == -1) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             resolve();
@@ -103,8 +105,9 @@ public enum CStructs {
         Object sizesPointer = PCallCapiFunction.getUncached().call(PythonContext.get(null).getCApiContext(), NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
         long[] sizes = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(sizesPointer, VALUES.length);
         for (CStructs struct : VALUES) {
-            struct.size = sizes[struct.ordinal()];
-            assert struct.size > 0 && struct.size < 1024;
+            long size = sizes[struct.ordinal()];
+            assert size > 0 && size < 1024;
+            struct.size = (int) size;
         }
     }
 }

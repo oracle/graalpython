@@ -675,7 +675,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_FromKindAndData", ret = PyObject, args = {Int, CONST_VOID_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromUnicode", ret = PyObject, args = {CONST_PY_UNICODE, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "PyUnicode_FromWideChar", ret = PyObject, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FSConverter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_GetLength", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_InternFromString", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = CImpl)

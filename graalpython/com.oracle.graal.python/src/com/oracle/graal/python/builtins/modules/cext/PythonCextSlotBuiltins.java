@@ -89,8 +89,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.SIZEOF_WCHAR_T;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -119,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.Uni
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
@@ -147,7 +146,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -261,7 +259,7 @@ public final class PythonCextSlotBuiltins {
             if (storageProfile.profile(object.isNativeCharSequence())) {
                 return object.getNativeCharSequence().getElementSize() & 0b111;
             }
-            return SIZEOF_WCHAR_T.intValue() & 0b111;
+            return CStructs.wchar_t.size() & 0b111;
         }
     }
 
@@ -280,7 +278,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static Object get(Object object,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
-            int elementSize = SIZEOF_WCHAR_T.intValue();
+            int elementSize = CStructs.wchar_t.size();
             return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize), elementSize);
         }
     }
@@ -385,7 +383,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static long get(Object object,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
-            long sizeofWchar = SIZEOF_WCHAR_T.longValue();
+            long sizeofWchar = CStructs.wchar_t.size();
             PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar);
             return result.getSequenceStorage().length() / sizeofWchar;
         }
@@ -754,7 +752,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static Object get(PString object,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
-            int elementSize = SIZEOF_WCHAR_T.intValue();
+            int elementSize = CStructs.wchar_t.size();
 
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer

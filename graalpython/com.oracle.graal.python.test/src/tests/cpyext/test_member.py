@@ -167,13 +167,13 @@ class TestMethod(object):
         dummy = object()
 
         # T_OBJECT
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
         del obj.member_o
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
         obj.member_o = dummy
-        assert obj.member_o is dummy
+        assert obj.member_o is dummy, f"member is {obj.member_o}"
         del obj.member_o
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
 
         # T_OBJECT_EX
         assert_raises(AttributeError, lambda x: x.member_o_ex, obj)
@@ -200,11 +200,14 @@ class TestMethod(object):
         # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
         sizes = obj.get_sizes()
         max_values = [0] * len(sizes)
+        min_values = [0] * len(sizes)
         for i, size in enumerate(sizes):
             if i % 2 == 0:
                 max_values[i] = (1 << (size * 8 - 1)) - 1
+                min_values[i] = -(1 << (size * 8 - 1))
             else:
                 max_values[i] = (1 << (size * 8)) - 1
+                min_values[i] = 0
 
         # all int-like members smaller than C long
         for i, m in enumerate(("member_byte", "member_ubyte", "member_short", "member_ushort", "member_int",
@@ -218,12 +221,18 @@ class TestMethod(object):
             setattr(obj, m, max_values[i] + 1)
             val = getattr(obj, m)
             assert val != max_values[i], "was: %r" % getattr(obj, m)
+            setattr(obj, m, min_values[i])
+            assert getattr(obj, m) == min_values[i], "member %s; was: %r" % (m, getattr(obj, m))
+            # min_value - 1 will be truncated but must not throw an error
+            setattr(obj, m, min_values[i] - 1)
+            val = getattr(obj, m)
+            assert val != min_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
 
         # T_LONG, T_ULONG, T_PYSSIZET
-        max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF)
-        err_values = (-1, -1 & 0xFFFFFFFFFFFFFFFF, -1)
-        for i, m in enumerate(("member_long", "member_ulong", "member_pyssizet")):
+        max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF)
+        err_values = (-1, 0xFFFFFFFFFFFFFFFF, -1, -1, 0xFFFFFFFFFFFFFFFF)
+        for i, m in enumerate(("member_long", "member_ulong", "member_pyssizet", "member_longlong", "member_ulonglong")):
             assert type(getattr(obj, m)) is int
             assert getattr(obj, m) == 0
             assert_raises(TypeError, delattr, obj, m)

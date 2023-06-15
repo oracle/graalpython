@@ -355,255 +355,6 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    // TODO(ls): currently unused?
-    /**
-     * Note: we always need the element size because if some native wrapper comes along, we might
-     * lose the element size. This would lead in incorrect element accesses. This problem is most
-     * like if API {@code _PyUnicode_FromUCS2} is used where the pointer object is a native wrapper.
-     * Then we just lose the information that we now need to access 2-byte elements.
-     */
-    @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class UnicodeFromWcharNode extends PNodeWithContext {
-
-        public abstract TruffleString execute(Object arr, int length, int elementSize);
-
-        // most common cases (decoding from native pointer) are first
-
-        @Specialization(guards = "!isNativeWrapper(arr)")
-        static TruffleString doUnicode(Object arr, int length, int elementSize,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib,
-                        @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                if (!lib.hasArrayElements(arr)) {
-                    throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY);
-                }
-                long arraySize = lib.getArraySize(arr);
-                int[] codePoints = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), elementSize);
-                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
-                // but might change in the future
-                return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
-            } catch (InteropException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.M, e);
-            }
-        }
-
-        @Specialization
-        static TruffleString doCStringWrapper(CStringWrapper obj, int length, @SuppressWarnings("unused") int sizeofWchar) {
-            return obj.getString();
-        }
-
-        @Specialization(rewriteOn = UnexpectedCodepointException.class)
-        static TruffleString doCByteArrayWrapperBMP(CByteArrayWrapper obj, int length, int elementSize,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            byte[] bytes = obj.getByteArray();
-            char[] chars = decodeBytesBMP(bytes, elementSize);
-            return switchEncodingNode.execute(fromCharArray.execute(chars), TS_ENCODING);
-        }
-
-        @Specialization(replaces = "doCByteArrayWrapperBMP")
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper obj, int length, int elementSize,
-                        @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            byte[] bytes = obj.getByteArray();
-            int[] i = decodeBytesUnicode(bytes, elementSize);
-            // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
-            // but might change in the future
-            return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doCIntArrayWrapper(CIntArrayWrapper obj, int length, int elementSize,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (elementSize == Integer.BYTES) {
-                int[] codePoints = obj.getIntArray();
-                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
-                // but might change in the future
-                return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
-            }
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-        }
-
-        @Specialization(rewriteOn = UnexpectedCodepointException.class)
-        static TruffleString doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int length, int elementSize,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            Object delegate = obj.getDelegate();
-            if (delegate instanceof PBytesLike) {
-                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                char[] chars = decodeBytesBMP(bytes, elementSize);
-                return switchEncodingNode.execute(fromCharArray.execute(chars), TS_ENCODING);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Specialization(replaces = "doSequenceArrayWrapperBMP")
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, int length, int elementSize,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            Object delegate = obj.getDelegate();
-            if (delegate instanceof PBytesLike) {
-                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                int[] i = decodeBytesUnicode(bytes, elementSize);
-                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
-                // but might change in the future
-                return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        /**
-         * Decode an array of Unicode BMP codepoints (i.e. codepoints that fit into {@code char}
-         * without surrogates) to a Java string where the codepoints are represented byte-wise in a
-         * Java byte array. The byte size of one codepoint is determined by native
-         * {@code sizeof(wchar_t)}. If a codepoint is not part of the BMP, an
-         * {@link UnexpectedCodepointException} will be thrown.
-         *
-         * @param bytes The Unicode codepoints encoded as bytes.
-         * @param elementSize The byte size of one code point element (e.g. {@code sizeof(wchar_t)}
-         *            ). For performance reasons, this value should be PE-constant (but it's not
-         *            strictly necessary).
-         * @return Return the String decoded from the Unicode codepoints.
-         * @throws UnexpectedCodepointException
-         */
-        private static char[] decodeBytesBMP(byte[] bytes, int elementSize) throws UnexpectedCodepointException {
-            // number of Unicode codepoints
-            int n = bytes.length / elementSize;
-            char[] decoded = new char[n];
-            for (int i = 0; i < n; i++) {
-                int elem = getCodepoint(bytes, i * elementSize, elementSize);
-                if (PythonUtils.isBmpCodePoint(elem)) {
-                    decoded[i] = (char) elem;
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw UnexpectedCodepointException.INSTANCE;
-                }
-            }
-            return decoded;
-        }
-
-        /**
-         * Same as {@link #decodeBytesBMP(byte[], int)} but without the restriction that codepoints
-         * must be in the BMP. This operation is, of course, more expensive than the BMP variant.
-         *
-         * @param bytes The Unicode codepoints encoded as bytes.
-         * @param elementSize The byte size of code point one element (e.g. {@code sizeof(wchar_t)}
-         *            ).
-         * @return Return the String decoded from the Unicode codepoints.
-         */
-        @TruffleBoundary
-        private static int[] decodeBytesUnicode(byte[] bytes, int elementSize) {
-            // number of Unicode codepoints
-            int n = bytes.length / elementSize;
-            int[] decoded = new int[n];
-            for (int i = 0; i < n; i++) {
-                decoded[i] = getCodepoint(bytes, i * elementSize, elementSize);
-            }
-            return decoded;
-        }
-
-        /**
-         * Get a single Unicode codepoint from the byte array at the given offset considering
-         * {@code sizeof(wchar_t)}.
-         *
-         * @param bytes The byte array.
-         * @param byteOffset The byte offset to start reading from.
-         * @param sizeofWchar {@code sizeof(wchar_t)}. For performance reasons, this value should be
-         *            PE-constant. Valid values are {@code 1, 2, 4}.
-         * @return The Unicode codepoint.
-         */
-        private static int getCodepoint(byte[] bytes, int byteOffset, int sizeofWchar) {
-            // TODO maybe via TruffleString api? [GR-38108]
-            switch (sizeofWchar) {
-                case 1:
-                    return bytes[byteOffset];
-                case 2:
-                    return PythonUtils.ARRAY_ACCESSOR.getShort(bytes, byteOffset);
-                case 4:
-                    return PythonUtils.ARRAY_ACCESSOR.getInt(bytes, byteOffset);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        /**
-         * Get a single Unicode codepoint from an interop array at the given offset.
-         *
-         * @param array The interop array.
-         * @param arrayLibrary An interop library for the {@code array} parameter.
-         * @param elementLibrary An interop library to convert the {@code array} parameter's
-         *            elements into integers.
-         * @param offset The interop array index to read from.
-         * @param sizeofWchar {@code sizeof(wchar_t)}. For performance reasons, this value should be
-         *            PE-constant. Valid values are {@code 1, 2, 4}.
-         * @return The Unicode codepoint.
-         */
-        private static int getCodepoint(Object array, InteropLibrary arrayLibrary, InteropLibrary elementLibrary, int offset, int sizeofWchar) {
-            try {
-                switch (sizeofWchar) {
-                    case 1:
-                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset)) & 0xff;
-                    case 2:
-                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset)) & 0xffff;
-                    case 4:
-                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset));
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                /*
-                 * This should not be reached because that's checked using the appropriate interop
-                 * messages in the caller.
-                 */
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        /**
-         * Very much like {@link #decodeBytesBMP(byte[], int)} but reads from an interop array
-         * rather than from a Java array.
-         *
-         * @param arrLib InteropLibrary for {@code arr}.
-         * @param elemLib InteropLibrary for the elements of the interop array.
-         * @param arr The interop array.
-         * @param size The size of the interop array (must be {@code arrLib.getArraySize(arr)}).
-         * @param elementSize The size of the interop array's elements in bytes. Valid values are
-         *            {@code 1, 2, 4}.
-         * @return The code points as Java characters.
-         * @throws UnsupportedMessageException Thrown if an element of the interop array cannot be
-         *             converted to an integer.
-         * @throws UnexpectedCodepointException
-         */
-        private static char[] readUnicodeBMPWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size, int elementSize)
-                        throws UnsupportedMessageException, UnexpectedCodepointException {
-            char[] decoded = new char[size];
-            for (int i = 0; i < size; i++) {
-                int ielem = getCodepoint(arr, arrLib, elemLib, i, elementSize);
-                if (Character.isBmpCodePoint(ielem)) {
-                    decoded[i] = (char) ielem;
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw UnexpectedCodepointException.INSTANCE;
-                }
-            }
-            return decoded;
-        }
-
-        private static int[] readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size, int elementSize) {
-            int[] codePoints = new int[size];
-            for (int i = 0; i < codePoints.length; i++) {
-                codePoints[i] = getCodepoint(arr, arrLib, elemLib, i, elementSize);
-            }
-            return codePoints;
-        }
-    }
-
     static final class UnexpectedCodepointException extends ControlFlowException {
         private static final long serialVersionUID = 0L;
 
@@ -1212,6 +963,24 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateUncached
+    public abstract static class NativeUnsignedByteNode extends CExtToJavaNode {
+
+        @Specialization
+        static int doUnsignedIntPositive(int n) {
+            return n & 0xff;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class NativeUnsignedShortNode extends CExtToJavaNode {
+
+        @Specialization
+        static int doUnsignedIntPositive(int n) {
+            return n & 0xffff;
+        }
+    }
+
     /**
      * This node converts a native primitive value to an appropriate Python value considering the
      * native value as unsigned. For example, a negative {@code int} value will be converted to a
@@ -1273,6 +1042,8 @@ public abstract class CExtCommonNodes {
      */
     @GenerateUncached
     public abstract static class AsNativeCharNode extends CExtToNativeNode {
+
+        public abstract byte executeByte(Object value);
 
         @Specialization
         static byte doGeneric(Object value,

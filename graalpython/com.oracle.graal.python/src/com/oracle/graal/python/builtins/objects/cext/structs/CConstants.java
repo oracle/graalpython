@@ -60,7 +60,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
  * necessary definitions on the C side.
  */
 public enum CConstants {
-    SIZEOF_WCHAR_T,
     PYLONG_BITS_IN_DIGIT,
     READONLY,
     ;

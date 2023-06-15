@@ -150,9 +150,18 @@ public class CStructAccess {
         }
     }
 
+    public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
+
+        abstract Object executeGeneric(Object pointer, long offset);
+
+        public final Object readGeneric(Object pointer, long offset) {
+            return executeGeneric(pointer, offset);
+        }
+    }
+
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class GetElementPtrNode extends Node implements CStructAccessNode {
+    public abstract static class GetElementPtrNode extends ReadBaseNode {
 
         abstract Object execute(Object pointer, long offset);
 
@@ -182,22 +191,22 @@ public class CStructAccess {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            return call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
+            return call.call(NativeCAPISymbol.FUN_PTR_ADD, pointer, offset);
         }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadByteNode extends Node implements CStructAccessNode {
+    public abstract static class ReadByteNode extends ReadBaseNode {
 
-        abstract byte execute(Object pointer, long offset);
+        abstract int execute(Object pointer, long offset);
 
-        public final byte read(Object pointer, CFields field) {
+        public final int read(Object pointer, CFields field) {
             assert accepts(field);
             return execute(pointer, field.offset());
         }
 
-        public final byte readFromObj(PythonNativeObject self, CFields field) {
+        public final int readFromObj(PythonNativeObject self, CFields field) {
             return read(self.getPtr(), field);
         }
 
@@ -212,49 +221,49 @@ public class CStructAccess {
         public final byte[] readByteArray(Object pointer, int elements, int sourceOffset) {
             byte[] result = new byte[elements];
             for (int i = 0; i < result.length; i++) {
-                result[i] = execute(pointer, (i + sourceOffset) * Byte.BYTES);
+                result[i] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
             }
             return result;
         }
 
         public final void readByteArray(Object pointer, byte[] target, int length, int sourceOffset, int targetOffset) {
             for (int i = 0; i < length; i++) {
-                target[i + targetOffset] = execute(pointer, (i + sourceOffset) * Byte.BYTES);
+                target[i + targetOffset] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
             }
         }
 
         public final byte readArrayElement(Object pointer, long element) {
-            return execute(pointer, element);
+            return (byte) execute(pointer, element);
         }
 
         @Specialization
-        static byte readLong(long pointer, long offset) {
+        static int readLong(long pointer, long offset) {
             assert offset >= 0;
             return UNSAFE.getByte(pointer + offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
-        static byte readPointer(Object pointer, long offset,
+        static int readPointer(Object pointer, long offset,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static byte readManaged(Object pointer, long offset,
+        static int readManaged(Object pointer, long offset,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            return (byte) (int) call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
+            return (int) call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
         }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadI16Node extends Node implements CStructAccessNode {
+    public abstract static class ReadI16Node extends ReadBaseNode {
 
-        abstract short execute(Object pointer, long offset);
+        abstract int execute(Object pointer, long offset);
 
-        public final short read(Object pointer, CFields field) {
+        public final int read(Object pointer, CFields field) {
             assert accepts(field);
             return execute(pointer, field.offset());
         }
@@ -263,38 +272,38 @@ public class CStructAccess {
             return desc.isI16();
         }
 
-        public final short readOffset(Object pointer, long offset) {
+        public final int readOffset(Object pointer, long offset) {
             return execute(pointer, offset);
         }
 
-        public final short readArrayElement(Object pointer, long element) {
+        public final int readArrayElement(Object pointer, long element) {
             return execute(pointer, element * Short.BYTES);
         }
 
         @Specialization
-        static short readLong(long pointer, long offset) {
+        static int readLong(long pointer, long offset) {
             assert offset >= 0;
             return UNSAFE.getShort(pointer + offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
-        static short readPointer(Object pointer, long offset,
+        static int readPointer(Object pointer, long offset,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static short readManaged(Object pointer, long offset,
+        static int readManaged(Object pointer, long offset,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            return (short) (int) call.call(NativeCAPISymbol.FUN_READ_SHORT_MEMBER, pointer, offset);
+            return (int) call.call(NativeCAPISymbol.FUN_READ_SHORT_MEMBER, pointer, offset);
         }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadI32Node extends Node implements CStructAccessNode {
+    public abstract static class ReadI32Node extends ReadBaseNode {
 
         abstract int execute(Object pointer, long offset);
 
@@ -343,7 +352,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadI64Node extends Node implements CStructAccessNode {
+    public abstract static class ReadI64Node extends ReadBaseNode {
 
         abstract long execute(Object pointer, long offset);
 
@@ -431,9 +440,73 @@ public class CStructAccess {
         }
     }
 
+    /**
+     * Note that this node returns a double, not a float, even though it reads only 32 bits.
+     */
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadDoubleNode extends Node implements CStructAccessNode {
+    public abstract static class ReadFloatNode extends ReadBaseNode {
+
+        abstract double execute(Object pointer, long offset);
+
+        public final double read(Object pointer, CFields field) {
+            assert accepts(field);
+            return execute(pointer, field.offset());
+        }
+
+        public final double readFromObj(PythonNativeObject self, CFields field) {
+            return read(self.getPtr(), field);
+        }
+
+        public final boolean accepts(ArgDescriptor desc) {
+            return desc.isDouble();
+        }
+
+        public final double readArrayElement(Object pointer, int element) {
+            return execute(pointer, element * Float.BYTES);
+        }
+
+        @Specialization
+        static double readLong(long pointer, long offset) {
+            assert offset >= 0;
+            return UNSAFE.getFloat(pointer + offset);
+        }
+
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        static double readPointer(Object pointer, long offset,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return readLong(asPointer(pointer, lib), offset);
+        }
+
+        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
+        static double readManaged(Object pointer, long offset,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary(limit = "3") InteropLibrary resultLib,
+                        @Cached PCallCapiFunction call) {
+            assert validPointer(pointer);
+            Object result = call.call(NativeCAPISymbol.FUN_READ_FLOAT_MEMBER, pointer, offset);
+            if (result instanceof Double) {
+                return (double) result;
+            }
+            try {
+                return resultLib.asFloat(result);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        public static ReadFloatNode getUncached() {
+            return CStructAccessFactory.ReadFloatNodeGen.getUncached();
+        }
+
+        public static ReadFloatNode create() {
+            return CStructAccessFactory.ReadFloatNodeGen.create();
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class ReadDoubleNode extends ReadBaseNode {
 
         abstract double execute(Object pointer, long offset);
 
@@ -474,7 +547,7 @@ public class CStructAccess {
             assert validPointer(pointer);
             Object result = call.call(NativeCAPISymbol.FUN_READ_DOUBLE_MEMBER, pointer, offset);
             if (result instanceof Double) {
-                return (long) result;
+                return (double) result;
             }
             try {
                 return resultLib.asDouble(result);
@@ -494,7 +567,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadPointerNode extends Node implements CStructAccessNode {
+    public abstract static class ReadPointerNode extends ReadBaseNode {
 
         abstract Object execute(Object pointer, long offset);
 
@@ -547,7 +620,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadObjectNode extends Node implements CStructAccessNode {
+    public abstract static class ReadObjectNode extends ReadBaseNode {
         abstract Object execute(Object pointer, long offset);
 
         public final Object read(Object pointer, CFields field) {
@@ -614,7 +687,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class ReadCharPtrNode extends Node implements CStructAccessNode {
+    public abstract static class ReadCharPtrNode extends ReadBaseNode {
         abstract TruffleString execute(Object pointer, long offset);
 
         public final TruffleString read(Object pointer, CFields field) {

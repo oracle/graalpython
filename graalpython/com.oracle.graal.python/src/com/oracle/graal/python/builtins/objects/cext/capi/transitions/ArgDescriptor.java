@@ -169,7 +169,7 @@ public enum ArgDescriptor {
     CONST_UNSIGNED_CHAR_PTR("const unsigned char*"),
     CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
-    CONST_WCHAR_PTR("const wchar_t*"),
+    CONST_WCHAR_PTR(ArgBehavior.Pointer, "const wchar_t*"),
     CROSSINTERPDATAFUNC("crossinterpdatafunc"),
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),

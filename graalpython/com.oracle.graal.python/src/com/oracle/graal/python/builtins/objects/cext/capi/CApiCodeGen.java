@@ -268,7 +268,7 @@ public final class CApiCodeGen {
         lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {");
         lines.add("    static Py_ssize_t sizes[] = {");
         for (CStructs struct : CStructs.VALUES) {
-            lines.add("        sizeof(" + struct.name() + "),");
+            lines.add("        sizeof(" + struct.name().replace("__", " ") + "),");
         }
         lines.add("        0xdead3333 // marker value");
         lines.add("    };");

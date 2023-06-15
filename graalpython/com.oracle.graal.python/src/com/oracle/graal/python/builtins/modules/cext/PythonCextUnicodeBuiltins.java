@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeDec
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -893,14 +894,14 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, SIZE_T}, call = Ignored)
-    abstract static class PyTruffle_Unicode_FromWchar extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObject, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = Direct)
+    abstract static class PyUnicode_FromWideChar extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doInt(Object arr, long size, long elementSize,
+        Object doInt(Object arr, long size,
                         @Cached ReadUnicodeArrayNode readArray,
                         @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            return factory().createString(fromArray.execute(readArray.execute(arr, castToInt(size), castToInt(elementSize))));
+            return factory().createString(fromArray.execute(readArray.execute(arr, castToInt(size), CStructs.wchar_t.size())));
         }
     }
 
