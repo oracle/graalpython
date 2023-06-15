@@ -1950,6 +1950,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
+    public long geteuid() {
+        throw new UnsupportedPosixFeatureException("Emulated geteuid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public long getgid() {
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
             String osName = System.getProperty("os.name");
