@@ -1219,7 +1219,102 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* haystack", "PyObject* needle"],
         cmpfunc=unhandled_error_compare
     )
-    
+
+    def index_func(args):
+        for idx,obj in enumerate(args[0]):
+            if obj == args[1]:
+                return idx
+        raise ValueError
+
+    test_PySequence_Index = CPyExtFunction(
+        index_func,
+        lambda: (
+            (tuple(), 1),
+            ((1, 2, 3), 1),
+            ((1, 2, 3), 4),
+            ((None,), 1),
+            ([], 1),
+            (['a', 'b', 'c'], 'a'),
+            (['a', 'b', 'c'], 'd'),
+            ([None], 1),
+            (set(), 1),
+            ({'a', 'b'}, 'a'),
+            ({'a', 'b'}, 'c'),
+            (DummyListSubclass(), 1),
+            ('hello', 'e'),
+            ('hello', 'x'),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    def count_func(args):
+        c = 0
+        for obj in args[0]:
+            if obj == args[1]:
+                c += 1
+        return c
+
+    test_PySequence_Count = CPyExtFunction(
+        count_func,
+        lambda: (
+            (tuple(), 1),
+            ((1, 2, 3), 1),
+            ((1, 2, 3), 4),
+            ((None,), 1),
+            ([], 1),
+            (['a', 'b', 'c'], 'a'),
+            (['a', 'b', 'c'], 'd'),
+            ([None], 1),
+            (set(), 1),
+            ({'a', 'b'}, 'a'),
+            ({'a', 'b'}, 'c'),
+            (DummyListSubclass(), 1),
+            ('hello', 'e'),
+            ('hello', 'x'),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    def _reference_setslice(args):
+        args[0][args[1]:args[2]] = args[3]
+        return 0;
+
+    test_PySequence_SetSlice = CPyExtFunction(
+        _reference_setslice,
+        lambda: (
+            ([1,2,3,4],0,4,[5,6,7,8]),
+            ([],1,2, [5,6]),
+            ([1,2,3,4],10,20,[5,6,7,8]),
+        ),
+        resultspec="i",
+        argspec='OnnO',
+        arguments=["PyObject* op", "Py_ssize_t ilow", "Py_ssize_t ihigh", "PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    def _reference_delslice(args):
+        del args[0][args[1]:args[2]]
+        return 0;
+
+    test_PySequence_DelSlice = CPyExtFunction(
+        _reference_delslice,
+        lambda: (
+            ([1,2,3,4],0,4),
+            ([],1,2),
+            ([1,2,3,4],10,20),
+        ),
+        resultspec="i",
+        argspec='Onn',
+        arguments=["PyObject* op", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PySequence_ITEM = CPyExtFunction(
         _reference_getitem,
         lambda: (

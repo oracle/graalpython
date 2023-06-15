@@ -60,13 +60,18 @@ def _reference_values(args):
     return list(d.values())
 
 
+def _reference_items(args):
+    d = args[0]
+    return list(d.items())
+
+
 def _reference_pop(args):
     d = args[0]
     if(len(args) == 2):
         return d.pop(args[1])
     else:
         return d.pop(args[1], args[2])
-        
+
 
 def _reference_get_item_with_error(args):
     d = args[0]
@@ -127,7 +132,7 @@ def _reference_merge(args):
                 if not k in a:
                     a[k] = b[k]
         return 0
-    except:        
+    except:
         raise AttributeError("'int' object has no attribute 'keys'")
 
 class SubDict(dict):
@@ -158,7 +163,7 @@ class MappingObj:
         return "ab"
     def __getitem__(self, key):
         return key
-        
+
 class TestPyDict(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -174,7 +179,7 @@ class TestPyDict(CPyExtTestCase):
         arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
         cmpfunc=unhandled_error_compare
     )
-    
+
     # PyDict_SetItem
     test_PyDict_SetItem = CPyExtFunction(
         _reference_set_item,
@@ -208,7 +213,7 @@ class TestPyDict(CPyExtTestCase):
         callfunction="wrap_PyDict_GetItem",
         cmpfunc=unhandled_error_compare
     )
-    
+
     # PyDict_GetItemWithError
     test_PyDict_GetItemWithError = CPyExtFunction(
         _reference_get_item_with_error,
@@ -344,12 +349,12 @@ class TestPyDict(CPyExtTestCase):
         lambda: (({'a': "hello"}, ),),
         code='''PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* dict) {
             PyObject* result = PyDict_New();
-            
+
             Py_ssize_t ppos = 0;
             PyObject* key;
             PyObject* value;
-            Py_hash_t phash;            
-            
+            Py_hash_t phash;
+
             _PyDict_Next(dict, &ppos, &key, &value, &phash);
             _PyDict_SetItem_KnownHash(result, key, value, phash);
             return result;
@@ -499,10 +504,18 @@ class TestPyDict(CPyExtTestCase):
         argspec="O",
         cmpfunc=unhandled_error_compare
     )
-    
+
     # PyDict_Values
     test_PyDict_Values = CPyExtFunction(
         _reference_values,
+        lambda: (({},), ({'a': "hello"},)),
+        resultspec="O",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyDict_Items = CPyExtFunction(
+        _reference_items,
         lambda: (({},), ({'a': "hello"},)),
         resultspec="O",
         argspec="O",
