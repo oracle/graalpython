@@ -47,17 +47,16 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,12 +68,9 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
  * Creates an exception out of type and value, similarly to CPython's
  * {@code PyErr_NormalizeException}. Returns the normalized exception.
  */
-@ImportStatic({PGuards.class, SpecialMethodNames.class})
+@ImportStatic(PGuards.class)
 public abstract class PrepareExceptionNode extends Node {
     public abstract PBaseException execute(VirtualFrame frame, Object type, Object value);
-
-    private PRaiseNode raiseNode;
-    private IsSubtypeNode isSubtypeNode;
 
     @Specialization
     static PBaseException doException(PBaseException exc, @SuppressWarnings("unused") PNone value) {
@@ -82,31 +78,36 @@ public abstract class PrepareExceptionNode extends Node {
     }
 
     @Specialization(guards = "!isPNone(value)")
-    PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value) {
-        throw raise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
+    static PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
+                    @Shared @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
     @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
-    PBaseException doException(VirtualFrame frame, Object type, PBaseException value,
+    static PBaseException doException(VirtualFrame frame, Object type, PBaseException value,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                     @Cached InlinedBranchProfile isNotInstanceProfile,
-                    @Cached.Shared("callCtor") @Cached CallNode callConstructor) {
+                    @Shared @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared @Cached PRaiseNode raiseNode,
+                    @Shared("callCtor") @Cached CallNode callConstructor) {
         if (isInstanceNode.executeWith(frame, value, type)) {
-            checkExceptionClass(type);
+            checkExceptionClass(type, isSubtypeNode, raiseNode);
             return value;
         } else {
             isNotInstanceProfile.enter(inliningTarget);
-            return doCreateObject(frame, type, value, isTypeNode, callConstructor);
+            return doCreateObject(frame, type, value, isTypeNode, isSubtypeNode, raiseNode, callConstructor);
         }
     }
 
     @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
-    PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
-                    @SuppressWarnings("unused") @Cached.Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                    @Cached.Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type);
+    static PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
+                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
+                    @Shared @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared @Cached PRaiseNode raiseNode,
+                    @Shared("callCtor") @Cached CallNode callConstructor) {
+        checkExceptionClass(type, isSubtypeNode, raiseNode);
         Object instance = callConstructor.execute(frame, type);
         if (instance instanceof PBaseException) {
             return (PBaseException) instance;
@@ -116,12 +117,14 @@ public abstract class PrepareExceptionNode extends Node {
     }
 
     @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
-    PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
+    static PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
                     @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                    @Cached.Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type);
+                    @Shared @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared @Cached PRaiseNode raiseNode,
+                    @Shared("callCtor") @Cached CallNode callConstructor) {
+        checkExceptionClass(type, isSubtypeNode, raiseNode);
         Object[] args = getObjectArrayNode.execute(inliningTarget, value);
         Object instance = callConstructor.execute(frame, type, args);
         if (instance instanceof PBaseException) {
@@ -132,10 +135,12 @@ public abstract class PrepareExceptionNode extends Node {
     }
 
     @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"}, limit = "1")
-    PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
-                    @SuppressWarnings("unused") @Cached.Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                    @Cached.Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type);
+    static PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
+                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
+                    @Shared @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared @Cached PRaiseNode raiseNode,
+                    @Shared("callCtor") @Cached CallNode callConstructor) {
+        checkExceptionClass(type, isSubtypeNode, raiseNode);
         Object instance = callConstructor.execute(frame, type, value);
         if (instance instanceof PBaseException) {
             return (PBaseException) instance;
@@ -144,34 +149,23 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
+    @Fallback
+    static PBaseException doError(Object type, @SuppressWarnings("unused") Object value,
+                    @Shared @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+    }
+
     private static PBaseException handleInstanceNotAnException(Object type, Object instance) {
         /*
-         * Instead of throwing the exception here, we throw it into the generator. That's what
-         * CPython does
+         * Instead of throwing the exception here, we replace the created exception with it. This is
+         * done to match CPython's behavior of `generator.throw`
          */
         return PythonObjectFactory.getUncached().createBaseException(TypeError, ErrorMessages.CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P, new Object[]{type, instance});
     }
 
-    @Fallback
-    PBaseException doError(Object type, @SuppressWarnings("unused") Object value) {
-        throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
-    }
-
-    private PRaiseNode raise() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return raiseNode;
-    }
-
-    private void checkExceptionClass(Object type) {
-        if (isSubtypeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isSubtypeNode = insert(IsSubtypeNode.create());
-        }
+    private static void checkExceptionClass(Object type, IsSubtypeNode isSubtypeNode, PRaiseNode raiseNode) {
         if (!isSubtypeNode.execute(type, PythonBuiltinClassType.PBaseException)) {
-            throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+            throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
         }
     }
 }
