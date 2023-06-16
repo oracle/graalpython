@@ -106,3 +106,51 @@ class TestPythonRun(CPyExtTestCase):
         arguments=["char* source", "char* filename", "int type"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_Py_CompileStringExFlags = CPyExtFunction(
+        lambda args: compile(
+            args[0],
+            args[1],
+            {
+                256: "single",
+                257: "exec",
+                258: "eval"
+            }[args[2]],
+            flags=args[3],
+            optimize=args[4],
+        ),
+        lambda: (
+            ("1 + 2", "foo.py", 256, 0, -1),
+            ("1 + 2", "foo.py", 257, 0, 1),
+            ("1 + 2", "foo.py", 258, 0, 2),
+            ("x = 2", "foo.py", 258, 0, 0),
+        ),
+        resultspec="O",
+        argspec='ssiii',
+        arguments=["char* source", "char* filename", "int type", "PyCompilerFlags* flags", "int optimize"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_Py_CompileStringObject = CPyExtFunction(
+        lambda args: compile(
+            args[0],
+            args[1],
+            {
+                256: "single",
+                257: "exec",
+                258: "eval"
+            }[args[2]],
+            flags=args[3],
+            optimize=args[4],
+        ),
+        lambda: (
+            ("1 + 2", "foo.py", 256, 0, -1),
+            ("1 + 2", "foo.py", 257, 0, 1),
+            ("1 + 2", "foo.py", 258, 0, 2),
+            ("x = 2", "foo.py", 258, 0, 0),
+        ),
+        resultspec="O",
+        argspec='sOiii',
+        arguments=["char* source", "PyObject* filename", "int type", "PyCompilerFlags* flags", "int optimize"],
+        cmpfunc=unhandled_error_compare
+    )

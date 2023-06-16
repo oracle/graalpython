@@ -56,13 +56,15 @@ import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isString;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -119,10 +121,30 @@ public final class PythonCextPythonRunBuiltins {
     @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
     abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
-        Object compile(Object source, Object filename, int type,
+        static Object compile(Object source, Object filename, int type,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            PythonModule builtins = getCore().getBuiltins();
+            return Py_CompileStringExFlags.compile(source, filename, type, null, -1, raiseNode, lookupNode, callNode);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isString(source) || !isString(filename)")
+        Object fail(Object source, Object filename, Object type) {
+            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
+        @Specialization(guards = {"isString(source)", "isString(filename)"})
+        static Object compile(Object source, Object filename, int type,
+                        @SuppressWarnings("unused") Object flags,
+                        int optimizationLevel,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode) {
+            PythonModule builtins = PythonContext.get(lookupNode).getCore().getBuiltins();
             Object compileCallable = lookupNode.execute(null, builtins, T_COMPILE);
             TruffleString stype;
             if (type == Py_single_input) {
@@ -132,13 +154,35 @@ public final class PythonCextPythonRunBuiltins {
             } else if (type == Py_eval_input) {
                 stype = StringLiterals.T_EVAL;
             } else {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
-            return callNode.execute(compileCallable, source, filename, stype);
+            int defaultFlags = 0;
+            boolean dontInherit = false;
+            return callNode.execute(compileCallable, source, filename, stype, defaultFlags, dontInherit, optimizationLevel);
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source) || !isString(filename)")
-        Object fail(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object filename, @SuppressWarnings("unused") int type) {
+        Object fail(Object source, Object filename,  Object type, Object flags, Object optimizationLevel) {
+            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, Int, PY_COMPILER_FLAGS, Int}, call = Direct)
+    abstract static class Py_CompileStringObject extends CApi5BuiltinNode {
+        @Specialization(guards = "isString(source)")
+        static Object compile(Object source, Object filename, int type,
+                        @SuppressWarnings("unused") Object flags,
+                        int optimizationLevel,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached CallNode callNode) {
+            return Py_CompileStringExFlags.compile(source, filename, type, null, optimizationLevel, raiseNode, lookupNode, callNode);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isString(source)")
+        Object fail(Object source, Object filename,  Object type, Object flags, Object optimizationLevel) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }

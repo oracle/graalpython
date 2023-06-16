@@ -416,6 +416,8 @@ typedef struct {
     BUILTIN(PyWeakref_NewRef, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_AtExit, int, void (*)(void)) \
     BUILTIN(Py_CompileString, PyObject*, const char*, const char*, int) \
+    BUILTIN(Py_CompileStringExFlags, PyObject*, const char*, const char*, int, PyCompilerFlags*, int) \
+    BUILTIN(Py_CompileStringObject, PyObject*, const char*, PyObject*, int, PyCompilerFlags*, int) \
     BUILTIN(Py_EnterRecursiveCall, int, const char*) \
     BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_LeaveRecursiveCall, void) \
