@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;

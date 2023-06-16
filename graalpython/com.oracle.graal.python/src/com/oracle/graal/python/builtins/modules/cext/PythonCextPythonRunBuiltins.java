@@ -163,7 +163,7 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source) || !isString(filename)")
-        Object fail(Object source, Object filename,  Object type, Object flags, Object optimizationLevel) {
+        Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
@@ -182,7 +182,7 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source)")
-        Object fail(Object source, Object filename,  Object type, Object flags, Object optimizationLevel) {
+        Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
