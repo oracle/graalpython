@@ -868,10 +868,10 @@ suite = {
                             "./": [
                                 "file:mx.graalpython/native-image.properties",
                             ],
-                            "./lib/python<py_ver:major_minor_nodot>/": [
+                            "./lib/python<py_ver:major_minor>/": [
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
-                            "./lib/graalpy<graal_ver:major_minor_nodot>/": [
+                            "./lib/graalpy<graal_ver:major_minor>/": [
                                 "file:graalpython/lib-graalpython/*",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
                                 {
@@ -892,10 +892,10 @@ suite = {
                                 },
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
                             ],
-                            "./lib/graalpy<graal_ver:major_minor_nodot>/modules/graalpy_virtualenv": [
+                            "./lib/graalpy<graal_ver:major_minor>/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",
                             ],
-                            "./include/python<py_ver:major_minor_nodot>/": [
+                            "./include/python<py_ver:major_minor>/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
                                 "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
                             ],

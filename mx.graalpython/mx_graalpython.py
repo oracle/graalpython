@@ -86,7 +86,9 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
+GRAAL_VERSION_NODOT = GRAAL_VERSION.replace('.', '')
 PYTHON_VERSION = "3.10"
+PYTHON_VERSION_NODOT = "3.10".replace('.', '')
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -1603,18 +1605,35 @@ def _get_output_root(projectname):
     mx.abort("Could not find out dir for project %s" % projectname)
 
 
-def py_version_short(*args):
+def py_version_short(variant=None, **kwargs):
+    if variant == 'major_minor_nodot':
+        return PYTHON_VERSION_NODOT
     return PYTHON_VERSION
 
 
-def graal_version_short(*args):
+def graal_version_short(variant=None, **kwargs):
+    if variant == 'major_minor_nodot':
+        return GRAAL_VERSION_NODOT
     return GRAAL_VERSION
 
-def graalpy_ext(arg):
-    if arg == "soabi":
-        # TODO(fa): do properly
-        return ".graalpy231-310-native-x86_64-darwin.so"
-    raise ValueError("unknown ext type requested: " + arg)
+def graalpy_ext(llvm_mode, **kwargs):
+    if not llvm_mode:
+        mx.abort("substitution 'graalpy_ext' is missing argument 'llvm_mode'")
+    os = mx_subst.path_substitutions.substitute('<os>')
+    arch = mx_subst.path_substitutions.substitute('<arch>')
+    if arch == 'amd64':
+        # be compatible with CPython's designation
+        # (see also: 'PythonUtils.getPythonArch')
+        arch = 'x86_64'
+
+    # not ".dylib", similar to CPython:
+    # https://github.com/python/cpython/issues/37510
+    if os == 'windows':
+        ext = 'pyd'
+    else:
+        ext = 'so'
+
+    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{os}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -1623,7 +1642,8 @@ mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 
-mx_subst.string_substitutions.register_with_arg('ext', graalpy_ext)
+mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
+mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 
 
 def delete_self_if_testdownstream(args):
