@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -141,6 +142,9 @@ abstract class PosixResources extends PosixSupport {
         }
 
         @Override
+        // Can be removed once the `graalpython` suite has mxversion >= 6.27.1.
+        // Until then, the analysis does not see an implementation with side effects.
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
         public Process destroyForcibly() {
             for (Process child : children) {
                 if (child != null && child != this) {
