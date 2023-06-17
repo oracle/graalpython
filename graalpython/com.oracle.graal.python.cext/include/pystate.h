@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -97,9 +97,8 @@ PyAPI_FUNC(PyFrameObject*) PyThreadState_GetFrame(PyThreadState *tstate);
 PyAPI_FUNC(uint64_t) PyThreadState_GetID(PyThreadState *tstate);
 #endif
 
-typedef
-    enum {PyGILState_LOCKED, PyGILState_UNLOCKED}
-        PyGILState_STATE;
+/* GraalVM change: we need more state bits */
+typedef int PyGILState_STATE;
 
 
 /* Ensure that the current thread is ready to call the Python

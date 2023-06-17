@@ -1729,14 +1729,6 @@ PyAPI_FUNC(PyObject*) PyFrozenSet_New(PyObject* a) {
 PyAPI_FUNC(int) PyGILState_Check() {
     return GraalPyGILState_Check();
 }
-#undef PyGILState_Ensure
-PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    return GraalPyGILState_Ensure();
-}
-#undef PyGILState_Release
-PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE a) {
-    GraalPyGILState_Release(a);
-}
 #undef PyImport_GetModuleDict
 PyAPI_FUNC(PyObject*) PyImport_GetModuleDict() {
     return GraalPyImport_GetModuleDict();
@@ -2212,6 +2204,14 @@ PyAPI_FUNC(int) PyTraceMalloc_Track(unsigned int a, uintptr_t b, size_t c) {
 #undef PyTraceMalloc_Untrack
 PyAPI_FUNC(int) PyTraceMalloc_Untrack(unsigned int a, uintptr_t b) {
     return GraalPyTraceMalloc_Untrack(a, b);
+}
+#undef PyTruffleGILState_Ensure
+PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
+    return GraalPyTruffleGILState_Ensure();
+}
+#undef PyTruffleGILState_Release
+PyAPI_FUNC(void) PyTruffleGILState_Release() {
+    GraalPyTruffleGILState_Release();
 }
 #undef PyTruffle_Debug
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {

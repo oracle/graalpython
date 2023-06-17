@@ -737,6 +737,8 @@ void unimplemented(const char* name) {
 #undef PyTruffleErr_WarnExplicit
 #undef PyTruffleFloat_AsDouble
 #undef PyTruffleFrame_New
+#undef PyTruffleGILState_Ensure
+#undef PyTruffleGILState_Release
 #undef PyTruffleHash_InitSecret
 #undef PyTruffleLong_AsPrimitive
 #undef PyTruffleLong_FromString
@@ -2564,17 +2566,10 @@ PyAPI_FUNC(int) PyGILState_Check() {
     int result = (int) GraalPyGILState_Check();
     return result;
 }
-PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    PyGILState_STATE result = (PyGILState_STATE) GraalPyGILState_Ensure();
-    return result;
-}
 PyThreadState* (*__target__PyGILState_GetThisThreadState)() = NULL;
 PyAPI_FUNC(PyThreadState*) PyGILState_GetThisThreadState() {
     PyThreadState* result = (PyThreadState*) __target__PyGILState_GetThisThreadState();
     return result;
-}
-PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE a) {
-    GraalPyGILState_Release(a);
 }
 PyObject* (*__target__PyGen_New)(PyFrameObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyGen_New(PyFrameObject* a) {
@@ -3954,6 +3949,13 @@ PyAPI_FUNC(int) PyTraceMalloc_Untrack(unsigned int a, uintptr_t b) {
 }
 PyAPI_FUNC(PyFrameObject*) PyTruffleFrame_New(PyThreadState* a, PyCodeObject* b, PyObject* c, PyObject* d) {
     unimplemented("PyTruffleFrame_New"); exit(-1);
+}
+PyAPI_FUNC(int) PyTruffleGILState_Ensure() {
+    int result = (int) GraalPyTruffleGILState_Ensure();
+    return result;
+}
+PyAPI_FUNC(void) PyTruffleGILState_Release() {
+    GraalPyTruffleGILState_Release();
 }
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
     int result = (int) GraalPyTruffle_Debug(a);

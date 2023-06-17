@@ -115,3 +115,15 @@ int PyState_RemoveModule(struct PyModuleDef* def) {
     // TODO(fa): implement
     return 0;
 }
+
+// This function has a different implementation on NFI in capi_native.c
+PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
+    return GraalPyTruffleGILState_Ensure();
+}
+
+// This function has a different implementation on NFI in capi_native.c
+PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
+    if (state) {
+        GraalPyTruffleGILState_Release();
+    }
+}

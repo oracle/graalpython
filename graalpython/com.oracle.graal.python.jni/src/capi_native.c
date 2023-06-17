@@ -50,11 +50,15 @@
 #include <pycore_pymem.h>
 #include <pycore_moduleobject.h>
 
+#include <trufflenfi.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 
 #define MUST_INLINE __attribute__((always_inline)) inline
+
+TruffleContext* TRUFFLE_CONTEXT;
 
 #define PY_TYPE_OBJECTS(OBJECT) \
 OBJECT(PyAsyncGen_Type, async_generator) \
@@ -299,13 +303,15 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
+PyAPI_FUNC(int) initNativeForward(TruffleEnv* env, void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
     if (initNativeForwardCalled) {
     	return 0;
     }
     initNativeForwardCalled = 1;
     clock_t t;
     t = clock();
+
+    TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
 
 #define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) setTypeStore(#TYPENAME, (void*) &NAME);
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
@@ -457,6 +463,31 @@ void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
 void finalizeCAPI() {
 	GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
 	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
+}
+
+#define _PYGILSTATE_LOCKED   0x1
+#define _PYGILSTATE_ATTACHED 0x2
+
+PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
+    int result = 0;
+    if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+        (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+        result |= _PYGILSTATE_ATTACHED;
+    }
+    int locked = PyTruffleGILState_Ensure();
+    if (locked) {
+        result |= _PYGILSTATE_LOCKED;
+    }
+    return result;
+}
+
+PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
+    if (state & _PYGILSTATE_LOCKED) {
+        PyTruffleGILState_Release();
+    }
+    if (state & _PYGILSTATE_ATTACHED) {
+        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
+    }
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {

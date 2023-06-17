@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,8 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import threading
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -83,3 +84,43 @@ class TestPyThread(CPyExtTestCase):
         callfunction="test_PyThread_tss_functions",
         cmpfunc=unhandled_error_compare
     )
+
+
+class TestNativeThread:
+    def test_register_new_thread(self):
+        TestThread = CPyExtType(
+            name="TestThread",
+            includes="#include <pthread.h>",
+            code=r'''
+            void* thread_entrypoint(void* arg) {
+                PyObject* callable = (PyObject*)arg;
+                PyGILState_STATE gstate;
+                gstate = PyGILState_Ensure();
+                if (!PyObject_CallNoArgs(callable)) {
+                    PyErr_WriteUnraisable(callable);
+                }
+                PyGILState_Release(gstate);
+                return NULL;
+            }
+            PyObject* run_in_thread(PyObject* self, PyObject* callable) {
+                Py_BEGIN_ALLOW_THREADS;
+                pthread_t thread;
+                pthread_create(&thread, NULL, thread_entrypoint, callable);
+                pthread_join(thread, NULL);
+                Py_END_ALLOW_THREADS;
+                Py_RETURN_NONE;
+            }
+            ''',
+            tp_methods='{"run_in_thread", (PyCFunction)run_in_thread, METH_O | METH_STATIC, ""}'
+        )
+
+        thread = None
+
+        def callable():
+            nonlocal thread
+            thread = threading.current_thread()
+
+        TestThread.run_in_thread(callable)
+
+        assert thread
+        assert thread is not threading.current_thread()
