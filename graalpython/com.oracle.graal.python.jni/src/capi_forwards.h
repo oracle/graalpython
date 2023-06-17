@@ -1363,6 +1363,7 @@ void unimplemented(const char* name) {
 #undef _PyInterpreterState_SetEvalFrameFunc
 #undef _PyList_DebugMallocStats
 #undef _PyList_Extend
+#undef _PyList_SET_ITEM
 #undef _PyLong_AsByteArray
 #undef _PyLong_AsInt
 #undef _PyLong_AsTime_t
@@ -4561,11 +4562,15 @@ PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
     PyObject* result = (PyObject*) __target__Py_CompileString(a, b, c);
     return result;
 }
+PyObject* (*__target__Py_CompileStringExFlags)(const char*, const char*, int, PyCompilerFlags*, int) = NULL;
 PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int c, PyCompilerFlags* d, int e) {
-    unimplemented("Py_CompileStringExFlags"); exit(-1);
+    PyObject* result = (PyObject*) __target__Py_CompileStringExFlags(a, b, c, d, e);
+    return result;
 }
+PyObject* (*__target__Py_CompileStringObject)(const char*, PyObject*, int, PyCompilerFlags*, int) = NULL;
 PyAPI_FUNC(PyObject*) Py_CompileStringObject(const char* a, PyObject* b, int c, PyCompilerFlags* d, int e) {
-    unimplemented("Py_CompileStringObject"); exit(-1);
+    PyObject* result = (PyObject*) __target__Py_CompileStringObject(a, b, c, d, e);
+    return result;
 }
 PyAPI_FUNC(wchar_t*) Py_DecodeLocale(const char* a, size_t* b) {
     unimplemented("Py_DecodeLocale"); exit(-1);
@@ -5164,6 +5169,9 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     PyObject* result = (PyObject*) Graal_PyList_Extend(a, b);
     return result;
+}
+PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    Graal_PyList_SET_ITEM(a, b, c);
 }
 PyAPI_FUNC(time_t) _PyLong_AsTime_t(PyObject* a) {
     unimplemented("_PyLong_AsTime_t"); exit(-1);
@@ -6438,6 +6446,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_New = getAPI("PyUnicode_New");
     __target__PyVectorcall_Call = getAPI("PyVectorcall_Call");
     __target__Py_CompileString = getAPI("Py_CompileString");
+    __target__Py_CompileStringExFlags = getAPI("Py_CompileStringExFlags");
+    __target__Py_CompileStringObject = getAPI("Py_CompileStringObject");
     __target__Py_GetBuildInfo = getAPI("Py_GetBuildInfo");
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");

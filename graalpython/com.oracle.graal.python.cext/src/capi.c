@@ -2361,6 +2361,14 @@ PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
 PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
     return GraalPy_CompileString(truffleString(a), truffleString(b), c);
 }
+#undef Py_CompileStringExFlags
+PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int c, PyCompilerFlags* d, int e) {
+    return GraalPy_CompileStringExFlags(truffleString(a), truffleString(b), c, d, e);
+}
+#undef Py_CompileStringObject
+PyAPI_FUNC(PyObject*) Py_CompileStringObject(const char* a, PyObject* b, int c, PyCompilerFlags* d, int e) {
+    return GraalPy_CompileStringObject(truffleString(a), b, c, d, e);
+}
 #undef Py_EnterRecursiveCall
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
     return GraalPy_EnterRecursiveCall(a);
@@ -2396,6 +2404,10 @@ PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
 #undef _PyList_Extend
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     return Graal_PyList_Extend(a, b);
+}
+#undef _PyList_SET_ITEM
+PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    Graal_PyList_SET_ITEM(a, b, c);
 }
 #undef _PyLong_Sign
 PyAPI_FUNC(int) _PyLong_Sign(PyObject* a) {

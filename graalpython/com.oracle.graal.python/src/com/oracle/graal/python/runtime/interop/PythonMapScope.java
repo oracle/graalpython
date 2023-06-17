@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -121,7 +121,7 @@ public final class PythonMapScope implements TruffleObject {
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
                     @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnsupportedMessageException {
-        int length = lengthProfile.profile(null, names.length);
+        int length = lengthProfile.profile(inliningTarget, names.length);
         Object[] keys = new Object[length - scopeIndex];
         for (int i = scopeIndex; i < length; i++) {
             keys[i - scopeIndex] = interop.getMembers(objects[i]);

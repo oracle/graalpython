@@ -665,6 +665,7 @@ static int polyglot_is_value(const void *value) {
 
 #include "_warnings.c"
 #include "boolobject.c"
+#include "bytearrayobject_shared.c"
 #include "longobject_shared.c"
 #include "complexobject.c"
 #include "dictobject.c"

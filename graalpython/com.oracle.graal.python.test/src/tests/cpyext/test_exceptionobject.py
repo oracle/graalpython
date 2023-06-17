@@ -127,6 +127,18 @@ class TestExceptionobject(object):
         else:
             assert False
 
+
+def raise_exception_with_cause():
+    try:
+        raise RuntimeError()
+    except RuntimeError as e:
+        exc = e
+    try:
+        raise IndexError from exc
+    except IndexError as e:
+        return e
+
+
 class TestExceptionobjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -142,4 +154,14 @@ class TestExceptionobjectFunctions(CPyExtTestCase):
         resultspec="i",
         argspec="OO",
         arguments=["PyObject* exc", "PyObject* tb"],
+    )
+
+    test_PyException_GetCause = CPyExtFunction(
+        lambda args: args[0].__cause__,
+        lambda: (
+            (raise_exception_with_cause(),),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* exc"],
     )

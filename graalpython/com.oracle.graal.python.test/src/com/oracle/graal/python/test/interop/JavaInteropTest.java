@@ -258,6 +258,11 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void enumeratingMainBindingsWorks() throws Exception {
+            assertTrue(context.getBindings("python").getMemberKeys().contains("__builtins__"));
+        }
+
+        @Test
         public void testMultipleInvocationsAreInSameScope() throws UnsupportedEncodingException {
             String source = "def foo(a, b):\n" +
                             "    print(a, b)\n" +

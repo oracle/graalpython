@@ -416,6 +416,8 @@ typedef struct {
     BUILTIN(PyWeakref_NewRef, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_AtExit, int, void (*)(void)) \
     BUILTIN(Py_CompileString, PyObject*, const char*, const char*, int) \
+    BUILTIN(Py_CompileStringExFlags, PyObject*, const char*, const char*, int, PyCompilerFlags*, int) \
+    BUILTIN(Py_CompileStringObject, PyObject*, const char*, PyObject*, int, PyCompilerFlags*, int) \
     BUILTIN(Py_EnterRecursiveCall, int, const char*) \
     BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
     BUILTIN(Py_LeaveRecursiveCall, void) \
@@ -607,6 +609,7 @@ typedef struct {
     BUILTIN(_PyErr_BadInternalCall, void, const char*, int) \
     BUILTIN(_PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
     BUILTIN(_PyList_Extend, PyObject*, PyListObject*, PyObject*) \
+    BUILTIN(_PyList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyLong_Sign, int, PyObject*) \
     BUILTIN(_PyNamespace_New, PyObject*, PyObject*) \
     BUILTIN(_PyNumber_Index, PyObject*, PyObject*) \

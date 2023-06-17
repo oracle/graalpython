@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 #include "capi.h"
 
-void* PyTruffle_NativeListItems(PyListObject* list) {
-    return polyglot_from_PyObjectPtr_array(list->ob_item, list->ob_base.ob_size);
+char* PyByteArray_AsString(PyObject* obj) {
+    return PyByteArray_AS_STRING(obj);
+}
+
+Py_ssize_t PyByteArray_Size(PyObject *self) {
+    return PyByteArray_GET_SIZE(self);
 }

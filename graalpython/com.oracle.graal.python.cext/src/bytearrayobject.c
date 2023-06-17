@@ -47,14 +47,6 @@ char* _PyByteArray_Start(PyObject* obj) {
 	return PyByteArrayObject_ob_start(obj);
 }
 
-char* PyByteArray_AsString(PyObject* obj) {
-    return PyByteArray_AS_STRING(obj);
-}
-
-Py_ssize_t PyByteArray_Size(PyObject *self) {
-    return PyByteArray_GET_SIZE(self);
-}
-
 // taken from CPython 3.7.0 "Objects/bytearrayobject.c"
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
     void *ptr;

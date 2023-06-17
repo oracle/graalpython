@@ -41,7 +41,7 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-    
+
 def _reference_new_list(args):
     n = args[0]
     if n < 0:
@@ -199,13 +199,26 @@ class TestPyList(CPyExtTestCase):
     test_PyList_SET_ITEM = CPyExtFunction(
         _wrap_list_fun(_reference_SET_ITEM),
         lambda: (
-            ([1,2,3,4], 0, 0),
-            ([1,2,3,4], 3, 5),
+            ([1,2,3,4], 0, _reference_SET_ITEM),
+            ([1,2,3,4], 3, _reference_SET_ITEM),
         ),
         code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
             Py_INCREF(newitem);
             PyList_SET_ITEM(op, idx, newitem);
-            return op;
+            int refcnt1 = Py_REFCNT(newitem);
+            PyList_SET_ITEM(op, idx, Py_None);
+            int refcnt2 = Py_REFCNT(newitem);
+            PyList_SET_ITEM(op, idx, newitem);
+            int refcnt3 = Py_REFCNT(newitem);
+            // Important! PyList_SET_ITEM does not change the refcnts,
+            // but PyList_SetItem decrefs the element that was
+            // previously at idx. Let's make sure that semantic
+            // difference is observed
+            if (refcnt1 != refcnt2 || refcnt2 != refcnt3) {
+                return Py_BuildValue("iii", refcnt1, refcnt2, refcnt3);
+            } else {
+                return op;
+            }
         }
         ''',
         resultspec="O",
