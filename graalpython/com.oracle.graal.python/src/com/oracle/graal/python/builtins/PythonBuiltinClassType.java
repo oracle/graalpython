@@ -99,6 +99,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -502,6 +503,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType type;
     @CompilationFinal private PythonBuiltinClassType base;
+    @CompilationFinal private int weaklistoffset;
 
     /**
      * @see #redefinesSlot(SpecialMethodSlot)
@@ -543,6 +545,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
         this.isException = flags == Flags.EXCEPTION;
         this.methodsFlags = methodsFlags;
+        this.weaklistoffset = -1;
     }
 
     PythonBuiltinClassType(String name, String module) {
@@ -611,6 +614,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public long getMethodsFlags() {
         return methodsFlags;
+    }
+
+    public int getWeaklistoffset() {
+        return weaklistoffset;
     }
 
     /**
@@ -863,6 +870,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
             if (type.type == null && type.base != null) {
                 type.type = type.base.type;
             }
+
+            type.weaklistoffset = WeakRefModuleBuiltins.getBuiltinTypeWeaklistoffset(type);
         }
 
         // Finally, we set all remaining types to PythonClass.

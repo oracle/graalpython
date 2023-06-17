@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -79,7 +81,6 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,9 +96,210 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
 
+    // This GraalPy specific as CPython is storing weakref list within a PyObject (obj +
+    // tp_weaklistoffset)
+    public static final HiddenKey __WEAKLIST__ = new HiddenKey("__weaklist__");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return WeakRefModuleBuiltinsFactory.getFactories();
+    }
+
+    public static int getBuiltinTypeWeaklistoffset(PythonBuiltinClassType cls) {
+        // @formatter:off
+        return switch (cls) {
+            case PythonObject, // object
+                    PInt, // int
+                    Boolean, // bool
+                    PByteArray, // bytearray
+                    PBytes, // bytes
+                    PList, // list
+                    PNone, // NoneType
+                    PNotImplemented, // NotImplementedType
+                    PTraceback, // traceback
+                    Super, // super
+                    PRange, // range
+                    PDict, // dict
+                    PDictKeysView, // dict_keys
+                    PDictValuesView, // dict_values
+                    PDictItemsView, // dict_items
+                    PDictReverseKeyIterator, // dict_reversekeyiterator
+                    PDictReverseValueIterator, // dict_reversevalueiterator
+                    PDictReverseItemIterator, // dict_reverseitemiterator
+                    PString, // str
+                    PSlice, // slice
+                    PStaticmethod, // staticmethod
+                    PComplex, // complex
+                    PFloat, // float
+                    PProperty, // property
+                    PTuple, // tuple
+                    PEnumerate, // enumerate
+                    PReverseIterator, // reversed
+                    PFrame, // frame
+                    PMappingproxy, // mappingproxy
+                    GetSetDescriptor, // getset_descriptor
+                    WrapperDescriptor, // wrapper_descriptor
+                    MethodWrapper, // method-wrapper
+                    PEllipsis, // ellipsis
+                    MemberDescriptor, // member_descriptor
+                    PSimpleNamespace, // types.SimpleNamespace
+                    Capsule, // PyCapsule
+                    PCell, // cell
+                    PInstancemethod, // instancemethod
+                    PBuiltinClassMethod, // classmethod_descriptor
+                    PBuiltinFunction, // method_descriptor
+                    PSentinelIterator, // callable_iterator
+                    PIterator, // iterator
+                    PCoroutineWrapper, // coroutine_wrapper
+                    PEncodingMap, // EncodingMap
+                    PIntInfo, // sys.int_info
+                    PBaseException, // BaseException
+                    Exception, // Exception
+                    TypeError, // TypeError
+                    StopAsyncIteration, // StopAsyncIteration
+                    StopIteration, // StopIteration
+                    GeneratorExit, // GeneratorExit
+                    SystemExit, // SystemExit
+                    KeyboardInterrupt, // KeyboardInterrupt
+                    ImportError, // ImportError
+                    ModuleNotFoundError, // ModuleNotFoundError
+                    OSError, // OSError
+                    EOFError, // EOFError
+                    RuntimeError, // RuntimeError
+                    RecursionError, // RecursionError
+                    NotImplementedError, // NotImplementedError
+                    NameError, // NameError
+                    UnboundLocalError, // UnboundLocalError
+                    AttributeError, // AttributeError
+                    SyntaxError, // SyntaxError
+                    IndentationError, // IndentationError
+                    TabError, // TabError
+                    LookupError, // LookupError
+                    IndexError, // IndexError
+                    KeyError, // KeyError
+                    ValueError, // ValueError
+                    UnicodeError, // UnicodeError
+                    UnicodeEncodeError, // UnicodeEncodeError
+                    UnicodeDecodeError, // UnicodeDecodeError
+                    UnicodeTranslateError, // UnicodeTranslateError
+                    AssertionError, // AssertionError
+                    ArithmeticError, // ArithmeticError
+                    FloatingPointError, // FloatingPointError
+                    OverflowError, // OverflowError
+                    ZeroDivisionError, // ZeroDivisionError
+                    SystemError, // SystemError
+                    ReferenceError, // ReferenceError
+                    MemoryError, // MemoryError
+                    BufferError, // BufferError
+                    Warning, // Warning
+                    UserWarning, // UserWarning
+                    DeprecationWarning, // DeprecationWarning
+                    PendingDeprecationWarning, // PendingDeprecationWarning
+                    SyntaxWarning, // SyntaxWarning
+                    RuntimeWarning, // RuntimeWarning
+                    FutureWarning, // FutureWarning
+                    ImportWarning, // ImportWarning
+                    UnicodeWarning, // UnicodeWarning
+                    BytesWarning, // BytesWarning
+                    ResourceWarning, // ResourceWarning
+                    ConnectionError, // ConnectionError
+                    BlockingIOError, // BlockingIOError
+                    BrokenPipeError, // BrokenPipeError
+                    ChildProcessError, // ChildProcessError
+                    ConnectionAbortedError, // ConnectionAbortedError
+                    ConnectionRefusedError, // ConnectionRefusedError
+                    ConnectionResetError, // ConnectionResetError
+                    FileExistsError, // FileExistsError
+                    FileNotFoundError, // FileNotFoundError
+                    IsADirectoryError, // IsADirectoryError
+                    NotADirectoryError, // NotADirectoryError
+                    InterruptedError, // InterruptedError
+                    PermissionError, // PermissionError
+                    ProcessLookupError, // ProcessLookupError
+                    TimeoutError, // TimeoutError
+                    PFloatInfo, // sys.float_info
+                    PythonModuleDef, // moduledef
+                    PHashInfo, // sys.hash_info
+                    PVersionInfo, // sys.version_info
+                    PFlags, // sys.flags
+                    PThreadInfo, // sys.thread_info
+                    PMap, // map
+                    PZip, // zip
+                    PClassmethod, // classmethod
+                    PBytesIOBuf, // _io._BytesIOBuffer
+                    PIncrementalNewlineDecoder, // _io.IncrementalNewlineDecoder
+                    PStatResult, // os.stat_result
+                    PStatvfsResult, // os.statvfs_result
+                    PTerminalSize, // os.terminal_size
+                    PScandirIterator, // posix.ScandirIterator
+                    PDirEntry, // posix.DirEntry
+                    PUnameResult, // posix.uname_result
+                    PStructTime, // time.struct_time
+                    PDictItemIterator, // dict_itemiterator
+                    PDictKeyIterator, // dict_keyiterator
+                    PDictValueIterator, // dict_valueiterator
+                    PAccumulate, // itertools.accumulate
+                    PCombinations, // itertools.combinations
+                    PCombinationsWithReplacement, // itertools.combinations_with_replacement
+                    PCycle, // itertools.cycle
+                    PDropwhile, // itertools.dropwhile
+                    PTakewhile, // itertools.takewhile
+                    PIslice, // itertools.islice
+                    PStarmap, // itertools.starmap
+                    PChain, // itertools.chain
+                    PCompress, // itertools.compress
+                    PFilterfalse, // itertools.filterfalse
+                    PCount, // itertools.count
+                    PZipLongest, // itertools.zip_longest
+                    PPermutations, // itertools.permutations
+                    PProduct, // itertools.product
+                    PRepeat, // itertools.repeat
+                    PGroupBy, // itertools.groupby
+                    PTeeDataObject, // itertools._tee_dataobject
+                    PDefaultDict, // collections.defaultdict
+                    PDequeIter, // _collections._deque_iterator
+                    PDequeRevIter, // _collections._deque_reverse_iterator
+                    PTupleGetter // _collections._tuplegetter
+                    -> 0;
+            case PythonClass -> 368; // type
+            case PSet, // set
+                    PFrozenSet // frozenset
+                    -> 192;
+            case PMemoryView, // memoryview
+                    PCode // code
+                    -> 136;
+            case PBuiltinFunctionOrMethod, // builtin_function_or_method
+                    PGenerator, // generator
+                    PCoroutine, // coroutine
+                    PythonModule, // module
+                    PThreadLocal, // _thread._local
+                    PRLock, // _thread.RLock
+                    PBufferedRWPair, // _io.BufferedRWPair
+                    PAsyncGenerator // async_generator
+                    -> 40;
+            case PMethod, // method
+                    PFileIO, // _io.FileIO
+                    PTee // itertools._tee
+                    -> 32;
+            case PFunction -> 80; // function
+            case PIOBase, // _io._IOBase
+                    PRawIOBase, // _io._RawIOBase
+                    PBufferedIOBase, // _io._BufferedIOBase
+                    PTextIOBase // _io._TextIOBase
+                    -> 24;
+            case PBytesIO, // _io.BytesIO
+                    PPartial // functools.partial
+                    -> 48;
+            case PStringIO -> 112; // _io.StringIO
+            case PBufferedReader, // _io.BufferedReader
+                    PBufferedWriter, // _io.BufferedWriter
+                    PBufferedRandom // _io.BufferedRandom
+                    -> 144;
+            case PTextIOWrapper -> 176; // _io.TextIOWrapper
+
+            default -> -1; // unknown or not implemented
+            // @formatter:on
+        };
     }
 
     private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
@@ -179,8 +381,31 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
 
         @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none) {
-            return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
+        public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached ReadAttributeFromObjectNode getAttrNode,
+                        @Cached WriteAttributeToDynamicObjectNode setAttrNode) {
+            Object obj = object;
+            if (object instanceof PythonBuiltinClassType tobj) {
+                obj = getContext().getCore().lookupType(tobj);
+            }
+
+            Object clazz = getClassNode.execute(this, obj);
+            boolean allowed = true;
+            if (clazz instanceof PythonBuiltinClassType type) {
+                allowed = type.getWeaklistoffset() != 0;
+            }
+            if (!allowed) {
+                throw raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
+            }
+            Object wr = getAttrNode.execute(obj, __WEAKLIST__);
+            if (wr != PNone.NO_VALUE) {
+                return (PReferenceType) wr; // is must be a PReferenceType instance.
+            }
+
+            PReferenceType ref = factory().createReferenceType(cls, obj, null, getWeakReferenceQueue());
+            setAttrNode.execute(obj, __WEAKLIST__, ref);
+            return ref;
         }
 
         @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
@@ -223,7 +448,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
         @SuppressWarnings("unchecked")
