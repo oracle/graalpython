@@ -106,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
@@ -516,17 +515,19 @@ public class GraalHPyNodes {
             Object getterFunPtr;
             Object setterFunPtr;
             Object closurePtr;
-            boolean readOnly;
+            boolean hasGetter;
+            boolean hasSetter;
             try {
                 getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
-                if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
+                hasGetter = !resultLib.isNull(getterFunPtr);
+                if (hasGetter && !resultLib.isExecutable(getterFunPtr)) {
                     LOGGER.warning(() -> String.format("get of %s is not callable", getSetDescrName));
                 }
                 setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
-                if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
+                hasSetter = !resultLib.isNull(setterFunPtr);
+                if (hasSetter && !resultLib.isExecutable(setterFunPtr)) {
                     LOGGER.warning(() -> String.format("set of %s is not callable", getSetDescrName));
                 }
-                readOnly = resultLib.isNull(setterFunPtr);
                 closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -537,15 +538,21 @@ public class GraalHPyNodes {
             }
 
             PythonLanguage lang = PythonLanguage.get(raiseNode);
-            PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunPtr, closurePtr);
-            Object setterObject;
-            if (readOnly) {
-                setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), owner, getSetDescrName);
+            PBuiltinFunction getterObject;
+            if (hasGetter) {
+                getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             } else {
-                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+                getterObject = null;
             }
 
-            GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);
+            PBuiltinFunction setterObject;
+            if (hasSetter) {
+                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+            } else {
+                setterObject = null;
+            }
+
+            GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, hasSetter);
             writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.T___DOC__, getSetDescrDoc);
             return getSetDescriptor;
         }
@@ -797,26 +804,33 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = memberDefLib.readMember(memberDef, "getter_impl");
-                if (context.isDebugMode() || !valueLib.isExecutable(getterFunctionPtr)) {
+                boolean hasGetter = !valueLib.isNull(getterFunctionPtr);
+                if (hasGetter && (context.isDebugMode() || !valueLib.isExecutable(getterFunctionPtr))) {
                     getterFunctionPtr = attachFunctionTypeNode.execute(context, getterFunctionPtr, LLVMType.HPyFunc_getter);
                 }
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = memberDefLib.readMember(memberDef, "setter_impl");
-                boolean readOnly = valueLib.isNull(setterFunctionPtr);
-                if (!readOnly && (context.isDebugMode() || !valueLib.isExecutable(setterFunctionPtr))) {
+                boolean hasSetter = !valueLib.isNull(setterFunctionPtr);
+                if (hasSetter && (context.isDebugMode() || !valueLib.isExecutable(setterFunctionPtr))) {
                     setterFunctionPtr = attachFunctionTypeNode.execute(context, setterFunctionPtr, LLVMType.HPyFunc_setter);
                 }
 
-                PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context, type, name, getterFunctionPtr, closurePtr);
-                Object setterObject;
-                if (readOnly) {
-                    setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), type, name);
+                PBuiltinFunction getterObject;
+                if (hasGetter) {
+                    getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context, type, name, getterFunctionPtr, closurePtr);
                 } else {
-                    setterObject = HPyGetSetDescriptorSetterRootNode.createFunction(context, type, name, setterFunctionPtr, closurePtr);
+                    getterObject = null;
                 }
 
-                GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, type, !readOnly);
+                PBuiltinFunction setterObject;
+                if (hasSetter) {
+                    setterObject = HPyGetSetDescriptorSetterRootNode.createFunction(context, type, name, setterFunctionPtr, closurePtr);
+                } else {
+                    setterObject = null;
+                }
+
+                GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, type, !hasSetter);
                 writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
                 return getSetDescriptor;
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {

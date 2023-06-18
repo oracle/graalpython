@@ -313,14 +313,7 @@ public final class GraalHPyContext extends CExtContext {
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
-        HPyBackendMode backendMode;
-        if (!context.getEnv().isNativeAccessAllowed()) {
-            // TODO(fa): We should just fail and the launcher should set the backend appropriately
-            // (GR-46631).
-            backendMode = HPyBackendMode.LLVM;
-        } else {
-            backendMode = context.getOption(PythonOptions.HPyBackend);
-        }
+        HPyBackendMode backendMode = context.getOption(PythonOptions.HPyBackend);
 
         nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
         hpyHandleTable = new Object[IMMUTABLE_HANDLE_COUNT * 2];
