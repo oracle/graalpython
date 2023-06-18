@@ -549,6 +549,10 @@ int64_t call_getuid() {
     return getuid();
 }
 
+int64_t call_geteuid() {
+    return geteuid();
+}
+
 int64_t call_getgid() {
     return getgid();
 }

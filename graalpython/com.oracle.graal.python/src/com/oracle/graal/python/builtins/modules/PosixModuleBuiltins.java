@@ -351,6 +351,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
             posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
+            posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
         }
     }
 
@@ -556,6 +557,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long getUid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.getuid(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "geteuid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetEUidNode extends PythonBuiltinNode {
+        @Specialization
+        long getUid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.geteuid(getPosixSupport());
         }
     }
 

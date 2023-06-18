@@ -630,6 +630,12 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long geteuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.geteuid(nativePosixSupport);
+    }
+
+    @ExportMessage
     final long getgid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
         return nativeLib.getgid(nativePosixSupport);

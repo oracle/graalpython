@@ -806,6 +806,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long geteuid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("geteuid", "");
+        return logExit("geteuid", "%d", lib.geteuid(delegate));
+    }
+
+    @ExportMessage
     final long getgid(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("getgid", "");
