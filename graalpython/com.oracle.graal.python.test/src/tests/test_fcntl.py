@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -99,6 +99,7 @@ class FcntlTests(unittest.TestCase):
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
     @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
+    @unittest.skipUnless("graalpython" in os.environ.get("BITBUCKET_REPO_URL", "graalpython"), "Do not run this in auxillary CI jobs, it can be flaky")
     def test_flock_s_and_s(self):
         os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
         file = os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY)
