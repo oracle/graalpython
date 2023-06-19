@@ -1,57 +1,5 @@
 [
 {
-  "name":"com.ibm.icu.impl.ICUCurrencyDisplayInfoProvider",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.impl.ICUCurrencyMetaInfo",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.impl.ICULangDataTables",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.impl.ICURegionDataTables",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.impl.LocaleDisplayNamesImpl",
-  "methods":[
-    {
-      "name":"getInstance",
-      "parameterTypes":[
-        "com.ibm.icu.util.ULocale",
-        "com.ibm.icu.text.DisplayContext[]"
-      ]
-    }
-  ]
-},
-{
-  "name":"com.ibm.icu.impl.TimeZoneNamesFactoryImpl",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.text.NumberFormatServiceShim",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.text.CollatorServiceShim",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.text.BreakIteratorFactory",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"com.ibm.icu.charset.CharsetUTF7",
-  "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "java.lang.String[]"]}]
-},
-{
-  "name":"com.ibm.icu.charset.CharsetHZ",
-  "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "java.lang.String[]"]}]
-},
-{
   "name":"java.util.Locale",
   "fields":[{"name":"US"}],
   "methods":[{"name":"setDefault","parameterTypes":["java.util.Locale"]}]
