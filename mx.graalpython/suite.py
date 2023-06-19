@@ -493,6 +493,45 @@ suite = {
             },
         },
 
+        "python-libbz2": {
+            "subDir": "graalpython",
+            "class" : "CMakeNinjaProject",
+            "max_jobs" : "4",
+            "vpath" : True,
+            "ninja_targets" : ["<lib:bz2support>"],
+            "ninja_install_targets" : ["install"],
+            "results" : [
+                "bin/<lib:bz2support>",
+            ],
+            "cmakeConfig" : {
+                "BZIP2_SRC": "<path:BZIP2>",
+                "BZIP2_VERSION_MAJOR": "1",
+                "BZIP2_VERSION_MINOR": "0",
+                "BZIP2_VERSION_PATCH": "8",
+            },
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild" : True,
+                    },
+                },
+            },
+            "buildDependencies": [
+                "sulong:SULONG_HOME",
+                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "BZIP2",
+            ],
+            "buildEnv": {
+                "ARCH": "<arch>",
+                "OS": "<os>",
+            },
+        },
+
         "com.oracle.graal.python.hpy.llvm": {
             "subDir": "graalpython",
             "class" : "CMakeNinjaProject",
@@ -820,6 +859,7 @@ suite = {
                 "com.oracle.graal.python.cext",
                 "python-libzsupport",
                 "python-libposix",
+                "python-libbz2",
                 "com.oracle.graal.python.hpy.llvm"
             ],
             "os_arch": {
@@ -891,6 +931,7 @@ suite = {
                                     "path": "*",
                                 },
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:python-libbz2/bin/*",
                             ],
                             "./lib/graalpy<graal_ver:major_minor>/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",

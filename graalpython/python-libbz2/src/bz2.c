@@ -192,14 +192,6 @@ static off_heap_buffer* bz_allocate_buffer(size_t items)
     return o;
 }
 
-static off_heap_buffer* bz_create_copy_buffer(Byte *src, ssize_t len) {
-    off_heap_buffer *dest = bz_allocate_buffer(len);
-    if (dest && len > 0) {
-        memcpy(dest->buf, src, len);
-    }
-    return dest; 
-}
-
 static void bz_release_buffer(off_heap_buffer *o) {
     if (!o) {
         return;
@@ -221,14 +213,6 @@ static void bz_release_buffer(off_heap_buffer *o) {
 
     free(o->buf);
     free(o);
-}
-
-static off_heap_buffer* bz_get_ref(off_heap_buffer* o) {
-    if (o) {
-        LOG_FINEST("off_heap_buffer(ref_count: %zu + 1)\n", o->ref_count);
-        o->ref_count++;
-    }
-    return o;
 }
 
 // nfi_function: name('createStream') map('bzst_stream*', 'POINTER')

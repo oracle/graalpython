@@ -155,7 +155,7 @@ public class NFIBz2Support {
     private NFIBz2Support(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached(), Bz2NativeFunctions.values(),
+            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt(), Bz2NativeFunctions.values(),
                             backend, noNativeAccessHelp, false);
             this.available = true;
         } else {

@@ -586,11 +586,6 @@ def build(capi_home):
         if WIN32:
             return # TODO: ...
         build_nativelibsupport(capi_home,
-                                subdir="bz2",
-                                libname="libbz2support",
-                                deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
-                                extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
-        build_nativelibsupport(capi_home,
                                 subdir="lzma",
                                 libname="liblzmasupport",
                                 deps=[LZMADepedency("lzma", "xz==5.2.6", "XZ-5.2.6")],
