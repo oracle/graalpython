@@ -130,7 +130,7 @@ public class CApiMemberAccessNodes {
      * Special case: members with type {@code STRING} and {@code STRING_INPLACE} are always
      * read-only.
      */
-    static boolean isReadOnlyType(int type) {
+    private static boolean isReadOnlyType(int type) {
         return type == T_STRING || type == T_STRING_INPLACE;
     }
 
@@ -174,7 +174,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
-    static CStructAccess.ReadBaseNode getReadNode(int type) {
+    private static CStructAccess.ReadBaseNode getReadNode(int type) {
         switch (type) {
             case T_SHORT:
             case T_USHORT:
@@ -215,7 +215,7 @@ public class CApiMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    static CExtAsPythonObjectNode getReadConverterNode(int type) {
+    private static CExtAsPythonObjectNode getReadConverterNode(int type) {
         switch (type) {
             case T_SHORT:
             case T_INT:
@@ -499,8 +499,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Cached CStructAccess.WriteObjectNode write) {
-            // TODO: handle refcount inc/dec
+                        @Cached CStructAccess.ReadObjectStealingNode read,
+                        @Cached CStructAccess.WriteObjectNewRefNode write) {
+            read.readGeneric(pointer, 0);
             write.write(pointer, newValue);
         }
     }
@@ -509,13 +510,13 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Cached CStructAccess.ReadObjectNode read,
-                        @Cached CStructAccess.WriteObjectNode write,
+                        @Cached CStructAccess.ReadObjectStealingNode read,
+                        @Cached CStructAccess.WriteObjectNewRefNode write,
                         @Cached PRaiseNode raise) {
-            if (newValue == DescriptorDeleteMarker.INSTANCE && read.readGeneric(pointer, 0) == PNone.NO_VALUE) {
+            Object current = read.readGeneric(pointer, 0);
+            if (newValue == DescriptorDeleteMarker.INSTANCE && current == PNone.NO_VALUE) {
                 throw raise.raise(PythonBuiltinClassType.AttributeError);
             }
-            // TODO: handle refcount inc/dec
             write.write(pointer, newValue);
         }
     }
@@ -530,7 +531,7 @@ public class CApiMemberAccessNodes {
         }
     }
 
-    static WriteTypeNode getWriteNode(int type) {
+    private static WriteTypeNode getWriteNode(int type) {
         switch (type) {
             case T_SHORT:
             case T_USHORT:

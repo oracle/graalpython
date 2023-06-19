@@ -713,9 +713,18 @@ public class CApiTransitions {
     @ImportStatic(CApiGuards.class)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
+        public final long executeLong(Object obj) {
+            return PythonNativeWrapper.coerceToLong(execute(obj), LIB);
+        }
+
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
             return PythonToNativeNodeGen.getUncached().execute(obj);
+        }
+
+        @TruffleBoundary
+        public static long executeLongUncached(Object obj) {
+            return PythonToNativeNodeGen.getUncached().executeLong(obj);
         }
 
         protected boolean needsTransfer() {
@@ -747,12 +756,16 @@ public class CApiTransitions {
 
         @Specialization(guards = "isOther(obj)")
         Object doOther(Object obj,
-                        @Cached GetNativeWrapperNode getWrapper) {
+                        @Cached GetNativeWrapperNode getWrapper,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
             if (needsTransfer()) {
                 // native part needs to decRef to release
                 incRef(wrapper, 1);
+            }
+            if (!lib.isPointer(wrapper)) {
+                lib.toNative(wrapper);
             }
             return wrapper;
         }
@@ -915,8 +928,6 @@ public class CApiTransitions {
                     return primitive.getInt();
                 } else if (primitive.isLong()) {
                     return primitive.getLong();
-                } else if (primitive.isByte()) {
-                    return primitive.getByte();
                 } else if (primitive.isDouble()) {
                     return primitive.getDouble();
                 } else {
@@ -1042,8 +1053,6 @@ public class CApiTransitions {
                     return primitive.getInt();
                 } else if (primitive.isLong()) {
                     return primitive.getLong();
-                } else if (primitive.isByte()) {
-                    return primitive.getByte();
                 } else if (primitive.isDouble()) {
                     return primitive.getDouble();
                 } else {

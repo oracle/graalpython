@@ -904,20 +904,6 @@ public final class PythonCextBuiltins {
         String comment() default "";
     }
 
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface CApiSymbols {
-        CApiSymbol[] value();
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Repeatable(value = CApiSymbols.class)
-    public @interface CApiSymbol {
-
-        String name() default "";
-
-        ArgDescriptor type();
-    }
-
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
         @Specialization

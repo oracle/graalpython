@@ -842,7 +842,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
-        @Child private PRaiseNode raiseNode;
         @Children private final CExtToNativeNode[] convertArgs;
 
         private final TruffleString name;
@@ -945,14 +944,6 @@ public abstract class ExternalFunctionNodes {
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseNativeWrapperNode;
-        }
-
-        protected final PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         @Override
@@ -2115,10 +2106,6 @@ public abstract class ExternalFunctionNodes {
             PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
             sysExc.setCause(currentException.getEscapedException());
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
-        }
-
-        protected static boolean isNativeNull(Object object) {
-            return object instanceof PythonNativePointer;
         }
 
         protected static boolean isPythonObjectNativeWrapper(Object object) {

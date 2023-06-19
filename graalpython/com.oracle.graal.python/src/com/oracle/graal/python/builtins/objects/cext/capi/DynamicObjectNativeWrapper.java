@@ -41,18 +41,13 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructs.PyMemoryViewObject;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
-import static com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile.profileClassSlowPath;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -65,17 +60,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -104,27 +93,12 @@ import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
-    static final String J_GP_OBJECT = "gp_object";
-    static final TruffleString T_GP_OBJECT = tsLiteral(J_GP_OBJECT);
-    static final TruffleString T_VALUE = tsLiteral("value");
-    private DynamicObjectStorage nativeMemberStore;
 
     public DynamicObjectNativeWrapper() {
     }
 
     public DynamicObjectNativeWrapper(Object delegate) {
         super(delegate);
-    }
-
-    public DynamicObjectStorage createNativeMemberStore(PythonLanguage lang) {
-        if (nativeMemberStore == null) {
-            nativeMemberStore = new DynamicObjectStorage(lang);
-        }
-        return nativeMemberStore;
-    }
-
-    public DynamicObjectStorage getNativeMemberStore() {
-        return nativeMemberStore;
     }
 
     @ExportMessage
@@ -318,19 +292,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return nativeWrapper;
         }
 
-        public static DynamicObjectNativeWrapper wrapNewRef(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
-            // important: native wrappers are cached
-            DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-            if (noWrapperProfile.profile(nativeWrapper == null)) {
-                nativeWrapper = new PythonObjectNativeWrapper(obj);
-                obj.setNativeWrapper(nativeWrapper);
-            } else {
-                // it already existed, so we need to increase the reference count
-                CApiTransitions.incRef(nativeWrapper, 1);
-            }
-            return nativeWrapper;
-        }
-
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
@@ -342,7 +303,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1;
-        public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
         public static final byte PRIMITIVE_STATE_INT = 1 << 2;
         public static final byte PRIMITIVE_STATE_LONG = 1 << 3;
         public static final byte PRIMITIVE_STATE_DOUBLE = 1 << 4;
@@ -372,10 +332,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value != 0;
         }
 
-        public byte getByte() {
-            return (byte) value;
-        }
-
         public int getInt() {
             return (int) value;
         }
@@ -392,10 +348,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return state == PRIMITIVE_STATE_BOOL;
         }
 
-        public boolean isByte() {
-            return state == PRIMITIVE_STATE_BYTE;
-        }
-
         public boolean isInt() {
             return state == PRIMITIVE_STATE_INT;
         }
@@ -409,7 +361,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         public boolean isIntLike() {
-            return (state & (PRIMITIVE_STATE_BYTE | PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
+            return (state & (PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
         }
 
         public boolean isSubtypeOfInt() {
@@ -467,10 +419,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public static PrimitiveNativeWrapper createBool(boolean val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BOOL, PInt.intValue(val));
-        }
-
-        public static PrimitiveNativeWrapper createByte(byte val) {
-            return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BYTE, val);
         }
 
         public static PrimitiveNativeWrapper createInt(int val) {

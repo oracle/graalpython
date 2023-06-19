@@ -56,7 +56,7 @@ import com.oracle.graal.python.test.PythonTests;
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
-        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.NativeModules", "").build()) {
+        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.NativeModules", "false").build()) {
             File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
             Source richardsSource = getSource(richards);
             Task[] tasks = new Task[THREADS_COUNT];

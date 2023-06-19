@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -65,8 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -106,11 +103,9 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -355,12 +350,6 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    static final class UnexpectedCodepointException extends ControlFlowException {
-        private static final long serialVersionUID = 0L;
-
-        private static final UnexpectedCodepointException INSTANCE = new UnexpectedCodepointException();
-    }
-
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
@@ -437,7 +426,7 @@ public abstract class CExtCommonNodes {
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
-            return nativeWrapper.isBool() || nativeWrapper.isByte() || nativeWrapper.isInt();
+            return nativeWrapper.isBool() || nativeWrapper.isInt();
         }
 
         static boolean fitsInInt64(PrimitiveNativeWrapper nativeWrapper) {
@@ -445,7 +434,7 @@ public abstract class CExtCommonNodes {
         }
 
         static boolean fitsInUInt32(PrimitiveNativeWrapper nativeWrapper) {
-            return (nativeWrapper.isBool() || nativeWrapper.isByte() || nativeWrapper.isInt()) && nativeWrapper.getInt() >= 0;
+            return (nativeWrapper.isBool() || nativeWrapper.isInt()) && nativeWrapper.getInt() >= 0;
         }
 
         static boolean fitsInUInt64(PrimitiveNativeWrapper nativeWrapper) {

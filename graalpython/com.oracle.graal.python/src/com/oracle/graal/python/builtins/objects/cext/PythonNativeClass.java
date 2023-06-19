@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -55,10 +54,6 @@ public interface PythonNativeClass extends PythonAbstractClass, PythonNativeObje
     public static final HiddenKey INSTANCESHAPE = new HiddenKey("instanceshape");
 
     Object getPtr();
-
-    default String getName() {
-        return PythonUtils.formatJString("PythonNativeClass(%s)", getPtr());
-    }
 
     static boolean isInstance(Object object) {
         return object instanceof PythonAbstractNativeObject;

@@ -79,19 +79,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nativeWrapper;
     }
 
-    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, TruffleString name) {
-        // important: native wrappers are cached
-        PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
-        if (nativeWrapper == null) {
-            nativeWrapper = new PythonClassNativeWrapper(obj, name);
-            obj.setNativeWrapper(nativeWrapper);
-        } else {
-            // it already existed, so we need to increase the reference count
-            CApiTransitions.incRef(nativeWrapper, 1);
-        }
-        return nativeWrapper;
-    }
-
     @ExportMessage
     protected void toNative(
                     @Cached ToNativeTypeNode toNativeNode) {

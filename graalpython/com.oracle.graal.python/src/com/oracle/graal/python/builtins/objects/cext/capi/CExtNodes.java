@@ -557,15 +557,6 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = {"!isMaterialized(object)", "object.isByte()"})
-        static PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            PInt materializedInt = factory.createInt(object.getByte());
-            object.setMaterializedObject(materializedInt);
-            materializedInt.setNativeWrapper(object);
-            return materializedInt;
-        }
-
         @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
         static PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
@@ -1494,24 +1485,7 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = {"!isNativeWrapper(object)", "lib.hasMembers(object)"}, //
-                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class, UnsupportedTypeException.class, CannotCastException.class}, //
-                        limit = "1")
-        static Object doNativeObjectByMember(Object object, long value,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
-            CompilerDirectives.shouldNotReachHere("refcnt operation");
-            CApiContext cApiContext = PythonContext.get(castToJavaLongNode).getCApiContext();
-            if (!lib.isNull(object) && cApiContext != null) {
-                assert value >= 0 : "adding negative reference count; dealloc might not happen";
-                cApiContext.checkAccess(object, lib);
-                long refCnt = castToJavaLongNode.execute(lib.readMember(object, StringLiterals.J_OB_REFCNT));
-                lib.writeMember(object, StringLiterals.J_OB_REFCNT, refCnt + value);
-            }
-            return object;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)", limit = "2", replaces = "doNativeObjectByMember")
+        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
         static Object doNativeObject(Object object, long value,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {

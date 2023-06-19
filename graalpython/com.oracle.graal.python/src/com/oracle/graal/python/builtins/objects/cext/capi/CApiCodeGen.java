@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VARARGS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
-import static java.util.stream.Collectors.joining;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,9 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -365,19 +361,6 @@ public final class CApiCodeGen {
         lines.add("        return null;");
         lines.add("    }");
         lines.add("");
-        lines.add("    public static CApiBuiltinExecutable getSlot(String key) {");
-        lines.add("        switch (key) {");
-
-        for (var builtin : javaBuiltins) {
-            if (builtin.name.startsWith("Py_get_")) {
-                lines.add("            case \"" + builtin.name.substring(7) + "\":");
-                lines.add("                return builtins[" + builtin.id + "];");
-            }
-        }
-
-        lines.add("        }");
-        lines.add("        return null;");
-        lines.add("    }");
         lines.add("    // @formatter:on");
 
         return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);

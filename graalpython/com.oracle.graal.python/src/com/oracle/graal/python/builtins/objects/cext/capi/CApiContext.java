@@ -133,12 +133,6 @@ public final class CApiContext extends CExtContext {
     public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
 
-    /**
-     * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
-     * should be looked up lazily</it>
-     */
-    static final CApiContext LAZY_CONTEXT = new CApiContext();
-
     /* a random number between 1 and 20 */
     private static final int MAX_COLLECTION_RETRIES = 17;
 
