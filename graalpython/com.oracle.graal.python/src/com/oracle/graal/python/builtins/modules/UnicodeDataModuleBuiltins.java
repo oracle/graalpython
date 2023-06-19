@@ -46,8 +46,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.text.Normalizer;
 import java.util.List;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;

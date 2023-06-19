@@ -78,9 +78,9 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
-import com.ibm.icu.text.CaseMap;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;

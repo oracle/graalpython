@@ -260,7 +260,7 @@ suite = {
             "sourceDirs": ["src"],
             "javaCompliance": "17+",
             "dependencies": [
-                "truffle:ICU4J",
+                "truffle:TRUFFLE_ICU4J",
             ],
             "buildDependencies": [
                 "com.oracle.graal.python.pegparser.generator",
@@ -375,8 +375,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "truffle:ICU4J",
-                "truffle:ICU4J-CHARSET",
+                "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
@@ -879,6 +878,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+                "truffle:TRUFFLE_ICU4J",
             ],
             "requires": [
                 "java.base",
@@ -892,8 +892,6 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "XZ-1.8",
-                "truffle:ICU4J",
-                "truffle:ICU4J-CHARSET",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"

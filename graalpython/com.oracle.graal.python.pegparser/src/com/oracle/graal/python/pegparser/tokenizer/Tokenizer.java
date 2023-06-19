@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,8 +13,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 
