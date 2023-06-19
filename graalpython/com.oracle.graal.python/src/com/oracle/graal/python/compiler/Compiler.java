@@ -206,7 +206,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 27;
+    public static final int BYTECODE_VERSION = 28;
 
     private final ErrorCallback errorCallback;
 
