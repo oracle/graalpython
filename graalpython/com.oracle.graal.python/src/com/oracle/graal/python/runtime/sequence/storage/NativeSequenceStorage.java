@@ -86,13 +86,15 @@ public final class NativeSequenceStorage extends SequenceStorage {
         return ptr;
     }
 
-    public void setPtrAndSize(Object ptr, int size) {
+    public void setPtr(Object ptr) {
         if (reference != null) {
             reference.setPtr(ptr);
-            reference.setSize(size);
         }
         this.ptr = ptr;
-        this.capacity = size;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 
     public void setReference(NativeStorageReference reference) {
@@ -108,6 +110,9 @@ public final class NativeSequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         assert length <= capacity;
         this.length = length;
+        if (reference != null) {
+            reference.setSize(length);
+        }
     }
 
     @Override

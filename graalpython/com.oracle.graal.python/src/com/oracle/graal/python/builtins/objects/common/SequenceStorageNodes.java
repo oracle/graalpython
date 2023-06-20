@@ -3119,7 +3119,8 @@ public abstract class SequenceStorageNodes {
                 if (lib.isNull(ptr)) {
                     throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
-                s.setPtrAndSize(ptr, newCapacity);
+                s.setPtr(ptr);
+                s.setCapacity(newCapacity);
             }
             return s;
         }
