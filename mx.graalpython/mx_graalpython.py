@@ -345,7 +345,15 @@ def punittest(ars, report=False):
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
-PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.cext"]
+PYTHON_NATIVE_PROJECTS = ["python-libbz2",
+                          "python-libbz2support",
+                          "python-liblzma",
+                          "python-liblzmasupport",
+                          "python-libzsupport",
+                          "python-libposix",
+                          "com.oracle.graal.python.hpy.llvm",
+                          "com.oracle.graal.python.jni",
+                          "com.oracle.graal.python.cext"]
 
 
 def nativebuild(args):

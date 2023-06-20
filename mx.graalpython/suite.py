@@ -460,47 +460,6 @@ suite = {
             "testProject": True,
         },
 
-        "com.oracle.graal.python.cext": {
-            "subDir": "graalpython",
-            "vpath": True,
-            "type": "GraalpythonCAPIProject",
-            "platformDependent": False,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "args": [
-                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
-                            "<output_root:com.oracle.graal.python.cext>",
-                        ],
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "args": [
-                            "--python.CAPI=/dev/null",
-                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
-                            "<output_root:com.oracle.graal.python.cext>",
-                        ],
-                    },
-                },
-            },
-            "buildDependencies": [
-                "GRAALPYTHON",
-                "sulong:SULONG_HOME",
-                "sulong:SULONG_LEGACY",
-                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
-                "XZ-5.2.6",
-                "BZIP2",
-            ],
-            "buildEnv": {
-                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
-                "ARCH": "<arch>",
-                "OS": "<os>",
-                "XZ-5.2.6": "<path:XZ-5.2.6>",
-                "BZIP2": "<path:BZIP2>",
-            },
-        },
-
         "python-libbz2": {
             "subDir": "graalpython",
             "class" : "CMakeNinjaProject",
@@ -570,6 +529,58 @@ suite = {
             },
             "buildDependencies": [
                 "XZ-5.2.6",
+            ],
+        },
+
+        "com.oracle.graal.python.cext": {
+            "subDir": "graalpython",
+            "class" : "CMakeNinjaProject",
+            "toolchain" : "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+            "max_jobs" : "8",
+            "vpath" : True,
+            "ninja_targets" : ["all"],
+            "ninja_install_targets" : ["install"],
+            "cmakeConfig" : {
+                "LLVM_MODE" : "native",
+                "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
+                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                "GRAALPY_EXT" : "<graalpy_ext:native>",
+            },
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": False,
+                        "results" : [
+                            "bin/libpython<graalpy_ext:native>",
+                            "bin/modules/_mmap<graalpy_ext:native>",
+                            "bin/modules/_cpython_sre<graalpy_ext:native>",
+                            "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
+                            "bin/modules/_cpython_struct<graalpy_ext:native>",
+                        ],
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild" : True,
+                        "results" : [
+                            "bin/libpython<graalpy_ext:native>",
+                            "bin/modules/_mmap<graalpy_ext:native>",
+                            "bin/modules/_cpython_sre<graalpy_ext:native>",
+                            "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
+                            "bin/modules/_cpython_struct<graalpy_ext:native>",
+                            "bin/modules/_testcapi<graalpy_ext:native>",
+                            "bin/modules/_testmultiphase<graalpy_ext:native>",
+                            "bin/modules/_ctypes_test<graalpy_ext:native>",
+                            "bin/modules/pyexpat<graalpy_ext:native>",
+                        ],
+                    },
+                },
+            },
+            "buildDependencies": [
+                "sulong:SULONG_HOME",
+                "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "sulong:SULONG_LEGACY",
             ],
         },
 
@@ -919,11 +930,6 @@ suite = {
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
                                 {
                                     "source_type": "dependency",
-                                    "dependency": "graalpython:com.oracle.graal.python.cext",
-                                    "path": "*",
-                                },
-                                {
-                                    "source_type": "dependency",
                                     "dependency": "graalpython:python-libzsupport",
                                     "path": "*",
                                 },
@@ -933,6 +939,11 @@ suite = {
                                     "path": "*",
                                 },
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:com.oracle.graal.python.cext/bin/*",
+                                "file:com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
+                            ],
+                            "./lib-graalpython/modules/": [
+                                "dependency:com.oracle.graal.python.cext/bin/modules/*",
                             ],
                             "./lib-graalpython/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",
@@ -956,12 +967,7 @@ suite = {
                             "./lib/graalpy<graal_ver:major_minor>/": [
                                 "file:graalpython/lib-graalpython/*",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "graalpython:com.oracle.graal.python.cext",
-                                    "path": "*",
-                                    "exclude": ["CEXT-WINDOWS-README.md"],
-                                },
+                                "dependency:com.oracle.graal.python.cext/bin/*",
                                 {
                                     "source_type": "dependency",
                                     "dependency": "graalpython:python-libzsupport",
