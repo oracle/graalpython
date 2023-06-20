@@ -295,7 +295,7 @@ public class NFILZMASupport {
     private NFILZMASupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached(), LZMANativeFunctions.values(),
+            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt(), LZMANativeFunctions.values(),
                             backend, noNativeAccessHelp, true);
             this.available = true;
         } else {

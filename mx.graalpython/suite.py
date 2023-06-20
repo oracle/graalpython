@@ -225,6 +225,14 @@ suite = {
             ],
         },
 
+        "python-liblzma": {
+            "type": "python",
+            "path": "graalpython/python-liblzma",
+            "source": [
+                "src",
+            ],
+        },
+
         "com.oracle.graal.python.frozen": {
             "type": "python",
             "path": "graalpython/com.oracle.graal.python.frozen",
@@ -530,6 +538,39 @@ suite = {
                 "ARCH": "<arch>",
                 "OS": "<os>",
             },
+        },
+
+        "python-liblzma": {
+            "subDir": "graalpython",
+            "class" : "CMakeNinjaProject",
+            "max_jobs" : "8",
+            "vpath" : True,
+            "ninja_targets" : ["<lib:lzmasupport>"],
+            "ninja_install_targets" : ["install"],
+            "results" : [
+                "bin/<lib:lzmasupport>",
+            ],
+            "cmakeConfig" : {
+                "XZ_SRC": "<path:XZ-5.2.6>",
+                "XZ_VERSION_MAJOR": "5",
+                "XZ_VERSION_MINOR": "2",
+                "XZ_VERSION_PATCH": "6",
+            },
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild" : True,
+                    },
+                },
+            },
+            "buildDependencies": [
+                "XZ-5.2.6",
+            ],
         },
 
         "com.oracle.graal.python.hpy.llvm": {
@@ -860,6 +901,7 @@ suite = {
                 "python-libzsupport",
                 "python-libposix",
                 "python-libbz2",
+                "python-liblzma",
                 "com.oracle.graal.python.hpy.llvm"
             ],
             "os_arch": {
@@ -932,6 +974,10 @@ suite = {
                                 },
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
                                 "dependency:python-libbz2/bin/*",
+                                "dependency:python-liblzma/bin/*",
+                            ],
+                            "./lib/graalpy<graal_ver:major_minor>/modules/": [
+                                "dependency:com.oracle.graal.python.cext/bin/modules/*",
                             ],
                             "./lib/graalpy<graal_ver:major_minor>/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",
