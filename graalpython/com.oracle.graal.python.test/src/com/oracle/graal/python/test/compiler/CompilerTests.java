@@ -1096,7 +1096,7 @@ public class CompilerTests extends PythonTests {
         Parser parser = Compiler.createParser(src, errorCallback, type, false);
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
-        CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
+        CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2, false);
         return cu.assemble();
     }
 

@@ -235,7 +235,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @SuppressWarnings("hiding")
-    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
+    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, boolean futureAnnotations) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
             parseFuture(((ModTy.Module) mod).body);
@@ -244,6 +244,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         this.env = ScopeEnvironment.analyze(mod, errorCallback, futureFeatures);
         this.optimizationLevel = optimizationLevel;
+        if (futureAnnotations) {
+            this.futureFeatures.add(FutureFeature.ANNOTATIONS);
+        }
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;
@@ -422,7 +425,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getSourceRange());
+                        hasSplat, hasKwSplat, node.getSourceRange(), futureFeatures);
         nestingLevel++;
     }
 

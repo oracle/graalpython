@@ -1217,7 +1217,7 @@ public abstract class Python3Core {
         }
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null);
+            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, false);
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));

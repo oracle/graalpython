@@ -41,6 +41,12 @@
 package com.oracle.graal.python.pegparser;
 
 public enum FutureFeature {
-    ANNOTATIONS,
-    BARRY_AS_BDFL
+    ANNOTATIONS(0x1000000), // these values are duplicated in BuiltinFunctions.Compiler
+    BARRY_AS_BDFL(0x400000);
+
+    public final int flagValue;
+
+    FutureFeature(int flagValue) {
+        this.flagValue = flagValue;
+    }
 }
