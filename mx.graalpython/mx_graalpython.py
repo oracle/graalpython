@@ -2509,77 +2509,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         return 0
 
 
-class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
-    def run(self, args, env=None, cwd=None, **kwargs):
-        env = env.copy() if env else os.environ.copy()
-        # n.b.: we don't want derived projects to also have to depend on our build env vars
-        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
-        env.update(self.subject.getBuildEnv())
-
-        # we need to use the sulong toolchain for this
-        args.insert(0, "--python.UseSystemToolchain=false")
-
-        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them,
-        # besides keeping custom sysroot, since our toolchain forwards to the system headers
-        for var in ["CC", "CFLAGS", "LDFLAGS"]:
-            value = env.pop(var, None)
-            new_value = []
-            if value:
-                if wants_debug_build(value):
-                    new_value.append("-ggdb3")
-                if "--sysroot" in value:
-                    seen_sysroot = False
-                    for element in shlex.split(value):
-                        if element == "--sysroot":
-                            seen_sysroot = True
-                        elif seen_sysroot:
-                            new_value.append(f"--sysroot {element}")
-                            break
-            if new_value:
-                env[var] = " ".join(new_value)
-        return super().run(args, env=env, cwd=cwd, **kwargs)
-
-    def _dev_headers_dir(self):
-        if sys.platform == "win32":
-            return os.path.join(SUITE.dir, "graalpython", "include")
-        else:
-            return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
-
-    def _prepare_headers(self):
-        target_dir = self._dev_headers_dir()
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
-        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir, symlinks=True)
-        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
-
-    def build(self):
-        self._prepare_headers()
-        # n.b.: we do the following to ensure that there's a directory when the
-        # importlib PathFinder initializes it's directory finders
-        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
-        # TODO: backwards compat, remove once EE is updated
-        if not hasattr(self.subject, "args"):
-            self.subject.args = [
-                os.path.join(self.src_dir(), "setup.py"),
-                self.subject.get_output_root()
-            ]
-        return super().build()
-
-    def clean(self, forBuild=False):
-        result = 0
-        if not forBuild:
-            try:
-                mx.logv('Cleaning {0}...'.format(self._dev_headers_dir()))
-                shutil.rmtree(self._dev_headers_dir(), ignore_errors=True)
-                mx.logv('Cleaning {0}...'.format(self.subject.get_output_root()))
-                shutil.rmtree(self.subject.get_output_root(), ignore_errors=True)
-            except BaseException as e:
-                mx.logv('Error while cleaning: {0}'.format(e))
-                result = 1
-        return max(result, super().clean(forBuild=forBuild))
-
-
 class GraalpythonProject(mx.ArchivableProject):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs): # pylint: disable=super-init-not-called
         context = 'project ' + name
@@ -2619,16 +2548,6 @@ class GraalpythonProject(mx.ArchivableProject):
             for key, value in self.buildEnv.items():
                 ret[key] = replaceVar.substitute(value, dependency=self)
         return ret
-
-
-class GraalpythonCAPIProject(GraalpythonProject):
-    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
-        super().__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
-        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
-            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
-
-    def getBuildTask(self, args):
-        return GraalpythonCAPIBuildTask(args, self)
 
 
 orig_clean = mx.command_function("clean")
