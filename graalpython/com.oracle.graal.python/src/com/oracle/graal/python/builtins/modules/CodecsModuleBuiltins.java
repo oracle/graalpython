@@ -941,8 +941,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         PTuple lookup(VirtualFrame frame, TruffleString encoding,
-                        @Cached InternalLookupNode internalNode) {
-            return internalNode.execute(frame, encoding);
+                        @Cached PyCodecLookupNode lookup) {
+            return lookup.execute(frame, encoding);
         }
 
         @Override
@@ -952,8 +952,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    abstract static class InternalLookupNode extends PNodeWithContext {
-        abstract PTuple execute(Frame frame, TruffleString encoding);
+    public abstract static class PyCodecLookupNode extends PNodeWithContext {
+        public abstract PTuple execute(Frame frame, TruffleString encoding);
 
         @Specialization
         PTuple lookup(VirtualFrame frame, TruffleString encoding,
