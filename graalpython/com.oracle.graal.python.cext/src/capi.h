@@ -120,6 +120,8 @@ typedef struct {
     BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
     BUILTIN(PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
     BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
+    BUILTIN(PyCodec_Decoder, PyObject*, const char*) \
+    BUILTIN(PyCodec_Encoder, PyObject*, const char*) \
     BUILTIN(PyComplex_FromDoubles, PyObject*, double, double) \
     BUILTIN(PyComplex_ImagAsDouble, double, PyObject*) \
     BUILTIN(PyComplex_RealAsDouble, double, PyObject*) \

@@ -1529,6 +1529,14 @@ PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
 PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p) {
     return GraalPyCode_NewWithPosOnlyArgs(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
 }
+#undef PyCodec_Decoder
+PyAPI_FUNC(PyObject*) PyCodec_Decoder(const char* a) {
+    return GraalPyCodec_Decoder(truffleString(a));
+}
+#undef PyCodec_Encoder
+PyAPI_FUNC(PyObject*) PyCodec_Encoder(const char* a) {
+    return GraalPyCodec_Encoder(truffleString(a));
+}
 #undef PyComplex_FromDoubles
 PyAPI_FUNC(PyObject*) PyComplex_FromDoubles(double a, double b) {
     return GraalPyComplex_FromDoubles(a, b);

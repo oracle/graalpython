@@ -1937,14 +1937,18 @@ PyAPI_FUNC(PyObject*) PyCodec_BackslashReplaceErrors(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyCodec_Decode(PyObject* a, const char* b, const char* c) {
     unimplemented("PyCodec_Decode"); exit(-1);
 }
+PyObject* (*__target__PyCodec_Decoder)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyCodec_Decoder(const char* a) {
-    unimplemented("PyCodec_Decoder"); exit(-1);
+    PyObject* result = (PyObject*) __target__PyCodec_Decoder(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyCodec_Encode(PyObject* a, const char* b, const char* c) {
     unimplemented("PyCodec_Encode"); exit(-1);
 }
+PyObject* (*__target__PyCodec_Encoder)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyCodec_Encoder(const char* a) {
-    unimplemented("PyCodec_Encoder"); exit(-1);
+    PyObject* result = (PyObject*) __target__PyCodec_Encoder(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyCodec_IgnoreErrors(PyObject* a) {
     unimplemented("PyCodec_IgnoreErrors"); exit(-1);
@@ -6260,6 +6264,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyCapsule_New = getAPI("PyCapsule_New");
     __target__PyCapsule_SetName = getAPI("PyCapsule_SetName");
     __target__PyCode_NewEmpty = getAPI("PyCode_NewEmpty");
+    __target__PyCodec_Decoder = getAPI("PyCodec_Decoder");
+    __target__PyCodec_Encoder = getAPI("PyCodec_Encoder");
     __target__PyContextVar_Get = getAPI("PyContextVar_Get");
     __target__PyContextVar_New = getAPI("PyContextVar_New");
     __target__PyDescrObject_GetName = getAPI("PyDescrObject_GetName");
