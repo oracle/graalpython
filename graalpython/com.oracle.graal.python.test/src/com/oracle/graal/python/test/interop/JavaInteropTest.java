@@ -340,15 +340,15 @@ public class JavaInteropTest {
         public void runAForeignExecutable() throws IOException {
             Source suitePy = Source.newBuilder("python",
                             """
-                            def foo(obj):
-                              try:
-                                 obj()
-                              except TypeError as e:
-                                 pass
-                              else:
-                                 assert False
-                            foo
-                            """,
+                                            def foo(obj):
+                                              try:
+                                                 obj()
+                                              except TypeError as e:
+                                                 pass
+                                              else:
+                                                 assert False
+                                            foo
+                                            """,
                             "suite.py").build();
             Value foo = context.eval(suitePy);
             foo.execute(new AForeignExecutable());
@@ -359,15 +359,15 @@ public class JavaInteropTest {
         public void invokeAForeignMember() throws IOException {
             Source suitePy = Source.newBuilder("python",
                             """
-                            def foo(obj):
-                              try:
-                                 obj.fun()
-                              except TypeError as e:
-                                 pass
-                              else:
-                                 assert False
-                            foo
-                            """,
+                                            def foo(obj):
+                                              try:
+                                                 obj.fun()
+                                              except TypeError as e:
+                                                 pass
+                                              else:
+                                                 assert False
+                                            foo
+                                            """,
                             "suite.py").build();
             Map<String, Object> m = new HashMap<>();
             m.put("fun", new AForeignExecutable());
