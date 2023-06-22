@@ -89,8 +89,8 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * <p>
  * The whole chain of {@link LazyTraceback} objects can be materialized into a linked list of
  * PTraceback objects. Due to all the parts of a segment being optional, it can also materialize to
- * nothing (null/None). The materialization is lazy and is split between {@link GetTracebackNode}
- * and accessor nodes in {@link TracebackBuiltins}. The purpose of {@link GetTracebackNode} is to do
+ * nothing (null/None). The materialization is lazy and is split between {@link MaterializeLazyTracebackNode}
+ * and accessor nodes in {@link TracebackBuiltins}. The purpose of {@link MaterializeLazyTracebackNode} is to do
  * the minimal amount of work necessary to determine whether the traceback will materialize to
  * something and is not empty. Then it either returns the {@link PTraceback} object or null.
  * </p>
@@ -112,7 +112,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * </p>
  */
 @GenerateUncached
-public abstract class GetTracebackNode extends Node {
+public abstract class MaterializeLazyTracebackNode extends Node {
     public abstract PTraceback execute(LazyTraceback tb);
 
     @Specialization(guards = "tb.isMaterialized()")
@@ -143,7 +143,7 @@ public abstract class GetTracebackNode extends Node {
     }
 
     @NeverDefault
-    public static GetTracebackNode create() {
-        return GetTracebackNodeGen.create();
+    public static MaterializeLazyTracebackNode create() {
+        return MaterializeLazyTracebackNodeGen.create();
     }
 }

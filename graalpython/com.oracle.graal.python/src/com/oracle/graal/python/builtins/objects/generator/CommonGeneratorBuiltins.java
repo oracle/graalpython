@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -275,7 +275,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Child private MaterializeFrameNode materializeFrameNode;
-        @Child private GetTracebackNode getTracebackNode;
+        @Child private MaterializeLazyTracebackNode materializeLazyTracebackNode;
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
@@ -345,12 +345,12 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             return materializeFrameNode;
         }
 
-        private GetTracebackNode ensureGetTracebackNode() {
-            if (getTracebackNode == null) {
+        private MaterializeLazyTracebackNode ensureGetTracebackNode() {
+            if (materializeLazyTracebackNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTracebackNode = insert(GetTracebackNode.create());
+                materializeLazyTracebackNode = insert(MaterializeLazyTracebackNode.create());
             }
-            return getTracebackNode;
+            return materializeLazyTracebackNode;
         }
     }
 

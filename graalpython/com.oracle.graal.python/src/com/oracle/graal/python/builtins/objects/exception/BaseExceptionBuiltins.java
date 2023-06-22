@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -110,10 +111,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
 public class BaseExceptionBuiltins extends PythonBuiltins {
-
-    protected static boolean isBaseExceptionOrNone(Object obj) {
-        return obj instanceof PBaseException || PGuards.isNone(obj);
-    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -233,57 +230,73 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    @ImportStatic(BaseExceptionBuiltins.class)
     public abstract static class CauseNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public static Object getCause(PBaseException self, @SuppressWarnings("unused") PNone value) {
-            return self.getCause() != null ? self.getCause() : PNone.NONE;
+        public static Object getCause(Object self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetCauseNode getCauseNode) {
+            return getCauseNode.execute(inliningTarget, self);
         }
 
-        @Specialization
-        public static Object setCause(PBaseException self, PBaseException value) {
-            self.setCause(value);
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
+        public static Object setCause(Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
+                        @Shared @Cached ExceptionNodes.SetCauseNode setCauseNode) {
+            setCauseNode.execute(inliningTarget, self, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNone(value)")
-        public static Object setCause(PBaseException self, @SuppressWarnings("unused") PNone value) {
-            self.setCause(null);
+        public static Object setCause(Object self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetCauseNode setCauseNode) {
+            setCauseNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isBaseExceptionOrNone(value)")
-        public static Object cause(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
+        public static Object cause(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                         @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
     @Builtin(name = J___CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    @ImportStatic(BaseExceptionBuiltins.class)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public static Object getContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
-            return self.getContext() != null ? self.getContext() : PNone.NONE;
+        public static Object getContext(Object self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetContextNode getContextNode) {
+            return getContextNode.execute(inliningTarget, self);
         }
 
-        @Specialization
-        public static Object setContext(PBaseException self, PBaseException value) {
-            self.setContext(value);
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
+        public static Object setContext(Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
+                        @Shared @Cached ExceptionNodes.SetContextNode setContextNode) {
+            setContextNode.execute(inliningTarget, self, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNone(value)")
-        public static Object setContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
-            self.setContext(null);
+        public static Object setContext(Object self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetContextNode setContextNode) {
+            setContextNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isBaseExceptionOrNone(value)")
-        public static Object context(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
+        public static Object context(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                         @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
+            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -291,24 +304,32 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public static Object getSuppressContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
-            return self.getSuppressContext();
+        public static Object getSuppressContext(Object self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode) {
+            return getSuppressContextNode.execute(inliningTarget, self);
         }
 
         @Specialization
-        public static Object setSuppressContext(PBaseException self, boolean value) {
-            self.setSuppressContext(value);
+        public static Object setSuppressContext(Object self, boolean value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode) {
+            setSuppressContextNode.execute(inliningTarget, self, value);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isBoolean(value)")
-        public Object setSuppressContext(PBaseException self, Object value,
+        @Specialization(guards = "!isBoolean(valueObj)")
+        public Object setSuppressContext(Object self, Object valueObj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+            boolean value;
             try {
-                self.setSuppressContext(castToJavaBooleanNode.execute(value));
+                value = castToJavaBooleanNode.execute(valueObj);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
+            setSuppressContextNode.execute(inliningTarget, self, value);
             return PNone.NONE;
         }
     }
@@ -319,8 +340,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(tb)")
         public static Object getTraceback(Object self, @SuppressWarnings("unused") Object tb,
-                        @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
-            return getExceptionTracebackNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
+            return getTracebackNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "!isNoValue(tb)")

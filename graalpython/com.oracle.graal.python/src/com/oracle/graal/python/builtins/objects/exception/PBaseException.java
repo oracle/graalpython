@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -94,8 +95,8 @@ public final class PBaseException extends PythonObject {
     private PException exception;
     private LazyTraceback traceback;
 
-    private PBaseException context;
-    private PBaseException cause;
+    private Object context;
+    private Object cause;
     private boolean suppressContext = false;
     // the data instance is used to store additional information for some of the builtin exceptions
     // not unlike subclassing
@@ -144,19 +145,21 @@ public final class PBaseException extends PythonObject {
         this.exceptionAttributes = exceptionAttributes;
     }
 
-    public PBaseException getContext() {
+    public Object getContext() {
         return context;
     }
 
-    public void setContext(PBaseException context) {
+    public void setContext(Object context) {
+        assert context == null || PyExceptionInstanceCheckNode.executeUncached(context);
         this.context = context;
     }
 
-    public PBaseException getCause() {
+    public Object getCause() {
         return cause;
     }
 
-    public void setCause(PBaseException cause) {
+    public void setCause(Object cause) {
+        assert cause == null || PyExceptionInstanceCheckNode.executeUncached(cause);
         this.cause = cause;
         this.suppressContext = true;
     }

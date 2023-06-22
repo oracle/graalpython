@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -191,12 +191,12 @@ public final class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, J_CUR_EXC_TRACEBACK)")
         static Object doCurExcTraceback(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
-                        @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode) {
+                        @Shared("getTraceback") @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PException currentException = receiver.threadState.getCurrentException();
             PTraceback result = null;
             if (currentException != null) {
                 LazyTraceback traceback = currentException.getTraceback();
-                result = traceback != null ? getTracebackNode.execute(traceback) : null;
+                result = traceback != null ? materializeLazyTracebackNode.execute(traceback) : null;
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -227,11 +227,11 @@ public final class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, J_EXC_TRACEBACK)")
         static Object doExcTraceback(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
-                        @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode) {
+                        @Shared("getTraceback") @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PException currentException = receiver.threadState.getCaughtException();
             PTraceback result = null;
             if (currentException != null) {
-                result = getTracebackNode.execute(currentException.getTraceback());
+                result = materializeLazyTracebackNode.execute(currentException.getTraceback());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }

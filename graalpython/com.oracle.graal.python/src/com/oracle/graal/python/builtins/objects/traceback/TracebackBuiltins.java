@@ -88,7 +88,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
      * Use the Truffle stacktrace attached to an exception to populate the information in the
      * {@link PTraceback} and its tb_next chain as far as the stacktrace goes for this segment.
      *
-     * @see GetTracebackNode
+     * @see MaterializeLazyTracebackNode
      */
     public abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
@@ -101,7 +101,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         @Specialization(guards = "!tb.isMaterialized()")
         void doMaterialize(PTraceback tb,
                         @Cached MaterializeFrameNode materializeFrameNode,
-                        @Cached GetTracebackNode getTracebackNode,
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
                         @Cached PythonObjectFactory factory) {
             /*
              * Truffle stacktrace consists of the frames captured during the unwinding and the
@@ -115,9 +115,9 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PTraceback next = null;
             LazyTraceback lazyTraceback = tb.getLazyTraceback();
             if (lazyTraceback.getNextChain() != null) {
-                next = getTracebackNode.execute(lazyTraceback.getNextChain());
+                next = materializeLazyTracebackNode.execute(lazyTraceback.getNextChain());
             }
-            // The logic of skipping and cutting off frames here and in GetTracebackNode must be the
+            // The logic of skipping and cutting off frames here and in MaterializeLazyTracebackNode must be the
             // same
             PException pException = lazyTraceback.getException();
             List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(pException);

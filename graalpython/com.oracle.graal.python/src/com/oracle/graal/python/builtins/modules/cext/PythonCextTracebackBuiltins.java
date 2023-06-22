@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PyCode_NewEmpty;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -80,14 +80,14 @@ public final class PythonCextTracebackBuiltins {
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         int tbHere(PFrame frame,
-                        @Cached GetTracebackNode getTracebackNode) {
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PythonLanguage language = getLanguage();
             PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
             PException currentException = threadState.getCurrentException();
             if (currentException != null) {
                 PTraceback traceback = null;
                 if (currentException.getTraceback() != null) {
-                    traceback = getTracebackNode.execute(currentException.getTraceback());
+                    traceback = materializeLazyTracebackNode.execute(currentException.getTraceback());
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);

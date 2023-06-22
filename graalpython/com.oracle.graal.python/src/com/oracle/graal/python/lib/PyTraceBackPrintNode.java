@@ -57,7 +57,7 @@ import java.nio.charset.StandardCharsets;
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -200,7 +200,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     }
 
     public static Object getExceptionTraceback(PBaseException e) {
-        return GetExceptionTracebackNode.getUncached().execute(e);
+        return ExceptionNodes.GetTracebackNode.executeUncached(e);
     }
 
     public static boolean checkLong(Object object) {

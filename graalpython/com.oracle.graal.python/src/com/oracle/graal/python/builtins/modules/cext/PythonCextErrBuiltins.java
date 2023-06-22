@@ -92,7 +92,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -164,7 +164,7 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object run(@Cached GetThreadStateNode getThreadStateNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetTracebackNode getTracebackNode) {
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PException currentException = getThreadStateNode.getCurrentException();
             Object result;
             if (currentException == null) {
@@ -173,7 +173,7 @@ public final class PythonCextErrBuiltins {
                 PBaseException exception = currentException.getEscapedException();
                 Object traceback = null;
                 if (currentException.getTraceback() != null) {
-                    traceback = getTracebackNode.execute(currentException.getTraceback());
+                    traceback = materializeLazyTracebackNode.execute(currentException.getTraceback());
                 }
                 if (traceback == null) {
                     traceback = getNativeNull();
@@ -351,7 +351,7 @@ public final class PythonCextErrBuiltins {
         Object info(
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetTracebackNode getTracebackNode,
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
                         @Cached BranchProfile noExceptionProfile) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
@@ -363,7 +363,7 @@ public final class PythonCextErrBuiltins {
             LazyTraceback lazyTraceback = currentException.getTraceback();
             PTraceback traceback = null;
             if (lazyTraceback != null) {
-                traceback = getTracebackNode.execute(lazyTraceback);
+                traceback = materializeLazyTracebackNode.execute(lazyTraceback);
             }
             return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
         }

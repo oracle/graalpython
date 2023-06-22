@@ -50,7 +50,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -181,7 +181,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
             Object type = GetClassNode.getUncached().execute(pythonException);
-            Object tb = GetExceptionTracebackNode.getUncached().execute(pythonException);
+            Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
             PythonModule sys = getContext().lookupBuiltinModule(T_SYS);
             sys.setAttribute(BuiltinNames.T_LAST_TYPE, type);

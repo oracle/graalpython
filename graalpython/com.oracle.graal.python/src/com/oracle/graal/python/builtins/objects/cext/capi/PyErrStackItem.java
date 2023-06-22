@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
@@ -95,7 +95,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     @ExportMessage
     Object readMember(String key,
                     @Cached GetClassNode getClassNode,
-                    @Cached GetTracebackNode getTracebackNode,
+                    @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
                     @Cached ToSulongNode toSulongNode) {
         Object result = null;
         if (exception != null) {
@@ -108,7 +108,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
                     break;
                 case J_EXC_TRACEBACK:
                     if (exception.getTraceback() != null) {
-                        result = getTracebackNode.execute(exception.getTraceback());
+                        result = materializeLazyTracebackNode.execute(exception.getTraceback());
                     }
                     break;
             }
