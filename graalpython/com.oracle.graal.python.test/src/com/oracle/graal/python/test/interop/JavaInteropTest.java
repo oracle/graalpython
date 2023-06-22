@@ -50,6 +50,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.graalvm.polyglot.Context;
@@ -60,9 +61,12 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyHashMap;
+import org.graalvm.polyglot.proxy.ProxyExecutable;
+import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -322,6 +326,53 @@ public class JavaInteropTest {
             }
             assertNotNull("Dacapo found", dacapo);
             assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getHashValue("sha1").toString());
+        }
+
+        public class AForeignExecutable implements ProxyExecutable {
+            @Override
+            public Object execute(Value... arguments) {
+                throw new UnsupportedOperationException("wrong arity");
+            }
+        }
+
+        @Ignore // blocked by GR-46281
+        @Test
+        public void runAForeignExecutable() throws IOException {
+            Source suitePy = Source.newBuilder("python",
+                            """
+                                            def foo(obj):
+                                              try:
+                                                 obj()
+                                              except TypeError as e:
+                                                 pass
+                                              else:
+                                                 assert False
+                                            foo
+                                            """,
+                            "suite.py").build();
+            Value foo = context.eval(suitePy);
+            foo.execute(new AForeignExecutable());
+        }
+
+        @Ignore // blocked by GR-46281
+        @Test
+        public void invokeAForeignMember() throws IOException {
+            Source suitePy = Source.newBuilder("python",
+                            """
+                                            def foo(obj):
+                                              try:
+                                                 obj.fun()
+                                              except TypeError as e:
+                                                 pass
+                                              else:
+                                                 assert False
+                                            foo
+                                            """,
+                            "suite.py").build();
+            Map<String, Object> m = new HashMap<>();
+            m.put("fun", new AForeignExecutable());
+            Value foo = context.eval(suitePy);
+            foo.execute(ProxyObject.fromMap(m));
         }
 
         @ExportLibrary(InteropLibrary.class)
