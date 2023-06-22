@@ -43,7 +43,7 @@
 #undef PyErr_BadInternalCall
 void PyErr_BadInternalCall(void) {
     assert(0 && "bad argument to internal function");
-    Graal_PyTruffleErr_CreateAndSetException(PyExc_SystemError, truffleString("bad argument to internal function"));
+    PyErr_SetString(PyExc_SystemError, "bad argument to internal function");
 }
 #define PyErr_BadInternalCall() _PyErr_BadInternalCall(__FILE__, __LINE__)
 

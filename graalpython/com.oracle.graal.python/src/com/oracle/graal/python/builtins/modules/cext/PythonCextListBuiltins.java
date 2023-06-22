@@ -44,12 +44,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 
 import java.util.Arrays;
@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
@@ -296,11 +295,13 @@ public final class PythonCextListBuiltins {
     abstract static class _PyList_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PList list, long index, Object element,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
                         @Cached ConditionProfile generalizedProfile) {
             SequenceStorage sequenceStorage = list.getSequenceStorage();
             checkBounds(sequenceStorage, index);
-            SequenceStorage newStorage = setItemNode.execute(null, sequenceStorage, (int) index, element);
+            SequenceStorage newStorage = generalizationNode.execute(sequenceStorage, element);
+            setItemNode.execute(newStorage, (int) index, element);
             if (generalizedProfile.profile(list.getSequenceStorage() != newStorage)) {
                 list.setSequenceStorage(newStorage);
             }
@@ -328,10 +329,6 @@ public final class PythonCextListBuiltins {
             if (index < 0 || index >= sequenceStorage.length()) {
                 throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
-        }
-
-        protected static SetItemNode createSetItem() {
-            return SetItemNode.create(null, ListGeneralizationNode::create);
         }
     }
 

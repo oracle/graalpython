@@ -133,7 +133,8 @@ public final class PythonCextTupleBuiltins {
     abstract static class _PyTuple_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PTuple tuple, long index, Object element,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
                         @Cached ConditionProfile generalizedProfile) {
             // we cannot assume that there is nothing already in the tuple, because the API usage
             // is valid if the tuple has never been visible to Python code so far, and it is up to
@@ -142,7 +143,8 @@ public final class PythonCextTupleBuiltins {
             // times
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             checkBounds(sequenceStorage, index);
-            SequenceStorage newStorage = setItemNode.execute(null, sequenceStorage, (int) index, element);
+            SequenceStorage newStorage = generalizationNode.execute(sequenceStorage, element);
+            setItemNode.execute(newStorage, (int) index, element);
             if (generalizedProfile.profile(tuple.getSequenceStorage() != newStorage)) {
                 tuple.setSequenceStorage(newStorage);
             }
@@ -170,10 +172,6 @@ public final class PythonCextTupleBuiltins {
             if (index < 0 || index >= sequenceStorage.length()) {
                 throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
-        }
-
-        protected static SetItemNode createSetItem() {
-            return SetItemNode.create(null, ListGeneralizationNode::create);
         }
     }
 

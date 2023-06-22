@@ -46,7 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -132,7 +132,7 @@ public final class PythonCextCodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCodeObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyCodeObject}, call = Direct)
     abstract static class PyCode_GetName extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PCode code) {
@@ -140,7 +140,7 @@ public final class PythonCextCodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCodeObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyCodeObject}, call = Direct)
     abstract static class PyCode_GetFileName extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PCode code) {

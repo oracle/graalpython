@@ -121,6 +121,51 @@ index 2ef8b7f2..1f4efd70 100644
  report("Building wheel {}-{}".format(package_name, version))
  
  cmake = CMake()
+diff --git a/test/test_overrides.py b/test/test_overrides.py
+index e9e01684..f4069bc9 100644
+--- a/test/test_overrides.py
++++ b/test/test_overrides.py
+@@ -1456,12 +1456,9 @@ class TestTorchFunctionMode(TestCase):
+             pass
+ 
+         x = A(torch.randn(5))
+-        with torch._C.DisableTorchFunction():
+-            g = torch._C._EnableTorchFunction()
+-            try:
++        with torch._C.DisableTorchFunction(), \
++            torch._C._EnableTorchFunction():
+                 self.assertIsInstance(torch.sum(x), A)
+-            finally:
+-                del g
+ 
+     def test_subclass_hash(self):
+         class DiagTensor(torch.Tensor):
+diff --git a/test/test_python_dispatch.py b/test/test_python_dispatch.py
+index dea96d19..4fb18b9e 100644
+--- a/test/test_python_dispatch.py
++++ b/test/test_python_dispatch.py
+@@ -1671,16 +1671,16 @@ $0 = torch._ops.aten.empty.memory_format([], device=device(type='cpu'), pin_memo
+ class TestPythonDispatcher(TestCase):
+     def test_basic(self):
+         x = torch.randn(2, requires_grad=True)
+-        r = torch._C._EnablePythonDispatcher()
+-        torch.add(x, x)
++        with torch._C._EnablePythonDispatcher():
++            torch.add(x, x)
+ 
+     def test_lstsq(self):
+         a = torch.randn(4, 3)
+         b = torch.rand(4, 3)
+         expected_shape = torch.linalg.lstsq(a, b).solution.shape
+-        r = torch._C._EnablePythonDispatcher()
+-        python_disp_shape = torch.linalg.lstsq(a, b).solution.shape
+-        self.assertEqual(expected_shape, python_disp_shape)
++        with torch._C._EnablePythonDispatcher():
++            python_disp_shape = torch.linalg.lstsq(a, b).solution.shape
++            self.assertEqual(expected_shape, python_disp_shape)
+ 
+ if __name__ == '__main__':
+     run_tests()
 diff --git a/third_party/fbgemm/CMakeLists.txt b/third_party/fbgemm/CMakeLists.txt
 index 58dcb9ae..b0ad68aa 100644
 --- a/third_party/fbgemm/CMakeLists.txt
@@ -207,6 +252,60 @@ index db8f2401..bac3c0d9 100644
              auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
  
              // Get the deepest trace possible.
+diff --git a/torch/_dispatch/python.py b/torch/_dispatch/python.py
+index 95b7fa05..8d6039c6 100644
+--- a/torch/_dispatch/python.py
++++ b/torch/_dispatch/python.py
+@@ -3,18 +3,8 @@ from contextlib import contextmanager
+ 
+ __all__ = ['enable_python_dispatcher', 'no_python_dispatcher']
+ 
+-@contextmanager
+ def no_python_dispatcher():
+-    g = torch._C._DisablePythonDispatcher()
+-    try:
+-        yield
+-    finally:
+-        del g
++    return torch._C._DisablePythonDispatcher()
+ 
+-@contextmanager
+ def enable_python_dispatcher():
+-    g = torch._C._EnablePythonDispatcher()
+-    try:
+-        yield
+-    finally:
+-        del g
++    return torch._C._EnablePythonDispatcher()
+diff --git a/torch/_tensor_str.py b/torch/_tensor_str.py
+index 986be67a..53b5126a 100644
+--- a/torch/_tensor_str.py
++++ b/torch/_tensor_str.py
+@@ -632,6 +632,6 @@ def _functorch_wrapper_str_intern(tensor, *, tensor_contents=None):
+ 
+ 
+ def _str(self, *, tensor_contents=None):
+-    with torch.no_grad():
+-        guard = torch._C._DisableFuncTorch()
++    with torch.no_grad(), \
++            torch._C._DisableFuncTorch():
+         return _str_intern(self, tensor_contents=tensor_contents)
+diff --git a/torch/autograd/grad_mode.py b/torch/autograd/grad_mode.py
+index b847129d..3219d1e1 100644
+--- a/torch/autograd/grad_mode.py
++++ b/torch/autograd/grad_mode.py
+@@ -292,9 +292,10 @@ class inference_mode(_DecoratorContextManager):
+ 
+     def __enter__(self):
+         self._inference_mode_raii_guard = torch._C._InferenceMode(self.mode)
++        self._inference_mode_raii_guard.__enter__()
+ 
+     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+-        del self._inference_mode_raii_guard
++        self._inference_mode_raii_guard.__exit__(exc_type, exc_value, traceback)
+ 
+     def clone(self):
+         return self.__class__(self.mode)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
 index 8e1ca3b1..b150ac3f 100644
 --- a/torch/csrc/Module.cpp
@@ -269,6 +368,164 @@ index 8e1ca3b1..b150ac3f 100644
    }
  
    Py_INCREF(obj);
+diff --git a/torch/csrc/autograd/init.cpp b/torch/csrc/autograd/init.cpp
+index a1d6de21..4a8e6487 100644
+--- a/torch/csrc/autograd/init.cpp
++++ b/torch/csrc/autograd/init.cpp
+@@ -43,27 +43,42 @@ struct DisableFuncTorch {
+   c10::impl::ExcludeDispatchKeyGuard back_guard_;
+ };
+ 
++struct DisableFuncTorchWrapper {
++  DisableFuncTorch* delegate = nullptr;
++};
++
+ struct EnableTorchFunction {
+   EnableTorchFunction()
+       : old_(at::impl::PythonTorchFunctionTLS::is_disabled()) {
+-    at::impl::PythonTorchFunctionTLS::set_disabled(false);
+-  }
+-  ~EnableTorchFunction() {
+-    at::impl::PythonTorchFunctionTLS::set_disabled(old_);
+   }
+   bool old_;
+ };
+ 
+ struct EnablePythonDispatcher {
+   EnablePythonDispatcher() : old_(c10::impl::PythonDispatcherTLS::get_state()) {
+-    c10::impl::PythonDispatcherTLS::set_state(getPyInterpreter());
+-  }
+-  ~EnablePythonDispatcher() {
+-    c10::impl::PythonDispatcherTLS::set_state(old_);
+   }
+   c10::impl::PyInterpreter* old_;
+ };
+ 
++struct DisableTorchDispatchWrapper {
++  torch::DisableTorchDispatch* delegate = nullptr;
++};
++
++struct InferenceModeWrapper {
++  bool enabled;
++  torch::InferenceMode* delegate = nullptr;
++
++  InferenceModeWrapper(bool enabled) : enabled(enabled) {}
++};
++
++struct RestorePythonTLSSnapshotWrapper {
++  at::impl::RestorePythonTLSSnapshot* delegate = nullptr;
++};
++
++struct DisablePythonDispatcherWrapper {
++  c10::impl::DisablePythonDispatcher* delegate = nullptr;
++};
++
+ } // namespace
+ 
+ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
+@@ -337,23 +352,92 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
+ 
+   _C_m.def("_activate_cuda_trace", []() { activateCUDATrace(); });
+ 
+-  py::class_<c10::InferenceMode>(_C_m, "_InferenceMode").def(py::init<bool>());
++  py::class_<InferenceModeWrapper>(_C_m, "_InferenceMode")
++      .def(py::init<bool>())
++      .def("__enter__", [&] (InferenceModeWrapper& w) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++        w.delegate = new c10::InferenceMode(w.enabled);
++      })
++      .def("__exit__", [&] (InferenceModeWrapper& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++      });
+ 
+-  py::class_<at::impl::RestorePythonTLSSnapshot>(
++  py::class_<RestorePythonTLSSnapshotWrapper>(
+       _C_m, "_RestorePythonTLSSnapshot")
+-      .def(py::init<>());
++      .def(py::init<>())
++      .def("__enter__", [&] (RestorePythonTLSSnapshotWrapper& w) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++        w.delegate = new at::impl::RestorePythonTLSSnapshot;
++      })
++      .def("__exit__", [&] (RestorePythonTLSSnapshotWrapper& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++      });
+ 
+   // TODO: line up this binding with DisableTorchFunction
+-  py::class_<torch::DisableTorchDispatch>(_C_m, "_DisableTorchDispatch")
+-      .def(py::init<>());
++  py::class_<DisableTorchDispatchWrapper>(_C_m, "_DisableTorchDispatch")
++      .def(py::init<>())
++      .def("__enter__", [&] (DisableTorchDispatchWrapper& w) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++        w.delegate = new torch::DisableTorchDispatch;
++      })
++      .def("__exit__", [&] (DisableTorchDispatchWrapper& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++      });
+   py::class_<EnableTorchFunction>(_C_m, "_EnableTorchFunction")
+-      .def(py::init<>());
++      .def(py::init<>())
++      .def("__enter__", [&] (EnableTorchFunction& w) {
++        at::impl::PythonTorchFunctionTLS::set_disabled(false);
++      })
++      .def("__exit__", [&] (EnableTorchFunction& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        at::impl::PythonTorchFunctionTLS::set_disabled(w.old_);
++      });
+   py::class_<EnablePythonDispatcher>(_C_m, "_EnablePythonDispatcher")
+-      .def(py::init<>());
+-  py::class_<c10::impl::DisablePythonDispatcher>(
++      .def(py::init<>())
++      .def("__enter__", [&] (EnablePythonDispatcher& w) {
++        c10::impl::PythonDispatcherTLS::set_state(getPyInterpreter());
++      })
++      .def("__exit__", [&] (EnablePythonDispatcher& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        c10::impl::PythonDispatcherTLS::set_state(w.old_);
++      });
++  py::class_<DisablePythonDispatcherWrapper>(
+       _C_m, "_DisablePythonDispatcher")
+-      .def(py::init<>());
+-  py::class_<DisableFuncTorch>(_C_m, "_DisableFuncTorch").def(py::init<>());
++      .def(py::init<>())
++      .def("__enter__", [&] (DisablePythonDispatcherWrapper& w) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++        w.delegate = new c10::impl::DisablePythonDispatcher;
++      })
++      .def("__exit__", [&] (DisablePythonDispatcherWrapper& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++      });
++  py::class_<DisableFuncTorchWrapper>(_C_m, "_DisableFuncTorch")
++      .def(py::init<>())
++      .def("__enter__", [&] (DisableFuncTorchWrapper& w) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++        w.delegate = new DisableFuncTorch;
++      })
++      .def("__exit__", [&] (DisableFuncTorchWrapper& w, py::object& excType, py::object& excValue, py::object& excTb) {
++        if (w.delegate) {
++          delete w.delegate;
++        }
++      });
+ 
+   py::class_<torch::autograd::SavedVariable>(m, "SavedTensor")
+       .def(py::init([]() -> torch::autograd::SavedVariable {
 diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
 index 8c9ed1d7..5183a325 100644
 --- a/torch/csrc/autograd/python_variable_indexing.cpp
@@ -310,20 +567,27 @@ index 8c9ed1d7..5183a325 100644
    }
  }
 diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
-index 78676e2e..ecc76ea9 100644
+index 78676e2e..e6a3caf0 100644
 --- a/torch/csrc/jit/python/python_tracer.cpp
 +++ b/torch/csrc/jit/python/python_tracer.cpp
-@@ -33,8 +33,8 @@ std::vector<StackEntry> _pythonCallstack() {
+@@ -33,11 +33,15 @@ std::vector<StackEntry> _pythonCallstack() {
    while (nullptr != frame) {
      auto code = THPCodeObjectPtr(PyFrame_GetCode(frame));
      size_t line = PyCode_Addr2Line(code.get(), PyFrame_GetLasti(frame));
 -    std::string filename = THPUtils_unpackString(code->co_filename);
 -    std::string funcname = THPUtils_unpackString(code->co_name);
-+    std::string filename = THPUtils_unpackString(PyCode_GetFileName(code));
-+    std::string funcname = THPUtils_unpackString(PyCode_GetName(code));
++    PyObject* filenameObj = PyCode_GetFileName(code);
++    std::string filename = THPUtils_unpackString(filenameObj);
++    PyObject* funcnameObj = PyCode_GetName(code);
++    std::string funcname = THPUtils_unpackString(funcnameObj);
      auto source = std::make_shared<Source>(funcname, filename, line);
      entries.emplace_back(
          StackEntry{funcname, SourceRange(source, 0, funcname.size())});
++    Py_DECREF(funcnameObj);
++    Py_DECREF(filenameObj);
+     auto new_frame = PyFrame_GetBack(frame);
+     Py_DECREF(frame);
+     frame = new_frame;
 diff --git a/torch/csrc/utils/python_compat.h b/torch/csrc/utils/python_compat.h
 index 44911527..d3ad9c54 100644
 --- a/torch/csrc/utils/python_compat.h
@@ -337,3 +601,78 @@ index 44911527..d3ad9c54 100644
  static inline PyObject* PyFrame_GetLocals(PyFrameObject* frame) {
    PyFrame_FastToLocals(frame);
    auto res = frame->f_locals;
+diff --git a/torch/distributed/_shard/partial_tensor.py b/torch/distributed/_shard/partial_tensor.py
+index dc8d09bd..d7e4ec6c 100644
+--- a/torch/distributed/_shard/partial_tensor.py
++++ b/torch/distributed/_shard/partial_tensor.py
+@@ -234,14 +234,11 @@ class _PartialTensor(torch.Tensor):
+             return _PARTIAL_TENSOR_OPS[func](types, args, kwargs, process_group)
+ 
+         # Need to disable all dispatch to print args and kwargs appropriately.
+-        guard = torch._C._DisableTorchDispatch()  # type: ignore[attr-defined]
+-        try:
+-            with torch._C.DisableTorchFunction():
+-                raise RuntimeError(
+-                    f"torch function '{func.__name__}', with args: {args} and "
+-                    f"kwargs: {kwargs} not supported for PartialTensor!")
+-        finally:
+-            del guard
++        with torch._C._DisableTorchDispatch(), \
++                torch._C.DisableTorchFunction():
++            raise RuntimeError(
++                f"torch function '{func.__name__}', with args: {args} and "
++                f"kwargs: {kwargs} not supported for PartialTensor!")
+ 
+     @classmethod
+     def __torch_dispatch__(cls, func, types, args=(), kwargs=None):
+diff --git a/torch/overrides.py b/torch/overrides.py
+index dbee241b..dbc601e4 100644
+--- a/torch/overrides.py
++++ b/torch/overrides.py
+@@ -1885,9 +1885,10 @@ def _no_torch_function_mode() -> Iterator[None]:
+ class enable_reentrant_dispatch():
+     def __enter__(self):
+         self._raii_guard = torch._C._RestorePythonTLSSnapshot()
++        self._raii_guard.__enter__()
+ 
+     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+-        del self._raii_guard
++        self._raii_guard.__exit__(exc_type, exc_value, traceback)
+ 
+ def get_buffer(tensor_subclass, data, prefix):
+     import ctypes
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+index e3285090..7f9059aa 100644
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -1347,13 +1347,8 @@ def set_rng_seed(seed):
+         np.random.seed(seed)
+ 
+ 
+-@contextmanager
+ def disable_functorch():
+-    guard = torch._C._DisableFuncTorch()  # type: ignore[attr-defined]
+-    try:
+-        yield
+-    finally:
+-        del guard
++    return torch._C._DisableFuncTorch()
+ 
+ 
+ @contextlib.contextmanager
+diff --git a/torch/utils/_mode_utils.py b/torch/utils/_mode_utils.py
+index f9098c6d..adcd4920 100644
+--- a/torch/utils/_mode_utils.py
++++ b/torch/utils/_mode_utils.py
+@@ -8,10 +8,5 @@ T = TypeVar('T')
+ def all_same_mode(modes):
+     return all(tuple(mode == modes[0] for mode in modes))
+ 
+-@contextmanager
+ def no_dispatch():
+-    guard = torch._C._DisableTorchDispatch()  # type: ignore[attr-defined]
+-    try:
+-        yield
+-    finally:
+-        del guard
++    return torch._C._DisableTorchDispatch()
