@@ -769,3 +769,22 @@ class TestNativeExceptionSubclass:
         e = ExceptionSubclass()
         e.__setstate__({'foo': 'bar'})
         assert e.foo == 'bar'
+
+    def test_throw(self):
+        def gen():
+            try:
+                yield
+            except Exception as e:
+                yield e
+
+        g = gen()
+        next(g)
+        e = g.throw(ExceptionSubclass)
+        assert type(e) == ExceptionSubclass
+
+        g = gen()
+        next(g)
+        e = ExceptionSubclass()
+        e1 = g.throw(e)
+        assert e1 is e
+

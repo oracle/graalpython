@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -347,20 +348,20 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static PNone dict(PBaseException self, PDict mapping,
+        static PNone dict(Object self, PDict mapping,
                         @Cached SetDictNode setDict) {
             setDict.execute(self, mapping);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(mapping)")
-        Object dict(PBaseException self, @SuppressWarnings("unused") PNone mapping,
+        Object dict(Object self, @SuppressWarnings("unused") PNone mapping,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(self);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        PNone dict(@SuppressWarnings("unused") PBaseException self, Object mapping) {
+        PNone dict(@SuppressWarnings("unused") Object self, Object mapping) {
             throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
@@ -449,12 +450,12 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BaseExceptionSetStateNode extends PythonBinaryBuiltinNode {
-        @CompilerDirectives.ValueType
+        @ValueType
         static final class ExcState {
             private final HashingStorage dictStorage;
-            private final PBaseException exception;
+            private final Object exception;
 
-            ExcState(HashingStorage dictStorage, PBaseException exception) {
+            ExcState(HashingStorage dictStorage, Object exception) {
                 this.dictStorage = dictStorage;
                 this.exception = exception;
             }
@@ -479,7 +480,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setDict(VirtualFrame frame, PBaseException self, PDict state,
+        Object setDict(VirtualFrame frame, Object self, PDict state,
                         @Cached ForEachKW forEachKW,
                         @Cached HashingStorageForEach forEachNode) {
             final HashingStorage dictStorage = state.getDictStorage();
@@ -488,7 +489,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isDict(state)")
-        Object generic(@SuppressWarnings("unused") PBaseException self, Object state) {
+        Object generic(@SuppressWarnings("unused") Object self, Object state) {
             if (state != PNone.NONE) {
                 throw raise(TypeError, STATE_IS_NOT_A_DICT);
             }
