@@ -38,7 +38,8 @@
 # SOFTWARE.
 import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON, CPyExtType
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
+    is_native_object
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -250,6 +251,8 @@ class TestPyTuple(CPyExtTestCase):
 class TestNativeSubclass(unittest.TestCase):
     def test_builtins(self):
         t = TupleSubclass(1, 2, 3)
+        assert type(t) == TupleSubclass
+        assert is_native_object(t)
         assert t
         assert len(t) == 3
         assert t[1] == 2

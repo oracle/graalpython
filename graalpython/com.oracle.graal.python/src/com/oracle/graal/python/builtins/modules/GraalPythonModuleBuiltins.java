@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -914,6 +915,21 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             assert assertOn = true;
             return assertOn;
         }
+    }
+
+    @Builtin(name = "is_native_object", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsNativeObject extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj) {
+            return true;
+        }
+
+        @Fallback
+        boolean isNative(@SuppressWarnings("unused") Object obj) {
+            return false;
+        }
+
     }
 
     // This is only used from HPy

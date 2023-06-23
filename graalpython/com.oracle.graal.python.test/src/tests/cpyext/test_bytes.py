@@ -38,7 +38,8 @@
 # SOFTWARE.
 import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
+    is_native_object
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -589,6 +590,7 @@ class ObjectTests(unittest.TestCase):
 class TestNativeSubclass(unittest.TestCase):
     def test_builtins(self):
         b = BytesSubclass(b"hello")
+        assert is_native_object(b)
         assert type(b) == BytesSubclass
         assert b
         assert not BytesSubclass(b'')

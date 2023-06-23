@@ -58,6 +58,13 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+if sys.implementation.name == 'graalpy':
+    is_native_object = __graalpython__.is_native_object
+else:
+    def is_native_object(obj):
+        return True
+
+
 def unhandled_error_compare(x, y):
     if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
