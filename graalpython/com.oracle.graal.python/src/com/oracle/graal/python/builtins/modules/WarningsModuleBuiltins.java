@@ -1108,7 +1108,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
      * Our replacement for PyErr_WarnFormat, warn_unicode and related functions.
      */
     public abstract static class WarnNode extends Node {
-        private static final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
         private static final WarnNode UNCACHED = new WarnNodeUncached();
 
         @NeverDefault
@@ -1184,7 +1183,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             private static String formatMessage(TruffleString format, Object... formatArgs) {
                 String message;
                 try {
-                    message = formatter.format(format, formatArgs);
+                    message = ErrorMessageFormatter.format(format, formatArgs);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
@@ -1210,7 +1209,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, T_WARN, PNone.NONE);
                 TruffleString message;
                 try {
-                    message = TruffleString.fromJavaStringUncached(formatter.format(format, formatArgs), TS_ENCODING);
+                    message = TruffleString.fromJavaStringUncached(ErrorMessageFormatter.format(format, formatArgs), TS_ENCODING);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }

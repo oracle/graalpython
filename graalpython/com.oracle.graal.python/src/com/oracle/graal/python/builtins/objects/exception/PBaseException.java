@@ -82,7 +82,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
-    private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
     public static final TruffleString T_CODE = tsLiteral("code");
 
     private PTuple args; // can be null for lazily generated message
@@ -235,7 +234,7 @@ public final class PBaseException extends PythonObject {
         String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(messageFormat.toJavaStringUncached(), getMessageArgs());
+                return typeName + ": " + ErrorMessageFormatter.format(messageFormat.toJavaStringUncached(), getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat.toJavaStringUncached();
             } else {

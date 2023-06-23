@@ -68,22 +68,22 @@ import com.oracle.truffle.api.strings.TruffleString;
  * </dl>
  * </p>
  */
-public class ErrorMessageFormatter {
+public abstract class ErrorMessageFormatter {
 
     private static final Object REMOVED_MARKER = new Object();
 
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final String formatSpecifier = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
 
-    private static Pattern fsPattern = Pattern.compile(formatSpecifier);
+    private static final Pattern fsPattern = Pattern.compile(formatSpecifier);
 
     @TruffleBoundary
-    public String format(TruffleString format, Object... args) {
+    public static String format(TruffleString format, Object... args) {
         return format(format.toJavaStringUncached(), args);
     }
 
     @TruffleBoundary
-    public String format(String format, Object... args) {
+    public static String format(String format, Object... args) {
         CompilerAsserts.neverPartOfCompilation();
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);

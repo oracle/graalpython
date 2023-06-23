@@ -75,8 +75,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class PConstructAndRaiseNode extends Node {
-    private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
-
     public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, Object[] arguments) {
         return execute(frame, type, null, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
     }
@@ -89,7 +87,7 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     @CompilerDirectives.TruffleBoundary
     private static TruffleString getFormattedMessage(TruffleString format, Object[] formatArgs) {
-        return toTruffleStringUncached(FORMATTER.format(format, formatArgs));
+        return toTruffleStringUncached(ErrorMessageFormatter.format(format, formatArgs));
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,

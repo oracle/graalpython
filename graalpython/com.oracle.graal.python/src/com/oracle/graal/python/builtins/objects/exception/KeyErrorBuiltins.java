@@ -54,11 +54,13 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.KeyError)
 public final class KeyErrorBuiltins extends PythonBuiltins {
@@ -73,16 +75,15 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
     abstract static class KeyErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
-                        @Cached BaseExceptionBuiltins.ArgsNode argsNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode) {
-            Object args = argsNode.executeGet(frame, self);
-            if (args instanceof PTuple) {
-                SequenceStorage storage = ((PTuple) args).getSequenceStorage();
-                if (storage.length() == 1) {
-                    return reprNode.execute(frame, getItemNode.execute(storage, 0));
-                }
+            PTuple args = argsNode.execute(inliningTarget, self);
+            SequenceStorage storage = args.getSequenceStorage();
+            if (storage.length() == 1) {
+                return reprNode.execute(frame, getItemNode.execute(storage, 0));
             }
             return baseStrNode.execute(frame, self);
         }

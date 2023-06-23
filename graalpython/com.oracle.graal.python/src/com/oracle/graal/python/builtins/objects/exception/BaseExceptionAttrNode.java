@@ -42,10 +42,14 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -86,18 +90,26 @@ public abstract class BaseExceptionAttrNode extends Node {
         return self.getExceptionAttributes() != null;
     }
 
-    private static Object[] ensureAttrStorage(PBaseException self, StorageFactory factory, SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode, PythonObjectFactory objectFactory) {
-        Object[] attributes = self.getExceptionAttributes();
-        if (attributes == null) {
-            // TODO: cbasca should we raise in case getArgs() is null (due to lazy init of args)?
-            Object[] args = PythonUtils.EMPTY_OBJECT_ARRAY;
-            if (self.getArgs() != null) {
-                args = getArrayNode.execute(self.getArgs().getSequenceStorage());
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class EnsureAttrStorageNode extends Node {
+        abstract Object[] execute(Node inliningTarget, PBaseException self, StorageFactory storageFactory);
+
+        @Specialization
+        static Object[] ensure(Node inliningTarget, PBaseException self, StorageFactory storageFactory,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
+                        @Cached PythonObjectFactory factory) {
+            Object[] attributes = self.getExceptionAttributes();
+            if (attributes == null) {
+                PTuple argsTuple = getArgsNode.execute(inliningTarget, self);
+                Object[] args = getInternalObjectArrayNode.execute(argsTuple.getSequenceStorage());
+                attributes = storageFactory.create(args, factory);
+                self.setExceptionAttributes(attributes);
             }
-            attributes = factory.create(args, objectFactory);
-            self.setExceptionAttributes(attributes);
+            return attributes;
         }
-        return attributes;
     }
 
     // GET
@@ -111,9 +123,9 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"isNoValue(none)", "!withAttributes(self)"})
     public Object getAttrNoStorage(PBaseException self, @SuppressWarnings("unused") PNone none, int index, StorageFactory factory,
-                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
-                    @Cached PythonObjectFactory objectFactory) {
-        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
+        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return getAttrWithStorage(self, none, index, factory);
     }
@@ -129,9 +141,9 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!withAttributes(self)"})
     public Object setAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
-                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
-                    @Cached PythonObjectFactory objectFactory) {
-        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
+        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return setAttrWithStorage(self, value, index, factory);
     }
@@ -147,9 +159,9 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"!isNoValue(value)", "isDeleteMarker(value)", "!withAttributes(self)"})
     public Object delAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
-                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArrayNode,
-                    @Cached PythonObjectFactory objectFactory) {
-        Object[] attributes = ensureAttrStorage(self, factory, getArrayNode, objectFactory);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
+        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return delAttrWithStorage(self, value, index, factory);
     }

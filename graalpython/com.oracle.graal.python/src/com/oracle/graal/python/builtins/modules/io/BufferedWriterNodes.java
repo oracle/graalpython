@@ -54,6 +54,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -96,7 +99,9 @@ public class BufferedWriterNodes {
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode,
                         @Cached RawWriteNode rawWriteNode,
-                        @Cached FlushUnlockedNode flushUnlockedNode) {
+                        @Cached FlushUnlockedNode flushUnlockedNode,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
             final int bufLen = bufferLib.getBufferLength(buffer);
 
             // TODO: check ENTER_BUFFERED(self)
@@ -148,12 +153,10 @@ public class BufferedWriterNodes {
                 bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), self.getWriteEnd(), avail);
                 self.incWriteEnd(avail);
                 self.incPos(avail);
-                /*
-                 * XXX Modifying the existing exception e using the pointer w will change
-                 * e.characters_written but not e.args[2]. Therefore we just replace with a new
-                 * error.
-                 */
-                Object errno = e.getUnreifiedException().getArgs().getSequenceStorage().getItemNormalized(0);
+
+                Object pythonException = e.getUnreifiedException();
+                PTuple args = getArgsNode.execute(inliningTarget, pythonException);
+                Object errno = getItemScalarNode.execute(args.getSequenceStorage(), 0);
                 throw raiseBlockingIOError.get(inliningTarget).raise(errno, WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, avail);
             }
             /*

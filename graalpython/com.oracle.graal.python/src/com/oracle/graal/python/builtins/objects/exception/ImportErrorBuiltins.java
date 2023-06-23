@@ -67,15 +67,17 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ImportError)
@@ -204,15 +206,16 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object reduce(VirtualFrame frame, PBaseException self,
+        Object reduce(PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
-                        @Cached BaseExceptionBuiltins.ArgsNode argsNode,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached HashingStorageCopy copyStorageNode) {
-            Object clazz = getClassNode.execute(self);
-            Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
+            Object clazz = getClassNode.execute(inliningTarget, self);
+            Object args = getArgsNode.execute(inliningTarget, self);
             Object state = getState(self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode);
             if (state == PNone.NONE) {
                 return factory().createTuple(new Object[]{clazz, args});
