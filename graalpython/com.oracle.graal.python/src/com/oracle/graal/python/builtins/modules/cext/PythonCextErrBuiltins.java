@@ -88,12 +88,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -118,10 +119,12 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -141,7 +144,9 @@ public final class PythonCextErrBuiltins {
 
         @Fallback
         Object restore(Object typ, Object val, Object tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
             PBaseException exception;
@@ -151,8 +156,8 @@ public final class PythonCextErrBuiltins {
                 context.setCurrentException(language, e);
                 return PNone.NO_VALUE;
             }
-            if (tb instanceof PTraceback pTraceback) {
-                exception.setTraceback(pTraceback);
+            if (tb instanceof PTraceback) {
+                setTracebackNode.execute(inliningTarget, exception, tb);
             }
             context.setCurrentException(language, PException.fromExceptionInfo(exception, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NO_VALUE;
@@ -609,7 +614,7 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
-        Object setCause(Object exc, Object context,
+        Object setContext(Object exc, Object context,
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(exc, T___CONTEXT__, context);
             return PNone.NONE;
@@ -620,15 +625,10 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static int doClearTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
-            self.clearTraceback();
-            return 0;
-        }
-
-        @Specialization
-        static int doSetTraceback(PBaseException self, PTraceback tb) {
-            self.setTraceback(tb);
-            return 0;
+        Object setTraceback(Object exc, Object traceback,
+                        @Cached PyObjectSetAttr setAttrNode) {
+            setAttrNode.execute(exc, T___TRACEBACK__, traceback);
+            return PNone.NONE;
         }
     }
 }

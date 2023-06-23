@@ -74,6 +74,7 @@ import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttr;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttrAsString;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectRepr;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectStr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.setExceptionTraceback;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DISPLAYHOOK;
@@ -1575,14 +1576,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHookWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
-            if (PGuards.isPBaseException(value)) {
-                final PBaseException exc = (PBaseException) value;
-                final Object currTb = getExceptionTraceback(exc);
-                if (currTb instanceof PTraceback) {
-                    exc.setTraceback(traceBack);
-                }
-            }
-
+            setExceptionTraceback(value, traceBack);
             final MaterializedFrame materializedFrame = frame.materialize();
             Object stdErr = objectLookupAttr(materializedFrame, sys, T_STDERR);
             printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());

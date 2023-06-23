@@ -58,7 +58,6 @@ import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -199,8 +198,12 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return InlinedGetClassNode.executeUncached(object);
     }
 
-    public static Object getExceptionTraceback(PBaseException e) {
+    public static Object getExceptionTraceback(Object e) {
         return ExceptionNodes.GetTracebackNode.executeUncached(e);
+    }
+
+    public static void setExceptionTraceback(Object e, Object tb) {
+        ExceptionNodes.SetTracebackNode.executeUncached(e, tb);
     }
 
     public static boolean checkLong(Object object) {

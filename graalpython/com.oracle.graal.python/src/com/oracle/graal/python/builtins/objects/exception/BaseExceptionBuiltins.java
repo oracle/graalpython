@@ -346,14 +346,18 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(tb)")
-        public static Object setTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
-            self.clearTraceback();
+        public static Object setTraceback(Object self, @SuppressWarnings("unused") PNone tb,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
+            setTracebackNode.execute(inliningTarget, self, PNone.NONE);
             return PNone.NONE;
         }
 
         @Specialization
-        public static Object setTraceback(PBaseException self, PTraceback tb) {
-            self.setTraceback(tb);
+        public static Object setTraceback(Object self, PTraceback tb,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
+            setTracebackNode.execute(inliningTarget, self, tb);
             return PNone.NONE;
         }
 
@@ -368,14 +372,18 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class WithTracebackNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static PBaseException doClearTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
-            self.clearTraceback();
+        static Object doClearTraceback(Object self, @SuppressWarnings("unused") PNone tb,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
+            setTracebackNode.execute(inliningTarget, self, PNone.NONE);
             return self;
         }
 
         @Specialization
-        static PBaseException doSetTraceback(PBaseException self, PTraceback tb) {
-            self.setTraceback(tb);
+        static Object doSetTraceback(Object self, PTraceback tb,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
+            setTracebackNode.execute(inliningTarget, self, tb);
             return self;
         }
     }

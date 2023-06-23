@@ -257,4 +257,40 @@ public final class ExceptionNodes {
             return PNone.NONE;
         }
     }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetTracebackNode extends Node {
+        public abstract void execute(Node inliningTarget, Object exception, Object value);
+
+        public static void executeUncached(Object e, Object value) {
+            ExceptionNodesFactory.SetTracebackNodeGen.getUncached().execute(null, e, value);
+        }
+
+        @Specialization
+        static void doManaged(PBaseException exception, @SuppressWarnings("unused") PNone value) {
+            exception.clearTraceback();
+        }
+
+        @Specialization
+        static void doManaged(PBaseException exception, PTraceback value) {
+            exception.setTraceback(value);
+        }
+
+        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, Object value,
+                        @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
+                        @Cached CApiTransitions.PythonToNativeNode excToNative,
+                        @Cached CApiTransitions.PythonToNativeNode valueToNative,
+                        @Cached CExtNodes.PCallCapiFunction callGetter) {
+            callGetter.call(NativeMember.TRACEBACK.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNoValue(value)));
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
+            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+        }
+    }
 }
