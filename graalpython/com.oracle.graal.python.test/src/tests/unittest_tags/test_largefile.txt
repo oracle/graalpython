@@ -10,4 +10,5 @@
 *graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_seek_read
 *graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_seekable
 *graalpython.lib-python.3.test.test_largefile.PyLargeFileTest.test_truncate
+*graalpython.lib-python.3.test.test_largefile.TestCopyfile.test_it
 *graalpython.lib-python.3.test.test_largefile.TestSocketSendfile.test_it

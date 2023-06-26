@@ -6,7 +6,9 @@
 *graalpython.lib-python.3.test.test_float.FormatTestCase.test_issue5864
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_error_message
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_ceil
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_containment
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_floor
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_memoryview
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_mod
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_pow

@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_d_compile_error
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_d_runtime_error
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_force
+*graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_hardlink
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_hardlink_bad_args
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_ignore_symlink_destination
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_include_bad_file
@@ -24,10 +25,12 @@
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_regexp
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_silent
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_symlink_loop
+*graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_d_compile_error
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_d_runtime_error
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_force
+*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_hardlink
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_hardlink_bad_args
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_ignore_symlink_destination
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_include_bad_file
@@ -50,6 +53,8 @@
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_regexp
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_silent
 *graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_symlink_loop
+*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers
+*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_compiles_as_much_as_possible
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_d_compile_error
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_d_runtime_error
@@ -141,5 +146,13 @@
 *graalpython.lib-python.3.test.test_compileall.EncodingTest.test_error
 *graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_bad_args
 *graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_disabled
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_duplicated_levels
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_hardlink
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_only_two_levels
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsNoSourceEpoch.test_recompilation
 *graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_bad_args
 *graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_disabled
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_duplicated_levels
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_hardlink
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_only_two_levels
+*graalpython.lib-python.3.test.test_compileall.HardlinkDedupTestsWithSourceEpoch.test_recompilation

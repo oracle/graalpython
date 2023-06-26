@@ -74,11 +74,13 @@
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_custom_excepthook_fail
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_excepthook
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_excepthook_thread_None
+*graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_original_excepthook
 *graalpython.lib-python.3.test.test_threading.ExceptHookTests.test_system_exit
 *graalpython.lib-python.3.test.test_threading.InterruptMainTests.test_interrupt_main_noerror
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_contended
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_destroy
 *graalpython.lib-python.3.test.test_threading.LockTests.test_acquire_release
+*graalpython.lib-python.3.test.test_threading.LockTests.test_at_fork_reinit
 *graalpython.lib-python.3.test.test_threading.LockTests.test_constructor
 *graalpython.lib-python.3.test.test_threading.LockTests.test_different_thread
 *graalpython.lib-python.3.test.test_threading.LockTests.test_locked_repr
@@ -117,6 +119,7 @@
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_acquire_timeout
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_constructor
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_default_value
+*graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_multirelease
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_release_unacquired
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_try_acquire
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_try_acquire_contended
@@ -129,7 +132,10 @@
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_reinit_tls_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_BoundedSemaphore_limit
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_PyThreadState_SetAsyncExc
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_boolean_target
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_daemon_param
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_debug_deprecation
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_disallow_instantiation
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_dummy_thread_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_enumerate_after_join
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalization_shutdown

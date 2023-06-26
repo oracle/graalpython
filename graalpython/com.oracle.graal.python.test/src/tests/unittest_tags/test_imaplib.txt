@@ -58,6 +58,7 @@
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_bad_auth_name
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_bracket_flags
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_connect
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_dump_ur
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_enable_UTF8_True_append
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_enable_UTF8_raises_error_if_not_supported
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_enable_raises_error_if_no_capability

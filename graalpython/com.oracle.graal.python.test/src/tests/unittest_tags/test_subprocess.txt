@@ -77,6 +77,7 @@
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_terminate_dead
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_user
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_user_error
+*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_wait_when_sigchild_ignored
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_zombie_fast_process_del
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_bufsize_equal_one_binary_mode
 *graalpython.lib-python.3.test.test_subprocess.ProcessTestCase.test_bufsize_equal_one_text_mode

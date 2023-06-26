@@ -110,6 +110,7 @@
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_11_tightloop
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_12_tighterloop
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_14_onliner_if
+*graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_15_loops
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_16_blank_lines
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_17_none_f_trace
 *graalpython.lib-python.3.test.test_sys_settrace.TraceTestCase.test_21_repeated_pass

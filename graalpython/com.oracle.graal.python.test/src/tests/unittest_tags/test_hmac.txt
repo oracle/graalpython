@@ -18,6 +18,7 @@
 *graalpython.lib-python.3.test.test_hmac.CopyTestCase.test_realcopy_old
 *graalpython.lib-python.3.test.test_hmac.SanityTestCase.test_exercise_all_methods
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_legacy_block_size_warnings
+*graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_md5_vectors
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_sha224_rfc4231
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_sha256_rfc4231
 *graalpython.lib-python.3.test.test_hmac.TestVectorsTestCase.test_sha384_rfc4231
