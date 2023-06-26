@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
@@ -2637,11 +2638,21 @@ public abstract class TypeNodes {
         @Specialization
         long lookup(Object cls,
                         @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            Object value = lookup.execute(cls, NativeMember.TP_DICTOFFSET, TYPE_DICTOFFSET);
+            Object value = lookup.execute(cls, NativeMember.TP_DICTOFFSET, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinTypeItemsize);
             if (value != PNone.NO_VALUE) {
                 return (long) value;
             }
+            return 0;
+        }
+
+        private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+            // TODO properly specify for all builtin classes
+            PythonBuiltinClassType current = cls;
+            do {
+                if (current == PBaseException) {
+                    return 16;
+                }
+            } while ((current = current.getBase()) != null);
             return 0;
         }
     }
