@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -287,12 +288,13 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone close(VirtualFrame frame, PythonObject self,
+        static PNone close(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(T___IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
-                        @Cached InlinedBranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PyErrChainExceptions chainExceptions) {
             if (!isClosed(self, frame, lookup)) {
                 try {
                     callMethod.execute(frame, self, T_FLUSH);
@@ -301,7 +303,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     try {
                         setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {
-                        throw e1.chainException(e);
+                        throw chainExceptions.execute(inliningTarget, e1, e);
                     }
                     throw e;
                 }

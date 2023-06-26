@@ -371,17 +371,6 @@ public final class PException extends AbstractTruffleException {
         return pe;
     }
 
-    /**
-     * Equivalent of CPython's {_PyErr_ChainExceptions}. Performs a simple exception chaining
-     * without checking for cycles (not suitable to implement try-except).
-     */
-    public PException chainException(PException e) {
-        PBaseException chainedException = e.getEscapedException();
-        chainedException.setTraceback(e.getTraceback());
-        getUnreifiedException().setContext(chainedException);
-        return this;
-    }
-
     @TruffleBoundary
     public void printStack() {
         // a convenience methods for debugging
