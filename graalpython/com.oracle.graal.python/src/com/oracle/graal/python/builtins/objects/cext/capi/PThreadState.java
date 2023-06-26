@@ -258,7 +258,7 @@ public final class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, J_EXC_INFO)")
         static Object doExcInfo(PThreadState receiver, @SuppressWarnings("unused") String key) {
             PException currentException = receiver.threadState.getCaughtException();
-            PBaseException caughtExceptionObject = null;
+            Object caughtExceptionObject = null;
             if (currentException != null) {
                 caughtExceptionObject = currentException.getEscapedException();
             }

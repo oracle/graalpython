@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
@@ -119,7 +120,7 @@ public abstract class SendNode extends PNodeWithContext {
     private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
                     int stackTop) {
         e.expectStopIteration(inliningTarget, stopIterationProfile);
-        Object value = getValue.execute(e.getUnreifiedException());
+        Object value = getValue.execute((PBaseException) e.getUnreifiedException());
         frame.setObject(stackTop, null);
         frame.setObject(stackTop - 1, value);
     }

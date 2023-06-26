@@ -93,7 +93,7 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     }
 
     public static void setSSLErrorAttributes(PException exception, SSLErrorCode errorCode, TruffleString message) {
-        setSSLErrorAttributes(exception.getUnreifiedException(), errorCode, message);
+        setSSLErrorAttributes((PBaseException) exception.getUnreifiedException(), errorCode, message);
     }
 
     public static void setSSLErrorAttributes(PBaseException self, SSLErrorCode errorCode, TruffleString message) {

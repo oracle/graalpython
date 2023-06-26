@@ -216,13 +216,13 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             if (self.isAsyncGen()) {
                 // Async generators need to wrap StopAsyncIteration in a runtime error
                 if (profile.profileException(inliningTarget, e, StopAsyncIteration)) {
-                    throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
+                    throw raiseNode.raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
                 }
             }
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             e.expectStopIteration(inliningTarget, profile);
-            throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            throw raiseNode.raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
         private Object handleResult(PGenerator self, GeneratorYieldResult result) {

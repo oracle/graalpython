@@ -200,7 +200,7 @@ public final class ExceptionUtils {
      * This function is kind-of analogous to PyErr_PrintEx
      */
     @TruffleBoundary
-    public static void printExceptionTraceback(PythonContext context, PBaseException pythonException) {
+    public static void printExceptionTraceback(PythonContext context, Object pythonException) {
         Object type = GetClassNode.getUncached().execute(pythonException);
         Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
@@ -214,7 +214,11 @@ public final class ExceptionUtils {
             } catch (PException internalError) {
                 // More complex handling of errors in exception printing is done in our
                 // Python code, if we get here, we just fall back to the launcher
-                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+                if (pythonException instanceof PBaseException managedException) {
+                    throw managedException.getExceptionForReraise(managedException.getTraceback());
+                } else {
+                    throw PException.fromObject(pythonException, null, false);
+                }
             }
         } else {
             try {

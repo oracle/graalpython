@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -466,7 +467,9 @@ public final class GraalHPyContext extends CExtContext {
                              * never receive a Python exception. If it happens, consider that to be
                              * a problem (however, it is not fatal problem).
                              */
-                            e.setMessage(e.getUnreifiedException().getFormattedMessage());
+                            if (e.getUnreifiedException() instanceof PBaseException managedException) {
+                                e.setMessage(managedException.getFormattedMessage());
+                            }
                             LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                         }
                     }

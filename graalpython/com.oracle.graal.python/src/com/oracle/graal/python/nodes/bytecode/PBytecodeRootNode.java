@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -2833,7 +2832,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
             pe.setCatchingFrameReference(virtualFrame, this, bci);
-            PBaseException peForPython = pe.getEscapedException();
+            Object peForPython = pe.getEscapedException();
             Object peType = GetClassNode.getUncached().execute(peForPython);
             Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
             invokeTraceFunction(virtualFrame,
@@ -3181,7 +3180,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void chainPythonExceptions(PException current, PException context) {
         if (chainExceptionsNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            chainExceptionsNode = ChainExceptionsNode.create();
+            chainExceptionsNode = insert(ChainExceptionsNode.create());
         }
         chainExceptionsNode.execute(current, context);
     }

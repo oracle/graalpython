@@ -72,11 +72,11 @@ public class PNodeWithRaise extends PNodeWithContext {
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
-        return getRaiseNode().raise(type, cause, format, arguments);
+        return getRaiseNode().raiseWithCause(type, cause, format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, PException cause, TruffleString format, Object... arguments) {
-        return getRaiseNode().raise(type, cause.getEscapedException(), format, arguments);
+        return getRaiseNode().raiseWithCause(type, cause.getEscapedException(), format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {

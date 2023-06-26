@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinSubtypeObjectProfile;
@@ -82,7 +83,7 @@ public final class PException extends AbstractTruffleException {
     public static final PException NO_EXCEPTION = new PException(null, null);
 
     private String message = null;
-    protected final transient PBaseException pythonException;
+    final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
     private transient PBytecodeRootNode catchRootNode;
     private int catchBci;
@@ -91,30 +92,32 @@ public final class PException extends AbstractTruffleException {
     private boolean skipFirstTracebackFrame;
     private int tracebackFrameCount;
 
-    private PException(PBaseException actual, Node node) {
+    private PException(Object pythonException, Node node) {
         super(node);
-        this.pythonException = actual;
+        this.pythonException = pythonException;
     }
 
-    private PException(PBaseException actual, Node node, Throwable wrapped) {
+    private PException(Object pythonException, Node node, Throwable wrapped) {
         super(null, wrapped, UNLIMITED_STACK_TRACE, node);
-        this.pythonException = actual;
+        this.pythonException = pythonException;
+        assert PyExceptionInstanceCheckNode.executeUncached(pythonException);
     }
 
-    private PException(PBaseException actual, LazyTraceback traceback, Throwable wrapped) {
+    private PException(Object pythonException, LazyTraceback traceback, Throwable wrapped) {
         super(null, wrapped, UNLIMITED_STACK_TRACE, null);
-        this.pythonException = actual;
+        this.pythonException = pythonException;
         this.traceback = traceback;
         reified = true;
+        assert PyExceptionInstanceCheckNode.executeUncached(pythonException);
     }
 
-    public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace) {
+    public static PException fromObject(Object pythonException, Node node, boolean withJavaStacktrace) {
         Throwable wrapped = null;
         if (withJavaStacktrace) {
             // Create a carrier for the java stacktrace as PException cannot have one
             wrapped = createStacktraceCarrier();
         }
-        return fromObject(actual, node, wrapped);
+        return fromObject(pythonException, node, wrapped);
     }
 
     @TruffleBoundary
@@ -128,13 +131,15 @@ public final class PException extends AbstractTruffleException {
      * guarantee on how many. Therefore, it is important that this method is simple. In particular,
      * do not add calls if that can be avoided.
      */
-    public static PException fromObject(PBaseException actual, Node node, Throwable wrapped) {
-        PException pException = new PException(actual, node, wrapped);
-        actual.setException(pException);
+    public static PException fromObject(Object pythonException, Node node, Throwable wrapped) {
+        PException pException = new PException(pythonException, node, wrapped);
+        if (pythonException instanceof PBaseException managedException) {
+            managedException.setException(pException);
+        }
         return pException;
     }
 
-    public static PException fromExceptionInfo(PBaseException pythonException, PTraceback traceback, boolean withJavaStacktrace) {
+    public static PException fromExceptionInfo(Object pythonException, PTraceback traceback, boolean withJavaStacktrace) {
         LazyTraceback lazyTraceback = null;
         if (traceback != null) {
             lazyTraceback = new LazyTraceback(traceback);
@@ -142,15 +147,17 @@ public final class PException extends AbstractTruffleException {
         return fromExceptionInfo(pythonException, lazyTraceback, withJavaStacktrace);
     }
 
-    public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback, boolean withJavaStacktrace) {
-        pythonException.ensureReified();
+    public static PException fromExceptionInfo(Object pythonException, LazyTraceback traceback, boolean withJavaStacktrace) {
         Throwable wrapped = null;
         if (withJavaStacktrace) {
             // Create a carrier for the java stacktrace as PException cannot have one
             wrapped = createStacktraceCarrier();
         }
         PException pException = new PException(pythonException, traceback, wrapped);
-        pythonException.setException(pException);
+        if (pythonException instanceof PBaseException managedException) {
+            managedException.ensureReified();
+            managedException.setException(pException);
+        }
         return pException;
     }
 
@@ -201,7 +208,7 @@ public final class PException extends AbstractTruffleException {
      * consistency and should be avoided unless you can guarantee that the exception will not escape
      * to the program. Use {@link PException#getEscapedException()}.
      */
-    public PBaseException getUnreifiedException() {
+    public Object getUnreifiedException() {
         return pythonException;
     }
 
@@ -300,7 +307,7 @@ public final class PException extends AbstractTruffleException {
     /**
      * Get the python exception while ensuring that the traceback frame is marked as escaped
      */
-    public PBaseException getEscapedException() {
+    public Object getEscapedException() {
         markFrameEscaped();
         return pythonException;
     }
@@ -338,10 +345,15 @@ public final class PException extends AbstractTruffleException {
                 assert frameInfo != PFrame.Reference.EMPTY;
                 frameInfo.markAsEscaped();
             }
-            // Make a snapshot of the traceback at the point of the exception handler. This may be
-            // called later than in the exception handler, but only in cases when the exception
-            // hasn't escaped to the prgram and thus couldn't have changed in the meantime
-            traceback = pythonException.internalReifyException(frameInfo);
+            if (pythonException instanceof PBaseException managedException) {
+                /*
+                 * Make a snapshot of the traceback at the point of the exception handler. This may
+                 * be called later than in the exception handler, but only in cases when the
+                 * exception hasn't escaped to the prgram and thus couldn't have changed in the
+                 * meantime
+                 */
+                traceback = managedException.internalReifyException(frameInfo);
+            }
             reified = true;
         }
     }
@@ -359,16 +371,20 @@ public final class PException extends AbstractTruffleException {
     /**
      * Prepare a new exception to be thrown to provide the semantics of a reraise. The difference
      * between this method and creating a new exception using
-     * {@link #fromObject(PBaseException, Node, boolean) fromObject} is that this method makes the
-     * traceback look like the last catch didn't happen, which is desired in `raise` without
-     * arguments, at the end of `finally`, `__exit__`...
+     * {@link #fromObject(Object, Node, boolean) fromObject} is that this method makes the traceback
+     * look like the last catch didn't happen, which is desired in `raise` without arguments, at the
+     * end of `finally`, `__exit__`...
      */
     public PException getExceptionForReraise(boolean rootNodeVisible) {
-        PException pe = pythonException.getExceptionForReraise(getTraceback());
-        if (rootNodeVisible) {
-            pe.skipFirstTracebackFrame();
+        if (pythonException instanceof PBaseException managedException) {
+            PException pe = managedException.getExceptionForReraise(getTraceback());
+            if (rootNodeVisible) {
+                pe.skipFirstTracebackFrame();
+            }
+            return pe;
+        } else {
+            return this;
         }
-        return pe;
     }
 
     @TruffleBoundary

@@ -101,12 +101,12 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
+    public final PException raiseWithCause(PythonBuiltinClassType type, Object cause, TruffleString format, Object... arguments) {
         throw execute(this, type, null, cause, format, arguments);
     }
 
-    public final PException raise(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
-        return raise(errorType, e.getEscapedException(), message, arguments);
+    public final PException raiseWithCause(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
+        return raiseWithCause(errorType, e.getEscapedException(), message, arguments);
     }
 
     public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType) {
@@ -173,6 +173,14 @@ public abstract class PRaiseNode extends Node {
 
     public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
         exc.ensureReified();
+        if (raisingNode != null && raisingNode.isAdoptable()) {
+            throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
+        } else {
+            throw PException.fromObject(exc, EncapsulatingNodeReference.getCurrent().get(), withJavaStacktrace);
+        }
+    }
+
+    public static PException raiseNoReify(Node raisingNode, Object exc, boolean withJavaStacktrace) {
         if (raisingNode != null && raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {

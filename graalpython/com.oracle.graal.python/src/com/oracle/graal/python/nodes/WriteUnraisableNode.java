@@ -49,11 +49,10 @@ import java.io.IOException;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -73,22 +72,22 @@ public abstract class WriteUnraisableNode extends Node {
 
     private static final TruffleString T_IGNORED = tsLiteral("Exception ignored ");
 
-    public final void execute(VirtualFrame frame, PBaseException exception, TruffleString message, Object object) {
+    public final void execute(VirtualFrame frame, Object exception, TruffleString message, Object object) {
         executeInternal(frame, exception, message, object);
     }
 
-    public final void execute(PBaseException exception, TruffleString message, Object object) {
+    public final void execute(Object exception, TruffleString message, Object object) {
         executeInternal(null, exception, message, object);
     }
 
-    protected abstract void executeInternal(Frame frame, PBaseException exception, TruffleString message, Object object);
+    protected abstract void executeInternal(Frame frame, Object exception, TruffleString message, Object object);
 
     @Specialization
-    static void writeUnraisable(VirtualFrame frame, PBaseException exception, TruffleString message, Object object,
+    static void writeUnraisable(VirtualFrame frame, Object exception, TruffleString message, Object object,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookup,
                     @Cached CallNode callNode,
-                    @Cached GetClassNode getClassNode,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached TruffleString.ConcatNode concatNode,
@@ -97,7 +96,7 @@ public abstract class WriteUnraisableNode extends Node {
         try {
             PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
             Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
-            Object exceptionType = getClassNode.execute(exception);
+            Object exceptionType = getClassNode.execute(inliningTarget, exception);
             Object traceback = getTracebackNode.execute(inliningTarget, exception);
             Object messageObj = PNone.NONE;
             if (message != null) {

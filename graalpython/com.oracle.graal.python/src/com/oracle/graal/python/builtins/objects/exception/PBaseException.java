@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -103,6 +104,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
         super(cls, instanceShape);
+        assert !(cls instanceof PythonNativeClass);
         this.exceptionAttributes = exceptionAttributes;
         this.args = args;
         this.hasMessageFormat = false;
@@ -113,6 +115,7 @@ public final class PBaseException extends PythonObject {
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
         assertContainsNoJavaString(exceptionAttributes);
+        assert !(cls instanceof PythonNativeClass);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = false;
@@ -122,6 +125,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, TruffleString format, Object[] formatArgs) {
         super(cls, instanceShape);
+        assert !(cls instanceof PythonNativeClass);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = true;

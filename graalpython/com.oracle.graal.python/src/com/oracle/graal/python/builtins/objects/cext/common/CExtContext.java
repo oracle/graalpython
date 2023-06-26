@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -306,8 +307,8 @@ public abstract class CExtContext {
     }
 
     /**
-     * This method loads a C extension module (C API) and will initialize the
-     * corresponding native contexts if necessary.
+     * This method loads a C extension module (C API) and will initialize the corresponding native
+     * contexts if necessary.
      *
      * @param location The node that's requesting this operation. This is required for reporting
      *            correct source code location in case exceptions occur.
@@ -407,10 +408,10 @@ public abstract class CExtContext {
     @TruffleBoundary
     protected static PException reportImportError(RuntimeException e, TruffleString name, TruffleString path) throws ImportException {
         StringBuilder sb = new StringBuilder();
-        PBaseException pythonCause = null;
+        Object pythonCause = null;
         PException pcause = null;
         if (e instanceof PException) {
-            PBaseException excObj = ((PException) e).getEscapedException();
+            Object excObj = ((PException) e).getEscapedException();
             pythonCause = excObj;
             pcause = (PException) e;
             sb.append(LookupAndCallUnaryDynamicNode.getUncached().executeObject(excObj, SpecialMethodNames.T___REPR__));
@@ -421,9 +422,9 @@ public abstract class CExtContext {
         Throwable cause = e;
         while ((cause = cause.getCause()) != null) {
             if (e instanceof PException) {
-                PBaseException pythonException = ((PException) e).getEscapedException();
+                Object pythonException = ((PException) e).getEscapedException();
                 if (pythonCause != null) {
-                    pythonCause.setCause(pythonException);
+                    ExceptionNodes.SetCauseNode.executeUncached(pythonCause, pythonException);
                 }
                 pythonCause = pythonException;
                 pcause = (PException) e;

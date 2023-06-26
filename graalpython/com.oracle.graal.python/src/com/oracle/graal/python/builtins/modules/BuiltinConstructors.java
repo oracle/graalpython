@@ -2916,7 +2916,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
             }
             if (arguments.length == 1) {
-                return initNoArgs(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+                return execute(frame, arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
             }
             Object[] argsWithoutSelf = PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);

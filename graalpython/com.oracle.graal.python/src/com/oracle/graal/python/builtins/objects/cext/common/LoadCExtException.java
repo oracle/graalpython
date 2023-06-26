@@ -103,7 +103,7 @@ public abstract class LoadCExtException extends Exception {
 
         public PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
             if (cause != null) {
-                throw raiseNode.raiseImportError(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
+                throw raiseNode.raiseImportErrorWithCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
             }
             throw raiseNode.raiseImportError(frame, name, path, formatString, formatArgs);
         }

@@ -119,7 +119,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
-                PBaseException pythonException = e.getEscapedException();
+                Object pythonException = e.getEscapedException();
                 if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
                     callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));

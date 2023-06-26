@@ -94,7 +94,6 @@ import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -110,6 +109,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -167,23 +167,22 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
         @Specialization
-        Object run(@Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
+        Object run(
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             PException currentException = getThreadStateNode.getCurrentException();
             Object result;
             if (currentException == null) {
                 result = getNativeNull();
             } else {
-                PBaseException exception = currentException.getEscapedException();
-                Object traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = materializeLazyTracebackNode.execute(currentException.getTraceback());
-                }
-                if (traceback == null) {
+                Object exception = currentException.getEscapedException();
+                Object traceback = getTracebackNode.execute(inliningTarget, exception);
+                if (traceback == PNone.NONE) {
                     traceback = getNativeNull();
                 }
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback});
+                result = factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
                 getThreadStateNode.setCurrentException(null);
             }
             return result;
@@ -354,9 +353,10 @@ public final class PythonCextErrBuiltins {
     abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached BranchProfile noExceptionProfile) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
@@ -364,13 +364,12 @@ public final class PythonCextErrBuiltins {
                 return getNativeNull();
             }
             assert currentException != PException.NO_EXCEPTION;
-            PBaseException exception = currentException.getEscapedException();
-            LazyTraceback lazyTraceback = currentException.getTraceback();
-            PTraceback traceback = null;
-            if (lazyTraceback != null) {
-                traceback = materializeLazyTracebackNode.execute(lazyTraceback);
+            Object exception = currentException.getEscapedException();
+            Object traceback = getTracebackNode.execute(inliningTarget, exception);
+            if (traceback == PNone.NONE) {
+                traceback = getNativeNull();
             }
-            return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
 

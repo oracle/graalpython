@@ -1934,7 +1934,7 @@ public abstract class TypeNodes {
                         try {
                             callSetNameNode.execute(frame, setName, value, newType, key);
                         } catch (PException e) {
-                            throw raise.raise(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                            throw raise.raiseWithCause(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
                         }
                     }
                 }

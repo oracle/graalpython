@@ -186,8 +186,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
@@ -792,19 +790,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                PBaseException exception = currentException.getEscapedException();
-                LazyTraceback lazyTraceback = currentException.getTraceback();
-                PTraceback traceback = null;
-                if (lazyTraceback != null) {
-                    traceback = materializeLazyTracebackNode.execute(lazyTraceback);
-                }
-                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback == null ? PNone.NONE : traceback});
+                Object exception = currentException.getEscapedException();
+                Object traceback = getTracebackNode.execute(inliningTarget, exception);
+                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
             }
         }
 
