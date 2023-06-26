@@ -125,6 +125,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -2920,14 +2922,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
-        @Specialization(guards = "args.length == 0")
+        @Specialization(guards = {"!isNativeClass(cls)", "args.length == 0"})
         Object initNoArgs(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls);
         }
 
-        @Specialization(guards = "args.length != 0")
+        @Specialization(guards = {"!isNativeClass(cls)", "args.length != 0"})
         Object initArgs(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createBaseException(cls, factory().createTuple(args));
+        }
+
+        @Specialization
+        Object doNativeSubtype(PythonNativeClass cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached NativeToPythonNode toPythonNode,
+                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object argsTuple = args.length > 0 ? factory().createTuple(args) : factory().createEmptyTuple();
+            Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
+            return toPythonNode.execute(checkFunctionResultNode.execute(getContext(), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), nativeResult));
         }
     }
 

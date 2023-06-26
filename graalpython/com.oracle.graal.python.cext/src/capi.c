@@ -424,9 +424,17 @@ PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {  \
 PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {        \
     return (PyObject*) obj->NAME;           \
 }
+#define OBJECT_FIELD_SETTER(RECEIVER, NAME) \
+PyAPI_FUNC(void) set_##NAME(RECEIVER obj, PyObject* value) {        \
+    Py_XSETREF(obj->NAME, value);           \
+}
 #define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
     return obj->NAME;                                  \
+}
+#define PRIMITIVE_FIELD_SETTER(RECEIVER, TYPE, NAME) \
+PyAPI_FUNC(void) set_##NAME(RECEIVER obj, TYPE value) {                      \
+    obj->NAME = value;                                  \
 }
 #define PRIMITIVE_SUBFIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                    \
@@ -522,6 +530,20 @@ PRIMITIVE_FIELD_GETTER(PyModuleDef*, Py_ssize_t, m_size)
 PRIMITIVE_FIELD_GETTER(PyModuleDef*, const char*, m_doc)
 PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, real)
 PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, imag)
+OBJECT_FIELD_GETTER(PyBaseExceptionObject*, args);
+OBJECT_FIELD_GETTER(PyBaseExceptionObject*, context);
+OBJECT_FIELD_GETTER(PyBaseExceptionObject*, cause);
+OBJECT_FIELD_GETTER(PyBaseExceptionObject*, traceback);
+PRIMITIVE_FIELD_GETTER(PyBaseExceptionObject*, char, suppress_context);
+OBJECT_FIELD_SETTER(PyBaseExceptionObject*, args);
+OBJECT_FIELD_SETTER(PyBaseExceptionObject*, context);
+PyAPI_FUNC(void) set_cause(PyBaseExceptionObject* obj, PyObject* value) {
+    Py_XSETREF(obj->cause, value);
+    obj->suppress_context = 1;
+}
+OBJECT_FIELD_SETTER(PyBaseExceptionObject*, traceback);
+PRIMITIVE_FIELD_SETTER(PyBaseExceptionObject*, char, suppress_context);
+
 
 char* get_ob_sval(PyObject* op) {
 	return ((PyBytesObject *)(op))->ob_sval;

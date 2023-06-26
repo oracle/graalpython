@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
@@ -117,7 +118,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class BaseExceptionInitNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
 
-        public final Object execute(PBaseException self, Object[] args) {
+        public final Object execute(Object self, Object[] args) {
             return execute(null, self, args, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -150,12 +151,27 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(replaces = {"doNoArguments", "doWithArguments"})
         Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords) {
             if (keywords.length != 0) {
-                throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
+                throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
             if (args.length == 0) {
                 self.setArgs(null);
             } else {
                 self.setArgs(factory().createTuple(args));
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doNative(PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+            if (keywords.length != 0) {
+                throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
+            }
+            if (args.length == 0) {
+                setArgsNode.execute(inliningTarget, self, factory().createEmptyTuple());
+            } else {
+                setArgsNode.execute(inliningTarget, self, factory().createTuple(args));
             }
             return PNone.NONE;
         }

@@ -187,7 +187,7 @@ public final class ExceptionNodes {
                         @Cached CApiTransitions.PythonToNativeNode toNative,
                         @Cached CApiTransitions.NativeToPythonNode toPython,
                         @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return (int) toPython.execute(callGetter.call(NativeMember.SUPPRESS_CONTEXT.getGetterFunctionName(), toNative.execute(noneToNoValue(exception)))) != 0;
+            return (byte) callGetter.call(NativeMember.SUPPRESS_CONTEXT.getGetterFunctionName(), toNative.execute(noneToNoValue(exception))) != 0;
         }
 
         @Specialization
@@ -217,7 +217,7 @@ public final class ExceptionNodes {
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CApiTransitions.PythonToNativeNode excToNative,
                         @Cached CExtNodes.PCallCapiFunction callGetter) {
-            callGetter.call(NativeMember.SUPPRESS_CONTEXT.getSetterFunctionName(), excToNative.execute(exception), value ? 1 : 0);
+            callGetter.call(NativeMember.SUPPRESS_CONTEXT.getSetterFunctionName(), excToNative.execute(exception), (byte) (value ? 1 : 0));
         }
 
         @Specialization
