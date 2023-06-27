@@ -631,7 +631,7 @@ public final class PythonCextErrBuiltins {
         Object setTraceback(Object exc, Object traceback,
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(exc, T___TRACEBACK__, traceback);
-            return PNone.NONE;
+            return 0;
         }
     }
 }
