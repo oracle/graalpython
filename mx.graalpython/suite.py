@@ -471,7 +471,7 @@ suite = {
                 "bin/<lib:bz2support>",
             ],
             "cmakeConfig" : {
-                "BZIP2_SRC": "<path:BZIP2>",
+                "BZIP2_ROOT": "<path:BZIP2>",
                 "BZIP2_VERSION_MAJOR": "1",
                 "BZIP2_VERSION_MINOR": "0",
                 "BZIP2_VERSION_PATCH": "8",

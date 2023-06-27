@@ -27,34 +27,52 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 cmake_minimum_required(VERSION 3.22)
-project(python-libbz2)
+project(libbz2)
 
-include(libbz2.cmake)
+function(require_var var)
+    if (NOT DEFINED ${var})
+        message(FATAL_ERROR "${var} needs to be set; was '${var}'")
+    endif()
+endfunction()
 
-if(NOT DEFINED TARGET_LIBBZ2)
-    message(FATAL_ERROR "TARGET_LIBBZ2 needs to be set")
-endif()
+require_var(BZIP2_ROOT)
+require_var(BZIP2_VERSION_MAJOR)
+require_var(BZIP2_VERSION_MINOR)
+require_var(BZIP2_VERSION_PATCH)
+
+set(BZIP2_VERSION "${BZIP2_VERSION_MAJOR}.${BZIP2_VERSION_MINOR}.${BZIP2_VERSION_PATCH}")
+
+message(VERBOSE "Building libbz2 version: ${BZIP2_VERSION}")
 
 set(PACKAGE_NAME "bzip2")
-set(TARGET_BZIP2SUPPORT "bz2support")
+set(TARGET_LIBBZ2 "bz2")
+set(BZIP2_SRC "${BZIP2_ROOT}/${PACKAGE_NAME}-${BZIP2_VERSION}")
 
-add_library(${TARGET_BZIP2SUPPORT} SHARED)
+add_library(${TARGET_LIBBZ2} STATIC)
+
+# we want '-fPIC' even for the static lib
+set_target_properties(${TARGET_LIBBZ2} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 # preprocessor defines for all platforms
-target_compile_definitions(${TARGET_BZIP2SUPPORT} PRIVATE NDEBUG)
+target_compile_definitions(${TARGET_LIBBZ2} PRIVATE _FILE_OFFSET_BITS=64)
 
 if(WIN32)
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE /Z7 /O2 /WX)
+    target_compile_options(${TARGET_LIBBZ2} PRIVATE /Z7 /O2 /Wall)
 else()
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE -Wall -Werror -O3 -g)
+    target_compile_options(${TARGET_LIBBZ2} PRIVATE -Wall -Winline -O2 -g)
 endif()
 
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
-target_sources(${TARGET_BZIP2SUPPORT} PRIVATE "src/bz2.c")
-# variable 'BZIP2_SRC' is provided by file 'libbz2.cmake'
-target_include_directories(${TARGET_BZIP2SUPPORT} PRIVATE ${BZIP2_SRC})
-target_link_libraries(${TARGET_BZIP2SUPPORT} PRIVATE ${TARGET_LIBBZ2})
-
-install(TARGETS ${TARGET_BZIP2SUPPORT} DESTINATION bin)
+# using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
+target_sources(${TARGET_LIBBZ2} PRIVATE
+    "${BZIP2_SRC}/bzlib.h"
+    "${BZIP2_SRC}/blocksort.c"
+    "${BZIP2_SRC}/huffman.c"
+    "${BZIP2_SRC}/crctable.c"
+    "${BZIP2_SRC}/randtable.c"
+    "${BZIP2_SRC}/compress.c"
+    "${BZIP2_SRC}/decompress.c"
+    "${BZIP2_SRC}/bzlib.c"
+)
