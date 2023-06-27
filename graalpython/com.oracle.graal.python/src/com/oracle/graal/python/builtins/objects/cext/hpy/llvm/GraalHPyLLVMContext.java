@@ -116,12 +116,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -237,10 +235,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CompilerAsserts.neverPartOfCompilation();
         Env env = context.getEnv();
         TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         // e.g. "libhpy-native.so"
-        TruffleFile capiFile = homePath.resolve("libhpy-" + toolchain.getIdentifier() + PythonContext.getSupportExt());
+        TruffleFile capiFile = homePath.resolve(context.getLLVMSupportExt("libhpy"));
         try {
             LOGGER.fine("Loading HPy LLVM backend from " + capiFile);
             SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);

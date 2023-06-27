@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
@@ -657,8 +658,9 @@ public final class CApiContext extends CExtContext {
             Env env = context.getEnv();
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-            String soAbi = context.getSoAbi().toJavaStringUncached();
-            TruffleFile capiFile = homePath.resolve("libpython" + soAbi);
+            // e.g. "libpython-native.so"
+            String libName = context.getLLVMSupportExt("libpython");
+            TruffleFile capiFile = homePath.resolve(libName);
             try {
                 SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
@@ -691,7 +693,7 @@ public final class CApiContext extends CExtContext {
             } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
                 // we cannot really check if we truly need native access, so
                 // when the abi contains "managed" we assume we do not
-                if (!soAbi.contains("managed") && !context.isNativeAccessAllowed()) {
+                if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
                 throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
@@ -986,7 +988,7 @@ public final class CApiContext extends CExtContext {
 
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            if (!toolchain.getIdentifier().equals("native")) {
+            if (!J_NATIVE.equals(toolchain.getIdentifier())) {
                 LOGGER.config("not loading native C API support library (non-native toolchain detected)");
                 return false;
             }

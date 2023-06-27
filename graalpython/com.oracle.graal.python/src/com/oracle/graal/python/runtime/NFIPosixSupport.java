@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
@@ -345,7 +346,7 @@ public final class NFIPosixSupport extends PosixSupport {
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
             String backend = posix.nfiBackend.toJavaStringUncached();
-            String withClause = backend.equals("native") ? "" : "with " + backend;
+            String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
 

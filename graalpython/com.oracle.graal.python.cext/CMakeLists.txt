@@ -39,13 +39,14 @@ if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
 endif()
 require_var(TRUFFLE_H_INC)
+require_var(LLVM_MODE)
 require_var(GRAALPY_EXT)
 
 if(NOT DEFINED SRC_DIR)
     set(SRC_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 
-set(TARGET_LIBPYTHON "python")
+set(TARGET_LIBPYTHON "python-${LLVM_MODE}")
 
 ######################################################################
 # common variables and compile/link options (for all build targets)
@@ -211,9 +212,6 @@ if(NOT WIN32)
         XML_POOR_ENTROPY=1
     )
 endif()
-
-# set file extension; e.g. "graalpy231-310-native-x86_64-darwin.so"
-set_target_properties(${TARGET_LIBPYTHON} PROPERTIES SUFFIX "${GRAALPY_EXT}")
 
 target_sources(${TARGET_LIBPYTHON} PRIVATE ${SRC_FILES})
 target_include_directories(${TARGET_LIBPYTHON} PRIVATE

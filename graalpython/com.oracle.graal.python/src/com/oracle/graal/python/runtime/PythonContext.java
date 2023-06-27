@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -2486,6 +2487,17 @@ public final class PythonContext extends Python3Core {
             case PLATFORM_WIN32 -> J_EXT_PYD;
             default -> J_EXT_SO;
         };
+    }
+
+    @TruffleBoundary
+    public String getLLVMSupportExt(String libName) {
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+        String toolchainIdentifier = toolchain.getIdentifier();
+        if (J_NATIVE.equals(toolchainIdentifier)) {
+            return libName + '-' + J_NATIVE + PythonContext.getSupportExt();
+        }
+        return libName + '-' + toolchainIdentifier + J_EXT_SO;
     }
 
     @TruffleBoundary

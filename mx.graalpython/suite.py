@@ -548,10 +548,11 @@ suite = {
                             "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "LLVM_MODE" : "native",
                             "GRAALPY_EXT" : "<graalpy_ext:native>",
                         },
                         "results" : [
-                            "bin/libpython<graalpy_ext:native>",
+                            "bin/<lib:python-native>",
                             "bin/modules/_mmap<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
@@ -565,10 +566,11 @@ suite = {
                         "cmakeConfig" : {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "LLVM_MODE" : "native",
                             "GRAALPY_EXT" : "<graalpy_ext:native>",
                         },
                         "results" : [
-                            "bin/libpython<graalpy_ext:native>",
+                            "bin/<lib:python-native>",
                             "bin/modules/_mmap<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",

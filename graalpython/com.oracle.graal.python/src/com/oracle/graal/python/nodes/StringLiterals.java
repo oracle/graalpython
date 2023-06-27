@@ -169,7 +169,8 @@ public abstract class StringLiterals {
     public static final String J_EXT_DYLIB = ".dylib";
     public static final TruffleString T_EXT_DYLIB = tsLiteral(J_EXT_DYLIB);
 
-    public static final TruffleString T_NATIVE = tsLiteral("native");
+    public static final String J_NATIVE = "native";
+    public static final TruffleString T_NATIVE = tsLiteral(J_NATIVE);
 
     public static final TruffleString T_BACKSLASHREPLACE = tsLiteral("backslashreplace");
     public static final TruffleString T_NAMEREPLACE = tsLiteral("namereplace");
