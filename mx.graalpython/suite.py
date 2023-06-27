@@ -540,17 +540,16 @@ suite = {
             "vpath" : True,
             "ninja_targets" : ["all"],
             "ninja_install_targets" : ["install"],
-            "cmakeConfig" : {
-                "LLVM_MODE" : "native",
-                "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
-                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
-                "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                "GRAALPY_EXT" : "<graalpy_ext:native>",
-            },
             "os_arch": {
                 "windows": {
                     "<others>": {
                         "defaultBuild": False,
+                        "cmakeConfig" : {
+                            "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
+                            "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                            "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_EXT" : "<graalpy_ext:native>",
+                        },
                         "results" : [
                             "bin/libpython<graalpy_ext:native>",
                             "bin/modules/_mmap<graalpy_ext:native>",
@@ -563,6 +562,11 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "defaultBuild" : True,
+                        "cmakeConfig" : {
+                            "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                            "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_EXT" : "<graalpy_ext:native>",
+                        },
                         "results" : [
                             "bin/libpython<graalpy_ext:native>",
                             "bin/modules/_mmap<graalpy_ext:native>",

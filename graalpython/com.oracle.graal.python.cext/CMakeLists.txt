@@ -30,28 +30,22 @@ cmake_minimum_required(VERSION 3.22)
 project(com.oracle.graal.python.cext)
 
 function(require_var var)
-  if (NOT ${var})
-    message(FATAL_ERROR "${var} needs to be set")
-  endif()
+    if (NOT DEFINED ${var})
+        message(FATAL_ERROR "${var} needs to be set")
+    endif()
 endfunction()
 
-function(check_var var)
-  set(${var} PARENT_SCOPE)
-  require_var(${var})
-endfunction()
+if(WIN32)
+    require_var(GRAALVM_LLVM_LIB_DIR)
+endif()
+require_var(TRUFFLE_H_INC)
+require_var(GRAALPY_EXT)
 
-# set variable from environement variable if the latter exists
-function(setFromEnv varname envname)
-  if(DEFINED ENV{${envname}})
-    set(${varname} $ENV{${envname}} PARENT_SCOPE)
-  endif()
-endfunction()
-
-require_var(LLVM_MODE)
-require_var(BZ2_LIB_DIR)
+if(NOT DEFINED SRC_DIR)
+    set(SRC_DIR ".")
+endif()
 
 set(TARGET_LIBPYTHON "python")
-set(LIB_OUTPUT_DIR "${PROJECT_OUTPUT_DIR}/lib")
 
 ######################################################################
 # common variables and compile/link options (for all build targets)
@@ -92,29 +86,32 @@ endif()
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
-check_var(GRAALVM_LLVM_LIB_DIR)
-check_var(TRUFFLE_H_INC)
-
-require_var(GRAALPY_EXT)
+set(CAPI_SRC "${SRC_DIR}/src")
 
 # using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
-set(SRC_FILES src/codecs.c src/setobject.c src/compile.c src/thread.c src/moduleobject.c src/preconfig.c
-              src/getbuildinfo.c src/object.c src/dtoa.c src/pystrhex.c src/capi.c src/complexobject.c src/capsule.c
-              src/typeobject.c src/obmalloc.c src/descrobject.c src/memoryobject.c src/traceback.c src/unicodeobject.c
-              src/pythonrun.c src/funcobject.c src/codeobject.c src/unicodectype.c src/structseq.c src/import.c
-              src/pytime.c src/bytearrayobject.c src/listobject.c src/bytesobject.c src/object_shared.c src/longobject.c
-              src/sysmodule.c src/pystrtod.c src/tupleobject.c src/iterobject.c src/sliceobject.c src/classobject.c
-              src/floatobject.c src/namespaceobject.c src/_warnings.c src/dictobject.c src/pystate.c src/mysnprintf.c
-              src/ceval.c src/getcompiler.c src/pyhash.c src/fileutils.c src/descrobject_shared.c src/modsupport.c
-              src/context.c src/abstract.c src/frameobject.c src/posixmodule.c src/longobject_shared.c src/exceptions.c
-              src/pyctype.c src/typeobject_shared.c src/mystrtoul.c src/weakrefobject.c src/modsupport_shared.c
-              src/fileobject.c src/pystrcmp.c src/getversion.c src/genobject.c src/methodobject.c src/boolobject.c
-              src/pylifecycle.c src/errors.c src/signals.c src/datetime.c
+set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
+              ${CAPI_SRC}/moduleobject.c ${CAPI_SRC}/preconfig.c ${CAPI_SRC}/getbuildinfo.c ${CAPI_SRC}/object.c
+              ${CAPI_SRC}/dtoa.c ${CAPI_SRC}/pystrhex.c ${CAPI_SRC}/capi.c ${CAPI_SRC}/complexobject.c
+              ${CAPI_SRC}/capsule.c ${CAPI_SRC}/typeobject.c ${CAPI_SRC}/obmalloc.c ${CAPI_SRC}/descrobject.c
+              ${CAPI_SRC}/memoryobject.c ${CAPI_SRC}/traceback.c ${CAPI_SRC}/unicodeobject.c ${CAPI_SRC}/pythonrun.c
+              ${CAPI_SRC}/funcobject.c ${CAPI_SRC}/codeobject.c ${CAPI_SRC}/unicodectype.c ${CAPI_SRC}/structseq.c
+              ${CAPI_SRC}/import.c ${CAPI_SRC}/pytime.c ${CAPI_SRC}/bytearrayobject.c ${CAPI_SRC}/listobject.c
+              ${CAPI_SRC}/bytesobject.c ${CAPI_SRC}/object_shared.c ${CAPI_SRC}/longobject.c ${CAPI_SRC}/sysmodule.c
+              ${CAPI_SRC}/pystrtod.c ${CAPI_SRC}/tupleobject.c ${CAPI_SRC}/iterobject.c ${CAPI_SRC}/sliceobject.c
+              ${CAPI_SRC}/classobject.c ${CAPI_SRC}/floatobject.c ${CAPI_SRC}/namespaceobject.c ${CAPI_SRC}/_warnings.c
+              ${CAPI_SRC}/dictobject.c ${CAPI_SRC}/pystate.c ${CAPI_SRC}/mysnprintf.c ${CAPI_SRC}/ceval.c
+              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c ${CAPI_SRC}/descrobject_shared.c
+              ${CAPI_SRC}/modsupport.c ${CAPI_SRC}/context.c ${CAPI_SRC}/abstract.c ${CAPI_SRC}/frameobject.c
+              ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/longobject_shared.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
+              ${CAPI_SRC}/typeobject_shared.c ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
+              ${CAPI_SRC}/modsupport_shared.c ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
+              ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
+              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c
 )
 
 include_directories(
-    "src"
-    "include"
+    ${CAPI_SRC}
+    "${SRC_DIR}/include"
     "${TRUFFLE_H_INC}"
 )
 
@@ -126,7 +123,7 @@ function(native_module name core src_files)
     endif()
     if(${core})
         target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
-        target_include_directories(${name} PRIVATE "include/internal")
+        target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
     endif()
     set_target_properties(${name} PROPERTIES SUFFIX "${GRAALPY_EXT}")
     set_target_properties(${name} PROPERTIES PREFIX "")
@@ -135,12 +132,8 @@ function(native_module name core src_files)
 endfunction()
 
 function(simple_native_module name)
-    native_module(${name} TRUE "modules/${name}.c")
+    native_module(${name} TRUE "${SRC_DIR}/modules/${name}.c")
 endfunction()
-
-#file(GLOB_RECURSE GLOBBED_SRC_FILES
-#    LIST_DIRECTORIES FALSE
-#    "src/*.c")
 
 ######################################################################
 # BUILD TARGETS
@@ -153,33 +146,34 @@ simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
 
 if(NOT WIN32)
-    native_module("_testcapi" FALSE "modules/_testcapi.c")
+    native_module("_testcapi" FALSE "${SRC_DIR}/modules/_testcapi.c")
     simple_native_module("_testmultiphase")
     simple_native_module("_ctypes_test")
 
     ###################### BZIP2 ########################
-    set(TARGET_BZ2 "_bz2")
-    simple_native_module(${TARGET_BZ2})
-    set_target_properties(${TARGET_BZ2} PROPERTIES
-        # BUILD_WITH_INSTALL_RPATH FALSE
-        # BUILD_RPATH_USE_ORIGIN TRUE
-        BUILD_RPATH "../lib/${LLVM_MODE}/"
-    )
-    target_link_directories(${TARGET_BZ2} PRIVATE "${BZ2_LIB_DIR}")
-    target_link_libraries(${TARGET_BZ2} bz2)
+    if(DEFINED LIBBZ2_BUILD_FILE)
+        include("${LIBBZ2_BUILD_FILE}")
+        set(TARGET_BZ2 "_bz2")
+        simple_native_module(${TARGET_BZ2})
+        # variable 'BZIP2_SRC' is defined in file 'LIBBZ2_BUILD_FILE'
+        target_include_directories(${TARGET_BZ2} PRIVATE ${BZIP2_SRC})
+        # variable 'TARGET_LIBBZ2' is defined in file 'LIBBZ2_BUILD_FILE'
+        target_link_libraries(${TARGET_BZ2} ${TARGET_LIBBZ2})
+    endif()
 
 
     ###################### PYEXPAT ######################
     set(TARGET_PYEXPAT "pyexpat")
     simple_native_module(${TARGET_PYEXPAT})
+    set(EXPAT_SRC "${SRC_DIR}/expat")
     set(PYEXPAT_HEADERS
-        "expat/ascii.h" "expat/asciitab.h" "expat/expat.h" "expat/expat_config.h" "expat/expat_external.h"
-        "expat/internal.h" "expat/latin1tab.h" "expat/utf8tab.h" "expat/xmlrole.h" "expat/xmltok.h"
-        "expat/xmltok_impl.h"
+        ${EXPAT_SRC}/ascii.h ${EXPAT_SRC}/asciitab.h ${EXPAT_SRC}/expat.h ${EXPAT_SRC}/expat_config.h
+        ${EXPAT_SRC}/expat_external.h ${EXPAT_SRC}/internal.h ${EXPAT_SRC}/latin1tab.h ${EXPAT_SRC}/utf8tab.h
+        ${EXPAT_SRC}/xmlrole.h ${EXPAT_SRC}/xmltok.h ${EXPAT_SRC}/xmltok_impl.h
     )
     target_sources(${TARGET_PYEXPAT} PRIVATE ${PYEXPAT_HEADERS})
-    target_sources(${TARGET_PYEXPAT} PRIVATE "expat/xmlparse.c" "expat/xmlrole.c" "expat/xmltok.c")
-    target_include_directories(${TARGET_PYEXPAT} PRIVATE "expat")
+    target_sources(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC}/xmlparse.c ${EXPAT_SRC}/xmlrole.c ${EXPAT_SRC}/xmltok.c)
+    target_include_directories(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC})
     # bpo-30947: Python uses best available entropy sources to call XML_SetHashSalt(),
     # expat entropy sources are not needed
     target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
@@ -193,23 +187,18 @@ set_target_properties(${TARGET_LIBPYTHON} PROPERTIES SUFFIX "${GRAALPY_EXT}")
 
 target_sources(${TARGET_LIBPYTHON} PRIVATE ${SRC_FILES})
 target_include_directories(${TARGET_LIBPYTHON} PRIVATE
-    "include/internal"
+    "${SRC_DIR}/include/internal"
 )
 
 ######################################################################
 # target-specific compile and link options
 ######################################################################
 
-#target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
-#target_link_libraries(${TARGET_LIBPYTHON} graalvm-llvm)
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
-    target_link_libraries(${TARGET_LIBPYTHON} sulong-native)
+    target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
+    target_link_libraries(${TARGET_LIBPYTHON} sulong-native graalvm-llvm)
 endif()
-
-#if(APPLE)
-#    target_link_options(${TARGET_LIBPYTHON} PRIVATE -undefined dynamic_lookup)
-#endif()
 
 install(TARGETS ${TARGET_LIBPYTHON} DESTINATION bin)
