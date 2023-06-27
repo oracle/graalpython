@@ -619,3 +619,9 @@ class TestNativeSubclass(unittest.TestCase):
         assert b.replace(b'e', b'a') == b'hallo'
         assert b.upper() == b'HELLO'
         assert BytesSubclass(b'a,b').split(BytesSubclass(b',')) == [b'a', b'b']
+
+    def test_managed_subclass(self):
+        class ManagedSubclass(BytesSubclass):
+            pass
+
+        assert is_native_object(ManagedSubclass(b"hello"))

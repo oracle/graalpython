@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -104,7 +105,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
         super(cls, instanceShape);
-        assert !(cls instanceof PythonNativeClass);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
         this.exceptionAttributes = exceptionAttributes;
         this.args = args;
         this.hasMessageFormat = false;
@@ -114,7 +115,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
-        assertContainsNoJavaString(exceptionAttributes);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
         assert !(cls instanceof PythonNativeClass);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
@@ -125,7 +126,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, TruffleString format, Object[] formatArgs) {
         super(cls, instanceShape);
-        assert !(cls instanceof PythonNativeClass);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = true;

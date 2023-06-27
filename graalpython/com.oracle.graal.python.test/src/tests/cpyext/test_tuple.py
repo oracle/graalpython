@@ -267,3 +267,9 @@ class TestNativeSubclass(unittest.TestCase):
         assert repr(t) == "(1, 2, 3)"
         assert t.index(2) == 1
         assert t.count(2) == 1
+
+    def test_managed_sublclass(self):
+        class ManagedSubclass(TupleSubclass):
+            pass
+
+        assert is_native_object(ManagedSubclass(1, 2, 3))

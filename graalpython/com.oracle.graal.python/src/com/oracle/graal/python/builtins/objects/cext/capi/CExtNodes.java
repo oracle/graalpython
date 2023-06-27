@@ -264,12 +264,13 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = "needsNativeAllocation(object)")
+        @Specialization
         Object callNativeConstructor(Object object, Object arg,
                         @Cached ToSulongNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+            assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);

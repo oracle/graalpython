@@ -666,6 +666,12 @@ class TestNativeExceptionSubclass:
         assert type(e) == ExceptionSubclass
         assert isinstance(e, Exception)
 
+    def test_managed_subtype(self):
+        class ManagedSubclass(ExceptionSubclass):
+            pass
+
+        assert is_native_object(ManagedSubclass())
+
     def test_raise_type(self):
         try:
             raise ExceptionSubclass

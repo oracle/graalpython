@@ -2599,12 +2599,11 @@ public abstract class TypeNodes {
                 case PBytes -> 1;
                 case PInt -> 4;
                 case PFrame, PMemoryView, PTuple, PStatResult, PTerminalSize, PUnameResult, PStructTime, PProfilerEntry,
-                                PProfilerSubentry, PStructPasswd, PStructRusage, PVersionInfo, PFlags, PFloatInfo,
-                                PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
-                                PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
-                                PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
-                                PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam ->
-                    8;
+                        PProfilerSubentry, PStructPasswd, PStructRusage, PVersionInfo, PFlags, PFloatInfo,
+                        PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
+                        PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
+                        PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
+                        PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam -> 8;
                 case PythonClass -> 40;
                 default -> 0;
             };
@@ -2671,6 +2670,47 @@ public abstract class TypeNodes {
         void set(PythonManagedClass cls, long value,
                         @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_DICTOFFSET, value);
+        }
+    }
+
+    /**
+     * Tests if the given {@code cls} is a Python class that needs a native allocation. This is the
+     * case if {@code cls} either is a native class or it is a managed class that (indirectly)
+     * inherits from a native class.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class NeedsNativeAllocationNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object cls);
+
+        public static boolean executeUncached(Object cls) {
+            return TypeNodesFactory.NeedsNativeAllocationNodeGen.getUncached().execute(null, cls);
+        }
+
+        @Specialization
+        static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType cls) {
+            return false;
+        }
+
+        @Specialization
+        static boolean doBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls) {
+            return false;
+        }
+
+        @Specialization
+        static boolean doManaged(PythonManagedClass cls) {
+            return cls.needsNativeAllocation();
+        }
+
+        @Specialization
+        static boolean doNative(@SuppressWarnings("unused") PythonNativeClass cls) {
+            return true;
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object cls) {
+            return false;
         }
     }
 }
