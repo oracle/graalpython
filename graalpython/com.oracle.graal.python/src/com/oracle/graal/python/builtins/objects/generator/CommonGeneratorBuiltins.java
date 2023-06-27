@@ -294,7 +294,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                 runningProfile.enter(inliningTarget);
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
+            Object instance = prepareExceptionNode.execute(frame, typ, val);
             if (hasTb) {
                 setTracebackNode.execute(inliningTarget, instance, tb);
             }
@@ -305,7 +305,9 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
-                instance.ensureReified();
+                if (instance instanceof PBaseException managedException) {
+                    managedException.ensureReified();
+                }
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 return resumeGeneratorNode.execute(frame, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));

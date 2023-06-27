@@ -51,10 +51,10 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
  */
 @ValueType
 public final class ThrowData {
-    public final PBaseException pythonException;
+    public final Object pythonException;
     public final boolean withJavaStacktrace;
 
-    public ThrowData(PBaseException pythonException, boolean withJavaStacktrace) {
+    public ThrowData(Object pythonException, boolean withJavaStacktrace) {
         this.pythonException = pythonException;
         this.withJavaStacktrace = withJavaStacktrace;
     }

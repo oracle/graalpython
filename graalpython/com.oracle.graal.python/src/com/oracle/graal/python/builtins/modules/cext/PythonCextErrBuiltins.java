@@ -104,6 +104,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -149,7 +150,7 @@ public final class PythonCextErrBuiltins {
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            PBaseException exception;
+            Object exception;
             try {
                 exception = prepareExceptionNode.execute(null, typ, val);
             } catch (PException e) {
@@ -267,8 +268,11 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
-            PBaseException exception = prepareExceptionNode.execute(null, type, value);
-            throw getRaiseNode().raiseExceptionObject(exception);
+            Object exception = prepareExceptionNode.execute(null, type, value);
+            if (exception instanceof PBaseException managedException) {
+                managedException.ensureReified();
+            }
+            throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
         }
 
         protected static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
