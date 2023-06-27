@@ -131,11 +131,10 @@ def _get_stdlib_home():
 
 
 def _get_capi_home():
-    return mx.dependency("com.oracle.graal.python.cext").get_output_root()
+    return mx.distribution("GRAALPYTHON_NATIVE_LIBS").get_output()
 
 
-def _get_jni_home():
-    return mx.distribution("GRAALPYTHON_JNI").get_output()
+_get_jni_home = _get_capi_home
 
 
 def _extract_graalpython_internal_options(args):

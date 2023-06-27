@@ -345,7 +345,7 @@ suite = {
                 # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_JNI",
+                "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
@@ -770,7 +770,7 @@ suite = {
             "description": "GraalPython launcher",
         },
 
-        "GRAALPYTHON_JNI" : {
+        "GRAALPYTHON_NATIVE_LIBS" : {
             "native": True,
             "platformDependent": True,
             "platforms": [
@@ -782,28 +782,58 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
+                        "dependencies": [
+                            "com.oracle.graal.python.cext",
+                            "python-libzsupport",
+                            "python-libposix",
+                            "python-libbz2",
+                            "python-liblzma",
+                            "com.oracle.graal.python.hpy.llvm"
+                        ],
                         "layout": {
-                            "./": "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
+                            "./": [
+                                "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
+                                "dependency:com.oracle.graal.python.cext/bin/*",
+                                "dependency:python-libzsupport/*",
+                                "dependency:python-libposix/*",
+                                "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:python-libbz2/bin/*",
+                                "dependency:python-liblzma/bin/*"
+                            ]
                         },
                     },
                 },
                 "<others>": {
                     "<others>": {
                         "dependencies": [
+                            "com.oracle.graal.python.cext",
                             "com.oracle.graal.python.jni",
+                            "python-libzsupport",
+                            "python-libposix",
+                            "python-libbz2",
+                            "python-liblzma",
+                            "com.oracle.graal.python.hpy.llvm"
                         ],
                         "layout": {
-                            "./": {
-                                "source_type": "dependency",
-                                "dependency": "com.oracle.graal.python.jni",
-                                "path": "*",
-                                "exclude": ["JNI-WINDOWS-README.md"],
-                            },
+                            "./": [
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "com.oracle.graal.python.jni",
+                                    "path": "*",
+                                    "exclude": ["JNI-WINDOWS-README.md"],
+                                },
+                                "dependency:com.oracle.graal.python.cext/bin/*",
+                                "dependency:python-libzsupport/*",
+                                "dependency:python-libposix/*",
+                                "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:python-libbz2/bin/*",
+                                "dependency:python-liblzma/bin/*",
+                            ]
                         },
                     },
                 },
             },
-            "description": "Contains the native library needed by HPy JNI backend.",
+            "description": "Contains the JNI native lib, the C API and support libs.",
             "maven": True,
         },
 
@@ -825,7 +855,7 @@ suite = {
             ],
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_JNI",
+                "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
@@ -909,14 +939,10 @@ suite = {
             "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM",
             "distDependencies": [
-                "GRAALPYTHON_JNI",
+                "GRAALPYTHON_NATIVE_LIBS",
             ],
             "dependencies": [
                 "com.oracle.graal.python.cext",
-                "python-libzsupport",
-                "python-libposix",
-                "python-libbz2",
-                "python-liblzma",
                 "com.oracle.graal.python.hpy.llvm"
             ],
             "os_arch": {
@@ -931,23 +957,8 @@ suite = {
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_JNI/*",
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "graalpython:python-libzsupport",
-                                    "path": "*",
-                                },
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "graalpython:python-libposix",
-                                    "path": "*",
-                                },
-                                "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
-                                "dependency:com.oracle.graal.python.cext/bin/*",
+                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/*",
                                 "file:com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
-                            ],
-                            "./lib-graalpython/modules/": [
-                                "dependency:com.oracle.graal.python.cext/bin/modules/*",
                             ],
                             "./lib-graalpython/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",
@@ -970,24 +981,7 @@ suite = {
                             ],
                             "./lib/graalpy<graal_ver:major_minor>/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_JNI/*",
-                                "dependency:com.oracle.graal.python.cext/bin/*",
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "graalpython:python-libzsupport",
-                                    "path": "*",
-                                },
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "graalpython:python-libposix",
-                                    "path": "*",
-                                },
-                                "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
-                                "dependency:python-libbz2/bin/*",
-                                "dependency:python-liblzma/bin/*",
-                            ],
-                            "./lib/graalpy<graal_ver:major_minor>/modules/": [
-                                "dependency:com.oracle.graal.python.cext/bin/modules/*",
+                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/*",
                             ],
                             "./lib/graalpy<graal_ver:major_minor>/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",
