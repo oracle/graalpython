@@ -42,7 +42,7 @@ require_var(TRUFFLE_H_INC)
 require_var(GRAALPY_EXT)
 
 if(NOT DEFINED SRC_DIR)
-    set(SRC_DIR ".")
+    set(SRC_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 
 set(TARGET_LIBPYTHON "python")
@@ -106,8 +106,38 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/typeobject_shared.c ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
               ${CAPI_SRC}/modsupport_shared.c ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
-              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c
+              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/bytearrayobject_shared.c
 )
+
+file(GLOB_RECURSE ACTUAL_SRC_FILES
+    LIST_DIRECTORIES FALSE
+    "${CAPI_SRC}/*.c")
+
+
+function(list_equals lst0 lst1)
+    list(LENGTH ${lst0} len0)
+    list(LENGTH ${lst1} len1)
+    if(NOT len0 EQUAL len1)
+        message(FATAL_ERROR "The list of source files does not match the current file system. "
+                            "Different number of files: given len = ${len0} ;; actual len = ${len1}")
+    endif()
+
+    # sort lists
+    list(SORT ${lst0})
+    list(SORT ${lst1})
+
+    # iterate over both lists in simultaneously
+    foreach(item IN ZIP_LISTS ${lst0} ${lst1})
+        if(NOT ${item_0} STREQUAL ${item_1})
+            message(VERBOSE "given src files = ${lst0}")
+            message(VERBOSE "actual src files = ${lst1}")
+            message(FATAL_ERROR "The list of source files does not match the current file system. "
+                                "Different items: given file = ${item_0} ;; actual file = ${item_1}")
+        endif()
+    endforeach()
+endfunction()
+
+list_equals(SRC_FILES ACTUAL_SRC_FILES)
 
 include_directories(
     ${CAPI_SRC}
