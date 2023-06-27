@@ -97,11 +97,13 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_simple_compare
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_two_fields_one_default
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_default_value
+*graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_init_calls_set
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_lookup_on_class
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_lookup_on_instance
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_no_default_value
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_non_descriptor
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_set_name
+*graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_setting_field_calls_set
 *graalpython.lib-python.3.test.test_dataclasses.TestDescriptors.test_setting_uninitialized_descriptor_field
 *graalpython.lib-python.3.test.test_dataclasses.TestDocString.test_docstring_list_field
 *graalpython.lib-python.3.test.test_dataclasses.TestDocString.test_docstring_list_field_with_default_factory

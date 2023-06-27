@@ -53,6 +53,10 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestWait.test_wait_socket
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestWait.test_wait_socket_slow
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestWait.test_wait_timeout
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestArray.test_array
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestArray.test_array_from_size
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestArray.test_getobj_getlock_obj
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestArray.test_rawarray
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_abort
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_abort_and_reset
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_action

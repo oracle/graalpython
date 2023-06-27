@@ -94,6 +94,7 @@
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_SpecialForm
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_TypeVar
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_TypedDict
+*graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_bad_module
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_forward
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_operator_with_genericalias
 *graalpython.lib-python.3.test.test_types.UnionTests.test_or_type_repr

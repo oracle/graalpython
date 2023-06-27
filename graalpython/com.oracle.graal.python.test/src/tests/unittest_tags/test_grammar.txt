@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_assert_syntax_warnings
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_async_await
+*graalpython.lib-python.3.test.test_grammar.GrammarTests.test_async_with
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_atoms
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_binary_mask_ops
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_break_continue_loop

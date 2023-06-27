@@ -129,4 +129,7 @@
 *graalpython.lib-python.3.test.test_call.TestErrorMessagesUseQualifiedName.test_positional_only_passed_as_keyword
 *graalpython.lib-python.3.test.test_call.TestErrorMessagesUseQualifiedName.test_too_many_positional
 *graalpython.lib-python.3.test.test_call.TestErrorMessagesUseQualifiedName.test_unexpected_keyword
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_method_descriptor_flag
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall
 *graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall_flag
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall_override

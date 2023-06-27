@@ -7,3 +7,6 @@
 *graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stderr_as_default
 *graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stdin_as_default_input
 *graalpython.lib-python.3.test.test_getpass.GetpassRawinputTest.test_uses_stdin_as_different_locale
+*graalpython.lib-python.3.test.test_getpass.UnixGetpassTest.test_falls_back_to_stdin
+*graalpython.lib-python.3.test.test_getpass.UnixGetpassTest.test_resets_termios
+*graalpython.lib-python.3.test.test_getpass.UnixGetpassTest.test_uses_tty_directly

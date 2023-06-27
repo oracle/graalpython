@@ -181,6 +181,7 @@
 *graalpython.lib-python.3.test.test_set.TestBinaryOps.test_union_subset
 *graalpython.lib-python.3.test.test_set.TestBinaryOps.test_union_superset
 *graalpython.lib-python.3.test.test_set.TestBinaryOpsMutating_Set_Set.test_iteration_with_mutation
+*graalpython.lib-python.3.test.test_set.TestBinaryOpsMutating_Set_Set.test_or_with_mutation
 *graalpython.lib-python.3.test.test_set.TestCopyingEmpty.test_copy
 *graalpython.lib-python.3.test.test_set.TestCopyingEmpty.test_deep_copy
 *graalpython.lib-python.3.test.test_set.TestCopyingNested.test_copy

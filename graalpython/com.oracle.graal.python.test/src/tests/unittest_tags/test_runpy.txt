@@ -27,4 +27,5 @@
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_main_recursion_error
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_script_compiled
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_zipfile
+*graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_zipfile_compiled
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_zipfile_error
