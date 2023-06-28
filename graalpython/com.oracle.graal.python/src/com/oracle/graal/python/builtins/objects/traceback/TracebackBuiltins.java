@@ -117,8 +117,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
             if (lazyTraceback.getNextChain() != null) {
                 next = materializeLazyTracebackNode.execute(lazyTraceback.getNextChain());
             }
-            // The logic of skipping and cutting off frames here and in MaterializeLazyTracebackNode must be the
-            // same
+            /*
+             * The logic of skipping and cutting off frames here and in MaterializeLazyTracebackNode
+             * must be the same.
+             */
             PException pException = lazyTraceback.getException();
             List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(pException);
             if (stackTrace != null) {

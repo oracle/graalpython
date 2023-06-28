@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,7 +24,6 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
