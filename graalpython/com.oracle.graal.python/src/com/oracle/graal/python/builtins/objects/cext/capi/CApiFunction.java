@@ -1112,7 +1112,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFile_OpenCode", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_OpenCodeObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFile_SetOpenCodeHook", ret = Int, args = {PY_OPENCODEHOOKFUNCTION, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFloat_FromString", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFloat_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyFloat_GetMax", ret = Double, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyFloat_GetMin", ret = Double, args = {}, call = NotImplemented)
