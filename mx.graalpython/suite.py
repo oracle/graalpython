@@ -612,7 +612,6 @@ suite = {
                 "LLVM_MODE" : "native",
                 "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
                 "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
-                "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
             },

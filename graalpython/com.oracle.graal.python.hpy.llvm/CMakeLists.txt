@@ -30,46 +30,67 @@ cmake_minimum_required(VERSION 3.22)
 project(com.oracle.graal.python.hpy.llvm)
 
 function(require_var var)
-  if (NOT ${var})
+  if (NOT DEFINED ${var})
     message(FATAL_ERROR "${var} needs to be set")
-  endif()
-endfunction()
-
-function(check_var var)
-  set(${var} PARENT_SCOPE)
-  require_var(${var})
-endfunction()
-
-# set variable from environement variable if the latter exists
-function(setFromEnv varname envname)
-  if(DEFINED ENV{${envname}})
-    set(${varname} $ENV{${envname}} PARENT_SCOPE)
   endif()
 endfunction()
 
 require_var(LLVM_MODE)
 
+# default to CMake's source dir if not explicitly provided
+if(NOT DEFINED SRC_DIR)
+    set(SRC_DIR "${CMAKE_SOURCE_DIR}")
+endif()
+
 set(TARGET_LIB "hpy-${LLVM_MODE}")
-# set(LIB_OUTPUT_DIR "${PROJECT_OUTPUT_DIR}/lib")
 
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
-check_var(GRAALVM_HPY_INCLUDE_DIR)
-check_var(GRAALVM_PYTHON_INCLUDE_DIR)
-check_var(TRUFFLE_H_INC)
+require_var(GRAALVM_HPY_INCLUDE_DIR)
+require_var(GRAALVM_PYTHON_INCLUDE_DIR)
+require_var(TRUFFLE_H_INC)
 
-file(GLOB_RECURSE SRC_FILES
-    LIST_DIRECTORIES TRUE
-    "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
-
-# only for Windows but to avoid a CMake warning
-check_var(GRAALVM_LLVM_LIB_DIR)
+set(HPY_SRC "${SRC_DIR}/src")
+set(HPY_INC "${SRC_DIR}/include")
 
 # using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
+set(SRC_FILES ${HPY_SRC}/hpy.c
+              ${HPY_SRC}/hpynative.h
+              ${HPY_SRC}/hpytypes.h
+)
+
+set(HPY_HEADERS ${HPY_INC}/hpy/autogen_hpyslot.h
+                ${HPY_INC}/hpy/version.h
+                ${HPY_INC}/hpy/hpytype.h
+                ${HPY_INC}/hpy/universal/hpyfunc_trampolines.h
+                ${HPY_INC}/hpy/universal/autogen_trampolines.h
+                ${HPY_INC}/hpy/universal/misc_trampolines.h
+                ${HPY_INC}/hpy/universal/autogen_ctx.h
+                ${HPY_INC}/hpy/universal/autogen_hpyfunc_trampolines.h
+                ${HPY_INC}/hpy/hpydef.h
+                ${HPY_INC}/hpy/runtime/argparse.h
+                ${HPY_INC}/hpy/runtime/ctx_type.h
+                ${HPY_INC}/hpy/runtime/buildvalue.h
+                ${HPY_INC}/hpy/runtime/ctx_funcs.h
+                ${HPY_INC}/hpy/runtime/structseq.h
+                ${HPY_INC}/hpy/runtime/helpers.h
+                ${HPY_INC}/hpy/inline_helpers.h
+                ${HPY_INC}/hpy/cpython/hpyfunc_trampolines.h
+                ${HPY_INC}/hpy/cpython/misc.h
+                ${HPY_INC}/hpy/cpython/autogen_api_impl.h
+                ${HPY_INC}/hpy/cpython/autogen_hpyfunc_trampolines.h
+                ${HPY_INC}/hpy/macros.h
+                ${HPY_INC}/hpy/hpymodule.h
+                ${HPY_INC}/hpy/autogen_hpyfunc_declare.h
+                ${HPY_INC}/hpy/cpy_types.h
+                ${HPY_INC}/hpy/hpyfunc.h
+                ${HPY_INC}/hpy.h
+)
+
 add_library(${TARGET_LIB} SHARED)
 
-target_sources(${TARGET_LIB} PRIVATE ${SRC_FILES})
+target_sources(${TARGET_LIB} PRIVATE ${SRC_FILES} ${HPY_HEADERS})
 target_include_directories(${TARGET_LIB} PRIVATE
     "${GRAALVM_HPY_INCLUDE_DIR}"
     "${GRAALVM_PYTHON_INCLUDE_DIR}"
@@ -77,6 +98,7 @@ target_include_directories(${TARGET_LIB} PRIVATE
 )
 
 if(WIN32)
+    require_var(GRAALVM_LLVM_LIB_DIR)
     target_link_directories(${TARGET_LIB} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
     target_link_libraries(${TARGET_LIB} graalvm-llvm)
     target_compile_options(${TARGET_LIB} PRIVATE /Z7 /O2 /WX)
