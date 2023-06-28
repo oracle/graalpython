@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -90,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -118,7 +118,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -851,11 +850,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         Object category, Object message, Object text, Object key, Object item, TruffleString action) {
 
             if (action.equalsUncached(T_ERROR, TS_ENCODING)) {
-                if (!(message instanceof PBaseException)) {
+                if (!PyExceptionInstanceCheckNode.executeUncached(message)) {
                     throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION,
                                     PyObjectReprAsTruffleStringNode.getUncached().execute(null, message));
                 } else {
-                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
+                    throw PRaiseNode.raiseExceptionObject(node, message);
                 }
             }
 

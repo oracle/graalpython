@@ -181,10 +181,11 @@ public final class PBaseException extends PythonObject {
     }
 
     public void setException(PException exception) {
+        ensureReified();
         this.exception = exception;
     }
 
-    public void ensureReified() {
+    private void ensureReified() {
         if (exception != null) {
             // If necessary, this will call back to this object to set the traceback
             exception.ensureReified();

@@ -540,12 +540,12 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         Object module = AbstractImportNode.importModule(toTruffleStringUncached("json.decoder"));
         Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, T_JSON_DECODE_ERROR);
         Object exception = CallNode.getUncached().execute(errorClass, format, toTruffleStringUncached(jsonString), pos);
-        throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
+        throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 
     private static RuntimeException stopIteration(Node raisingNode, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).lookupType(PythonBuiltinClassType.StopIteration), value);
-        throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
+        throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 }

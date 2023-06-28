@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -43,7 +42,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.ValidExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -138,14 +136,8 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedBranchProfile isReraise) {
-        if (exception.getException() != null) {
-            isReraise.enter(inliningTarget);
-            exception.ensureReified();
-        }
-        throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible) {
+        throw PRaiseNode.raiseExceptionObject(this, exception);
     }
 
     // raise <native-exception>
@@ -154,21 +146,15 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @SuppressWarnings("unused") boolean rootNodeVisible,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check) {
-        throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+        throw PRaiseNode.raiseExceptionObject(this, exception);
     }
 
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedBranchProfile isReraise,
                     @Shared @Cached SetExceptionCauseNode setExceptionCauseNode) {
-        if (exception.getException() != null) {
-            isReraise.enter(inliningTarget);
-            exception.ensureReified();
-        }
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+        throw PRaiseNode.raiseExceptionObject(this, exception);
     }
 
     // raise <native-exception> from *
@@ -178,7 +164,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
                     @Shared @Cached SetExceptionCauseNode setExceptionCauseNode) {
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+        throw PRaiseNode.raiseExceptionObject(this, exception);
     }
 
     private void checkBaseClass(VirtualFrame frame, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
@@ -200,7 +186,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (check.execute(inliningTarget, newException)) {
-            throw PRaiseNode.raiseNoReify(this, newException, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+            throw PRaiseNode.raiseExceptionObject(this, newException);
         } else {
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
@@ -220,7 +206,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         Object newException = callConstructor.execute(frame, pythonClass);
         if (check.execute(inliningTarget, newException)) {
             setExceptionCauseNode.execute(frame, newException, cause);
-            throw PRaiseNode.raiseNoReify(this, newException, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+            throw PRaiseNode.raiseExceptionObject(this, newException);
         } else {
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }

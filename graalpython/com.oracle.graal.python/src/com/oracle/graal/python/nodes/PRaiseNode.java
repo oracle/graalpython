@@ -163,24 +163,15 @@ public abstract class PRaiseNode extends Node {
         return raise(PythonBuiltinClassType.MemoryError);
     }
 
-    public final PException raiseExceptionObject(PBaseException exc) {
-        throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+    public final PException raiseExceptionObject(Object exc) {
+        throw raiseExceptionObject(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
-    private static PException raiseExceptionObject(Node raisingNode, PBaseException exc) {
-        throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
+    public static PException raiseExceptionObject(Node raisingNode, Object exc) {
+        throw raiseExceptionObject(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
     }
 
-    public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
-        exc.ensureReified();
-        if (raisingNode != null && raisingNode.isAdoptable()) {
-            throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
-        } else {
-            throw PException.fromObject(exc, EncapsulatingNodeReference.getCurrent().get(), withJavaStacktrace);
-        }
-    }
-
-    public static PException raiseNoReify(Node raisingNode, Object exc, boolean withJavaStacktrace) {
+    public static PException raiseExceptionObject(Node raisingNode, Object exc, boolean withJavaStacktrace) {
         if (raisingNode != null && raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {

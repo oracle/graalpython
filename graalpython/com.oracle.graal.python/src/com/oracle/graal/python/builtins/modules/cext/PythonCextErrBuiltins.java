@@ -269,10 +269,7 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
-            if (exception instanceof PBaseException managedException) {
-                managedException.ensureReified();
-            }
-            throw PRaiseNode.raiseNoReify(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+            throw PRaiseNode.raiseExceptionObject(this, exception);
         }
 
         protected static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {

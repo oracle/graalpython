@@ -18,7 +18,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 public abstract class PyErrChainExceptions extends Node {
     public final PException execute(Node inliningTarget, PException current, PException context) {
-        context.ensureReified();
         execute(inliningTarget, current.getUnreifiedException(), context.getEscapedException());
         return current;
     }

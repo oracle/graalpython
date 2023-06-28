@@ -39,9 +39,7 @@ public abstract class ChainExceptionsNode extends Node {
                 }
                 e = eContext;
             }
-            if (context != null) {
-                contextException.markFrameEscaped();
-            }
+            contextException.markEscaped();
             setContextNode.execute(inliningTarget, current, context);
         }
     }

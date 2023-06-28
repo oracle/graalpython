@@ -41,10 +41,13 @@
 package com.oracle.graal.python.runtime.exception;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -155,7 +158,6 @@ public final class PException extends AbstractTruffleException {
         }
         PException pException = new PException(pythonException, traceback, wrapped);
         if (pythonException instanceof PBaseException managedException) {
-            managedException.ensureReified();
             managedException.setException(pException);
         }
         return pException;
@@ -298,7 +300,17 @@ public final class PException extends AbstractTruffleException {
         this.catchBci = catchBci;
     }
 
-    public void markFrameEscaped() {
+    public void markEscaped() {
+        markFrameEscaped();
+        if (!(pythonException instanceof PBaseException)) {
+            materializeNativeExceptionTraceback();
+            reified = true;
+        }
+    }
+
+    private void markFrameEscaped() {
+        // Frame may be null when the catch handler is the C boundary, which is internal and
+        // shouldn't leak to the traceback
         if (this.frameInfo != null) {
             this.frameInfo.markAsEscaped();
         }
@@ -308,7 +320,7 @@ public final class PException extends AbstractTruffleException {
      * Get the python exception while ensuring that the traceback frame is marked as escaped
      */
     public Object getEscapedException() {
-        markFrameEscaped();
+        markEscaped();
         return pythonException;
     }
 
@@ -339,20 +351,17 @@ public final class PException extends AbstractTruffleException {
      */
     public void ensureReified() {
         if (!reified) {
-            // Frame may be null when the catch handler is the C boundary, which is internal and
-            // shouldn't leak to the traceback
-            if (frameInfo != null) {
-                assert frameInfo != PFrame.Reference.EMPTY;
-                frameInfo.markAsEscaped();
-            }
+            markFrameEscaped();
             if (pythonException instanceof PBaseException managedException) {
                 /*
                  * Make a snapshot of the traceback at the point of the exception handler. This may
                  * be called later than in the exception handler, but only in cases when the
-                 * exception hasn't escaped to the prgram and thus couldn't have changed in the
+                 * exception hasn't escaped to the program and thus couldn't have changed in the
                  * meantime
                  */
                 traceback = managedException.internalReifyException(frameInfo);
+            } else {
+                materializeNativeExceptionTraceback();
             }
             reified = true;
         }
@@ -377,14 +386,33 @@ public final class PException extends AbstractTruffleException {
      */
     public PException getExceptionForReraise(boolean rootNodeVisible) {
         if (pythonException instanceof PBaseException managedException) {
-            PException pe = managedException.getExceptionForReraise(getTraceback());
-            if (rootNodeVisible) {
-                pe.skipFirstTracebackFrame();
-            }
-            return pe;
+            managedException.setTraceback(getTraceback());
         } else {
-            return this;
+            setNativeExceptionTraceback(getTraceback());
         }
+        PException pe = PException.fromObject(pythonException, getLocation(), false);
+        if (rootNodeVisible) {
+            pe.skipFirstTracebackFrame();
+        }
+        return pe;
+    }
+
+    @TruffleBoundary
+    private PTraceback setNativeExceptionTraceback(LazyTraceback tb) {
+        PTraceback materializedTb = tb != null ? MaterializeLazyTracebackNode.executeUncached(tb) : null;
+        ExceptionNodes.SetTracebackNode.executeUncached(pythonException, materializedTb != null ? materializedTb : PNone.NONE);
+        return materializedTb;
+    }
+
+    @TruffleBoundary
+    private void materializeNativeExceptionTraceback() {
+        Object existingTraceback = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
+        LazyTraceback nextChain = null;
+        if (existingTraceback instanceof PTraceback nextTraceback) {
+            nextChain = new LazyTraceback(nextTraceback);
+        }
+        PTraceback materializedTraceback = setNativeExceptionTraceback(new LazyTraceback(frameInfo, this, nextChain));
+        traceback = new LazyTraceback(materializedTraceback);
     }
 
     @TruffleBoundary

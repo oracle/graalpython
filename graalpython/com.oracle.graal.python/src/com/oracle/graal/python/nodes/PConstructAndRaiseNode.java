@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -56,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.util.PythonUtils;
@@ -104,7 +102,7 @@ public abstract class PConstructAndRaiseNode extends Node {
             error.setContext(cause);
             error.setCause(cause);
         }
-        return PRaiseNode.raise(this, error, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+        return PRaiseNode.raiseExceptionObject(this, error);
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})

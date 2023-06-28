@@ -2145,7 +2145,7 @@ public abstract class ExternalFunctionNodes {
         private static PException raiseResultWithError(PythonLanguage language, Node node, TruffleString name, PException currentException, TruffleString resultWithErrorMessage) {
             PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
             sysExc.setCause(currentException.getEscapedException());
-            throw PRaiseNode.raise(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
 
         protected static boolean isNativeNull(Object object) {

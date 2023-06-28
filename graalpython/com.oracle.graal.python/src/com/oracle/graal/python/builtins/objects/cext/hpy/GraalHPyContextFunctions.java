@@ -285,7 +285,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -308,6 +307,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictKeys;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
@@ -1613,6 +1613,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
@@ -1625,8 +1626,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1643,14 +1644,15 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
             Object exception = callExceptionConstructorNode.execute(errTypeObj, fromCharPointerNode.execute(charPtr));
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(isSubtypeNode, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1664,11 +1666,13 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object errMessagePtr,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperFunctionNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object i = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
             Object message = fromCharPointerNode.execute(callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
@@ -1685,8 +1689,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1700,10 +1704,12 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object filenameObject1, Object filenameObject2,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object i = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
             Object message = fromCharPointerNode.execute(callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
@@ -1723,8 +1729,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -2337,44 +2343,44 @@ public abstract class GraalHPyContextFunctions {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyNew.class);
 
         @Specialization
-            static Object doGeneric(GraalHPyContext hpyContext, Object type, Object dataOutVar,
-                                    @Cached IsTypeNode isTypeNode,
-                                    @Cached PRaiseNode raiseNode,
-                                    @Cached PythonObjectFactory factory,
-                                    @Cached PCallHPyFunction callMallocNode,
-                                    @Cached PCallHPyFunction callWriteDataNode) {
+        static Object doGeneric(GraalHPyContext hpyContext, Object type, Object dataOutVar,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PCallHPyFunction callMallocNode,
+                        @Cached PCallHPyFunction callWriteDataNode) {
 
-                // check if argument is actually a type
-                if (!isTypeNode.execute(type)) {
-                    return raiseNode.raise(TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
-                }
-
-                // create the managed Python object
-                PythonObject pythonObject = null;
-
-                if (type instanceof PythonClass clazz) {
-                    // allocate native space
-                    long basicSize = clazz.basicSize;
-                    if (basicSize != -1) {
-                        Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                        pythonObject = factory.createPythonHPyObject(type, dataPtr);
-                        Object destroyFunc = clazz.hpyDestroyFunc;
-                        hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
-
-                        // write data pointer to out var
-                        callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
-
-                        if (LOGGER.isLoggable(Level.FINEST)) {
-                            LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
-                        }
-                        // TODO(fa): add memory tracing
-                    }
-                }
-                if (pythonObject == null) {
-                    pythonObject = factory.createPythonObject(type);
-                }
-                return pythonObject;
+            // check if argument is actually a type
+            if (!isTypeNode.execute(type)) {
+                return raiseNode.raise(TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
             }
+
+            // create the managed Python object
+            PythonObject pythonObject = null;
+
+            if (type instanceof PythonClass clazz) {
+                // allocate native space
+                long basicSize = clazz.basicSize;
+                if (basicSize != -1) {
+                    Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
+                    Object destroyFunc = clazz.hpyDestroyFunc;
+                    hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+
+                    // write data pointer to out var
+                    callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
+
+                    if (LOGGER.isLoggable(Level.FINEST)) {
+                        LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                    }
+                    // TODO(fa): add memory tracing
+                }
+            }
+            if (pythonObject == null) {
+                pythonObject = factory.createPythonObject(type);
+            }
+            return pythonObject;
+        }
     }
 
     @HPyContextFunction("ctx_AsStruct")
@@ -2397,33 +2403,33 @@ public abstract class GraalHPyContextFunctions {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyTypeGenericNew.class);
 
         @Specialization
-            @SuppressWarnings("unused")
-            static Object doGeneric(GraalHPyContext hpyContext, Object type, Object args, long nargs, Object kw,
-                            @Cached PythonObjectFactory factory,
-                            @Cached PCallHPyFunction callMallocNode) {
+        @SuppressWarnings("unused")
+        static Object doGeneric(GraalHPyContext hpyContext, Object type, Object args, long nargs, Object kw,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PCallHPyFunction callMallocNode) {
 
-                // create the managed Python object
-                PythonObject pythonObject = null;
+            // create the managed Python object
+            PythonObject pythonObject = null;
 
-                // allocate native space
-                if (type instanceof PythonClass clazz) {
-                    long basicSize = clazz.basicSize;
-                    if (basicSize != -1) {
-                        // we fully control this attribute; if it is there, it's always a long
-                        Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                        pythonObject = factory.createPythonHPyObject(type, dataPtr);
+            // allocate native space
+            if (type instanceof PythonClass clazz) {
+                long basicSize = clazz.basicSize;
+                if (basicSize != -1) {
+                    // we fully control this attribute; if it is there, it's always a long
+                    Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
 
-                        if (LOGGER.isLoggable(Level.FINEST)) {
-                            LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
-                        }
-                        // TODO(fa): add memory tracing
+                    if (LOGGER.isLoggable(Level.FINEST)) {
+                        LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
+                    // TODO(fa): add memory tracing
                 }
-                if (pythonObject == null) {
-                    pythonObject = factory.createPythonObject(type);
-                }
-                return pythonObject;
             }
+            if (pythonObject == null) {
+                pythonObject = factory.createPythonObject(type);
+            }
+            return pythonObject;
+        }
     }
 
     @HPyContextFunction("ctx_Absolute")
@@ -2678,9 +2684,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle, long lidx, Object value,
-                             @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached SequenceStorageNodes.SetItemDynamicNode setItemNode)  {
+                        @Cached SequenceStorageNodes.SetItemDynamicNode setItemNode) {
             Object builder = asPythonObjectNode.execute(builderHandle);
             if (builder instanceof ObjectSequenceStorage storage) {
                 try {
@@ -2692,9 +2698,9 @@ public abstract class GraalHPyContextFunctions {
                 return 0;
             }
             /*
-            * that's really unexpected since the C signature should enforce a valid builder but
-            * someone could have messed it up
-            */
+             * that's really unexpected since the C signature should enforce a valid builder but
+             * someone could have messed it up
+             */
             throw CompilerDirectives.shouldNotReachHere("invalid builder object");
         }
     }
@@ -3493,8 +3499,8 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyCapsuleIsValid extends HPyTernaryContextFunction {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object capsule, Object namePtr,
-                             @Bind("this") Node inliningTarget,
-                             @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
             return PInt.intValue(capsule instanceof PyCapsule pyCapsule && nameMatchesNode.execute(inliningTarget, pyCapsule.getName(), namePtr));
         }
     }
@@ -3535,7 +3541,7 @@ public abstract class GraalHPyContextFunctions {
         static int doGeneric(GraalHPyContext hpyContext, Object var, Object def, Object outPtr,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PRaiseNode raiseNode,
-                             @Cached PCallHPyFunction callWriteHPyNode) {
+                        @Cached PCallHPyFunction callWriteHPyNode) {
             if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }

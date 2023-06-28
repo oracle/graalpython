@@ -212,7 +212,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             int end = start + encoder.getErrorLength();
             Object exception = callNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+                throw raiseNode.raiseExceptionObject(exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is
@@ -373,7 +373,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 return exception;
             }
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+                throw raiseNode.raiseExceptionObject(exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is

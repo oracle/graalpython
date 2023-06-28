@@ -692,10 +692,7 @@ class TestNativeExceptionSubclass:
 
     def test_traceback(self):
         try:
-            try:
-                raise_native_exception()
-            finally:
-                assert True  # no-op, just to test implicit reraising
+            raise_native_exception()
         except ExceptionSubclass as e:
             tb = e.__traceback__
         else:
@@ -712,6 +709,22 @@ class TestNativeExceptionSubclass:
         e2 = ExceptionSubclass()
         e2 = e2.with_traceback(tb)
         assert e2.__traceback__ is tb
+
+    def test_traceback_reraise(self):
+        try:
+            try:
+                raise_native_exception()
+            except Exception as e1:
+                e1.__traceback__ = None
+                raise
+        except ExceptionSubclass as e:
+            tb = e.__traceback__
+        else:
+            assert False
+        assert tb
+        assert tb.tb_frame.f_code is TestNativeExceptionSubclass.test_traceback_reraise.__code__
+        assert tb.tb_next
+        assert tb.tb_next.tb_frame.f_code is raise_native_exception.__code__
 
     def test_chaining(self):
         inner_e = ExceptionSubclass()
@@ -802,4 +815,3 @@ class TestNativeExceptionSubclass:
         e = ExceptionSubclass()
         e1 = g.throw(e)
         assert e1 is e
-

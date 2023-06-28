@@ -305,9 +305,6 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
-                if (instance instanceof PBaseException managedException) {
-                    managedException.ensureReified();
-                }
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 return resumeGeneratorNode.execute(frame, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));
