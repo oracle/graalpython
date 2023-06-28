@@ -97,6 +97,12 @@ target_include_directories(${TARGET_LIB} PRIVATE
     "${TRUFFLE_H_INC}"
 )
 
+target_compile_definitions(${TARGET_LIB} PRIVATE
+    HPY_UNIVERSAL_ABI
+    NDEBUG
+    GRAALVM_PYTHON_LLVM
+)
+
 if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
     target_link_directories(${TARGET_LIB} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
@@ -104,9 +110,6 @@ if(WIN32)
     target_compile_options(${TARGET_LIB} PRIVATE /Z7 /O2 /WX)
 else()
     target_compile_options(${TARGET_LIB} PRIVATE
-        -DHPY_UNIVERSAL_ABI
-        -DNDEBUG
-        -DGRAALVM_PYTHON_LLVM
         -Werror
         -Wno-int-to-pointer-cast
         -Wno-int-conversion
