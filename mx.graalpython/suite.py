@@ -932,10 +932,8 @@ suite = {
             "platformDependent": True,
             "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM",
-            "distDependencies": [
-                "GRAALPYTHON_NATIVE_LIBS",
-            ],
             "dependencies": [
+                "GRAALPYTHON_NATIVE_LIBS",
                 "com.oracle.graal.python.cext",
                 "com.oracle.graal.python.hpy.llvm"
             ],
