@@ -263,6 +263,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer"),
     FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK("PyTruffle_PySequence_Check"),
     FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE("PyTruffle_PySequence_Size"),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM("PyTruffle_PySequence_GetItem"),
     FUN_GET_PY_METHOD_DEF_TYPEID("get_PyMethodDef_typeid"),
     FUN_GET_INT_T_TYPEID("get_int_t_typeid"),
     FUN_GET_INT8_T_TYPEID("get_int8_t_typeid"),
