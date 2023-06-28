@@ -101,16 +101,30 @@ target_compile_definitions(${TARGET_LIB} PRIVATE
     HPY_UNIVERSAL_ABI
     NDEBUG
     GRAALVM_PYTHON_LLVM
+    Py_BUILD_CORE
 )
 
 if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
     target_link_directories(${TARGET_LIB} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
-    target_link_libraries(${TARGET_LIB} graalvm-llvm)
+    target_link_libraries(${TARGET_LIB} PRIVATE graalvm-llvm)
+    # Following defines are for 'Python.h'. Since HPy includes it, we need them.
+    target_compile_definitions(${TARGET_LIB} PRIVATE
+        MS_WINDOWS
+        Py_ENABLE_SHARED
+        HAVE_DECLSPEC_DLL
+    )
+endif()
+
+if(MSVC)
     target_compile_options(${TARGET_LIB} PRIVATE /Z7 /O2 /WX)
 else()
+    if(NOT WIN32)
+        target_compile_options(${TARGET_LIB} PRIVATE
+            -Werror
+        )
+    endif()
     target_compile_options(${TARGET_LIB} PRIVATE
-        -Werror
         -Wno-int-to-pointer-cast
         -Wno-int-conversion
         -Wno-void-pointer-to-int-cast
