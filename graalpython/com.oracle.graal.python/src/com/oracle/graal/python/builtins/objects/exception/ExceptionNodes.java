@@ -17,6 +17,7 @@ import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -40,8 +41,8 @@ public final class ExceptionNodes {
         return obj != PNone.NO_VALUE ? obj : PNone.NONE;
     }
 
-    private static Object noneToNoValue(Object obj) {
-        return obj != PNone.NONE ? obj : PNone.NO_VALUE;
+    private static Object noneToNativeNull(Node node, Object obj) {
+        return obj != PNone.NONE ? obj : PythonContext.get(node).getNativeNull();
     }
 
     @GenerateUncached
@@ -97,12 +98,12 @@ public final class ExceptionNodes {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, exception)")
-        static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, Object value,
+        static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CApiTransitions.PythonToNativeNode excToNative,
                         @Cached CApiTransitions.PythonToNativeNode valueToNative,
                         @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.CAUSE.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNoValue(value)));
+            callSetter.call(NativeMember.CAUSE.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
         }
 
         @Specialization
@@ -156,21 +157,21 @@ public final class ExceptionNodes {
 
         @Specialization(guards = "isNone(value)")
         static void doManaged(PBaseException exception, @SuppressWarnings("unused") PNone value) {
-            exception.setCause(null);
+            exception.setContext(null);
         }
 
         @Specialization(guards = "!isNone(value)")
         static void doManaged(PBaseException exception, Object value) {
-            exception.setCause(value);
+            exception.setContext(value);
         }
 
         @Specialization(guards = "check.execute(inliningTarget, exception)")
-        static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, Object value,
+        static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CApiTransitions.PythonToNativeNode excToNative,
                         @Cached CApiTransitions.PythonToNativeNode valueToNative,
                         @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.CONTEXT.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNoValue(value)));
+            callSetter.call(NativeMember.CONTEXT.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
         }
 
         @Specialization
@@ -196,11 +197,11 @@ public final class ExceptionNodes {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, exception)")
-        static boolean doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CApiTransitions.PythonToNativeNode toNative,
                         @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return (byte) callGetter.call(NativeMember.SUPPRESS_CONTEXT.getGetterFunctionName(), toNative.execute(noneToNoValue(exception))) != 0;
+            return (byte) callGetter.call(NativeMember.SUPPRESS_CONTEXT.getGetterFunctionName(), toNative.execute(noneToNativeNull(inliningTarget, exception))) != 0;
         }
 
         @Specialization
@@ -301,12 +302,12 @@ public final class ExceptionNodes {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, exception)")
-        static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, Object value,
+        static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CApiTransitions.PythonToNativeNode excToNative,
                         @Cached CApiTransitions.PythonToNativeNode valueToNative,
                         @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.TRACEBACK.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNoValue(value)));
+            callSetter.call(NativeMember.TRACEBACK.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
         }
 
         @Specialization

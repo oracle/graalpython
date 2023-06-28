@@ -426,6 +426,7 @@ PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {        \
 }
 #define OBJECT_FIELD_SETTER(RECEIVER, NAME) \
 PyAPI_FUNC(void) set_##NAME(RECEIVER obj, PyObject* value) {        \
+    Py_XINCREF(value);                      \
     Py_XSETREF(obj->NAME, value);           \
 }
 #define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
