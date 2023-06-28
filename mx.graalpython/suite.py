@@ -786,21 +786,13 @@ suite = {
                     "<others>": {
                         "dependencies": [
                             "com.oracle.graal.python.cext",
-                            "python-libzsupport",
-                            "python-libposix",
-                            "python-libbz2",
-                            "python-liblzma",
                             "com.oracle.graal.python.hpy.llvm"
                         ],
                         "layout": {
                             "./": [
                                 "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
-                                "dependency:python-libzsupport/*",
-                                "dependency:python-libposix/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
-                                "dependency:python-libbz2/bin/*",
-                                "dependency:python-liblzma/bin/*"
                             ]
                         },
                     },
