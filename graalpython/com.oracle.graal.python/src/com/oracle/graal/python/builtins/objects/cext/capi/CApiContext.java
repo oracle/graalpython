@@ -659,7 +659,7 @@ public final class CApiContext extends CExtContext {
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
-            String libName = context.getLLVMSupportExt("libpython");
+            String libName = context.getLLVMSupportExt("python");
             TruffleFile capiFile = homePath.resolve(libName);
             try {
                 SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);

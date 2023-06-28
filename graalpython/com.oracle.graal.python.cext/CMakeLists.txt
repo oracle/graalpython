@@ -35,6 +35,10 @@ function(require_var var)
     endif()
 endfunction()
 
+if(MSVC)
+    message(FATAL_ERROR "C API cannot be built with MSVC")
+endif()
+
 if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
 endif()
@@ -52,27 +56,17 @@ set(TARGET_LIBPYTHON "python-${LLVM_MODE}")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-if(NOT WIN32)
-    set(CFLAGS_WARNINGS -Werror -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
-                        -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
-                        -Wno-braced-scalar-init -Wno-deprecated-declarations)
-else()
-    set(CFLAGS_WARNINGS)
-endif()
+set(CFLAGS_WARNINGS -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
+                    -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
+                    -Wno-braced-scalar-init -Wno-deprecated-declarations)
 
 # preprocessor defines for all platforms
 add_compile_definitions(
     NDEBUG
     GRAALVM_PYTHON_LLVM
-    Py_BUILD_CORE_MODULE
 )
 
 if(WIN32)
-    add_compile_options(
-        /Z7
-        /O2
-        /WX
-    )
     add_compile_definitions(
         MS_WINDOWS
         Py_ENABLE_SHARED
@@ -156,9 +150,14 @@ function(native_module name core src_files)
         target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
         target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
     endif()
-    set_target_properties(${name} PROPERTIES SUFFIX "${GRAALPY_EXT}")
-    set_target_properties(${name} PROPERTIES PREFIX "")
+    target_compile_definitions(${name} PRIVATE Py_BUILD_CORE_MODULE)
+    set_target_properties(${name} PROPERTIES SUFFIX "${GRAALPY_EXT}"
+                                             PREFIX "")
     target_sources(${name} PRIVATE ${src_files})
+    if(WIN32)
+        target_link_directories(${name} PRIVATE ${CMAKE_BINARY_DIR})
+        target_link_libraries(${name} PRIVATE ${TARGET_LIBPYTHON})
+    endif()
     install(TARGETS ${name} DESTINATION "bin/modules")
 endfunction()
 
@@ -222,6 +221,7 @@ target_include_directories(${TARGET_LIBPYTHON} PRIVATE
 # target-specific compile and link options
 ######################################################################
 
+target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE)
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)

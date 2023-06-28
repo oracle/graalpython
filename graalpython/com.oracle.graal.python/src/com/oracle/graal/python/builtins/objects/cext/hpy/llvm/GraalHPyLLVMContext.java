@@ -236,7 +236,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         Env env = context.getEnv();
         TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
         // e.g. "libhpy-native.so"
-        TruffleFile capiFile = homePath.resolve(context.getLLVMSupportExt("libhpy"));
+        TruffleFile capiFile = homePath.resolve(context.getLLVMSupportExt("hpy"));
         try {
             LOGGER.fine("Loading HPy LLVM backend from " + capiFile);
             SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);

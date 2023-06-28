@@ -1631,14 +1631,16 @@ def graalpy_ext(llvm_mode, **kwargs):
         # (see also: 'PythonUtils.getPythonArch')
         arch = 'x86_64'
 
-    # not ".dylib", similar to CPython:
-    # https://github.com/python/cpython/issues/37510
-    if os == 'windows':
-        ext = 'pyd'
-    else:
-        ext = 'so'
+    # 'pyos' also needs to be compatible with CPython's designation.
+    # See class 'com.oracle.graal.python.builtins.PythonOS'
+    # In this case, we can just use 'sys.platform' of the Python running MX.
+    pyos = sys.platform
 
-    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{os}.{ext}'
+    # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
+    # https://github.com/python/cpython/issues/37510
+    ext = 'pyd' if os == 'windows' else 'so'
+
+    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)

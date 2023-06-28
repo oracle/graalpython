@@ -608,23 +608,28 @@ suite = {
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "sulong:SULONG_LEGACY",
             ],
-            "cmakeConfig" : {
-                "LLVM_MODE" : "native",
-                "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
-                "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
-                "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
-                "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-            },
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
-                        "defaultBuild": False,
+                        "cmakeConfig" : {
+                            "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
+                            "LLVM_MODE" : "native",
+                            "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
+                            "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
+                            "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                            "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                        },
                     },
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
+                        "cmakeConfig" : {
+                            "LLVM_MODE" : "native",
+                            "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
+                            "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
+                            "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
+                            "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                        },
                     },
                 },
             },
@@ -949,7 +954,7 @@ suite = {
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
                                 "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/*",
-                                "file:com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
+                                "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                             ],
                             "./lib-graalpython/modules/graalpy_virtualenv": [
                                 "file:graalpy_virtualenv/graalpy_virtualenv",

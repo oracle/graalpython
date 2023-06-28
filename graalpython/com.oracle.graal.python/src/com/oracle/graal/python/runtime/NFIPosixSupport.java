@@ -126,7 +126,7 @@ import sun.misc.Unsafe;
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public final class NFIPosixSupport extends PosixSupport {
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
@@ -336,7 +336,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // Temporary - will be replaced with something else when we move this to Truffle
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
-            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt();
+            String libPythonName = PythonContext.getSupportLibName(NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME);
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();

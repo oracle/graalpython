@@ -145,7 +145,7 @@ public class NFIBz2Support {
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "libbz2support";
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "bz2support";
 
     private final PythonContext pythonContext;
     private final NativeLibrary.TypedNativeLibrary<Bz2NativeFunctions> typedNativeLib;
@@ -155,7 +155,7 @@ public class NFIBz2Support {
     private NFIBz2Support(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt(), Bz2NativeFunctions.values(),
+            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), Bz2NativeFunctions.values(),
                             backend, noNativeAccessHelp, false);
             this.available = true;
         } else {

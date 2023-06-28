@@ -258,7 +258,7 @@ public class NFIZlibSupport {
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "libzsupport";
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "zsupport";
 
     private final PythonContext pythonContext;
     private final NativeLibrary.TypedNativeLibrary<ZlibNativeFunctions> typedNativeLib;
@@ -268,7 +268,7 @@ public class NFIZlibSupport {
     private NFIZlibSupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt(),
+            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME),
                             ZlibNativeFunctions.values(), backend, noNativeAccessHelp, true);
             this.available = true;
         } else {

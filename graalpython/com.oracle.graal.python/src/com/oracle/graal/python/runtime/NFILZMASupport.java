@@ -285,7 +285,7 @@ public class NFILZMASupport {
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "liblzmasupport";
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "lzmasupport";
 
     private final PythonContext pythonContext;
     private final NativeLibrary.TypedNativeLibrary<LZMANativeFunctions> typedNativeLib;
@@ -295,7 +295,7 @@ public class NFILZMASupport {
     private NFILZMASupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME + PythonContext.getSupportExt(), LZMANativeFunctions.values(),
+            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), LZMANativeFunctions.values(),
                             backend, noNativeAccessHelp, true);
             this.available = true;
         } else {
