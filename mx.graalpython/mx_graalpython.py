@@ -2650,8 +2650,8 @@ def update_hpy_import_cmd(args):
     def exclude_files(*files):
         return lambda relpath: str(os.path.normpath(relpath)) in files
 
-    # headers go into 'com.oracle.graal.python.cext/include'
-    header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
+    # headers go into 'com.oracle.graal.python.hpy.llvm/include'
+    header_dest = join(mx.project("com.oracle.graal.python.hpy.llvm").dir, "include")
 
     # copy 'hpy/devel/__init__.py' to 'lib-graalpython/module/hpy/devel/__init__.py'
     dest_devel_file = join(_get_core_home(), "modules", "hpy", "devel", "__init__.py")
