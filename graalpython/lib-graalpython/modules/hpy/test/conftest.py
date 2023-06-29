@@ -1,7 +1,8 @@
 import pytest
 from .support import ExtensionCompiler, DefaultExtensionTemplate,\
-    PythonSubprocessRunner, HPyDebugCapture
+    PythonSubprocessRunner, HPyDebugCapture, make_hpy_abi_fixture
 from hpy.debug.leakdetector import LeakDetector
+from pathlib import Path
 
 IS_VALGRIND_RUN = False
 
@@ -11,8 +12,17 @@ def pytest_addoption(parser):
         help="Print to stdout the commands used to invoke the compiler")
     parser.addoption(
         "--subprocess-v", action="store_true",
-        help="Print to stdout the stdout and stderr of Python subprocesses"
+        help="Print to stdout the stdout and stderr of Python subprocesses "
              "executed via run_python_subprocess")
+    parser.addoption(
+        "--dump-dir",
+        help="Enables dump mode and specifies where to write generated test "
+             "sources. This will then only generate the sources and skip "
+             "evaluation of the tests.")
+    parser.addoption(
+        '--reuse-venv', action="store_true",
+        help="Development only: reuse the venv for test_distutils.py instead of "
+             "creating a new one for every test")
 
 
 @pytest.hookimpl(trylast=True)
@@ -23,30 +33,49 @@ def pytest_configure(config):
         "markers", "syncgc: Mark tests that rely on a synchronous GC."
     )
 
+# this is the default set of hpy_abi for all the tests. Individual files and
+# classes can override it.
+hpy_abi = make_hpy_abi_fixture('default')
+
+
 @pytest.fixture(scope='session')
 def hpy_devel(request):
     from hpy.devel import HPyDevel
     return HPyDevel()
 
-@pytest.fixture(params=['cpython', 'universal', 'debug'])
-def hpy_abi(request):
-    abi = request.param
-    if abi == 'debug':
-        with LeakDetector():
-            yield abi
+@pytest.fixture
+def leakdetector(hpy_abi):
+    """
+    Automatically detect leaks when the hpy_abi == 'debug'
+    """
+    if 'debug' in hpy_abi:
+        with LeakDetector() as ld:
+            yield ld
     else:
-        yield abi
+        yield None
 
 @pytest.fixture
 def ExtensionTemplate():
     return DefaultExtensionTemplate
 
-
 @pytest.fixture
 def compiler(request, tmpdir, hpy_devel, hpy_abi, ExtensionTemplate):
     compiler_verbose = request.config.getoption('--compiler-v')
+    dump_dir = request.config.getoption('--dump-dir')
+    if dump_dir:
+        # Test-specific dump dir in format: dump_dir/[mod_][cls_]func
+        qname_parts = []
+        if request.module:
+            qname_parts.append(request.module.__name__)
+        if request.cls:
+            qname_parts.append(request.cls.__name__)
+        qname_parts.append(request.function.__name__)
+        test_dump_dir = "_".join(qname_parts).replace(".", "_")
+        dump_dir = Path(dump_dir).joinpath(test_dump_dir)
+        dump_dir.mkdir(parents=True, exist_ok=True)
     return ExtensionCompiler(tmpdir, hpy_devel, hpy_abi,
                              compiler_verbose=compiler_verbose,
+                             dump_dir=dump_dir,
                              ExtensionTemplate=ExtensionTemplate)
 
 

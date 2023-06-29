@@ -54,13 +54,6 @@ HPyCapsule_GetContext(HPyContext *ctx, HPy capsule)
             ctx, capsule, HPyCapsule_key_Context, NULL);
 }
 
-static inline HPyCapsule_Destructor
-HPyCapsule_GetDestructor(HPyContext *ctx, HPy capsule)
-{
-    return (HPyCapsule_Destructor) ctx->ctx_Capsule_Get(
-            ctx, capsule, HPyCapsule_key_Destructor, NULL);
-}
-
 static inline int
 HPyCapsule_SetPointer(HPyContext *ctx, HPy capsule, void *pointer)
 {
@@ -84,7 +77,7 @@ HPyCapsule_SetContext(HPyContext *ctx, HPy capsule, void *context)
 
 static inline int
 HPyCapsule_SetDestructor(HPyContext *ctx, HPy capsule,
-        HPyCapsule_Destructor destructor)
+        HPyCapsule_Destructor *destructor)
 {
     return ctx->ctx_Capsule_Set(
             ctx, capsule, HPyCapsule_key_Destructor, (void *) destructor);
