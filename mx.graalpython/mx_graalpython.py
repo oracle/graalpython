@@ -1433,7 +1433,8 @@ def run_shared_lib_test(home, args=()):
             }
 
             poly_engine_builder engine_builder;
-            status = poly_create_engine_builder(isolate_thread, &engine_builder);
+            const char* permitted_languages[] = {"python"};
+            status = poly_create_engine_builder(isolate_thread, permitted_languages, 1, &engine_builder);
             if (status != poly_ok) {
                 return status;
             }
