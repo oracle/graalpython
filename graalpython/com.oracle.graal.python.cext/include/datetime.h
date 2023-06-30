@@ -124,39 +124,32 @@ typedef struct
 // o is a pointer to a time or a datetime object.
 #define _PyDateTime_HAS_TZINFO(o)  (((_PyDateTime_BaseTZInfo *)(o))->hastzinfo)
 
-#define PyDateTime_GET_YEAR(o)     ((((PyDateTime_Date*)o)->data[0] << 8) | \
-                     ((PyDateTime_Date*)o)->data[1])
-#define PyDateTime_GET_MONTH(o)    (((PyDateTime_Date*)o)->data[2])
-#define PyDateTime_GET_DAY(o)      (((PyDateTime_Date*)o)->data[3])
+#define PyDateTime_GET_YEAR(o)     ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "year")))
+#define PyDateTime_GET_MONTH(o)    ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "month")))
+#define PyDateTime_GET_DAY(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "day")))
 
-#define PyDateTime_DATE_GET_HOUR(o)        (((PyDateTime_DateTime*)o)->data[4])
-#define PyDateTime_DATE_GET_MINUTE(o)      (((PyDateTime_DateTime*)o)->data[5])
-#define PyDateTime_DATE_GET_SECOND(o)      (((PyDateTime_DateTime*)o)->data[6])
-#define PyDateTime_DATE_GET_MICROSECOND(o)              \
-    ((((PyDateTime_DateTime*)o)->data[7] << 16) |       \
-     (((PyDateTime_DateTime*)o)->data[8] << 8)  |       \
-      ((PyDateTime_DateTime*)o)->data[9])
-#define PyDateTime_DATE_GET_FOLD(o)        (((PyDateTime_DateTime*)o)->fold)
-#define PyDateTime_DATE_GET_TZINFO(o)      (_PyDateTime_HAS_TZINFO(o) ? \
-    ((PyDateTime_DateTime *)(o))->tzinfo : Py_None)
+#define PyDateTime_DATE_GET_HOUR(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "hour")))
+#define PyDateTime_DATE_GET_MINUTE(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "minute")))
+#define PyDateTime_DATE_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
+#define PyDateTime_DATE_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
+#define PyDateTime_DATE_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
+// TODO borrow
+#define PyDateTime_DATE_GET_TZINFO(o)      (PyObject_GetAttrString((PyObject*)o, "tzinfo"))
 
 /* Apply for time instances. */
-#define PyDateTime_TIME_GET_HOUR(o)        (((PyDateTime_Time*)o)->data[0])
-#define PyDateTime_TIME_GET_MINUTE(o)      (((PyDateTime_Time*)o)->data[1])
-#define PyDateTime_TIME_GET_SECOND(o)      (((PyDateTime_Time*)o)->data[2])
-#define PyDateTime_TIME_GET_MICROSECOND(o)              \
-    ((((PyDateTime_Time*)o)->data[3] << 16) |           \
-     (((PyDateTime_Time*)o)->data[4] << 8)  |           \
-      ((PyDateTime_Time*)o)->data[5])
-#define PyDateTime_TIME_GET_FOLD(o)        (((PyDateTime_Time*)o)->fold)
-#define PyDateTime_TIME_GET_TZINFO(o)      (_PyDateTime_HAS_TZINFO(o) ? \
-    ((PyDateTime_Time *)(o))->tzinfo : Py_None)
+#define PyDateTime_TIME_GET_HOUR(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "hour")))
+#define PyDateTime_TIME_GET_MINUTE(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "minute")))
+#define PyDateTime_TIME_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
+#define PyDateTime_TIME_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
+#define PyDateTime_TIME_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
+// TODO borrow
+#define PyDateTime_TIME_GET_TZINFO(o)      (PyObject_GetAttrString((PyObject*)o, "tzinfo"))
 
 /* Apply for time delta instances */
-#define PyDateTime_DELTA_GET_DAYS(o)         (((PyDateTime_Delta*)o)->days)
-#define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
-#define PyDateTime_DELTA_GET_MICROSECONDS(o)            \
-    (((PyDateTime_Delta*)o)->microseconds)
+#define PyDateTime_DELTA_GET_DAYS(o)         ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "days")))
+#define PyDateTime_DELTA_GET_SECONDS(o)      ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "seconds")))
+#define PyDateTime_DELTA_GET_MICROSECONDS(o)            ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microseconds")))
+
 
 
 /* Define structure for C API. */
