@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper.T_FOLD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper.T_FROMTIMESTAMP;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 
@@ -57,8 +59,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -160,6 +165,15 @@ public final class PythonCextDateTimeBuiltins {
         static Object values(int hour, int minute, int second, int usecond, Object tzinfo, int fold, Object type,
                         @Cached CallVarargsMethodNode call) {
             return call.execute(null, type, new Object[]{hour, minute, second, usecond, tzinfo}, new PKeyword[]{new PKeyword(T_FOLD, fold)});
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
+    abstract static class PyTruffle_PyDateTime_GET_TZINFO extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object get(Object obj,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(null, obj, PyDateTimeMRNode.T_TZINFO);
         }
     }
 }

@@ -119,10 +119,12 @@ typedef struct
 } PyDateTime_DateTime;          /* hastzinfo true */
 
 
+PyObject* PyTruffle_PyDateTime_GET_TZINFO(PyObject*);
+
 /* Apply for date and datetime instances. */
 
 // o is a pointer to a time or a datetime object.
-#define _PyDateTime_HAS_TZINFO(o)  (((_PyDateTime_BaseTZInfo *)(o))->hastzinfo)
+#define _PyDateTime_HAS_TZINFO(o)  (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o) != Py_None)
 
 #define PyDateTime_GET_YEAR(o)     ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "year")))
 #define PyDateTime_GET_MONTH(o)    ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "month")))
@@ -133,8 +135,7 @@ typedef struct
 #define PyDateTime_DATE_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
 #define PyDateTime_DATE_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
 #define PyDateTime_DATE_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
-// TODO borrow
-#define PyDateTime_DATE_GET_TZINFO(o)      (PyObject_GetAttrString((PyObject*)o, "tzinfo"))
+#define PyDateTime_DATE_GET_TZINFO(o)      (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o))
 
 /* Apply for time instances. */
 #define PyDateTime_TIME_GET_HOUR(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "hour")))
@@ -142,8 +143,7 @@ typedef struct
 #define PyDateTime_TIME_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
 #define PyDateTime_TIME_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
 #define PyDateTime_TIME_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
-// TODO borrow
-#define PyDateTime_TIME_GET_TZINFO(o)      (PyObject_GetAttrString((PyObject*)o, "tzinfo"))
+#define PyDateTime_TIME_GET_TZINFO(o)      (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o))
 
 /* Apply for time delta instances */
 #define PyDateTime_DELTA_GET_DAYS(o)         ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "days")))
