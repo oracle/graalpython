@@ -62,8 +62,8 @@ class PairTemplate(DefaultExtensionTemplate):
 
     def DEFINE_Pair_new(self):
         return """
-            HPyDef_SLOT(Pair_new, Pair_new_impl, HPy_tp_new)
-            static HPy Pair_new_impl(HPyContext *ctx, HPy cls, HPy *args,
+            HPyDef_SLOT(Pair_new, HPy_tp_new)
+            static HPy Pair_new_impl(HPyContext *ctx, HPy cls, const HPy *args,
                                       HPy_ssize_t nargs, HPy kw)
             {
                 HPy a;
@@ -80,7 +80,7 @@ class PairTemplate(DefaultExtensionTemplate):
 
     def DEFINE_Pair_traverse(self):
         return """
-            HPyDef_SLOT(Pair_traverse, Pair_traverse_impl, HPy_tp_traverse)
+            HPyDef_SLOT(Pair_traverse, HPy_tp_traverse)
             static int Pair_traverse_impl(void *self, HPyFunc_visitproc visit, void *arg)
             {
                 PairObject *p = (PairObject *)self;
@@ -92,7 +92,7 @@ class PairTemplate(DefaultExtensionTemplate):
 
     def DEFINE_Pair_set_a(self):
         return """
-            HPyDef_METH(Pair_set_a, "set_a", Pair_set_a_impl, HPyFunc_O)
+            HPyDef_METH(Pair_set_a, "set_a", HPyFunc_O)
             static HPy Pair_set_a_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 PairObject *pair = PairObject_AsStruct(ctx, self);
@@ -103,7 +103,7 @@ class PairTemplate(DefaultExtensionTemplate):
 
     def DEFINE_Pair_get_ab(self):
         return """
-            HPyDef_METH(Pair_get_a, "get_a", Pair_get_a_impl, HPyFunc_NOARGS)
+            HPyDef_METH(Pair_get_a, "get_a", HPyFunc_NOARGS)
             static HPy Pair_get_a_impl(HPyContext *ctx, HPy self)
             {
                 PairObject *pair = PairObject_AsStruct(ctx, self);
@@ -112,7 +112,7 @@ class PairTemplate(DefaultExtensionTemplate):
                 return HPyField_Load(ctx, self, pair->a);
             }
 
-            HPyDef_METH(Pair_get_b, "get_b", Pair_get_b_impl, HPyFunc_NOARGS)
+            HPyDef_METH(Pair_get_b, "get_b", HPyFunc_NOARGS)
             static HPy Pair_get_b_impl(HPyContext *ctx, HPy self)
             {
                 PairObject *pair = PairObject_AsStruct(ctx, self);
@@ -248,7 +248,7 @@ class TestHPyField(HPyTest):
             @DEFINE_Pair_traverse
             @DEFINE_Pair_set_a
 
-            HPyDef_METH(Pair_clear_a, "clear_a", Pair_clear_a_impl, HPyFunc_NOARGS)
+            HPyDef_METH(Pair_clear_a, "clear_a", HPyFunc_NOARGS)
             static HPy Pair_clear_a_impl(HPyContext *ctx, HPy self)
             {
                 PairObject *pair = PairObject_AsStruct(ctx, self);
@@ -374,7 +374,7 @@ class TestHPyField(HPyTest):
                     unexpected_finalize_call = true;
             }
 
-            HPyDef_SLOT(Pair_finalize, Pair_finalize_impl, HPy_tp_finalize)
+            HPyDef_SLOT(Pair_finalize, HPy_tp_finalize)
             static void Pair_finalize_impl(HPyContext *ctx, HPy to_be_finalized)
             {
                 PairObject *pair = PairObject_AsStruct(ctx, to_be_finalized);
@@ -433,7 +433,7 @@ class TestHPyField(HPyTest):
                 HPy_Close(ctx, owner_b);
             }
 
-            HPyDef_METH(check_finalize_calls, "check_finalize_calls", check_finalize_calls_impl, HPyFunc_NOARGS)
+            HPyDef_METH(check_finalize_calls, "check_finalize_calls", HPyFunc_NOARGS)
             static HPy check_finalize_calls_impl(HPyContext *ctx, HPy self)
             {
                 test_finished = true;

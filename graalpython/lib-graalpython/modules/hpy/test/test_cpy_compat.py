@@ -1,18 +1,18 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,26 +21,43 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .support import HPyTest
-import pytest
-
+from .support import HPyTest, make_hpy_abi_fixture
 
 @pytest.mark.usefixtures('skip_nfi')
 class TestCPythonCompatibility(HPyTest):
+
+    hpy_abi = make_hpy_abi_fixture('with hybrid', class_fixture=True)
 
     # One note about the supports_refcounts() in the tests below: on
     # CPython, handles are actually implemented as INCREF/DECREF, so we can
     # check e.g. after an HPy_Dup the refcnt is += 1. However, on PyPy they
     # are implemented in a completely different way which is unrelated to the
     # refcnt (this is the whole point of HPy, after all :)). So in many of the
-    # following ttests, checking the actual result of the function doesn't
+    # following tests, checking the actual result of the function doesn't
     # really make sens on PyPy. We still run the functions to ensure they do
     # not crash, though.
+
+    def test_abi(self):
+        mod = self.make_module("""
+            #include <Python.h>
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
+            static HPy f_impl(HPyContext *ctx, HPy self)
+            {
+                return HPyUnicode_FromString(ctx, HPY_ABI);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        hpy_abi = mod.f()
+        expected = self.compiler.hpy_abi
+        if expected in ('hybrid+debug', 'hybrid+trace'):
+            expected = 'hybrid'
+        assert hpy_abi == expected
 
     def test_frompyobject(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
@@ -66,7 +83,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_frompyobject_null(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 HPy h = HPy_FromPyObject(ctx, NULL);
@@ -85,7 +102,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_aspyobject(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            HPyDef_METH(f, "f", HPyFunc_O)
             static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 PyObject *o = HPy_AsPyObject(ctx, arg);
@@ -101,7 +118,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_aspyobject_null(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = HPy_AsPyObject(ctx, HPy_NULL);
@@ -120,7 +137,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_aspyobject_custom_class(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            HPyDef_METH(f, "f", HPyFunc_O)
             static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 PyObject *o = HPy_AsPyObject(ctx, arg);
@@ -142,7 +159,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_hpy_close(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
@@ -166,7 +183,7 @@ class TestCPythonCompatibility(HPyTest):
     def test_hpy_dup(self):
         mod = self.make_module("""
             #include <Python.h>
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
@@ -194,7 +211,7 @@ class TestCPythonCompatibility(HPyTest):
             #include <Python.h>
             #define NUM_HANDLES  10000
 
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", HPyFunc_NOARGS)
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);

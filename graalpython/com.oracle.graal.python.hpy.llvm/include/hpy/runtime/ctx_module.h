@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,19 +22,28 @@
  * SOFTWARE.
  */
 
+#ifndef HPY_COMMON_RUNTIME_CTX_MODULE_H
+#define HPY_COMMON_RUNTIME_CTX_MODULE_H
+
 #include <Python.h>
 #include "hpy.h"
 
-#ifdef HPY_UNIVERSAL_ABI
-   // for _h2py and _py2h
-#  include "handles.h"
-#endif
+// Helper functions for CPython implementation (both CPython ABI and
+// HPy universal module impl for CPython)
 
+/** Converts HPy module definition to CPython module definition for multiphase
+ * initialization */
+_HPy_HIDDEN PyModuleDef*
+_HPyModuleDef_CreatePyModuleDef(HPyModuleDef *hpydef);
 
-_HPy_HIDDEN HPy
-ctx_Dict_GetItem(HPyContext *ctx, HPy op, HPy key)
-{
-    PyObject *res = PyDict_GetItem(_h2py(op), _h2py(key));
-    Py_XINCREF(res);
-    return _py2h(res);
-}
+/** Converts HPy module definition to PyObject that wraps CPython module
+ * definition for multiphase initialization */
+_HPy_HIDDEN PyObject*
+_HPyModuleDef_AsPyInit(HPyModuleDef *hpydef);
+
+/** Implements the extra HPy specific validation that should be applied to the
+ * result of the HPy_mod_create slot. */
+_HPy_HIDDEN void
+_HPyModule_CheckCreateSlotResult(PyObject **result);
+
+#endif //HPY_COMMON_RUNTIME_CTX_MODULE_H

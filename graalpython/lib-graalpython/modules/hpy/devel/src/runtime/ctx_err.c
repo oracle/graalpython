@@ -26,7 +26,7 @@
 #include "hpy.h"
 #include "hpy/runtime/ctx_funcs.h"
 
-#ifdef HPY_UNIVERSAL_ABI
+#ifndef HPY_ABI_CPYTHON
    // for _h2py and _py2h
 #  include "handles.h"
 #endif

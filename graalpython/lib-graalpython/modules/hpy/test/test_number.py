@@ -26,21 +26,41 @@ from .support import HPyTest
 
 class TestNumber(HPyTest):
 
-    def test_bool_from_long(self):
+    def test_bool_from_bool_and_long(self):
+        import pytest
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
+            HPyDef_METH(from_bool, "from_bool", HPyFunc_O)
+            static HPy from_bool_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                int32_t x = HPyLong_AsInt32_t(ctx, arg);
+                if (x == -1 && HPyErr_Occurred(ctx))
+                    return HPy_NULL;
+                if (x != 0 && x != 1) {
+                    HPyErr_SetString(ctx, ctx->h_ValueError,
+                                         "value must be 0 or 1");
+                    return HPy_NULL;
+                }
+                return HPyBool_FromBool(ctx, (x ? true : false));
+            }
+
+            HPyDef_METH(from_long, "from_long", HPyFunc_O)
+            static HPy from_long_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 long x = HPyLong_AsLong(ctx, arg);
-                if (HPyErr_Occurred(ctx))
+                if (x == -1 && HPyErr_Occurred(ctx))
                     return HPy_NULL;
                 return HPyBool_FromLong(ctx, x);
             }
-            @EXPORT(f)
+            @EXPORT(from_bool)
+            @EXPORT(from_long)
             @INIT
         """)
-        assert mod.f(0) is False
-        assert mod.f(42) is True
+        assert mod.from_bool(0) is False
+        assert mod.from_bool(1) is True
+        with pytest.raises(ValueError):
+            mod.from_bool(2)
+        assert mod.from_long(0) is False
+        assert mod.from_long(42) is True
 
     def test_unary(self):
         import pytest
@@ -55,7 +75,7 @@ class TestNumber(HPyTest):
                 ('Float', float),
                 ]:
             mod = self.make_module("""
-                HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+                HPyDef_METH(f, "f", HPyFunc_O)
                 static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
                 {
                     return HPy_%s(ctx, arg);
@@ -90,9 +110,9 @@ class TestNumber(HPyTest):
                 ('Or', operator.or_),
                 ]:
             mod = self.make_module("""
-                HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+                HPyDef_METH(f, "f", HPyFunc_VARARGS)
                 static HPy f_impl(HPyContext *ctx, HPy self,
-                                  HPy *args, HPy_ssize_t nargs)
+                                  const HPy *args, size_t nargs)
                 {
                     HPy a, b;
                     if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
@@ -107,9 +127,9 @@ class TestNumber(HPyTest):
 
     def test_power(self):
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self,
-                              HPy *args, HPy_ssize_t nargs)
+                              const HPy *args, size_t nargs)
             {
                 HPy a, b, c;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "OOO", &a, &b, &c))
@@ -129,9 +149,9 @@ class TestNumber(HPyTest):
         m1 = Mat()
         m2 = Mat()
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self,
-                              HPy *args, HPy_ssize_t nargs)
+                              const HPy *args, size_t nargs)
             {
                 HPy a, b;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
@@ -159,9 +179,9 @@ class TestNumber(HPyTest):
                 ('Or', '__ior__'),
                 ]:
             mod = self.make_module("""
-                HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+                HPyDef_METH(f, "f", HPyFunc_VARARGS)
                 static HPy f_impl(HPyContext *ctx, HPy self,
-                                  HPy *args, HPy_ssize_t nargs)
+                                  const HPy *args, size_t nargs)
                 {
                     HPy a, b;
                     if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
@@ -179,9 +199,9 @@ class TestNumber(HPyTest):
 
     def test_inplace_power(self):
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self,
-                              HPy *args, HPy_ssize_t nargs)
+                              const HPy *args, size_t nargs)
             {
                 HPy a, b, c;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "OOO", &a, &b, &c))
@@ -208,9 +228,9 @@ class TestNumber(HPyTest):
         m1 = Mat()
         m2 = Mat()
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            HPyDef_METH(f, "f", HPyFunc_VARARGS)
             static HPy f_impl(HPyContext *ctx, HPy self,
-                              HPy *args, HPy_ssize_t nargs)
+                              const HPy *args, size_t nargs)
             {
                 HPy a, b;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
@@ -224,7 +244,7 @@ class TestNumber(HPyTest):
 
     def test_number_check(self):
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            HPyDef_METH(f, "f", HPyFunc_O)
             static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 int cond = HPyNumber_Check(ctx, arg);

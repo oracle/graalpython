@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,15 +22,17 @@
  * SOFTWARE.
  */
 
-/**
+/*
  * Helper functions to create struct sequences.
  *
  * These are not part of the HPy context or ABI, but instead are just helpers
  * that delegate to the relevant HPy/CPython APIs.
- *
  */
 
 #include "hpy.h"
+
+#include <string.h> // for strncpy/strncpy_s
+#include <stdio.h>
 
 const char * const HPyStructSequence_UnnamedField = "_";
 
@@ -38,10 +40,23 @@ HPyAPI_HELPER HPy
 HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
 {
     HPy_ssize_t i;
+
+    if (desc->name == NULL) {
+        HPyErr_SetString(ctx, ctx->h_SystemError,
+                "Struct sequence descriptor does not define the name field.");
+        return HPy_NULL;
+    }
+
     for (i = 0; desc->fields[i].name != NULL; i++) {
     }
 
-#ifdef HPY_UNIVERSAL_ABI
+#ifndef HPY_ABI_CPYTHON
+    HPyTracker ht;
+    HPy fields, args, kwds, defs, docstring, n_fields, h_field, h_modname;
+    HPy result = HPy_NULL;
+    const char *name, *s;
+    char *modname;
+
     HPy collections = HPyImport_ImportModule(ctx, "collections");
     if (HPy_IsNull(collections)) {
         return HPy_NULL;
@@ -51,13 +66,9 @@ HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
     if (HPy_IsNull(namedtuple)) {
         return HPy_NULL;
     }
+    ht = HPyTracker_New(ctx, 9);
+    HPyTracker_Add(ctx, ht, namedtuple);
 
-    HPy kwds = HPy_NULL;
-    HPy args = HPy_NULL;
-    HPy fields = HPy_NULL;
-    HPy defs = HPy_NULL;
-    HPy result = HPy_NULL;
-    HPy docstring = HPy_NULL;
 
     HPyTupleBuilder argsBuilder = HPyTupleBuilder_New(ctx, 2);
     HPyTupleBuilder fieldsBuilder = HPyTupleBuilder_New(ctx, i);
@@ -71,9 +82,9 @@ HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
     HPy_Close(ctx, h_name);
 
     i = 0;
-    for (const char* name = desc->fields[i].name; name != NULL; name = desc->fields[++i].name) {
-        HPy h_field = HPyUnicode_FromString(ctx, name);
-        if (HPy_IsNull(h_name)) {
+    for (name = desc->fields[i].name; name != NULL; name = desc->fields[++i].name) {
+        h_field = HPyUnicode_FromString(ctx, name);
+        if (HPy_IsNull(h_field)) {
             HPyTupleBuilder_Cancel(ctx, argsBuilder);
             HPyTupleBuilder_Cancel(ctx, fieldsBuilder);
             HPyTupleBuilder_Cancel(ctx, defsBuilder);
@@ -89,21 +100,27 @@ HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
         HPyTupleBuilder_Cancel(ctx, defsBuilder);
         goto error;
     }
+    HPyTracker_Add(ctx, ht, fields);
+
     defs = HPyTupleBuilder_Build(ctx, defsBuilder);
     if (HPy_IsNull(defs)) {
         HPyTupleBuilder_Cancel(ctx, argsBuilder);
         goto error;
     }
+    HPyTracker_Add(ctx, ht, defs);
+
     HPyTupleBuilder_Set(ctx, argsBuilder, 1, fields);
     args = HPyTupleBuilder_Build(ctx, argsBuilder);
     if (HPy_IsNull(args)) {
         goto error;
     }
+    HPyTracker_Add(ctx, ht, args);
 
     kwds = HPyDict_New(ctx);
     if (HPy_IsNull(kwds)) {
         goto error;
     }
+    HPyTracker_Add(ctx, ht, kwds);
     if (HPy_SetItem_s(ctx, kwds, "rename", ctx->h_True) < 0) {
         goto error;
     }
@@ -112,147 +129,159 @@ HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
     }
 
     result = HPy_CallTupleDict(ctx, namedtuple, args, kwds);
-
     if (HPy_IsNull(result)) {
         goto error;
     }
 
-    docstring = HPyUnicode_FromString(ctx, desc->doc);
-    if (HPy_IsNull(docstring) || HPy_SetAttr_s(ctx, result, "__doc__", docstring) < 0) {
-        HPy_Close(ctx, result);
-        result = HPy_NULL;
+    if (desc->doc) {
+        docstring = HPyUnicode_FromString(ctx, desc->doc);
+        if (HPy_IsNull(docstring)) {
+            goto error;
+        }
+        HPyTracker_Add(ctx, ht, docstring);
+    } else {
+        docstring = ctx->h_None;
+    }
+    if (HPy_SetAttr_s(ctx, result, "__doc__", docstring) < 0) {
         goto error;
     }
 
-    h_name = HPyUnicode_FromString(ctx, desc->name);
+    n_fields = HPyLong_FromSsize_t(ctx, i);
+    if (HPy_IsNull(n_fields)) {
+        goto error;
+    }
+    HPyTracker_Add(ctx, ht, n_fields);
+    if (HPy_SetAttr_s(ctx, result, "n_fields", n_fields) < 0) {
+        goto error;
+    }
+
+    /* Set the type name and qualname */
+    s = strrchr(desc->name, '.');
+    if (s == NULL) {
+        s = desc->name;
+        modname = NULL;
+    }
+    else {
+        /* TODO: Replace this by using 'HPyUnicode_FromStringAndSize' or similar
+           once available. */
+        const size_t n_modname = s - desc->name;
+        modname = (char *)malloc((n_modname + 1) * sizeof(char));
+#ifdef _WIN32
+        strncpy_s(modname, n_modname + 1, desc->name, n_modname);
+#else
+        strncpy(modname, desc->name, n_modname);
+#endif
+        modname[n_modname] = '\0';
+
+        // now, advance by one to skip '.'
+        s++;
+    }
+
+    h_name = HPyUnicode_FromString(ctx, s);
     if (HPy_IsNull(h_name)) {
         goto error;
     }
-    if (HPy_IsNull(h_name) ||
-        HPy_SetAttr_s(ctx, result, "__name__", h_name) < 0 ||
-        HPy_SetAttr_s(ctx, result, "__qualname__", h_name) < 0) {
-        HPy_Close(ctx, result);
-        result = HPy_NULL;
+    HPyTracker_Add(ctx, ht, h_name);
+    if (HPy_SetAttr_s(ctx, result, "__name__", h_name) < 0 ||
+            HPy_SetAttr_s(ctx, result, "__qualname__", h_name) < 0) {
         goto error;
     }
 
- error:
-    HPy_Close(ctx, h_name);
-    HPy_Close(ctx, namedtuple);
-    HPy_Close(ctx, kwds);
-    HPy_Close(ctx, args);
-    HPy_Close(ctx, fields);
-    HPy_Close(ctx, defs);
-    HPy_Close(ctx, docstring);
+    if (modname != NULL) {
+        h_modname = HPyUnicode_FromString(ctx, modname);
+        free(modname);
+        if (HPy_IsNull(h_modname)) {
+            goto error;
+        }
+        HPyTracker_Add(ctx, ht, h_modname);
+        if (HPy_SetAttr_s(ctx, result, "__module__", h_modname) < 0) {
+            goto error;
+        }
+    }
+
+    HPyTracker_Close(ctx, ht);
     return result;
+
+ error:
+    HPyTracker_Close(ctx, ht);
+    HPy_Close(ctx, result);
+    return HPy_NULL;
 #else
     PyStructSequence_Desc d = {
         .name = desc->name,
+#if PY_VERSION_HEX < 0x03090000
+        // In Python 3.8.x or earlier, the docstring MUST NOT be NULL
+        .doc = (desc->doc != NULL ? desc->doc : ""),
+#else
         .doc = desc->doc,
+#endif
         .fields = (PyStructSequence_Field *)desc->fields,
-        .n_in_sequence = i
+        .n_in_sequence = (int)i
     };
     return _py2h((PyObject*) PyStructSequence_NewType(&d));
 #endif
 }
 
-HPyAPI_HELPER HPyStructSequenceBuilder
-HPyStructSequenceBuilder_New(HPyContext *ctx, HPy type)
-{
-#ifdef HPY_UNIVERSAL_ABI
-    HPy fields = HPy_GetAttr_s(ctx, type, "_fields");
-    if (HPy_IsNull(fields)) {
-#ifdef GRAALVM_PYTHON_LLVM
-        return (HPyTupleBuilder){NULL};
-#else
-        return (HPyTupleBuilder){(HPy_ssize_t)0};
-#endif
-    }
-    HPy_ssize_t n = HPy_Length(ctx, fields);
-    if (n < 0) {
-        HPy_Close(ctx, fields);
-#ifdef GRAALVM_PYTHON_LLVM
-        return (HPyTupleBuilder){NULL};
-#else
-        return (HPyTupleBuilder){(HPy_ssize_t)0};
-#endif
-    }
-    return HPyTupleBuilder_New(ctx, n);
-#else
-    PyObject *seq = PyStructSequence_New((PyTypeObject *)_h2py(type));
-#ifdef GRAALVM_PYTHON_LLVM
-    return (HPyStructSequenceBuilder){(void *)seq};
-#else
-    return (HPyStructSequenceBuilder){(HPy_ssize_t)seq};
-#endif
-#endif
-}
-
-HPyAPI_HELPER void
-HPyStructSequenceBuilder_Set(HPyContext *ctx, HPyStructSequenceBuilder self, HPy_ssize_t i, HPy value)
-{
-#ifdef HPY_UNIVERSAL_ABI
-    HPyTupleBuilder_Set(ctx, self, i, value);
-#else
-    PyObject *v = _h2py(value);
-    Py_INCREF(v);
-    PyStructSequence_SetItem((PyObject *)self._tup, i, v);
-#endif
-}
-
-HPyAPI_HELPER void
-HPyStructSequenceBuilder_Set_i(HPyContext *ctx, HPyStructSequenceBuilder self, HPy_ssize_t i, long value)
-{
-#ifdef HPY_UNIVERSAL_ABI
-    HPy v = HPyLong_FromLong(ctx, value);
-    HPyTupleBuilder_Set(ctx, self, i, v);
-    HPy_Close(ctx, v);
-#else
-    PyStructSequence_SetItem((PyObject *)self._tup, i, PyLong_FromLong(value));
-#endif
-}
-
 HPyAPI_HELPER HPy
-HPyStructSequenceBuilder_Build(HPyContext *ctx, HPyStructSequenceBuilder self, HPy type)
+HPyStructSequence_New(HPyContext *ctx, HPy type, HPy_ssize_t nargs, HPy *args)
 {
-#ifdef HPY_UNIVERSAL_ABI
-    HPy tuple = HPyTupleBuilder_Build(ctx, self);
+    static const char *s_n_fields = "n_fields";
+#ifndef HPY_ABI_CPYTHON
+    if (!HPy_HasAttr_s(ctx, type, s_n_fields)) {
+        HPyErr_Clear(ctx);
+        HPyErr_Format(ctx, ctx->h_TypeError,
+                "object '%R' does not look like a struct sequence type ", type);
+        return HPy_NULL;
+    }
+    HPy tuple = HPyTuple_FromArray(ctx, args, nargs);
     if (HPy_IsNull(tuple)) {
         return HPy_NULL;
     }
-    HPy kw = HPyDict_New(ctx);
-    if (HPy_IsNull(kw)) {
-        HPy_Close(ctx, tuple);
-        return HPy_NULL;
-    }
-    HPy result = HPy_CallTupleDict(ctx, type, tuple, kw);
-    HPy_Close(ctx, kw);
+    HPy result = HPy_CallTupleDict(ctx, type, tuple, HPy_NULL);
     HPy_Close(ctx, tuple);
     return result;
 #else
-    return _py2h((PyObject *)self._tup);
-#endif
-}
+    PyTypeObject *tp;
+    PyObject *name, *v, *seq, *item;
+    Py_ssize_t n_fields, i;
 
-HPyAPI_HELPER void
-HPyStructSequenceBuilder_Cancel(HPyContext *ctx, HPyStructSequenceBuilder self)
-{
-#ifdef HPY_UNIVERSAL_ABI
-    HPyTupleBuilder_Cancel(ctx, self);
-#else
-    Py_DECREF((PyObject *)self._tup);
-    self._tup = 0;
-#endif
-}
+    tp = (PyTypeObject *)_h2py(type);
+    name = PyUnicode_FromStringAndSize(s_n_fields, sizeof(s_n_fields));
+    // CPython also accesses the dict directly
+    v = PyDict_GetItemWithError(tp->tp_dict, name);
+    Py_DECREF(name);
+    if (v == NULL && !PyErr_Occurred()) {
+        goto type_error;
+    }
+    n_fields = PyLong_AsSsize_t(v);
+    seq = PyStructSequence_New(tp);
+    if (seq == NULL) {
+        goto type_error;
+    }
+    if (n_fields != nargs) {
+        PyErr_Format(PyExc_TypeError,
+                     "expected exactly %d arguments but got %d",
+                     n_fields, nargs);
+        Py_DECREF(seq);
+        goto error;
+    }
 
-HPyAPI_HELPER HPy
-HPyStructSequence_GetItem(HPyContext *ctx, HPy self, HPy_ssize_t i)
-{
-#ifdef HPY_UNIVERSAL_ABI
-    return HPy_GetItem_i(ctx, self, i);
-#else
-    PyObject *v = PyStructSequence_GetItem(_h2py(self), i);
-    Py_INCREF(v);
-    return _py2h(v);
+    for (i = 0; i < nargs; i++) {
+        item = _h2py(args[i]);
+        Py_INCREF(item);
+        PyStructSequence_SetItem(seq, i, item);
+    }
+    return _py2h(seq);
+
+type_error:
+    /* The error behavior seems not to be consistent. If anything goes
+       wrong, we will convert it to a TypeError here. */
+    PyErr_Clear();
+    PyErr_Format(PyExc_TypeError,
+                 "type '%s' does not look like a struct sequence type",
+                 tp->tp_name);
+
+error:
+    return HPy_NULL;
 #endif
 }
