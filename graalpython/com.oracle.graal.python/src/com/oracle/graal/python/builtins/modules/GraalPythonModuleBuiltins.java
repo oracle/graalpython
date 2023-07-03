@@ -248,6 +248,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
         }
     }
 

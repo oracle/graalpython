@@ -59,7 +59,9 @@ def assert_raises(err, fn, *args, **kwargs):
 
 
 if sys.implementation.name == 'graalpy':
-    is_native_object = __graalpython__.is_native_object
+    is_native_object = getattr(__graalpython__, 'is_native_object', None)
+    if not is_native_object:
+        raise RuntimeError("Needs to be run with --python.EnableDebuggingBuiltins")
 else:
     def is_native_object(obj):
         return True
