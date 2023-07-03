@@ -66,5 +66,12 @@ class TestPickle(unittest.TestCase):
         assert [16,17,18,19] == [next(teeit2) for i in range(1, 5)]
         assert [16,17,18,19] == [next(teeit) for i in range(1, 5)]
 
+    def test_is_builtin_on_enterprise(self):
+        import sys
+        if sys.implementation.name == "graalpy" and __graalpython__.is_managed_launcher():
+            import _pickle
+            assert "built-in" in repr(_pickle)
+
+
 if __name__ == '__main__':
     unittest.main()

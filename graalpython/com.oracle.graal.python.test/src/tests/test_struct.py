@@ -269,3 +269,11 @@ def test_pack_varargs():
     except TypeError:
         raised = True
     assert raised
+
+
+def test_struct_is_builtin_on_enterprise():
+    if sys.implementation.name == "graalpy" and __graalpython__.is_managed_launcher():
+        # none of these should fail
+        import __graalpython_enterprise__
+        import _struct
+        assert "built-in" in repr(_struct)
