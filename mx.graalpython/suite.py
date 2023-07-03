@@ -771,8 +771,7 @@ suite = {
             "moduleInfo" : {
                 "name" : "org.graalvm.py.launcher",
                 "exports" : [
-                    # How does the enterprise launcher work without this (O.o)?
-                    # "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell"
+                    "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell",
                 ],
             },
             "dependencies": [
@@ -848,11 +847,6 @@ suite = {
         "GRAALPYTHON": {
             "moduleInfo" : {
                 "name" : "org.graalvm.py",
-                "requiresConcealed" : {
-                    "org.graalvm.truffle" : [
-                        "com.oracle.truffle.api"
-                    ],
-                },
                 "exports" : [
                     "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.builtins.objects.buffer to org.graalvm.py.enterprise",
@@ -868,9 +862,9 @@ suite = {
                     "com.oracle.graal.python.runtime.exception to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.util to org.graalvm.py.enterprise",
                 ],
-                "provides": {
-                    "TruffleLanguageProvider": ["PythonLanguageProvider"],
-                },
+                "uses" : [
+                    "com.oracle.graal.python.builtins.PythonBuiltins",
+                ],
             },
             "dependencies": [
                 "com.oracle.graal.python",
