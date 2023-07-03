@@ -120,11 +120,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -339,14 +340,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         abstract static class CreateBytes extends PNodeWithContext {
             abstract Object execute(Node inliningTarget, Object cls, byte[] bytes);
 
-            @Specialization(guards = "!isNativeClass(cls)")
-            PBytes doManaged(Object cls, byte[] bytes,
+            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            static PBytes doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
+                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached PythonObjectFactory factory) {
                 return factory.createBytes(cls, bytes);
             }
 
-            @Specialization
-            Object doNative(PythonNativeClass cls, byte[] bytes,
+            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
+                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached PythonToNativeNode toNative,
                             @Cached NativeToPythonNode toPython,
                             @Cached PCallCapiFunction call) {
@@ -1024,18 +1027,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pyNumberFloat.execute(frame, obj);
         }
 
-        @Specialization(guards = {"!needsNativeAllocation(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"}, //
+        @Specialization(guards = {
+                        "!needsNativeAllocationNode.execute(inliningTarget, cls)", //
+                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", //
+                        "isNoValue(obj)"}, //
                         limit = "1")
         Object floatFromNoneManagedSubclass(Object cls, PNone obj,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return factory().createFloat(cls, floatFromNoValue(cls, obj, inliningTarget, isPrimitiveFloatProfile));
         }
 
-        @Specialization(guards = {"!needsNativeAllocation(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
+        @Specialization(guards = {
+                        "!needsNativeAllocationNode.execute(inliningTarget, cls)", //
+                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
                         limit = "1")
         Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Shared @Cached FloatNode recursiveCallNode) {
             try {
@@ -1049,12 +1059,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
         @Specialization(guards = { //
-                        "needsNativeAllocation(cls)", //
-                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", //
+                        "needsNativeAllocationNode.execute(inliningTarget, cls)", //
                         "isSubtypeOfFloat(frame, isSubtype, cls)"}, limit = "1")
         static Object floatFromObjectNativeSubclass(VirtualFrame frame, Object cls, Object obj,
                         @Bind("this") @SuppressWarnings("unused") Node inliningTarget,
-                        @Shared("isFloat") @Cached @SuppressWarnings("unused") InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
                         @Shared @Cached FloatNode recursiveCallNode) {
@@ -2129,19 +2138,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
         }
 
-        public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
+        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object encoding, Object errors);
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)"})
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"}, limit = "1")
         @SuppressWarnings("unused")
-        Object strNoArgs(Object strClass, PNone arg, Object encoding, Object errors,
+        Object strNoArgs(Object cls, PNone arg, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
-            return asPString(strClass, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile);
+            return asPString(cls, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile);
         }
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        Object strOneArg(VirtualFrame frame, Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        Object strOneArg(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Shared @Cached PyObjectStrAsObjectNode strNode) {
             Object result = strNode.execute(frame, obj);
@@ -2149,16 +2160,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // try to return a primitive if possible
             result = assertNoJavaString(result);
             if (getIsStringProfile().profile(result instanceof TruffleString)) {
-                return asPString(strClass, (TruffleString) result, inliningTarget, isPrimitiveProfile);
+                return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile);
             }
 
-            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, strClass, PythonBuiltinClassType.PString)) {
+            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
                 // PyObjectStrAsObjectNode guarantees that the returned object is an instanceof of
                 // 'str'
                 return result;
             } else {
                 try {
-                    return asPString(strClass, getCastToTruffleStringNode().execute(result), inliningTarget, isPrimitiveProfile);
+                    return asPString(cls, getCastToTruffleStringNode().execute(result), inliningTarget, isPrimitiveProfile);
                 } catch (CannotCastException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("asPstring result not castable to String");
@@ -2166,10 +2177,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         @SuppressWarnings("truffle-static-method")
-        Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
+        Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
@@ -2184,17 +2196,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO don't copy, CPython creates a memoryview
                 PBytes bytesObj = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
-                return decodeBytes(frame, strClass, bytesObj, en, errors, inliningTarget, isPrimitiveProfile);
+                return decodeBytes(frame, cls, bytesObj, en, errors, inliningTarget, isPrimitiveProfile);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
-        private Object decodeBytes(VirtualFrame frame, Object strClass, PBytes obj, Object encoding, Object errors, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile) {
+        private Object decodeBytes(VirtualFrame frame, Object cls, PBytes obj, Object encoding, Object errors, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile) {
             Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
             result = assertNoJavaString(result);
             if (getIsStringProfile().profile(result instanceof TruffleString)) {
-                return asPString(strClass, (TruffleString) result, inliningTarget, isPrimitiveProfile);
+                return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile);
             } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
@@ -2207,10 +2219,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
          * into a natively allocated subtype structure
          */
-        @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
                         "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
-        static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
-                        @SuppressWarnings("unused") Object errors,
+        static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Shared @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
@@ -2275,15 +2288,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        protected static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode) {
             return constructTupleNode.execute(frame, cls, iterable);
         }
 
         // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
-        @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
         static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
             return subtypeNew.call(cls, iterable);
@@ -2914,20 +2931,37 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
             }
             if (arguments.length == 1) {
-                return initNoArgs(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+                return execute(frame, arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
             }
             Object[] argsWithoutSelf = PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
-        @Specialization(guards = "args.length == 0")
-        Object initNoArgs(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return factory().createBaseException(cls);
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached InlinedConditionProfile argsProfile) {
+            if (argsProfile.profile(inliningTarget, args.length == 0)) {
+                return factory.createBaseException(cls);
+            } else {
+                return factory.createBaseException(cls, factory.createTuple(args));
+            }
         }
 
-        @Specialization(guards = "args.length != 0")
-        Object initArgs(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return factory().createBaseException(cls, factory().createTuple(args));
+        @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        static Object doNativeSubtype(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached NativeToPythonNode toPythonNode,
+                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object argsTuple = args.length > 0 ? factory.createTuple(args) : factory.createEmptyTuple();
+            Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
+            return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), nativeResult));
         }
     }
 

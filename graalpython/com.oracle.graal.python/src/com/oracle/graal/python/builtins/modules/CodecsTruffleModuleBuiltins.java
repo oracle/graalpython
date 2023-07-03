@@ -421,7 +421,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lookup(VirtualFrame frame, TruffleString encoding, TruffleString alternateCommand,
-                        @Cached CodecsModuleBuiltins.InternalLookupNode lookupNode,
+                        @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached PyObjectGetAttr getAttributeNode,
                         @Cached PRaiseNode raiseNode) {
             PTuple codecInfo = lookupNode.execute(frame, encoding);

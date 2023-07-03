@@ -53,9 +53,9 @@ import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * A lazy representation of an exception traceback that can be evaluated to a python object by
- * {@link GetTracebackNode}.
+ * {@link MaterializeLazyTracebackNode}.
  *
- * @see GetTracebackNode
+ * @see MaterializeLazyTracebackNode
  */
 public class LazyTraceback {
     private final PFrame.Reference frameInfo;

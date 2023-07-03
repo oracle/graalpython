@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,52 +40,52 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.KeyError)
-public final class KeyErrorBuiltins extends PythonBuiltins {
+public abstract class ChainExceptionsNode extends Node {
+    public abstract void execute(PException currentException, PException contextException);
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return KeyErrorBuiltinsFactory.getFactories();
+    @Specialization
+    public static void chainExceptions(PException currentException, PException contextException,
+                    @Bind("this") Node inliningTarget,
+                    @Cached ExceptionNodes.GetContextNode getContextNode,
+                    @Cached ExceptionNodes.SetContextNode setContextNode,
+                    @Cached InlinedLoopConditionProfile p1,
+                    @Cached InlinedLoopConditionProfile p2) {
+        Object current = currentException.getUnreifiedException();
+        Object context = contextException.getUnreifiedException();
+        if (current != context) {
+            Object e = current;
+            while (p1.profile(inliningTarget, e != PNone.NONE)) {
+                Object eContext = getContextNode.execute(inliningTarget, e);
+                if (eContext == context) {
+                    // We have already chained this exception in an inner block, do nothing
+                    return;
+                }
+                e = eContext;
+            }
+            e = context;
+            while (p2.profile(inliningTarget, e != PNone.NONE)) {
+                Object eContext = getContextNode.execute(inliningTarget, e);
+                if (eContext == current) {
+                    setContextNode.execute(inliningTarget, e, PNone.NONE);
+                }
+                e = eContext;
+            }
+            contextException.markEscaped();
+            setContextNode.execute(inliningTarget, current, context);
+        }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class KeyErrorStrNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object str(VirtualFrame frame, PBaseException self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ExceptionNodes.GetArgsNode argsNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached BaseExceptionBuiltins.StrNode baseStrNode,
-                        @Cached PyObjectReprAsTruffleStringNode reprNode) {
-            PTuple args = argsNode.execute(inliningTarget, self);
-            SequenceStorage storage = args.getSequenceStorage();
-            if (storage.length() == 1) {
-                return reprNode.execute(frame, getItemNode.execute(storage, 0));
-            }
-            return baseStrNode.execute(frame, self);
-        }
+    @NeverDefault
+    public static ChainExceptionsNode create() {
+        return ChainExceptionsNodeGen.create();
     }
 }

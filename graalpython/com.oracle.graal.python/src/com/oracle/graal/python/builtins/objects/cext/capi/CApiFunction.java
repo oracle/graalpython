@@ -199,6 +199,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextClassBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCodecBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextContextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltins;
@@ -1041,9 +1042,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCode_Optimize", ret = PyObject, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_BackslashReplaceErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_Decode", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCodec_Decoder", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_Encode", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCodec_Encoder", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_IgnoreErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_IncrementalDecoder", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_IncrementalEncoder", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
@@ -1392,6 +1391,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextCEvalBuiltins.class);
         addCApiBuiltins(result, PythonCextClassBuiltins.class);
         addCApiBuiltins(result, PythonCextCodeBuiltins.class);
+        addCApiBuiltins(result, PythonCextCodecBuiltins.class);
         addCApiBuiltins(result, PythonCextComplexBuiltins.class);
         addCApiBuiltins(result, PythonCextContextBuiltins.class);
         addCApiBuiltins(result, PythonCextDateTimeBuiltins.class);

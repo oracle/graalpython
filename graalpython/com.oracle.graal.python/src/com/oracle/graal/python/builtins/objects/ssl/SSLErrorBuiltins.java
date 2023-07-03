@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -65,11 +66,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SSLError)
@@ -90,7 +93,7 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     }
 
     public static void setSSLErrorAttributes(PException exception, SSLErrorCode errorCode, TruffleString message) {
-        setSSLErrorAttributes(exception.getUnreifiedException(), errorCode, message);
+        setSSLErrorAttributes((PBaseException) exception.getUnreifiedException(), errorCode, message);
     }
 
     public static void setSSLErrorAttributes(PBaseException self, SSLErrorCode errorCode, TruffleString message) {
@@ -173,12 +176,14 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectStrAsObjectNode strNode,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode) {
             Object strerror = self.getExceptionAttribute(IDX_STRERROR);
             if (PGuards.isString(strerror)) {
                 return strerror;
             }
-            return strNode.execute(frame, self.getArgs());
+            return strNode.execute(frame, getArgsNode.execute(inliningTarget, self));
         }
     }
 

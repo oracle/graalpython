@@ -101,12 +101,12 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
+    public final PException raiseWithCause(PythonBuiltinClassType type, Object cause, TruffleString format, Object... arguments) {
         throw execute(this, type, null, cause, format, arguments);
     }
 
-    public final PException raise(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
-        return raise(errorType, e.getEscapedException(), message, arguments);
+    public final PException raiseWithCause(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
+        return raiseWithCause(errorType, e.getEscapedException(), message, arguments);
     }
 
     public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType) {
@@ -163,16 +163,15 @@ public abstract class PRaiseNode extends Node {
         return raise(PythonBuiltinClassType.MemoryError);
     }
 
-    public final PException raiseExceptionObject(PBaseException exc) {
-        throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+    public final PException raiseExceptionObject(Object exc) {
+        throw raiseExceptionObject(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
-    private static PException raiseExceptionObject(Node raisingNode, PBaseException exc) {
-        throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
+    public static PException raiseExceptionObject(Node raisingNode, Object exc) {
+        throw raiseExceptionObject(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
     }
 
-    public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
-        exc.ensureReified();
+    public static PException raiseExceptionObject(Node raisingNode, Object exc, boolean withJavaStacktrace) {
         if (raisingNode != null && raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {

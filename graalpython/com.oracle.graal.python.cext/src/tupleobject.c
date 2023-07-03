@@ -61,6 +61,8 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     return result;
 }
 
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
+
 POLYGLOT_DECLARE_TYPE(PyTupleObject);
 PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
 	PyTupleObject* newobj;
@@ -75,7 +77,10 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     assert(PyTuple_Check(tmp));
     n = PyTuple_GET_SIZE(tmp);
 
-    newobj = (PyTupleObject*) type->tp_alloc(type, n);
+    /* GraalPy note: we cannot call type->tp_alloc here because managed subtypes don't inherit tp_alloc but get a generic one.
+     * In CPython tuple uses the generic one to begin with, so they don't have this problem
+     */
+    newobj = (PyTupleObject*) PyTruffle_Tuple_Alloc(type, n);
     if (newobj == NULL) {
         return NULL;
     }

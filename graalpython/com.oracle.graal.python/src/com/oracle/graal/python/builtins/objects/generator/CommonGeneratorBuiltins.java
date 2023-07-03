@@ -55,11 +55,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -80,7 +80,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -217,13 +216,13 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             if (self.isAsyncGen()) {
                 // Async generators need to wrap StopAsyncIteration in a runtime error
                 if (profile.profileException(inliningTarget, e, StopAsyncIteration)) {
-                    throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
+                    throw raiseNode.raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
                 }
             }
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             e.expectStopIteration(inliningTarget, profile);
-            throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            throw raiseNode.raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
         private Object handleResult(PGenerator self, GeneratorYieldResult result) {
@@ -274,39 +273,38 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
-        @Child private MaterializeFrameNode materializeFrameNode;
-        @Child private GetTracebackNode getTracebackNode;
-
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasTbProfile,
+                        @Cached InlinedConditionProfile startedProfile,
+                        @Cached InlinedBranchProfile invalidTbProfile,
+                        @Cached InlinedBranchProfile runningProfile,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
+                        @Cached ResumeGeneratorNode resumeGeneratorNode,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
+                        @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
+                        @Cached ExceptionNodes.SetContextNode setContextNode) {
+            boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
+            if (hasTb && !(tb instanceof PTraceback)) {
+                invalidTbProfile.enter(inliningTarget);
+                throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
+            }
             if (self.isRunning()) {
+                runningProfile.enter(inliningTarget);
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
-            return doThrow(frame, resumeGeneratorNode, self, instance, getLanguage());
-        }
-
-        @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
-            if (self.isRunning()) {
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            Object instance = prepareExceptionNode.execute(frame, typ, val);
+            if (hasTb) {
+                setTracebackNode.execute(inliningTarget, instance, tb);
             }
-            PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
-            instance.setTraceback(tb);
-            return doThrow(frame, resumeGeneratorNode, self, instance, getLanguage());
-        }
-
-        private Object doThrow(VirtualFrame frame, ResumeGeneratorNode resumeGeneratorNode, PGenerator self, PBaseException instance, PythonLanguage language) {
-            instance.setContext(null); // Will be filled when caught
+            PythonLanguage language = getLanguage();
+            setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
+                                                                          // caught
             if (self.isCoroutine() && self.isFinished()) {
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
-            if (self.isStarted() && !self.isFinished()) {
-                instance.ensureReified();
+            if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 return resumeGeneratorNode.execute(frame, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));
@@ -321,36 +319,11 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory());
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getRootNode().getFirstLineno());
-                PTraceback existingTraceback = null;
-                if (instance.getTraceback() != null) {
-                    existingTraceback = ensureGetTracebackNode().execute(instance.getTraceback());
-                }
-                PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), existingTraceback);
-                instance.setTraceback(newTraceback);
+                Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
+                PTraceback newTraceback = factory().createTraceback(pFrame, pFrame.getLine(), (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
+                setTracebackNode.execute(inliningTarget, instance, newTraceback);
                 throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
-        }
-
-        @Specialization(guards = {"!isPNone(tb)", "!isPTraceback(tb)"})
-        @SuppressWarnings("unused")
-        Object doError(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb) {
-            throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
-        }
-
-        private MaterializeFrameNode ensureMaterializeFrameNode() {
-            if (materializeFrameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeFrameNode = insert(MaterializeFrameNode.create());
-            }
-            return materializeFrameNode;
-        }
-
-        private GetTracebackNode ensureGetTracebackNode() {
-            if (getTracebackNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTracebackNode = insert(GetTracebackNode.create());
-            }
-            return getTracebackNode;
         }
     }
 

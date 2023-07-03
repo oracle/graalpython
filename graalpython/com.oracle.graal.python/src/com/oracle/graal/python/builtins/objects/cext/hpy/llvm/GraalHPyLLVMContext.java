@@ -179,7 +179,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
                 int id = handle.getIdUncached(context);
                 assert id > 0 && id < GraalHPyContext.IMMUTABLE_HANDLE_COUNT;
                 assert id > GraalHPyBoxing.SINGLETON_HANDLE_MAX ||
-                        context.getHPyHandleForObject(handle.getDelegate()) == id;
+                                context.getHPyHandleForObject(handle.getDelegate()) == id;
             }
         }
         this.hpyContextMembers = ctxMembers;

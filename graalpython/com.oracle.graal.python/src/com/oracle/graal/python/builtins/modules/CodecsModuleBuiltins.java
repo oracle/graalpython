@@ -212,7 +212,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             int end = start + encoder.getErrorLength();
             Object exception = callNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+                throw raiseNode.raiseExceptionObject(exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is
@@ -373,7 +373,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 return exception;
             }
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+                throw raiseNode.raiseExceptionObject(exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is
@@ -941,8 +941,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         PTuple lookup(VirtualFrame frame, TruffleString encoding,
-                        @Cached InternalLookupNode internalNode) {
-            return internalNode.execute(frame, encoding);
+                        @Cached PyCodecLookupNode lookup) {
+            return lookup.execute(frame, encoding);
         }
 
         @Override
@@ -952,8 +952,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    abstract static class InternalLookupNode extends PNodeWithContext {
-        abstract PTuple execute(Frame frame, TruffleString encoding);
+    public abstract static class PyCodecLookupNode extends PNodeWithContext {
+        public abstract PTuple execute(Frame frame, TruffleString encoding);
 
         @Specialization
         PTuple lookup(VirtualFrame frame, TruffleString encoding,

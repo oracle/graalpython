@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -96,6 +99,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.OSError)
 public final class OsErrorBuiltins extends PythonBuiltins {
@@ -452,17 +456,20 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PBaseException self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            PTuple args = self.getArgs();
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            PTuple args = getArgsNode.execute(inliningTarget, self);
             final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
-            if (args.getSequenceStorage().length() == 2 && filename != PNone.NONE) {
+            SequenceStorage argsStorage = args.getSequenceStorage();
+            if (argsStorage.length() == 2 && filename != PNone.NONE) {
                 Object[] argData = new Object[filename2 != PNone.NONE ? 5 : 3];
-                argData[0] = getItemNode.execute(args.getSequenceStorage(), 0);
-                argData[1] = getItemNode.execute(args.getSequenceStorage(), 1);
+                argData[0] = getItemNode.execute(argsStorage, 0);
+                argData[1] = getItemNode.execute(argsStorage, 1);
                 argData[2] = filename;
                 if (filename2 != PNone.NONE) {
                     // This tuple is essentially used as OSError(*args). So, to recreate filename2,
@@ -473,7 +480,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 args = factory().createTuple(argData);
             }
 
-            final Object type = getClassNode.execute(self);
+            final Object type = getClassNode.execute(inliningTarget, self);
             final PDict dict = getDictNode.execute(self);
             if (dict != null) {
                 return factory().createTuple(new Object[]{type, args, dict});

@@ -96,7 +96,7 @@ public abstract class GetANextNode extends PNodeWithContext {
             return getAwaitable.execute(frame, anext);
         } catch (PException e) {
             errorProfile.enter(inliningTarget);
-            throw raiseInvalidObject.raise(PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
+            throw raiseInvalidObject.raiseWithCause(PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
         }
     }
 }

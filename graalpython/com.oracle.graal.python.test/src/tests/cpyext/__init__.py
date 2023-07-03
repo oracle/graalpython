@@ -58,6 +58,15 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+if sys.implementation.name == 'graalpy':
+    is_native_object = getattr(__graalpython__, 'is_native_object', None)
+    if not is_native_object:
+        raise RuntimeError("Needs to be run with --python.EnableDebuggingBuiltins")
+else:
+    def is_native_object(obj):
+        return True
+
+
 def unhandled_error_compare(x, y):
     if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
@@ -591,7 +600,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_getattro},
         {tp_setattro},
         {tp_as_buffer},
-        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+        {tp_flags},
         "",
         {tp_traverse},              /* tp_traverse */
         {tp_clear},                 /* tp_clear */
@@ -648,6 +657,7 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
     kwargs.setdefault("tp_free", "PyObject_Del")
+    kwargs.setdefault("tp_flags", "Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE")
     kwargs.setdefault("cmembers", "")
     kwargs.setdefault("includes", "")
     kwargs.setdefault("struct_base", "PyObject_HEAD")

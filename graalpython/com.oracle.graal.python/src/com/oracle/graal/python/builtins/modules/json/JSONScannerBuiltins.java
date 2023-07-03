@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,7 +24,6 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -540,12 +539,12 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         Object module = AbstractImportNode.importModule(toTruffleStringUncached("json.decoder"));
         Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, T_JSON_DECODE_ERROR);
         Object exception = CallNode.getUncached().execute(errorClass, format, toTruffleStringUncached(jsonString), pos);
-        throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
+        throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 
     private static RuntimeException stopIteration(Node raisingNode, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).lookupType(PythonBuiltinClassType.StopIteration), value);
-        throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
+        throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 }

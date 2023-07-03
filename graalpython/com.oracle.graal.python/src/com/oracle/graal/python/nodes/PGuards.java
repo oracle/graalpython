@@ -368,18 +368,6 @@ public abstract class PGuards {
         return PythonNativeClass.isInstance(klass);
     }
 
-    /**
-     * Tests if the given {@code klass} is a Python class that needs a native allocation. This is
-     * the case if {@code klass} either is a native class or it is a managed class that (indirectly)
-     * inherits from a native class.
-     */
-    public static boolean needsNativeAllocation(Object klass) {
-        if (klass instanceof PythonManagedClass managedClass) {
-            return managedClass.needsNativeAllocation();
-        }
-        return PythonNativeClass.isInstance(klass);
-    }
-
     public static boolean isPythonClass(Object klass) {
         return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }

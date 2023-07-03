@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -152,7 +153,8 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
                         @Cached EnterBufferedNode lock,
-                        @Cached InlinedConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile,
+                        @Cached PyErrChainExceptions chainExceptions) {
             try {
                 lock.enter(inliningTarget, self);
                 if (profile.profile(inliningTarget, isClosedNode.execute(frame, inliningTarget, self))) {
@@ -173,7 +175,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 try {
                     close(frame, inliningTarget, self, lock, callMethodClose);
                 } catch (PException ee) {
-                    throw ee.chainException(e);
+                    throw chainExceptions.execute(inliningTarget, ee, e);
                 }
                 throw e;
             }

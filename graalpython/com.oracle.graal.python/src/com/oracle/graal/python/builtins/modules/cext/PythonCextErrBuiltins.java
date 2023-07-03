@@ -88,11 +88,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -104,11 +104,13 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -118,10 +120,12 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -141,18 +145,20 @@ public final class PythonCextErrBuiltins {
 
         @Fallback
         Object restore(Object typ, Object val, Object tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached ExceptionNodes.SetTracebackNode setTracebackNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            PBaseException exception;
+            Object exception;
             try {
                 exception = prepareExceptionNode.execute(null, typ, val);
             } catch (PException e) {
                 context.setCurrentException(language, e);
                 return PNone.NO_VALUE;
             }
-            if (tb instanceof PTraceback pTraceback) {
-                exception.setTraceback(pTraceback);
+            if (tb instanceof PTraceback) {
+                setTracebackNode.execute(inliningTarget, exception, tb);
             }
             context.setCurrentException(language, PException.fromExceptionInfo(exception, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return PNone.NO_VALUE;
@@ -162,23 +168,22 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
         @Specialization
-        Object run(@Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetTracebackNode getTracebackNode) {
+        Object run(
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             PException currentException = getThreadStateNode.getCurrentException();
             Object result;
             if (currentException == null) {
                 result = getNativeNull();
             } else {
-                PBaseException exception = currentException.getEscapedException();
-                Object traceback = null;
-                if (currentException.getTraceback() != null) {
-                    traceback = getTracebackNode.execute(currentException.getTraceback());
-                }
-                if (traceback == null) {
+                Object exception = currentException.getEscapedException();
+                Object traceback = getTracebackNode.execute(inliningTarget, exception);
+                if (traceback == PNone.NONE) {
                     traceback = getNativeNull();
                 }
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback});
+                result = factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
                 getThreadStateNode.setCurrentException(null);
             }
             return result;
@@ -263,8 +268,8 @@ public final class PythonCextErrBuiltins {
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
-            PBaseException exception = prepareExceptionNode.execute(null, type, value);
-            throw getRaiseNode().raiseExceptionObject(exception);
+            Object exception = prepareExceptionNode.execute(null, type, value);
+            throw PRaiseNode.raiseExceptionObject(this, exception);
         }
 
         protected static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
@@ -349,9 +354,10 @@ public final class PythonCextErrBuiltins {
     abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetTracebackNode getTracebackNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached BranchProfile noExceptionProfile) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
@@ -359,13 +365,12 @@ public final class PythonCextErrBuiltins {
                 return getNativeNull();
             }
             assert currentException != PException.NO_EXCEPTION;
-            PBaseException exception = currentException.getEscapedException();
-            LazyTraceback lazyTraceback = currentException.getTraceback();
-            PTraceback traceback = null;
-            if (lazyTraceback != null) {
-                traceback = getTracebackNode.execute(lazyTraceback);
+            Object exception = currentException.getEscapedException();
+            Object traceback = getTracebackNode.execute(inliningTarget, exception);
+            if (traceback == PNone.NONE) {
+                traceback = getNativeNull();
             }
-            return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
 
@@ -609,7 +614,7 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
-        Object setCause(Object exc, Object context,
+        Object setContext(Object exc, Object context,
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(exc, T___CONTEXT__, context);
             return PNone.NONE;
@@ -620,14 +625,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static int doClearTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
-            self.clearTraceback();
-            return 0;
-        }
-
-        @Specialization
-        static int doSetTraceback(PBaseException self, PTraceback tb) {
-            self.setTraceback(tb);
+        Object setTraceback(Object exc, Object traceback,
+                        @Cached PyObjectSetAttr setAttrNode) {
+            setAttrNode.execute(exc, T___TRACEBACK__, traceback);
             return 0;
         }
     }

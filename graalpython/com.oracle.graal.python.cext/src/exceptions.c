@@ -187,3 +187,17 @@ void initialize_exceptions() {
     PyExc_ResourceWarning = PY_EXCEPTION("ResourceWarning");
 }
 
+PyObject* exception_subtype_new(PyTypeObject *type, PyObject *args) {
+    PyBaseExceptionObject *self;
+
+    self = (PyBaseExceptionObject *)type->tp_alloc(type, 0);
+    if (!self)
+        return NULL;
+    /* the dict is created on the fly in PyObject_GenericSetAttr */
+    self->dict = NULL;
+    self->traceback = self->cause = self->context = NULL;
+    self->suppress_context = 0;
+    self->args = args;
+    Py_INCREF(args);
+    return (PyObject *)self;
+}

@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -63,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -88,6 +88,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__THREAD)
 public class ThreadModuleBuiltins extends PythonBuiltins {
@@ -209,6 +210,9 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "start_new", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
+
+        private static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("in thread started by");
+
         @Specialization
         @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
@@ -256,23 +260,13 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 } catch (PythonThreadKillException e) {
                     return;
                 } catch (PException e) {
-                    dumpError(context, e.getUnreifiedException(), callable);
-                    // TODO (cbasca): when GR-30386 is completed use the intrinsified
-                    // sys.unraisablehook
-                    // WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in
-                    // thread started by", callable);
+                    WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                 }
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
-        }
-
-        @TruffleBoundary
-        static void dumpError(PythonContext context, PBaseException exception, Object object) {
-            PrintWriter err = new PrintWriter(context.getStandardErr());
-            err.println(String.format("%s in thread started by %s", exception.toString(), object));
         }
     }
 

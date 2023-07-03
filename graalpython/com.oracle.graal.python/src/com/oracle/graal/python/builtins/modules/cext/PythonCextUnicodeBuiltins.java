@@ -127,13 +127,11 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -1012,10 +1010,8 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyUnicodeDecodeError_Create extends CApi6BuiltinNode {
         @Specialization
         Object doit(Object encoding, Object object, int length, int start, int end, Object reason,
-                        @Bind("this") Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile isUnicodeDecode,
-                        @Cached PConstructAndRaiseNode raiseNode,
-                        @Cached GetByteArrayNode getByteArrayNode) {
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached CallNode callNode) {
             PBytes bytes;
             try {
                 bytes = factory().createBytes(getByteArrayNode.execute(object, length));
@@ -1024,12 +1020,7 @@ public final class PythonCextUnicodeBuiltins {
             } catch (OverflowException e) {
                 throw raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
-            try {
-                throw raiseNode.executeWithArgsOnly(null, UnicodeDecodeError, new Object[]{encoding, bytes, start, end, reason});
-            } catch (PException e) {
-                e.expect(inliningTarget, UnicodeDecodeError, isUnicodeDecode);
-                return e.getEscapedException();
-            }
+            return callNode.execute(UnicodeDecodeError, encoding, bytes, start, end, reason);
         }
     }
 }

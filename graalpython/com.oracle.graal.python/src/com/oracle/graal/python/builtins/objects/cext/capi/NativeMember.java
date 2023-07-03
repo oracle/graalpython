@@ -305,6 +305,13 @@ public enum NativeMember {
     CO_FREEVARS("co_freevars", OBJECT),
     CO_CELLVARS("co_cellvars", OBJECT),
 
+    // PyBaseException
+    TRACEBACK("traceback", OBJECT),
+    CAUSE("cause", OBJECT),
+    CONTEXT("context", OBJECT),
+    SUPPRESS_CONTEXT("suppress_context", PRIMITIVE),
+    ARGS("args", OBJECT),
+
     // PyStopIterationObject
     VALUE("value", OBJECT);
 
@@ -312,16 +319,18 @@ public enum NativeMember {
     private final TruffleString tMemberName;
     private final NativeMemberType type;
     private final NativeCAPISymbol getter;
+    private final NativeCAPISymbol setter;
 
-    private NativeMember(String name) {
+    NativeMember(String name) {
         this(name, POINTER);
     }
 
-    private NativeMember(String name, NativeMemberType type) {
+    NativeMember(String name, NativeMemberType type) {
         this.jMemberName = name;
         this.tMemberName = toTruffleStringUncached(name);
         this.type = type;
         this.getter = NativeCAPISymbol.getByName(StringLiterals.J_GET_ + name);
+        this.setter = NativeCAPISymbol.getByName(StringLiterals.J_SET_ + name);
     }
 
     public TruffleString getMemberNameTruffleString() {
@@ -343,6 +352,14 @@ public enum NativeMember {
             throw CompilerDirectives.shouldNotReachHere("no getter for native member " + jMemberName);
         }
         return getter;
+    }
+
+    public NativeCAPISymbol getSetterFunctionName() {
+        if (setter == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere("no setter for native member " + jMemberName);
+        }
+        return setter;
     }
 
     @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();

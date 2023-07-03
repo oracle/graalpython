@@ -286,6 +286,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D = tsLiteral("Exceeds the limit (%d) for integer string conversion: value has %d digits");
     public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral("Exceeds the limit (%d) for integer string conversion");
     public static final TruffleString EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception cause must be None or derive from BaseException");
+    public static final TruffleString EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception context must be None or derive from BaseException");
     public static final TruffleString EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = tsLiteral("exception causes must derive from BaseException");
     public static final TruffleString EXCEPTION_NOT_BASEEXCEPTION = tsLiteral("exception %s not a BaseException subclass");
     public static final TruffleString EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = tsLiteral("exceptions must be classes or instances deriving from BaseException, not %p");
@@ -394,6 +395,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INTEGER_REQUIRED = tsLiteral("an integer is required");
     public static final TruffleString INTEGER_REQUIRED_GOT = tsLiteral("an integer is required (got type %p)");
     public static final TruffleString INTERMEDIATE_OVERFLOW_IN = tsLiteral("intermediate overflow in %s");
+    public static final TruffleString CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION = tsLiteral("Cannot set property on interop exception");
     public static final TruffleString INVALD_OR_UNREADABLE_CLASSPATH = tsLiteral("invalid or unreadable classpath: '%s' - %m");
     public static final TruffleString INVALID_ARGS = tsLiteral("%s: invalid arguments");
     public static final TruffleString INVALID_ARGS_FOR_ALLOCFUNC = tsLiteral("invalid arguments for allocfunc (expected 2 but got %s)");

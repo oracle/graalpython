@@ -124,7 +124,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_STRUCT_TIME = tsLiteral("struct_time");
 
     public static final String J_GET_ = "get_";
-    public static final TruffleString T_GET_ = tsLiteral(J_GET_);
+    public static final String J_SET_ = "set_";
 
     public static final TruffleString T_NAME = tsLiteral("name");
 

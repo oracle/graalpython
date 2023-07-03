@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.interop;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,7 +112,7 @@ public abstract class PForeignToPTypeNode extends Node {
     }
 
     @Specialization
-    protected static PBaseException fromPException(PException pe) {
+    protected static Object fromPException(PException pe) {
         return pe.getUnreifiedException();
     }
 

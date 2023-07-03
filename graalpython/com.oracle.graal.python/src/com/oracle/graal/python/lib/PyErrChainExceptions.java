@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,24 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.generator;
+package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Simple wrapper to pass a {@link PBaseException} between {@code throw} method and the
- * {@code yield} expression that will continue the control flow. The wrapper is needed because the
- * same frame slot is used to pass value from {@code send}, so the exception for {@code throw} needs
- * to be wrapped in something that is not a Python object to be able to distinguish the two cases.
+ * Equivalent of CPython's {_PyErr_ChainExceptions}. Performs a simple exception chaining without
+ * checking for cycles (not suitable to implement try-except).
  */
-@ValueType
-public final class ThrowData {
-    public final Object pythonException;
-    public final boolean withJavaStacktrace;
+@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyErrChainExceptions extends Node {
+    public final PException execute(Node inliningTarget, PException current, PException context) {
+        execute(inliningTarget, current.getUnreifiedException(), context.getEscapedException());
+        return current;
+    }
 
-    public ThrowData(Object pythonException, boolean withJavaStacktrace) {
-        this.pythonException = pythonException;
-        this.withJavaStacktrace = withJavaStacktrace;
+    abstract void execute(Node inliningTarget, Object current, Object context);
+
+    @Specialization
+    static void chain(Node inliningTarget, Object current, Object context,
+                    @Cached ExceptionNodes.SetContextNode setContextNode) {
+        setContextNode.execute(inliningTarget, current, context);
     }
 }

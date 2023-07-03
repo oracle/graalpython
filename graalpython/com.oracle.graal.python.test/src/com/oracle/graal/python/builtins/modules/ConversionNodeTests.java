@@ -46,6 +46,7 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -109,7 +110,9 @@ public class ConversionNodeTests {
             }
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python
-            e.setMessage(e.getUnreifiedException().getFormattedMessage());
+            if (e.getUnreifiedException() instanceof PBaseException managedException) {
+                e.setMessage(managedException.getFormattedMessage());
+            }
             throw e;
         }
     }
