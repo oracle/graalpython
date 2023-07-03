@@ -245,7 +245,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
     else:
         dists = ['GRAALPYTHON']
-    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE']
+    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON-LAUNCHER']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     if minimal:

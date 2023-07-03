@@ -862,7 +862,7 @@ suite = {
                     "com.oracle.graal.python.runtime.exception to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.util to org.graalvm.py.enterprise",
                 ],
-                "uses" : [
+                "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
             },
@@ -871,7 +871,6 @@ suite = {
                 "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
-                "GRAALPYTHON-LAUNCHER",
                 "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
