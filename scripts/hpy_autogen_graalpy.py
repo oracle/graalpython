@@ -39,7 +39,7 @@
 
 import textwrap
 from copy import deepcopy
-from .conf import RETURN_CONSTANT
+from . import conf
 from .autogenfile import AutoGenFile
 from .parse import toC, find_typedecl, get_context_return_type, \
     maybe_make_void, make_void, get_return_constant
@@ -1039,6 +1039,119 @@ class autogen_ctx_llvm_init(AutoGenFilePart):
         w('')
         return '\n'.join(lines)
 
+llvm_return_cast_func = {
+    'HPy': 'WRAP',
+    'HPyGlobal': 'WRAP_GLOBAL',
+    'HPyField': 'WRAP_FIELD',
+    'HPyTracker': 'WRAP_TRACKER',
+    'HPyListBuilder': 'WRAP_LIST_BUILDER',
+    'HPyTupleBuilder': 'WRAP_TUPLE_BUILDER',
+    'HPyThreadState': 'WRAP_THREADSTATE',
+}
+
+
+llvm_param_cast_func = {
+    'HPy': 'UNWRAP',
+    'HPyGlobal': 'UNWRAP_GLOBAL',
+    'HPyField': 'UNWRAP_FIELD',
+    'HPyTracker': 'UNWRAP_TRACKER',
+    'HPyListBuilder': 'UNWRAP_LIST_BUILDER',
+    'HPyTupleBuilder': 'UNWRAP_TUPLE_BUILDER',
+    'HPyThreadState': 'UNWRAP_THREADSTATE',
+}
+
+
+class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
+    PATH = 'graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/universal/autogen_trampolines.h'
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w('#ifdef GRAALVM_PYTHON_LLVM')
+        w('#define UNWRAP(_h) ((_h)._i)')
+        w('#define WRAP(_ptr) ((HPy){(_ptr)})')
+        w('#define UNWRAP_TUPLE_BUILDER(_h) ((_h)._tup)')
+        w('#define WRAP_TUPLE_BUILDER(_ptr) ((HPyTupleBuilder){(_ptr)})')
+        w('#define UNWRAP_LIST_BUILDER(_h) ((_h)._lst)')
+        w('#define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})')
+        w('#define UNWRAP_TRACKER(_h) ((_h)._i)')
+        w('#define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})')
+        w('#define UNWRAP_THREADSTATE(_ts) ((_ts)._i)')
+        w('#define WRAP_THREADSTATE(_ptr) ((HPyThreadState){(_ptr)})')
+        w('#define UNWRAP_FIELD(_h) ((_h)._i)')
+        w('#define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})')
+        w('#define UNWRAP_GLOBAL(_h) ((_h)._i)')
+        w('#define WRAP_GLOBAL(_ptr) ((HPyGlobal){(_ptr)})')
+        w('#else')
+        w('#define UNWRAP(_h) _h')
+        w('#define WRAP(_ptr) _ptr')
+        w('#define UNWRAP_TUPLE_BUILDER(_h) _h')
+        w('#define WRAP_TUPLE_BUILDER(_ptr) _ptr')
+        w('#define UNWRAP_LIST_BUILDER(_h) _h')
+        w('#define WRAP_LIST_BUILDER(_ptr) _ptr')
+        w('#define UNWRAP_TRACKER(_h) _h')
+        w('#define WRAP_TRACKER(_ptr) _ptr')
+        w('#define UNWRAP_THREADSTATE(_ts) _ts')
+        w('#define WRAP_THREADSTATE(_data) _data')
+        w('#define UNWRAP_FIELD(_h) _h')
+        w('#define WRAP_FIELD(_ptr) _ptr')
+        w('#define UNWRAP_GLOBAL(_h) _h')
+        w('#define WRAP_GLOBAL(_ptr) _ptr')
+        w('#endif')
+        for func in self.api.functions:
+            trampoline = self.gen_trampoline(func)
+            if trampoline:
+                lines.append(trampoline)
+                lines.append('')
+        return '\n'.join(lines)
+
+    def gen_trampoline(self, func):
+        # HPyAPI_FUNC HPy HPyModule_Create(HPyContext *ctx, HPyModuleDef *def) {
+        #      return ctx->ctx_Module_Create ( ctx, def );
+        # }
+        if func.name in conf.NO_TRAMPOLINES:
+            return None
+        const_return = get_return_constant(func)
+        rettype = get_context_return_type(func.node, const_return)
+        parts = []
+        w = parts.append
+        w('HPyAPI_FUNC')
+        w(toC(func.node))
+        w('{')
+
+        # trampolines cannot deal with varargs easily
+        assert not func.is_varargs()
+
+        call = []
+        wc = call.append
+        wc('    ')
+        cast_fun = llvm_return_cast_func.get(rettype, '')
+        if rettype == 'void':
+            wc(f'ctx->{func.ctx_name()}')
+        else:
+            if cast_fun:
+                wc(f'return {cast_fun}(ctx->{func.ctx_name()}')
+            else:
+                wc(f'return ctx->{func.ctx_name()}')
+        wc('(')
+        params = []
+        for p in func.node.type.args.params:
+            param_type_name = toC(p.type)
+            arg_cast_fun = llvm_param_cast_func.get(param_type_name, '')
+            params.append(f'{arg_cast_fun}({p.name})')
+        wc(', '.join(params))
+        if cast_fun:
+            wc('));')
+        else:
+            wc(');')
+
+        w(''.join(call))
+        if const_return:
+            w(f'return {const_return};')
+
+        w('}')
+        return '\n'.join(parts)
+
 
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
@@ -1050,4 +1163,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_handles_init,
               autogen_ctx_member_enum,
               autogen_ctx_llvm_init,
-              autogen_ctx_function_factory)
+              autogen_ctx_function_factory,
+              autogen_llvm_trampolines_h)
