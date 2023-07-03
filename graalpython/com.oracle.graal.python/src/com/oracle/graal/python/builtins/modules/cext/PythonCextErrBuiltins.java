@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -172,15 +173,18 @@ public final class PythonCextErrBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedGetClassNode getClassNode,
-                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
+                        @Cached MaterializeLazyTracebackNode materializeTraceback) {
             PException currentException = getThreadStateNode.getCurrentException();
             Object result;
             if (currentException == null) {
                 result = getNativeNull();
             } else {
                 Object exception = currentException.getEscapedException();
-                Object traceback = getTracebackNode.execute(inliningTarget, exception);
-                if (traceback == PNone.NONE) {
+                Object traceback = null;
+                if (currentException.getTraceback() != null) {
+                    traceback = materializeTraceback.execute(currentException.getTraceback());
+                }
+                if (traceback == null) {
                     traceback = getNativeNull();
                 }
                 result = factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
