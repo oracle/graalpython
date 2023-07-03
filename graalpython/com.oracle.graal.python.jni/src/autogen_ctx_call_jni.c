@@ -80,13 +80,13 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeO)(JNIEnv *env, jclass clazz, jlong ta
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeVarargs)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs)
 {
     HPyFunc_varargs f = (HPyFunc_varargs)target;
-    return _h2jlong(f((HPyContext *)ctx, _jlong2h(self), (HPy *) args, (HPy_ssize_t) nargs));
+    return _h2jlong(f((HPyContext *)ctx, _jlong2h(self), (const HPy *) args, (size_t) nargs));
 }
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw)
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kwnames)
 {
     HPyFunc_keywords f = (HPyFunc_keywords)target;
-    return _h2jlong(f((HPyContext *)ctx, _jlong2h(self), (HPy *) args, (HPy_ssize_t) nargs, _jlong2h(kw)));
+    return _h2jlong(f((HPyContext *)ctx, _jlong2h(self), (const HPy *) args, (size_t) nargs, _jlong2h(kwnames)));
 }
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeUnaryfunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
@@ -224,7 +224,13 @@ JNIEXPORT jint JNICALL TRAMPOLINE(executeDescrsetfunc)(JNIEnv *env, jclass clazz
 JNIEXPORT jint JNICALL TRAMPOLINE(executeInitproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw)
 {
     HPyFunc_initproc f = (HPyFunc_initproc)target;
-    return (jint) f((HPyContext *)ctx, _jlong2h(self), (HPy *) args, (HPy_ssize_t) nargs, _jlong2h(kw));
+    return (jint) f((HPyContext *)ctx, _jlong2h(self), (const HPy *) args, (HPy_ssize_t) nargs, _jlong2h(kw));
+}
+
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeNewfunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong type, jlong args, jlong nargs, jlong kw)
+{
+    HPyFunc_newfunc f = (HPyFunc_newfunc)target;
+    return _h2jlong(f((HPyContext *)ctx, _jlong2h(type), (const HPy *) args, (HPy_ssize_t) nargs, _jlong2h(kw)));
 }
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeGetter)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0, jlong arg1)
@@ -261,6 +267,12 @@ JNIEXPORT void JNICALL TRAMPOLINE(executeDestructor)(JNIEnv *env, jclass clazz, 
 {
     HPyFunc_destructor f = (HPyFunc_destructor)target;
     f((HPyContext *)ctx, _jlong2h(arg0));
+}
+
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeMod_create)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
+{
+    HPyFunc_mod_create f = (HPyFunc_mod_create)target;
+    return _h2jlong(f((HPyContext *)ctx, _jlong2h(arg0)));
 }
 
 
@@ -301,24 +313,20 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugVarargs)(JNIEnv *env, jclass claz
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_varargs f = (HPyFunc_varargs)target;
     DHPy dh_self = _jlong2dh(dctx, self);
-    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
-    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t)nargs);
-    _ARR_DH_CLOSE(dctx, dh_args, nargs)
+    DHPy dh_result = f(dctx, dh_self, (const HPy *)args, (size_t)nargs);
     DHPy_close_and_check(dctx, dh_self);
     return from_dh(dctx, dh_result);
 }
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw)
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kwnames)
 {
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_keywords f = (HPyFunc_keywords)target;
     DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy dh_kw = _jlong2dh(dctx, kw);
-    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
-    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t)nargs, dh_kw);
-    _ARR_DH_CLOSE(dctx, dh_args, nargs)
+    DHPy dh_kwnames = _jlong2dh(dctx, kwnames);
+    DHPy dh_result = f(dctx, dh_self, (const HPy *)args, (size_t)nargs, dh_kwnames);
     DHPy_close_and_check(dctx, dh_self);
-    DHPy_close_and_check(dctx, dh_kw);
+    DHPy_close_and_check(dctx, dh_kwnames);
     return from_dh(dctx, dh_result);
 }
 
@@ -577,12 +585,22 @@ JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInitproc)(JNIEnv *env, jclass claz
     HPyFunc_initproc f = (HPyFunc_initproc)target;
     DHPy dh_self = _jlong2dh(dctx, self);
     DHPy dh_kw = _jlong2dh(dctx, kw);
-    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
-    jint result = (jint) f(dctx, dh_self, dh_args, (HPy_ssize_t)nargs, dh_kw);
-    _ARR_DH_CLOSE(dctx, dh_args, nargs)
+    jint result = (jint) f(dctx, dh_self, (const HPy *)args, (HPy_ssize_t)nargs, dh_kw);
     DHPy_close_and_check(dctx, dh_self);
     DHPy_close_and_check(dctx, dh_kw);
     return result;
+}
+
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugNewfunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong type, jlong args, jlong nargs, jlong kw)
+{
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_newfunc f = (HPyFunc_newfunc)target;
+    DHPy dh_type = _jlong2dh(dctx, type);
+    DHPy dh_kw = _jlong2dh(dctx, kw);
+    DHPy dh_result = f(dctx, dh_type, (const HPy *)args, (HPy_ssize_t)nargs, dh_kw);
+    DHPy_close_and_check(dctx, dh_type);
+    DHPy_close_and_check(dctx, dh_kw);
+    return from_dh(dctx, dh_result);
 }
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugGetter)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0, jlong arg1)
@@ -626,6 +644,16 @@ JNIEXPORT void JNICALL TRAMPOLINE(executeDebugDestructor)(JNIEnv *env, jclass cl
     DHPy dh_arg0 = _jlong2dh(dctx, arg0);
     f(dctx, dh_arg0);
     DHPy_close_and_check(dctx, dh_arg0);
+}
+
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugMod_create)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
+{
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_mod_create f = (HPyFunc_mod_create)target;
+    DHPy dh_arg0 = _jlong2dh(dctx, arg0);
+    DHPy dh_result = f(dctx, dh_arg0);
+    DHPy_close_and_check(dctx, dh_arg0);
+    return from_dh(dctx, dh_result);
 }
 
 #undef TRAMPOLINE

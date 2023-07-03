@@ -403,6 +403,7 @@ CTX_HANDLES = {
     "h_MemoryViewType": ("PythonBuiltinClassType.PMemoryView", "createTypeConstant", []),
     "h_CapsuleType": ("PythonBuiltinClassType.Capsule", "createTypeConstant", []),
     "h_SliceType": ("PythonBuiltinClassType.PSlice", "createTypeConstant", []),
+    "h_Builtins": ("", "createBuiltinsConstant", []),
 }
 
 def get_cast_fun(type_name):

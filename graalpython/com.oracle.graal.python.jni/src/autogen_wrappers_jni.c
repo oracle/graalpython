@@ -59,36 +59,34 @@
 
 #define TRAMPOLINE(FUN_NAME) Java_com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNIContext_ ## FUN_NAME
 
-static jmethodID jniMethod_ctx_Module_Create;
-static HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def);
 static jmethodID jniMethod_ctx_Dup;
 static HPy ctx_Dup_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Close;
 static void ctx_Close_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_FromLong;
-static HPy ctx_Long_FromLong_jni(HPyContext *ctx, long value);
-static jmethodID jniMethod_ctx_Long_FromUnsignedLong;
-static HPy ctx_Long_FromUnsignedLong_jni(HPyContext *ctx, unsigned long value);
-static jmethodID jniMethod_ctx_Long_FromLongLong;
-static HPy ctx_Long_FromLongLong_jni(HPyContext *ctx, long long v);
-static jmethodID jniMethod_ctx_Long_FromUnsignedLongLong;
-static HPy ctx_Long_FromUnsignedLongLong_jni(HPyContext *ctx, unsigned long long v);
+static jmethodID jniMethod_ctx_Long_FromInt32_t;
+static HPy ctx_Long_FromInt32_t_jni(HPyContext *ctx, int32_t value);
+static jmethodID jniMethod_ctx_Long_FromUInt32_t;
+static HPy ctx_Long_FromUInt32_t_jni(HPyContext *ctx, uint32_t value);
+static jmethodID jniMethod_ctx_Long_FromInt64_t;
+static HPy ctx_Long_FromInt64_t_jni(HPyContext *ctx, int64_t v);
+static jmethodID jniMethod_ctx_Long_FromUInt64_t;
+static HPy ctx_Long_FromUInt64_t_jni(HPyContext *ctx, uint64_t v);
 static jmethodID jniMethod_ctx_Long_FromSize_t;
 static HPy ctx_Long_FromSize_t_jni(HPyContext *ctx, size_t value);
 static jmethodID jniMethod_ctx_Long_FromSsize_t;
 static HPy ctx_Long_FromSsize_t_jni(HPyContext *ctx, HPy_ssize_t value);
-static jmethodID jniMethod_ctx_Long_AsLong;
-static long ctx_Long_AsLong_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_AsUnsignedLong;
-static unsigned long ctx_Long_AsUnsignedLong_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_AsUnsignedLongMask;
-static unsigned long ctx_Long_AsUnsignedLongMask_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_AsLongLong;
-static long long ctx_Long_AsLongLong_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_AsUnsignedLongLong;
-static unsigned long long ctx_Long_AsUnsignedLongLong_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Long_AsUnsignedLongLongMask;
-static unsigned long long ctx_Long_AsUnsignedLongLongMask_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsInt32_t;
+static int32_t ctx_Long_AsInt32_t_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsUInt32_t;
+static uint32_t ctx_Long_AsUInt32_t_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsUInt32_tMask;
+static uint32_t ctx_Long_AsUInt32_tMask_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsInt64_t;
+static int64_t ctx_Long_AsInt64_t_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsUInt64_t;
+static uint64_t ctx_Long_AsUInt64_t_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Long_AsUInt64_tMask;
+static uint64_t ctx_Long_AsUInt64_tMask_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsSize_t;
 static size_t ctx_Long_AsSize_t_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Long_AsSsize_t;
@@ -101,12 +99,10 @@ static jmethodID jniMethod_ctx_Float_FromDouble;
 static HPy ctx_Float_FromDouble_jni(HPyContext *ctx, double v);
 static jmethodID jniMethod_ctx_Float_AsDouble;
 static double ctx_Float_AsDouble_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Bool_FromLong;
-static HPy ctx_Bool_FromLong_jni(HPyContext *ctx, long v);
+static jmethodID jniMethod_ctx_Bool_FromBool;
+static HPy ctx_Bool_FromBool_jni(HPyContext *ctx, bool v);
 static jmethodID jniMethod_ctx_Length;
 static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Sequence_Check;
-static int ctx_Sequence_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Number_Check;
 static int ctx_Number_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Add;
@@ -181,10 +177,14 @@ static jmethodID jniMethod_ctx_Callable_Check;
 static int ctx_Callable_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_CallTupleDict;
 static HPy ctx_CallTupleDict_jni(HPyContext *ctx, HPy callable, HPy args, HPy kw);
+static jmethodID jniMethod_ctx_Call;
+static HPy ctx_Call_jni(HPyContext *ctx, HPy callable, const HPy *args, size_t nargs, HPy kwnames);
+static jmethodID jniMethod_ctx_CallMethod;
+static HPy ctx_CallMethod_jni(HPyContext *ctx, HPy name, const HPy *args, size_t nargs, HPy kwnames);
 static jmethodID jniMethod_ctx_FatalError;
 static void ctx_FatalError_jni(HPyContext *ctx, const char *message);
 static jmethodID jniMethod_ctx_Err_SetString;
-static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *message);
+static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *utf8_message);
 static jmethodID jniMethod_ctx_Err_SetObject;
 static void ctx_Err_SetObject_jni(HPyContext *ctx, HPy h_type, HPy h_value);
 static jmethodID jniMethod_ctx_Err_SetFromErrnoWithFilename;
@@ -200,11 +200,11 @@ static void ctx_Err_NoMemory_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Err_Clear;
 static void ctx_Err_Clear_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Err_NewException;
-static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *name, HPy base, HPy dict);
+static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *utf8_name, HPy base, HPy dict);
 static jmethodID jniMethod_ctx_Err_NewExceptionWithDoc;
-static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict);
+static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *utf8_name, const char *utf8_doc, HPy base, HPy dict);
 static jmethodID jniMethod_ctx_Err_WarnEx;
-static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level);
+static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *utf8_message, HPy_ssize_t stack_level);
 static jmethodID jniMethod_ctx_Err_WriteUnraisable;
 static void ctx_Err_WriteUnraisable_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_IsTrue;
@@ -212,19 +212,17 @@ static int ctx_IsTrue_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Type_FromSpec;
 static HPy ctx_Type_FromSpec_jni(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params);
 static jmethodID jniMethod_ctx_Type_GenericNew;
-static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw);
+static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, const HPy *args, HPy_ssize_t nargs, HPy kw);
 static jmethodID jniMethod_ctx_GetAttr;
 static HPy ctx_GetAttr_jni(HPyContext *ctx, HPy obj, HPy name);
-static jmethodID jniMethod_ctx_MaybeGetAttr_s;
-static HPy ctx_MaybeGetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name);
 static jmethodID jniMethod_ctx_HasAttr;
 static int ctx_HasAttr_jni(HPyContext *ctx, HPy obj, HPy name);
 static jmethodID jniMethod_ctx_HasAttr_s;
-static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *name);
+static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *utf8_name);
 static jmethodID jniMethod_ctx_SetAttr;
 static int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value);
 static jmethodID jniMethod_ctx_SetAttr_s;
-static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name, HPy value);
+static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *utf8_name, HPy value);
 static jmethodID jniMethod_ctx_GetItem;
 static HPy ctx_GetItem_jni(HPyContext *ctx, HPy obj, HPy key);
 static jmethodID jniMethod_ctx_GetItem_i;
@@ -235,26 +233,40 @@ static jmethodID jniMethod_ctx_SetItem;
 static int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value);
 static jmethodID jniMethod_ctx_SetItem_i;
 static int ctx_SetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value);
+static jmethodID jniMethod_ctx_DelItem;
+static int ctx_DelItem_jni(HPyContext *ctx, HPy obj, HPy key);
+static jmethodID jniMethod_ctx_DelItem_i;
+static int ctx_DelItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx);
+static jmethodID jniMethod_ctx_DelItem_s;
+static int ctx_DelItem_s_jni(HPyContext *ctx, HPy obj, const char *utf8_key);
 static jmethodID jniMethod_ctx_Type;
 static HPy ctx_Type_jni(HPyContext *ctx, HPy obj);
 static jmethodID jniMethod_ctx_TypeCheck;
 static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type);
-static jmethodID jniMethod_ctx_TypeCheck_g;
-static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type);
-static jmethodID jniMethod_ctx_SetType;
-static int ctx_SetType_jni(HPyContext *ctx, HPy obj, HPy type);
-static jmethodID jniMethod_ctx_Type_IsSubtype;
-static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type);
 static jmethodID jniMethod_ctx_Type_GetName;
 static const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type);
+static jmethodID jniMethod_ctx_Type_IsSubtype;
+static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type);
 static jmethodID jniMethod_ctx_Is;
 static int ctx_Is_jni(HPyContext *ctx, HPy obj, HPy other);
-static jmethodID jniMethod_ctx_Is_g;
-static int ctx_Is_g_jni(HPyContext *ctx, HPy obj, HPyGlobal other);
-static jmethodID jniMethod_ctx_AsStruct;
-static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_AsStructLegacy;
-static void *ctx_AsStructLegacy_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Object;
+static void *ctx_AsStruct_Object_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Legacy;
+static void *ctx_AsStruct_Legacy_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Type;
+static void *ctx_AsStruct_Type_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Long;
+static void *ctx_AsStruct_Long_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Float;
+static void *ctx_AsStruct_Float_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Unicode;
+static void *ctx_AsStruct_Unicode_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_Tuple;
+static void *ctx_AsStruct_Tuple_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_AsStruct_List;
+static void *ctx_AsStruct_List_jni(HPyContext *ctx, HPy h);
+static jmethodID jniMethod_ctx_Type_GetBuiltinShape;
+static HPyType_BuiltinShape ctx_Type_GetBuiltinShape_jni(HPyContext *ctx, HPy h_type);
 static jmethodID jniMethod_ctx_New;
 static HPy ctx_New_jni(HPyContext *ctx, HPy h_type, void **data);
 static jmethodID jniMethod_ctx_Repr;
@@ -271,8 +283,6 @@ static jmethodID jniMethod_ctx_RichCompareBool;
 static int ctx_RichCompareBool_jni(HPyContext *ctx, HPy v, HPy w, int op);
 static jmethodID jniMethod_ctx_Hash;
 static HPy_hash_t ctx_Hash_jni(HPyContext *ctx, HPy obj);
-static jmethodID jniMethod_ctx_SeqIter_New;
-static HPy ctx_SeqIter_New_jni(HPyContext *ctx, HPy seq);
 static jmethodID jniMethod_ctx_Bytes_Check;
 static int ctx_Bytes_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_Size;
@@ -280,13 +290,13 @@ static HPy_ssize_t ctx_Bytes_Size_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_GET_SIZE;
 static HPy_ssize_t ctx_Bytes_GET_SIZE_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_AsString;
-static char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h);
+static const char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_AS_STRING;
-static char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h);
+static const char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Bytes_FromString;
-static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *v);
+static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *bytes);
 static jmethodID jniMethod_ctx_Bytes_FromStringAndSize;
-static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t len);
+static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *bytes, HPy_ssize_t len);
 static jmethodID jniMethod_ctx_Unicode_FromString;
 static HPy ctx_Unicode_FromString_jni(HPyContext *ctx, const char *utf8);
 static jmethodID jniMethod_ctx_Unicode_Check;
@@ -309,15 +319,13 @@ static HPy ctx_Unicode_EncodeFSDefault_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Unicode_ReadChar;
 static HPy_UCS4 ctx_Unicode_ReadChar_jni(HPyContext *ctx, HPy h, HPy_ssize_t index);
 static jmethodID jniMethod_ctx_Unicode_DecodeASCII;
-static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
+static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *ascii, HPy_ssize_t size, const char *errors);
 static jmethodID jniMethod_ctx_Unicode_DecodeLatin1;
-static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
+static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *latin1, HPy_ssize_t size, const char *errors);
 static jmethodID jniMethod_ctx_Unicode_FromEncodedObject;
 static HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
-static jmethodID jniMethod_ctx_Unicode_InternFromString;
-static HPy ctx_Unicode_InternFromString_jni(HPyContext *ctx, const char *str);
 static jmethodID jniMethod_ctx_Unicode_Substring;
-static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end);
+static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy str, HPy_ssize_t start, HPy_ssize_t end);
 static jmethodID jniMethod_ctx_List_Check;
 static int ctx_List_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_List_New;
@@ -330,24 +338,20 @@ static jmethodID jniMethod_ctx_Dict_New;
 static HPy ctx_Dict_New_jni(HPyContext *ctx);
 static jmethodID jniMethod_ctx_Dict_Keys;
 static HPy ctx_Dict_Keys_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Dict_GetItem;
-static HPy ctx_Dict_GetItem_jni(HPyContext *ctx, HPy op, HPy key);
+static jmethodID jniMethod_ctx_Dict_Copy;
+static HPy ctx_Dict_Copy_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Tuple_Check;
 static int ctx_Tuple_Check_jni(HPyContext *ctx, HPy h);
 static jmethodID jniMethod_ctx_Slice_Unpack;
 static int ctx_Slice_Unpack_jni(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
-static jmethodID jniMethod_ctx_ContextVar_New;
-static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value);
-static jmethodID jniMethod_ctx_ContextVar_Set;
-static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value);
 static jmethodID jniMethod_ctx_Import_ImportModule;
-static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *name);
+static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *utf8_name);
 static jmethodID jniMethod_ctx_Capsule_New;
-static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor);
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *utf8_name, HPyCapsule_Destructor *destructor);
 static jmethodID jniMethod_ctx_Capsule_Get;
-static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name);
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *utf8_name);
 static jmethodID jniMethod_ctx_Capsule_IsValid;
-static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *name);
+static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *utf8_name);
 static jmethodID jniMethod_ctx_Capsule_Set;
 static int ctx_Capsule_Set_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value);
 static jmethodID jniMethod_ctx_FromPyObject;
@@ -371,8 +375,16 @@ static HPyThreadState ctx_LeavePythonExecution_jni(HPyContext *ctx);
 _HPy_HIDDEN jmethodID jniMethod_ctx_Global_Load;
 static jmethodID jniMethod_ctx_Dump;
 static void ctx_Dump_jni(HPyContext *ctx, HPy h);
-static jmethodID jniMethod_ctx_Type_CheckSlot;
-static int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value);
+static jmethodID jniMethod_ctx_Compile_s;
+static HPy ctx_Compile_s_jni(HPyContext *ctx, const char *utf8_source, const char *utf8_filename, HPy_SourceKind kind);
+static jmethodID jniMethod_ctx_EvalCode;
+static HPy ctx_EvalCode_jni(HPyContext *ctx, HPy code, HPy globals, HPy locals);
+static jmethodID jniMethod_ctx_ContextVar_New;
+static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value);
+static jmethodID jniMethod_ctx_ContextVar_Set;
+static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value);
+static jmethodID jniMethod_ctx_SetCallFunction;
+static int ctx_SetCallFunction_jni(HPyContext *ctx, HPy h, HPyCallFunction *func);
 
 _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx, jlongArray jctx_handles)
 {
@@ -459,19 +471,14 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
     ctx->h_UnicodeType = _jlong2h(ctx_handles[74]);
     ctx->h_TupleType = _jlong2h(ctx_handles[75]);
     ctx->h_ListType = _jlong2h(ctx_handles[76]);
-    ctx->h_ComplexType = _jlong2h(ctx_handles[229]);
-    ctx->h_BytesType = _jlong2h(ctx_handles[230]);
-    ctx->h_MemoryViewType = _jlong2h(ctx_handles[231]);
-    ctx->h_CapsuleType = _jlong2h(ctx_handles[232]);
-    ctx->h_SliceType = _jlong2h(ctx_handles[233]);
+    ctx->h_ComplexType = _jlong2h(ctx_handles[238]);
+    ctx->h_BytesType = _jlong2h(ctx_handles[239]);
+    ctx->h_MemoryViewType = _jlong2h(ctx_handles[240]);
+    ctx->h_CapsuleType = _jlong2h(ctx_handles[241]);
+    ctx->h_SliceType = _jlong2h(ctx_handles[242]);
+    ctx->h_Builtins = _jlong2h(ctx_handles[243]);
     (*env)->ReleasePrimitiveArrayCritical(env, jctx_handles, ctx_handles, JNI_ABORT);
 
-    jniMethod_ctx_Module_Create = (*env)->GetMethodID(env, clazz, "ctxModuleCreate", "(J)J");
-    if (jniMethod_ctx_Module_Create == NULL) {
-        LOGS("ERROR: Java method ctxModuleCreate not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Module_Create = &ctx_Module_Create_jni;
     jniMethod_ctx_Dup = (*env)->GetMethodID(env, clazz, "ctxDup", "(J)J");
     if (jniMethod_ctx_Dup == NULL) {
         LOGS("ERROR: Java method ctxDup not found found !\n");
@@ -484,30 +491,30 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Close = &ctx_Close_jni;
-    jniMethod_ctx_Long_FromLong = (*env)->GetMethodID(env, clazz, "ctxLongFromLong", "(J)J");
-    if (jniMethod_ctx_Long_FromLong == NULL) {
-        LOGS("ERROR: Java method ctxLongFromLong not found found !\n");
+    jniMethod_ctx_Long_FromInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromInt32t", "(J)J");
+    if (jniMethod_ctx_Long_FromInt32_t == NULL) {
+        LOGS("ERROR: Java method ctxLongFromInt32t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_FromLong = &ctx_Long_FromLong_jni;
-    jniMethod_ctx_Long_FromUnsignedLong = (*env)->GetMethodID(env, clazz, "ctxLongFromUnsignedLong", "(J)J");
-    if (jniMethod_ctx_Long_FromUnsignedLong == NULL) {
-        LOGS("ERROR: Java method ctxLongFromUnsignedLong not found found !\n");
+    ctx->ctx_Long_FromInt32_t = &ctx_Long_FromInt32_t_jni;
+    jniMethod_ctx_Long_FromUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromUInt32t", "(J)J");
+    if (jniMethod_ctx_Long_FromUInt32_t == NULL) {
+        LOGS("ERROR: Java method ctxLongFromUInt32t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_FromUnsignedLong = &ctx_Long_FromUnsignedLong_jni;
-    jniMethod_ctx_Long_FromLongLong = (*env)->GetMethodID(env, clazz, "ctxLongFromLongLong", "(J)J");
-    if (jniMethod_ctx_Long_FromLongLong == NULL) {
-        LOGS("ERROR: Java method ctxLongFromLongLong not found found !\n");
+    ctx->ctx_Long_FromUInt32_t = &ctx_Long_FromUInt32_t_jni;
+    jniMethod_ctx_Long_FromInt64_t = (*env)->GetMethodID(env, clazz, "ctxLongFromInt64t", "(J)J");
+    if (jniMethod_ctx_Long_FromInt64_t == NULL) {
+        LOGS("ERROR: Java method ctxLongFromInt64t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_FromLongLong = &ctx_Long_FromLongLong_jni;
-    jniMethod_ctx_Long_FromUnsignedLongLong = (*env)->GetMethodID(env, clazz, "ctxLongFromUnsignedLongLong", "(J)J");
-    if (jniMethod_ctx_Long_FromUnsignedLongLong == NULL) {
-        LOGS("ERROR: Java method ctxLongFromUnsignedLongLong not found found !\n");
+    ctx->ctx_Long_FromInt64_t = &ctx_Long_FromInt64_t_jni;
+    jniMethod_ctx_Long_FromUInt64_t = (*env)->GetMethodID(env, clazz, "ctxLongFromUInt64t", "(J)J");
+    if (jniMethod_ctx_Long_FromUInt64_t == NULL) {
+        LOGS("ERROR: Java method ctxLongFromUInt64t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_FromUnsignedLongLong = &ctx_Long_FromUnsignedLongLong_jni;
+    ctx->ctx_Long_FromUInt64_t = &ctx_Long_FromUInt64_t_jni;
     jniMethod_ctx_Long_FromSize_t = (*env)->GetMethodID(env, clazz, "ctxLongFromSizet", "(J)J");
     if (jniMethod_ctx_Long_FromSize_t == NULL) {
         LOGS("ERROR: Java method ctxLongFromSizet not found found !\n");
@@ -520,42 +527,42 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Long_FromSsize_t = &ctx_Long_FromSsize_t_jni;
-    jniMethod_ctx_Long_AsLong = (*env)->GetMethodID(env, clazz, "ctxLongAsLong", "(J)J");
-    if (jniMethod_ctx_Long_AsLong == NULL) {
-        LOGS("ERROR: Java method ctxLongAsLong not found found !\n");
+    jniMethod_ctx_Long_AsInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsInt32t", "(J)J");
+    if (jniMethod_ctx_Long_AsInt32_t == NULL) {
+        LOGS("ERROR: Java method ctxLongAsInt32t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsLong = &ctx_Long_AsLong_jni;
-    jniMethod_ctx_Long_AsUnsignedLong = (*env)->GetMethodID(env, clazz, "ctxLongAsUnsignedLong", "(J)J");
-    if (jniMethod_ctx_Long_AsUnsignedLong == NULL) {
-        LOGS("ERROR: Java method ctxLongAsUnsignedLong not found found !\n");
+    ctx->ctx_Long_AsInt32_t = &ctx_Long_AsInt32_t_jni;
+    jniMethod_ctx_Long_AsUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32t", "(J)J");
+    if (jniMethod_ctx_Long_AsUInt32_t == NULL) {
+        LOGS("ERROR: Java method ctxLongAsUInt32t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsUnsignedLong = &ctx_Long_AsUnsignedLong_jni;
-    jniMethod_ctx_Long_AsUnsignedLongMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUnsignedLongMask", "(J)J");
-    if (jniMethod_ctx_Long_AsUnsignedLongMask == NULL) {
-        LOGS("ERROR: Java method ctxLongAsUnsignedLongMask not found found !\n");
+    ctx->ctx_Long_AsUInt32_t = &ctx_Long_AsUInt32_t_jni;
+    jniMethod_ctx_Long_AsUInt32_tMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32tMask", "(J)J");
+    if (jniMethod_ctx_Long_AsUInt32_tMask == NULL) {
+        LOGS("ERROR: Java method ctxLongAsUInt32tMask not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsUnsignedLongMask = &ctx_Long_AsUnsignedLongMask_jni;
-    jniMethod_ctx_Long_AsLongLong = (*env)->GetMethodID(env, clazz, "ctxLongAsLongLong", "(J)J");
-    if (jniMethod_ctx_Long_AsLongLong == NULL) {
-        LOGS("ERROR: Java method ctxLongAsLongLong not found found !\n");
+    ctx->ctx_Long_AsUInt32_tMask = &ctx_Long_AsUInt32_tMask_jni;
+    jniMethod_ctx_Long_AsInt64_t = (*env)->GetMethodID(env, clazz, "ctxLongAsInt64t", "(J)J");
+    if (jniMethod_ctx_Long_AsInt64_t == NULL) {
+        LOGS("ERROR: Java method ctxLongAsInt64t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsLongLong = &ctx_Long_AsLongLong_jni;
-    jniMethod_ctx_Long_AsUnsignedLongLong = (*env)->GetMethodID(env, clazz, "ctxLongAsUnsignedLongLong", "(J)J");
-    if (jniMethod_ctx_Long_AsUnsignedLongLong == NULL) {
-        LOGS("ERROR: Java method ctxLongAsUnsignedLongLong not found found !\n");
+    ctx->ctx_Long_AsInt64_t = &ctx_Long_AsInt64_t_jni;
+    jniMethod_ctx_Long_AsUInt64_t = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt64t", "(J)J");
+    if (jniMethod_ctx_Long_AsUInt64_t == NULL) {
+        LOGS("ERROR: Java method ctxLongAsUInt64t not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsUnsignedLongLong = &ctx_Long_AsUnsignedLongLong_jni;
-    jniMethod_ctx_Long_AsUnsignedLongLongMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUnsignedLongLongMask", "(J)J");
-    if (jniMethod_ctx_Long_AsUnsignedLongLongMask == NULL) {
-        LOGS("ERROR: Java method ctxLongAsUnsignedLongLongMask not found found !\n");
+    ctx->ctx_Long_AsUInt64_t = &ctx_Long_AsUInt64_t_jni;
+    jniMethod_ctx_Long_AsUInt64_tMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt64tMask", "(J)J");
+    if (jniMethod_ctx_Long_AsUInt64_tMask == NULL) {
+        LOGS("ERROR: Java method ctxLongAsUInt64tMask not found found !\n");
         return 1;
     }
-    ctx->ctx_Long_AsUnsignedLongLongMask = &ctx_Long_AsUnsignedLongLongMask_jni;
+    ctx->ctx_Long_AsUInt64_tMask = &ctx_Long_AsUInt64_tMask_jni;
     jniMethod_ctx_Long_AsSize_t = (*env)->GetMethodID(env, clazz, "ctxLongAsSizet", "(J)J");
     if (jniMethod_ctx_Long_AsSize_t == NULL) {
         LOGS("ERROR: Java method ctxLongAsSizet not found found !\n");
@@ -592,24 +599,18 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Float_AsDouble = &ctx_Float_AsDouble_jni;
-    jniMethod_ctx_Bool_FromLong = (*env)->GetMethodID(env, clazz, "ctxBoolFromLong", "(J)J");
-    if (jniMethod_ctx_Bool_FromLong == NULL) {
-        LOGS("ERROR: Java method ctxBoolFromLong not found found !\n");
+    jniMethod_ctx_Bool_FromBool = (*env)->GetMethodID(env, clazz, "ctxBoolFromBool", "(J)J");
+    if (jniMethod_ctx_Bool_FromBool == NULL) {
+        LOGS("ERROR: Java method ctxBoolFromBool not found found !\n");
         return 1;
     }
-    ctx->ctx_Bool_FromLong = &ctx_Bool_FromLong_jni;
+    ctx->ctx_Bool_FromBool = &ctx_Bool_FromBool_jni;
     jniMethod_ctx_Length = (*env)->GetMethodID(env, clazz, "ctxLength", "(J)J");
     if (jniMethod_ctx_Length == NULL) {
         LOGS("ERROR: Java method ctxLength not found found !\n");
         return 1;
     }
     ctx->ctx_Length = &ctx_Length_jni;
-    jniMethod_ctx_Sequence_Check = (*env)->GetMethodID(env, clazz, "ctxSequenceCheck", "(J)I");
-    if (jniMethod_ctx_Sequence_Check == NULL) {
-        LOGS("ERROR: Java method ctxSequenceCheck not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Sequence_Check = &ctx_Sequence_Check_jni;
     jniMethod_ctx_Number_Check = (*env)->GetMethodID(env, clazz, "ctxNumberCheck", "(J)I");
     if (jniMethod_ctx_Number_Check == NULL) {
         LOGS("ERROR: Java method ctxNumberCheck not found found !\n");
@@ -832,6 +833,18 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_CallTupleDict = &ctx_CallTupleDict_jni;
+    jniMethod_ctx_Call = (*env)->GetMethodID(env, clazz, "ctxCall", "(JJJJ)J");
+    if (jniMethod_ctx_Call == NULL) {
+        LOGS("ERROR: Java method ctxCall not found found !\n");
+        return 1;
+    }
+    ctx->ctx_Call = &ctx_Call_jni;
+    jniMethod_ctx_CallMethod = (*env)->GetMethodID(env, clazz, "ctxCallMethod", "(JJJJ)J");
+    if (jniMethod_ctx_CallMethod == NULL) {
+        LOGS("ERROR: Java method ctxCallMethod not found found !\n");
+        return 1;
+    }
+    ctx->ctx_CallMethod = &ctx_CallMethod_jni;
     jniMethod_ctx_FatalError = (*env)->GetMethodID(env, clazz, "ctxFatalError", "(J)V");
     if (jniMethod_ctx_FatalError == NULL) {
         LOGS("ERROR: Java method ctxFatalError not found found !\n");
@@ -934,12 +947,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_GetAttr = &ctx_GetAttr_jni;
-    jniMethod_ctx_MaybeGetAttr_s = (*env)->GetMethodID(env, clazz, "ctxMaybeGetAttrs", "(JJ)J");
-    if (jniMethod_ctx_MaybeGetAttr_s == NULL) {
-        LOGS("ERROR: Java method ctxMaybeGetAttrs not found found !\n");
-        return 1;
-    }
-    ctx->ctx_MaybeGetAttr_s = &ctx_MaybeGetAttr_s_jni;
     jniMethod_ctx_HasAttr = (*env)->GetMethodID(env, clazz, "ctxHasAttr", "(JJ)I");
     if (jniMethod_ctx_HasAttr == NULL) {
         LOGS("ERROR: Java method ctxHasAttr not found found !\n");
@@ -994,6 +1001,24 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_SetItem_i = &ctx_SetItem_i_jni;
+    jniMethod_ctx_DelItem = (*env)->GetMethodID(env, clazz, "ctxDelItem", "(JJ)I");
+    if (jniMethod_ctx_DelItem == NULL) {
+        LOGS("ERROR: Java method ctxDelItem not found found !\n");
+        return 1;
+    }
+    ctx->ctx_DelItem = &ctx_DelItem_jni;
+    jniMethod_ctx_DelItem_i = (*env)->GetMethodID(env, clazz, "ctxDelItemi", "(JJ)I");
+    if (jniMethod_ctx_DelItem_i == NULL) {
+        LOGS("ERROR: Java method ctxDelItemi not found found !\n");
+        return 1;
+    }
+    ctx->ctx_DelItem_i = &ctx_DelItem_i_jni;
+    jniMethod_ctx_DelItem_s = (*env)->GetMethodID(env, clazz, "ctxDelItems", "(JJ)I");
+    if (jniMethod_ctx_DelItem_s == NULL) {
+        LOGS("ERROR: Java method ctxDelItems not found found !\n");
+        return 1;
+    }
+    ctx->ctx_DelItem_s = &ctx_DelItem_s_jni;
     jniMethod_ctx_Type = (*env)->GetMethodID(env, clazz, "ctxType", "(J)J");
     if (jniMethod_ctx_Type == NULL) {
         LOGS("ERROR: Java method ctxType not found found !\n");
@@ -1006,54 +1031,78 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_TypeCheck = &ctx_TypeCheck_jni;
-    jniMethod_ctx_TypeCheck_g = (*env)->GetMethodID(env, clazz, "ctxTypeCheckg", "(JJ)I");
-    if (jniMethod_ctx_TypeCheck_g == NULL) {
-        LOGS("ERROR: Java method ctxTypeCheckg not found found !\n");
-        return 1;
-    }
-    ctx->ctx_TypeCheck_g = &ctx_TypeCheck_g_jni;
-    jniMethod_ctx_SetType = (*env)->GetMethodID(env, clazz, "ctxSetType", "(JJ)I");
-    if (jniMethod_ctx_SetType == NULL) {
-        LOGS("ERROR: Java method ctxSetType not found found !\n");
-        return 1;
-    }
-    ctx->ctx_SetType = &ctx_SetType_jni;
-    jniMethod_ctx_Type_IsSubtype = (*env)->GetMethodID(env, clazz, "ctxTypeIsSubtype", "(JJ)I");
-    if (jniMethod_ctx_Type_IsSubtype == NULL) {
-        LOGS("ERROR: Java method ctxTypeIsSubtype not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Type_IsSubtype = &ctx_Type_IsSubtype_jni;
     jniMethod_ctx_Type_GetName = (*env)->GetMethodID(env, clazz, "ctxTypeGetName", "(J)J");
     if (jniMethod_ctx_Type_GetName == NULL) {
         LOGS("ERROR: Java method ctxTypeGetName not found found !\n");
         return 1;
     }
     ctx->ctx_Type_GetName = &ctx_Type_GetName_jni;
+    jniMethod_ctx_Type_IsSubtype = (*env)->GetMethodID(env, clazz, "ctxTypeIsSubtype", "(JJ)I");
+    if (jniMethod_ctx_Type_IsSubtype == NULL) {
+        LOGS("ERROR: Java method ctxTypeIsSubtype not found found !\n");
+        return 1;
+    }
+    ctx->ctx_Type_IsSubtype = &ctx_Type_IsSubtype_jni;
     jniMethod_ctx_Is = (*env)->GetMethodID(env, clazz, "ctxIs", "(JJ)I");
     if (jniMethod_ctx_Is == NULL) {
         LOGS("ERROR: Java method ctxIs not found found !\n");
         return 1;
     }
     ctx->ctx_Is = &ctx_Is_jni;
-    jniMethod_ctx_Is_g = (*env)->GetMethodID(env, clazz, "ctxIsg", "(JJ)I");
-    if (jniMethod_ctx_Is_g == NULL) {
-        LOGS("ERROR: Java method ctxIsg not found found !\n");
+    jniMethod_ctx_AsStruct_Object = (*env)->GetMethodID(env, clazz, "ctxAsStructObject", "(J)J");
+    if (jniMethod_ctx_AsStruct_Object == NULL) {
+        LOGS("ERROR: Java method ctxAsStructObject not found found !\n");
         return 1;
     }
-    ctx->ctx_Is_g = &ctx_Is_g_jni;
-    jniMethod_ctx_AsStruct = (*env)->GetMethodID(env, clazz, "ctxAsStruct", "(J)J");
-    if (jniMethod_ctx_AsStruct == NULL) {
-        LOGS("ERROR: Java method ctxAsStruct not found found !\n");
-        return 1;
-    }
-    ctx->ctx_AsStruct = &ctx_AsStruct_jni;
-    jniMethod_ctx_AsStructLegacy = (*env)->GetMethodID(env, clazz, "ctxAsStructLegacy", "(J)J");
-    if (jniMethod_ctx_AsStructLegacy == NULL) {
+    ctx->ctx_AsStruct_Object = &ctx_AsStruct_Object_jni;
+    jniMethod_ctx_AsStruct_Legacy = (*env)->GetMethodID(env, clazz, "ctxAsStructLegacy", "(J)J");
+    if (jniMethod_ctx_AsStruct_Legacy == NULL) {
         LOGS("ERROR: Java method ctxAsStructLegacy not found found !\n");
         return 1;
     }
-    ctx->ctx_AsStructLegacy = &ctx_AsStructLegacy_jni;
+    ctx->ctx_AsStruct_Legacy = &ctx_AsStruct_Legacy_jni;
+    jniMethod_ctx_AsStruct_Type = (*env)->GetMethodID(env, clazz, "ctxAsStructType", "(J)J");
+    if (jniMethod_ctx_AsStruct_Type == NULL) {
+        LOGS("ERROR: Java method ctxAsStructType not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_Type = &ctx_AsStruct_Type_jni;
+    jniMethod_ctx_AsStruct_Long = (*env)->GetMethodID(env, clazz, "ctxAsStructLong", "(J)J");
+    if (jniMethod_ctx_AsStruct_Long == NULL) {
+        LOGS("ERROR: Java method ctxAsStructLong not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_Long = &ctx_AsStruct_Long_jni;
+    jniMethod_ctx_AsStruct_Float = (*env)->GetMethodID(env, clazz, "ctxAsStructFloat", "(J)J");
+    if (jniMethod_ctx_AsStruct_Float == NULL) {
+        LOGS("ERROR: Java method ctxAsStructFloat not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_Float = &ctx_AsStruct_Float_jni;
+    jniMethod_ctx_AsStruct_Unicode = (*env)->GetMethodID(env, clazz, "ctxAsStructUnicode", "(J)J");
+    if (jniMethod_ctx_AsStruct_Unicode == NULL) {
+        LOGS("ERROR: Java method ctxAsStructUnicode not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_Unicode = &ctx_AsStruct_Unicode_jni;
+    jniMethod_ctx_AsStruct_Tuple = (*env)->GetMethodID(env, clazz, "ctxAsStructTuple", "(J)J");
+    if (jniMethod_ctx_AsStruct_Tuple == NULL) {
+        LOGS("ERROR: Java method ctxAsStructTuple not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_Tuple = &ctx_AsStruct_Tuple_jni;
+    jniMethod_ctx_AsStruct_List = (*env)->GetMethodID(env, clazz, "ctxAsStructList", "(J)J");
+    if (jniMethod_ctx_AsStruct_List == NULL) {
+        LOGS("ERROR: Java method ctxAsStructList not found found !\n");
+        return 1;
+    }
+    ctx->ctx_AsStruct_List = &ctx_AsStruct_List_jni;
+    jniMethod_ctx_Type_GetBuiltinShape = (*env)->GetMethodID(env, clazz, "ctxTypeGetBuiltinShape", "(J)J");
+    if (jniMethod_ctx_Type_GetBuiltinShape == NULL) {
+        LOGS("ERROR: Java method ctxTypeGetBuiltinShape not found found !\n");
+        return 1;
+    }
+    ctx->ctx_Type_GetBuiltinShape = &ctx_Type_GetBuiltinShape_jni;
     jniMethod_ctx_New = (*env)->GetMethodID(env, clazz, "ctxNew", "(JJ)J");
     if (jniMethod_ctx_New == NULL) {
         LOGS("ERROR: Java method ctxNew not found found !\n");
@@ -1102,12 +1151,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Hash = &ctx_Hash_jni;
-    jniMethod_ctx_SeqIter_New = (*env)->GetMethodID(env, clazz, "ctxSeqIterNew", "(J)J");
-    if (jniMethod_ctx_SeqIter_New == NULL) {
-        LOGS("ERROR: Java method ctxSeqIterNew not found found !\n");
-        return 1;
-    }
-    ctx->ctx_SeqIter_New = &ctx_SeqIter_New_jni;
     jniMethod_ctx_Bytes_Check = (*env)->GetMethodID(env, clazz, "ctxBytesCheck", "(J)I");
     if (jniMethod_ctx_Bytes_Check == NULL) {
         LOGS("ERROR: Java method ctxBytesCheck not found found !\n");
@@ -1234,12 +1277,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Unicode_FromEncodedObject = &ctx_Unicode_FromEncodedObject_jni;
-    jniMethod_ctx_Unicode_InternFromString = (*env)->GetMethodID(env, clazz, "ctxUnicodeInternFromString", "(J)J");
-    if (jniMethod_ctx_Unicode_InternFromString == NULL) {
-        LOGS("ERROR: Java method ctxUnicodeInternFromString not found found !\n");
-        return 1;
-    }
-    ctx->ctx_Unicode_InternFromString = &ctx_Unicode_InternFromString_jni;
     jniMethod_ctx_Unicode_Substring = (*env)->GetMethodID(env, clazz, "ctxUnicodeSubstring", "(JJJ)J");
     if (jniMethod_ctx_Unicode_Substring == NULL) {
         LOGS("ERROR: Java method ctxUnicodeSubstring not found found !\n");
@@ -1282,12 +1319,12 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Dict_Keys = &ctx_Dict_Keys_jni;
-    jniMethod_ctx_Dict_GetItem = (*env)->GetMethodID(env, clazz, "ctxDictGetItem", "(JJ)J");
-    if (jniMethod_ctx_Dict_GetItem == NULL) {
-        LOGS("ERROR: Java method ctxDictGetItem not found found !\n");
+    jniMethod_ctx_Dict_Copy = (*env)->GetMethodID(env, clazz, "ctxDictCopy", "(J)J");
+    if (jniMethod_ctx_Dict_Copy == NULL) {
+        LOGS("ERROR: Java method ctxDictCopy not found found !\n");
         return 1;
     }
-    ctx->ctx_Dict_GetItem = &ctx_Dict_GetItem_jni;
+    ctx->ctx_Dict_Copy = &ctx_Dict_Copy_jni;
     jniMethod_ctx_Tuple_Check = (*env)->GetMethodID(env, clazz, "ctxTupleCheck", "(J)I");
     if (jniMethod_ctx_Tuple_Check == NULL) {
         LOGS("ERROR: Java method ctxTupleCheck not found found !\n");
@@ -1300,18 +1337,6 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Slice_Unpack = &ctx_Slice_Unpack_jni;
-    jniMethod_ctx_ContextVar_New = (*env)->GetMethodID(env, clazz, "ctxContextVarNew", "(JJ)J");
-    if (jniMethod_ctx_ContextVar_New == NULL) {
-        LOGS("ERROR: Java method ctxContextVarNew not found found !\n");
-        return 1;
-    }
-    ctx->ctx_ContextVar_New = &ctx_ContextVar_New_jni;
-    jniMethod_ctx_ContextVar_Set = (*env)->GetMethodID(env, clazz, "ctxContextVarSet", "(JJ)J");
-    if (jniMethod_ctx_ContextVar_Set == NULL) {
-        LOGS("ERROR: Java method ctxContextVarSet not found found !\n");
-        return 1;
-    }
-    ctx->ctx_ContextVar_Set = &ctx_ContextVar_Set_jni;
     jniMethod_ctx_Import_ImportModule = (*env)->GetMethodID(env, clazz, "ctxImportImportModule", "(J)J");
     if (jniMethod_ctx_Import_ImportModule == NULL) {
         LOGS("ERROR: Java method ctxImportImportModule not found found !\n");
@@ -1432,18 +1457,37 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Dump = &ctx_Dump_jni;
-    jniMethod_ctx_Type_CheckSlot = (*env)->GetMethodID(env, clazz, "ctxTypeCheckSlot", "(JJ)I");
-    if (jniMethod_ctx_Type_CheckSlot == NULL) {
-        LOGS("ERROR: Java method ctxTypeCheckSlot not found found !\n");
+    jniMethod_ctx_Compile_s = (*env)->GetMethodID(env, clazz, "ctxCompiles", "(JJJ)J");
+    if (jniMethod_ctx_Compile_s == NULL) {
+        LOGS("ERROR: Java method ctxCompiles not found found !\n");
         return 1;
     }
-    ctx->ctx_Type_CheckSlot = &ctx_Type_CheckSlot_jni;
+    ctx->ctx_Compile_s = &ctx_Compile_s_jni;
+    jniMethod_ctx_EvalCode = (*env)->GetMethodID(env, clazz, "ctxEvalCode", "(JJJ)J");
+    if (jniMethod_ctx_EvalCode == NULL) {
+        LOGS("ERROR: Java method ctxEvalCode not found found !\n");
+        return 1;
+    }
+    ctx->ctx_EvalCode = &ctx_EvalCode_jni;
+    jniMethod_ctx_ContextVar_New = (*env)->GetMethodID(env, clazz, "ctxContextVarNew", "(JJ)J");
+    if (jniMethod_ctx_ContextVar_New == NULL) {
+        LOGS("ERROR: Java method ctxContextVarNew not found found !\n");
+        return 1;
+    }
+    ctx->ctx_ContextVar_New = &ctx_ContextVar_New_jni;
+    jniMethod_ctx_ContextVar_Set = (*env)->GetMethodID(env, clazz, "ctxContextVarSet", "(JJ)J");
+    if (jniMethod_ctx_ContextVar_Set == NULL) {
+        LOGS("ERROR: Java method ctxContextVarSet not found found !\n");
+        return 1;
+    }
+    ctx->ctx_ContextVar_Set = &ctx_ContextVar_Set_jni;
+    jniMethod_ctx_SetCallFunction = (*env)->GetMethodID(env, clazz, "ctxSetCallFunction", "(JJ)I");
+    if (jniMethod_ctx_SetCallFunction == NULL) {
+        LOGS("ERROR: Java method ctxSetCallFunction not found found !\n");
+        return 1;
+    }
+    ctx->ctx_SetCallFunction = &ctx_SetCallFunction_jni;
     return 0;
-}
-
-static HPy ctx_Module_Create_jni(HPyContext *ctx, HPyModuleDef *def)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Module_Create, PTR_UP(def));
 }
 
 static HPy ctx_Dup_jni(HPyContext *ctx, HPy h)
@@ -1456,24 +1500,24 @@ static void ctx_Close_jni(HPyContext *ctx, HPy h)
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Close, HPY_UP(h));
 }
 
-static HPy ctx_Long_FromLong_jni(HPyContext *ctx, long value)
+static HPy ctx_Long_FromInt32_t_jni(HPyContext *ctx, int32_t value)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromLong, LONG_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromInt32_t, LONG_UP(value));
 }
 
-static HPy ctx_Long_FromUnsignedLong_jni(HPyContext *ctx, unsigned long value)
+static HPy ctx_Long_FromUInt32_t_jni(HPyContext *ctx, uint32_t value)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUnsignedLong, LONG_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUInt32_t, LONG_UP(value));
 }
 
-static HPy ctx_Long_FromLongLong_jni(HPyContext *ctx, long long v)
+static HPy ctx_Long_FromInt64_t_jni(HPyContext *ctx, int64_t v)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromLongLong, LONG_UP(v));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromInt64_t, LONG_UP(v));
 }
 
-static HPy ctx_Long_FromUnsignedLongLong_jni(HPyContext *ctx, unsigned long long v)
+static HPy ctx_Long_FromUInt64_t_jni(HPyContext *ctx, uint64_t v)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUnsignedLongLong, LONG_UP(v));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUInt64_t, LONG_UP(v));
 }
 
 static HPy ctx_Long_FromSize_t_jni(HPyContext *ctx, size_t value)
@@ -1486,34 +1530,34 @@ static HPy ctx_Long_FromSsize_t_jni(HPyContext *ctx, HPy_ssize_t value)
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromSsize_t, SIZE_T_UP(value));
 }
 
-static long ctx_Long_AsLong_jni(HPyContext *ctx, HPy h)
+static int32_t ctx_Long_AsInt32_t_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsLong, HPY_UP(h));
+    return DO_UPCALL_INT32_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsInt32_t, HPY_UP(h));
 }
 
-static unsigned long ctx_Long_AsUnsignedLong_jni(HPyContext *ctx, HPy h)
+static uint32_t ctx_Long_AsUInt32_t_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_UNSIGNED_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLong, HPY_UP(h));
+    return DO_UPCALL_UINT32_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsUInt32_t, HPY_UP(h));
 }
 
-static unsigned long ctx_Long_AsUnsignedLongMask_jni(HPyContext *ctx, HPy h)
+static uint32_t ctx_Long_AsUInt32_tMask_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_UNSIGNED_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongMask, HPY_UP(h));
+    return DO_UPCALL_UINT32_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsUInt32_tMask, HPY_UP(h));
 }
 
-static long long ctx_Long_AsLongLong_jni(HPyContext *ctx, HPy h)
+static int64_t ctx_Long_AsInt64_t_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsLongLong, HPY_UP(h));
+    return DO_UPCALL_INT64_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsInt64_t, HPY_UP(h));
 }
 
-static unsigned long long ctx_Long_AsUnsignedLongLong_jni(HPyContext *ctx, HPy h)
+static uint64_t ctx_Long_AsUInt64_t_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_UNSIGNED_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongLong, HPY_UP(h));
+    return DO_UPCALL_UINT64_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsUInt64_t, HPY_UP(h));
 }
 
-static unsigned long long ctx_Long_AsUnsignedLongLongMask_jni(HPyContext *ctx, HPy h)
+static uint64_t ctx_Long_AsUInt64_tMask_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_UNSIGNED_LONG_LONG(CONTEXT_INSTANCE(ctx), ctx_Long_AsUnsignedLongLongMask, HPY_UP(h));
+    return DO_UPCALL_UINT64_T(CONTEXT_INSTANCE(ctx), ctx_Long_AsUInt64_tMask, HPY_UP(h));
 }
 
 static size_t ctx_Long_AsSize_t_jni(HPyContext *ctx, HPy h)
@@ -1546,19 +1590,14 @@ static double ctx_Float_AsDouble_jni(HPyContext *ctx, HPy h)
     return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), ctx_Float_AsDouble, HPY_UP(h));
 }
 
-static HPy ctx_Bool_FromLong_jni(HPyContext *ctx, long v)
+static HPy ctx_Bool_FromBool_jni(HPyContext *ctx, bool v)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bool_FromLong, LONG_UP(v));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bool_FromBool, LONG_UP(v));
 }
 
 static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Length, HPY_UP(h));
-}
-
-static int ctx_Sequence_Check_jni(HPyContext *ctx, HPy h)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Sequence_Check, HPY_UP(h));
 }
 
 static int ctx_Number_Check_jni(HPyContext *ctx, HPy h)
@@ -1746,14 +1785,24 @@ static HPy ctx_CallTupleDict_jni(HPyContext *ctx, HPy callable, HPy args, HPy kw
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_CallTupleDict, HPY_UP(callable), HPY_UP(args), HPY_UP(kw));
 }
 
+static HPy ctx_Call_jni(HPyContext *ctx, HPy callable, const HPy *args, size_t nargs, HPy kwnames)
+{
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Call, HPY_UP(callable), PTR_UP(args), LONG_UP(nargs), HPY_UP(kwnames));
+}
+
+static HPy ctx_CallMethod_jni(HPyContext *ctx, HPy name, const HPy *args, size_t nargs, HPy kwnames)
+{
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_CallMethod, HPY_UP(name), PTR_UP(args), LONG_UP(nargs), HPY_UP(kwnames));
+}
+
 static void ctx_FatalError_jni(HPyContext *ctx, const char *message)
 {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_FatalError, PTR_UP(message));
 }
 
-static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *message)
+static void ctx_Err_SetString_jni(HPyContext *ctx, HPy h_type, const char *utf8_message)
 {
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_SetString, HPY_UP(h_type), PTR_UP(message));
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Err_SetString, HPY_UP(h_type), PTR_UP(utf8_message));
 }
 
 static void ctx_Err_SetObject_jni(HPyContext *ctx, HPy h_type, HPy h_value)
@@ -1791,19 +1840,19 @@ static void ctx_Err_Clear_jni(HPyContext *ctx)
     DO_UPCALL_VOID0(CONTEXT_INSTANCE(ctx), ctx_Err_Clear);
 }
 
-static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *name, HPy base, HPy dict)
+static HPy ctx_Err_NewException_jni(HPyContext *ctx, const char *utf8_name, HPy base, HPy dict)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewException, PTR_UP(name), HPY_UP(base), HPY_UP(dict));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewException, PTR_UP(utf8_name), HPY_UP(base), HPY_UP(dict));
 }
 
-static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict)
+static HPy ctx_Err_NewExceptionWithDoc_jni(HPyContext *ctx, const char *utf8_name, const char *utf8_doc, HPy base, HPy dict)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewExceptionWithDoc, PTR_UP(name), PTR_UP(doc), HPY_UP(base), HPY_UP(dict));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Err_NewExceptionWithDoc, PTR_UP(utf8_name), PTR_UP(utf8_doc), HPY_UP(base), HPY_UP(dict));
 }
 
-static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level)
+static int ctx_Err_WarnEx_jni(HPyContext *ctx, HPy category, const char *utf8_message, HPy_ssize_t stack_level)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Err_WarnEx, HPY_UP(category), PTR_UP(message), SIZE_T_UP(stack_level));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Err_WarnEx, HPY_UP(category), PTR_UP(utf8_message), SIZE_T_UP(stack_level));
 }
 
 static void ctx_Err_WriteUnraisable_jni(HPyContext *ctx, HPy obj)
@@ -1821,7 +1870,7 @@ static HPy ctx_Type_FromSpec_jni(HPyContext *ctx, HPyType_Spec *spec, HPyType_Sp
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type_FromSpec, PTR_UP(spec), PTR_UP(params));
 }
 
-static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw)
+static HPy ctx_Type_GenericNew_jni(HPyContext *ctx, HPy type, const HPy *args, HPy_ssize_t nargs, HPy kw)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type_GenericNew, HPY_UP(type), PTR_UP(args), SIZE_T_UP(nargs), HPY_UP(kw));
 }
@@ -1831,19 +1880,14 @@ static HPy ctx_GetAttr_jni(HPyContext *ctx, HPy obj, HPy name)
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_GetAttr, HPY_UP(obj), HPY_UP(name));
 }
 
-static HPy ctx_MaybeGetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_MaybeGetAttr_s, HPY_UP(obj), PTR_UP(name));
-}
-
 static int ctx_HasAttr_jni(HPyContext *ctx, HPy obj, HPy name)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_HasAttr, HPY_UP(obj), HPY_UP(name));
 }
 
-static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *name)
+static int ctx_HasAttr_s_jni(HPyContext *ctx, HPy obj, const char *utf8_name)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_HasAttr_s, HPY_UP(obj), PTR_UP(name));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_HasAttr_s, HPY_UP(obj), PTR_UP(utf8_name));
 }
 
 static int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value)
@@ -1851,9 +1895,9 @@ static int ctx_SetAttr_jni(HPyContext *ctx, HPy obj, HPy name, HPy value)
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetAttr, HPY_UP(obj), HPY_UP(name), HPY_UP(value));
 }
 
-static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *name, HPy value)
+static int ctx_SetAttr_s_jni(HPyContext *ctx, HPy obj, const char *utf8_name, HPy value)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetAttr_s, HPY_UP(obj), PTR_UP(name), HPY_UP(value));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetAttr_s, HPY_UP(obj), PTR_UP(utf8_name), HPY_UP(value));
 }
 
 static HPy ctx_GetItem_jni(HPyContext *ctx, HPy obj, HPy key)
@@ -1881,6 +1925,21 @@ static int ctx_SetItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy valu
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetItem_i, HPY_UP(obj), SIZE_T_UP(idx), HPY_UP(value));
 }
 
+static int ctx_DelItem_jni(HPyContext *ctx, HPy obj, HPy key)
+{
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_DelItem, HPY_UP(obj), HPY_UP(key));
+}
+
+static int ctx_DelItem_i_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx)
+{
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_DelItem_i, HPY_UP(obj), SIZE_T_UP(idx));
+}
+
+static int ctx_DelItem_s_jni(HPyContext *ctx, HPy obj, const char *utf8_key)
+{
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_DelItem_s, HPY_UP(obj), PTR_UP(utf8_key));
+}
+
 static HPy ctx_Type_jni(HPyContext *ctx, HPy obj)
 {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Type, HPY_UP(obj));
@@ -1891,14 +1950,9 @@ static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type)
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_TypeCheck, HPY_UP(obj), HPY_UP(type));
 }
 
-static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type)
+static const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_TypeCheck_g, HPY_UP(obj), HPY_GLOBAL_UP(type));
-}
-
-static int ctx_SetType_jni(HPyContext *ctx, HPy obj, HPy type)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetType, HPY_UP(obj), HPY_UP(type));
+    return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Type_GetName, HPY_UP(type));
 }
 
 static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type)
@@ -1906,29 +1960,54 @@ static int ctx_Type_IsSubtype_jni(HPyContext *ctx, HPy sub, HPy type)
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Type_IsSubtype, HPY_UP(sub), HPY_UP(type));
 }
 
-static const char *ctx_Type_GetName_jni(HPyContext *ctx, HPy type)
-{
-    return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Type_GetName, HPY_UP(type));
-}
-
 static int ctx_Is_jni(HPyContext *ctx, HPy obj, HPy other)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Is, HPY_UP(obj), HPY_UP(other));
 }
 
-static int ctx_Is_g_jni(HPyContext *ctx, HPy obj, HPyGlobal other)
+static void *ctx_AsStruct_Object_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Is_g, HPY_UP(obj), HPY_GLOBAL_UP(other));
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Object, HPY_UP(h));
 }
 
-static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h)
+static void *ctx_AsStruct_Legacy_jni(HPyContext *ctx, HPy h)
 {
-    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct, HPY_UP(h));
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Legacy, HPY_UP(h));
 }
 
-static void *ctx_AsStructLegacy_jni(HPyContext *ctx, HPy h)
+static void *ctx_AsStruct_Type_jni(HPyContext *ctx, HPy h)
 {
-    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStructLegacy, HPY_UP(h));
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Type, HPY_UP(h));
+}
+
+static void *ctx_AsStruct_Long_jni(HPyContext *ctx, HPy h)
+{
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Long, HPY_UP(h));
+}
+
+static void *ctx_AsStruct_Float_jni(HPyContext *ctx, HPy h)
+{
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Float, HPY_UP(h));
+}
+
+static void *ctx_AsStruct_Unicode_jni(HPyContext *ctx, HPy h)
+{
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Unicode, HPY_UP(h));
+}
+
+static void *ctx_AsStruct_Tuple_jni(HPyContext *ctx, HPy h)
+{
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_Tuple, HPY_UP(h));
+}
+
+static void *ctx_AsStruct_List_jni(HPyContext *ctx, HPy h)
+{
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_AsStruct_List, HPY_UP(h));
+}
+
+static HPyType_BuiltinShape ctx_Type_GetBuiltinShape_jni(HPyContext *ctx, HPy h_type)
+{
+    return DO_UPCALL_HPYTYPE_BUILTINSHAPE(CONTEXT_INSTANCE(ctx), ctx_Type_GetBuiltinShape, HPY_UP(h_type));
 }
 
 static HPy ctx_New_jni(HPyContext *ctx, HPy h_type, void **data)
@@ -1971,11 +2050,6 @@ static HPy_hash_t ctx_Hash_jni(HPyContext *ctx, HPy obj)
     return DO_UPCALL_HPY_HASH_T(CONTEXT_INSTANCE(ctx), ctx_Hash, HPY_UP(obj));
 }
 
-static HPy ctx_SeqIter_New_jni(HPyContext *ctx, HPy seq)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_SeqIter_New, HPY_UP(seq));
-}
-
 static int ctx_Bytes_Check_jni(HPyContext *ctx, HPy h)
 {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Bytes_Check, HPY_UP(h));
@@ -1991,24 +2065,24 @@ static HPy_ssize_t ctx_Bytes_GET_SIZE_jni(HPyContext *ctx, HPy h)
     return DO_UPCALL_HPY_SSIZE_T(CONTEXT_INSTANCE(ctx), ctx_Bytes_GET_SIZE, HPY_UP(h));
 }
 
-static char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h)
+static const char *ctx_Bytes_AsString_jni(HPyContext *ctx, HPy h)
 {
-    return (char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AsString, HPY_UP(h));
+    return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AsString, HPY_UP(h));
 }
 
-static char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h)
+static const char *ctx_Bytes_AS_STRING_jni(HPyContext *ctx, HPy h)
 {
-    return (char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AS_STRING, HPY_UP(h));
+    return (const char *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Bytes_AS_STRING, HPY_UP(h));
 }
 
-static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *v)
+static HPy ctx_Bytes_FromString_jni(HPyContext *ctx, const char *bytes)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromString, PTR_UP(v));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromString, PTR_UP(bytes));
 }
 
-static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *v, HPy_ssize_t len)
+static HPy ctx_Bytes_FromStringAndSize_jni(HPyContext *ctx, const char *bytes, HPy_ssize_t len)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromStringAndSize, PTR_UP(v), SIZE_T_UP(len));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Bytes_FromStringAndSize, PTR_UP(bytes), SIZE_T_UP(len));
 }
 
 static HPy ctx_Unicode_FromString_jni(HPyContext *ctx, const char *utf8)
@@ -2061,14 +2135,14 @@ static HPy_UCS4 ctx_Unicode_ReadChar_jni(HPyContext *ctx, HPy h, HPy_ssize_t ind
     return DO_UPCALL_HPY_UCS4(CONTEXT_INSTANCE(ctx), ctx_Unicode_ReadChar, HPY_UP(h), SIZE_T_UP(index));
 }
 
-static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
+static HPy ctx_Unicode_DecodeASCII_jni(HPyContext *ctx, const char *ascii, HPy_ssize_t size, const char *errors)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeASCII, PTR_UP(s), SIZE_T_UP(size), PTR_UP(errors));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeASCII, PTR_UP(ascii), SIZE_T_UP(size), PTR_UP(errors));
 }
 
-static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors)
+static HPy ctx_Unicode_DecodeLatin1_jni(HPyContext *ctx, const char *latin1, HPy_ssize_t size, const char *errors)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeLatin1, PTR_UP(s), SIZE_T_UP(size), PTR_UP(errors));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_DecodeLatin1, PTR_UP(latin1), SIZE_T_UP(size), PTR_UP(errors));
 }
 
 static HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const char *encoding, const char *errors)
@@ -2076,14 +2150,9 @@ static HPy ctx_Unicode_FromEncodedObject_jni(HPyContext *ctx, HPy obj, const cha
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_FromEncodedObject, HPY_UP(obj), PTR_UP(encoding), PTR_UP(errors));
 }
 
-static HPy ctx_Unicode_InternFromString_jni(HPyContext *ctx, const char *str)
+static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy str, HPy_ssize_t start, HPy_ssize_t end)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_InternFromString, PTR_UP(str));
-}
-
-static HPy ctx_Unicode_Substring_jni(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end)
-{
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_Substring, HPY_UP(obj), SIZE_T_UP(start), SIZE_T_UP(end));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Unicode_Substring, HPY_UP(str), SIZE_T_UP(start), SIZE_T_UP(end));
 }
 
 static int ctx_List_Check_jni(HPyContext *ctx, HPy h)
@@ -2116,9 +2185,9 @@ static HPy ctx_Dict_Keys_jni(HPyContext *ctx, HPy h)
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dict_Keys, HPY_UP(h));
 }
 
-static HPy ctx_Dict_GetItem_jni(HPyContext *ctx, HPy op, HPy key)
+static HPy ctx_Dict_Copy_jni(HPyContext *ctx, HPy h)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dict_GetItem, HPY_UP(op), HPY_UP(key));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Dict_Copy, HPY_UP(h));
 }
 
 static int ctx_Tuple_Check_jni(HPyContext *ctx, HPy h)
@@ -2131,34 +2200,24 @@ static int ctx_Slice_Unpack_jni(HPyContext *ctx, HPy slice, HPy_ssize_t *start, 
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Slice_Unpack, HPY_UP(slice), PTR_UP(start), PTR_UP(stop), PTR_UP(step));
 }
 
-static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value)
+static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *utf8_name)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_New, PTR_UP(name), HPY_UP(default_value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Import_ImportModule, PTR_UP(utf8_name));
 }
 
-static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value)
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *utf8_name, HPyCapsule_Destructor *destructor)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_Set, HPY_UP(context_var), HPY_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Capsule_New, PTR_UP(pointer), PTR_UP(utf8_name), PTR_UP(destructor));
 }
 
-static HPy ctx_Import_ImportModule_jni(HPyContext *ctx, const char *name)
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *utf8_name)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Import_ImportModule, PTR_UP(name));
+    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Capsule_Get, HPY_UP(capsule), INT_UP(key), PTR_UP(utf8_name));
 }
 
-static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor)
+static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *utf8_name)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Capsule_New, PTR_UP(pointer), PTR_UP(name), LONG_UP(destructor));
-}
-
-static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name)
-{
-    return (void *)DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), ctx_Capsule_Get, HPY_UP(capsule), INT_UP(key), PTR_UP(name));
-}
-
-static int ctx_Capsule_IsValid_jni(HPyContext *ctx, HPy capsule, const char *name)
-{
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Capsule_IsValid, HPY_UP(capsule), PTR_UP(name));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Capsule_IsValid, HPY_UP(capsule), PTR_UP(utf8_name));
 }
 
 static int ctx_Capsule_Set_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value)
@@ -2196,8 +2255,28 @@ static void ctx_Dump_jni(HPyContext *ctx, HPy h)
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), ctx_Dump, HPY_UP(h));
 }
 
-static int ctx_Type_CheckSlot_jni(HPyContext *ctx, HPy type, HPyDef *value)
+static HPy ctx_Compile_s_jni(HPyContext *ctx, const char *utf8_source, const char *utf8_filename, HPy_SourceKind kind)
 {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_Type_CheckSlot, HPY_UP(type), PTR_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Compile_s, PTR_UP(utf8_source), PTR_UP(utf8_filename), LONG_UP(kind));
+}
+
+static HPy ctx_EvalCode_jni(HPyContext *ctx, HPy code, HPy globals, HPy locals)
+{
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_EvalCode, HPY_UP(code), HPY_UP(globals), HPY_UP(locals));
+}
+
+static HPy ctx_ContextVar_New_jni(HPyContext *ctx, const char *name, HPy default_value)
+{
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_New, PTR_UP(name), HPY_UP(default_value));
+}
+
+static HPy ctx_ContextVar_Set_jni(HPyContext *ctx, HPy context_var, HPy value)
+{
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_ContextVar_Set, HPY_UP(context_var), HPY_UP(value));
+}
+
+static int ctx_SetCallFunction_jni(HPyContext *ctx, HPy h, HPyCallFunction *func)
+{
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ctx_SetCallFunction, HPY_UP(h), PTR_UP(func));
 }
 
