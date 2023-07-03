@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_MOD_CREATE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_MOD_EXEC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
@@ -51,12 +53,17 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MEMBER_GET_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_METH_GET_SIGNATURE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_INIT_GLOBALS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXEC;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -64,6 +71,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -105,6 +114,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckPrimitiveResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
@@ -117,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -151,9 +164,11 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -178,6 +193,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -196,7 +212,7 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-public class GraalHPyNodes {
+public abstract class GraalHPyNodes {
 
     /**
      * A node interface for calling (native) helper functions. The implementation depends on the HPy
@@ -374,6 +390,294 @@ public class GraalHPyNodes {
 
         public static HPyFromCharPointerNode getUncached(GraalHPyContext hpyContext) {
             return hpyContext.getBackend().getUncachedFromCharPointerNode();
+        }
+    }
+
+    /**
+     * Creates an HPy module from a module definition structure:
+     *
+     * <pre>
+     * typedef struct {
+     *     const char* doc;
+     *     HPy_ssize_t size;
+     *     cpy_PyMethodDef *legacy_methods;
+     *     HPyDef **defines;
+     * } HPyModuleDef;
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class GraalHPyModuleCreate extends Node {
+
+        public abstract Object execute(GraalHPyContext hpyContext, TruffleString mName, Object spec, Object moduleDefPtr);
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext hpyContext, TruffleString mName, Object spec, Object moduleDefPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PCallHPyFunction callFromHPyModuleDefNode,
+                        @Cached PCallHPyFunction callGetterNode,
+                        @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @CachedLibrary(limit = "3") InteropLibrary valueLib,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaIntLossyNode castToJavaIntNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
+                        @Cached HPyCreateFunctionNode addFunctionNode,
+                        @Cached CreateMethodNode addLegacyMethodNode,
+                        @Cached HPyReadSlotNode readSlotNode,
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
+                        @Cached HPyCheckHandleResultNode checkFunctionResultNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "1") InteropLibrary createLib,
+                        @Cached PRaiseNode raiseNode) {
+
+            // call to type the pointer
+            Object moduleDef = callFromHPyModuleDefNode.call(hpyContext, GRAAL_HPY_FROM_HPY_MODULE_DEF, moduleDefPtr);
+
+            assert checkLayout(moduleDef);
+
+            Object mDoc;
+            try {
+                // docstring pointers are not required to be copied
+                mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "doc"), false);
+
+                Object sizeObj = ptrLib.readMember(moduleDef, "size");
+                long size = valueLib.asLong(sizeObj);
+                if (size < 0) {
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, tsLiteral("HPy does not permit HPyModuleDef.size < 0"));
+                } else if (size > 0) {
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, tsLiteral("Module state is not supported yet in HPy, set HPyModuleDef.size = 0 if module state is not needed"));
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
+            }
+
+            // process HPy module slots
+            Object moduleDefinesPtr = callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
+            int nModuleDefines;
+            try {
+                if (ptrLib.isNull(moduleDefinesPtr)) {
+                    nModuleDefines = 0;
+                } else if (!ptrLib.hasArrayElements(moduleDefinesPtr)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "defines");
+                } else {
+                    nModuleDefines = PInt.intValueExact(ptrLib.getArraySize(moduleDefinesPtr));
+                }
+            } catch (UnsupportedMessageException e) {
+                // should not happen since we check if 'moduleDefines' has array elements
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (OverflowException ex) {
+                throw CompilerDirectives.shouldNotReachHere("Count of HPy module defines exceeds maximum");
+            }
+
+            int nMethodDefs = 0;
+            Object[] methodDefs = new Object[nModuleDefines];
+
+            boolean hasExecutionSlots = false;
+            List<Object> executeSlots = new LinkedList<>();
+            Object createFunction = null;
+
+            try {
+                for (int i = 0; i < nModuleDefines; i++) {
+                    Object moduleDefine = ptrLib.readArrayElement(moduleDefinesPtr, i);
+                    int kind = castToJavaIntNode.execute(callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                    switch (kind) {
+                        case GraalHPyDef.HPY_DEF_KIND_METH:
+                            methodDefs[nMethodDefs++] = moduleDefine;
+                            break;
+                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                            HPySlotData slotData = readSlotNode.execute(inliningTarget, hpyContext, moduleDefine);
+                            switch (slotData.slot) {
+                                case HPY_MOD_CREATE -> {
+                                    if (createFunction != null) {
+                                        throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
+                                    }
+                                    createFunction = slotData.impl;
+                                    if (hpyContext.isDebugMode() || !createLib.isExecutable(createFunction)) {
+                                        createFunction = attachFunctionTypeNode.execute(hpyContext, createFunction, HPY_MOD_CREATE.getSignatures()[0].getLLVMFunctionType());
+                                    }
+                                }
+                                case HPY_MOD_EXEC -> {
+                                    /*
+                                     * In contrast to CPython, we already parse and store the
+                                     * HPy_mod_exec slots here since parsing is a bit more expensive
+                                     * in our case.
+                                     */
+                                    Object execFunction = slotData.impl;
+                                    if (hpyContext.isDebugMode() || !createLib.isExecutable(execFunction)) {
+                                        execFunction = attachFunctionTypeNode.execute(hpyContext, execFunction, HPY_MOD_EXEC.getSignatures()[0].getLLVMFunctionType());
+                                    }
+                                    executeSlots.add(execFunction);
+                                }
+                                default -> throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotData.slot);
+                            }
+                            break;
+                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                            // silently ignore
+                            // TODO(fa): maybe we should log a warning
+                            break;
+                        default:
+                            assert false : "unknown definition kind";
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                // should not happen since we check if 'moduleDefines' has array elements
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            // create the module object
+            Object module;
+            if (createFunction != null) {
+                module = callCreate(inliningTarget, createFunction, hpyContext, spec, checkFunctionResultNode, asHandleNode, createLib);
+            } else {
+                PythonModule pmodule = factory.createPythonModule(mName);
+                pmodule.setNativeModuleDef(executeSlots);
+                module = pmodule;
+            }
+
+            // process HPy methods
+            for (int i = 0; i < nMethodDefs; i++) {
+                Object methodDef = callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_METH, methodDefs[i]);
+                PBuiltinFunction fun = addFunctionNode.execute(hpyContext, null, methodDef);
+                PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                writeAttrToMethodNode.execute(method, SpecialAttributeNames.T___MODULE__, mName);
+                writeAttrNode.execute(module, fun.getName(), method);
+            }
+
+            // process legacy methods
+            Object legacyMethods = callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
+            // the field 'legacy_methods' may be 'NULL'
+            if (!ptrLib.isNull(legacyMethods)) {
+                if (!ptrLib.hasArrayElements(legacyMethods)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "legacyMethods");
+                }
+
+                try {
+                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
+                    CApiContext capiContext = nLegacyMethods > 0 ? PythonContext.get(ptrLib).getCApiContext() : null;
+                    for (long i = 0; i < nLegacyMethods; i++) {
+                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+
+                        PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, legacyMethod);
+                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
+                        writeAttrNode.execute(module, fun.getName(), method);
+                    }
+                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                    // should not happen since we check if 'legacyMethods' has array
+                    // elements
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+
+            // allocate module's HPyGlobals
+            try {
+                int globalStartIdx = hpyContext.getEndIndexOfGlobalTable();
+                int nModuleGlobals = ptrLib.asInt(callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_INIT_GLOBALS, moduleDef, globalStartIdx));
+                hpyContext.initBatchGlobals(globalStartIdx, nModuleGlobals);
+            } catch (UnsupportedMessageException e) {
+                // should not happen unless the number of module global is larger than an `int`
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
+
+            return module;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object moduleDef) {
+            String[] members = new String[]{"doc", "size", "legacy_methods", "defines"};
+            InteropLibrary lib = InteropLibrary.getUncached(moduleDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(moduleDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static final TruffleString CREATE = tsLiteral("create");
+
+        /**
+         * Call the create slot function.
+         * 
+         * TODO(fa): This method shares some logic with
+         * {@link com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionInvokeNode}.
+         * We should refactor the node such that we can use it here.
+         */
+        static Object callCreate(Node inliningTarget, Object callable, GraalHPyContext hPyContext, Object spec,
+                        HPyCheckFunctionResultNode checkFunctionResultNode, HPyAsHandleNode asHandleNode, InteropLibrary lib) {
+
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext ctx = hPyContext.getContext();
+            PythonThreadState pythonThreadState = ctx.getThreadState(language);
+
+            GraalHPyHandle hSpec = asHandleNode.execute(spec);
+            try {
+                return checkFunctionResultNode.execute(pythonThreadState, CREATE, lib.execute(callable, hPyContext.getBackend(), hSpec));
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, CREATE, e);
+            } catch (ArityException e) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, CREATE, e.getExpectedMinArity(), e.getActualArity());
+            } finally {
+                // close all handles (if necessary)
+                hSpec.closeAndInvalidate(hPyContext);
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GraalHPyModuleExecNode extends Node {
+
+        public abstract void execute(Node inliningTarget, GraalHPyContext hpyContext, PythonModule module);
+
+        @Specialization
+        static void doGeneric(GraalHPyContext hpyContext, PythonModule module,
+                             @Bind("this") Node inliningTarget,
+                             @Cached HPyCheckPrimitiveResultNode checkFunctionResultNode,
+                             @Cached HPyAsHandleNode asHandleNode,
+                             @CachedLibrary(limit = "1") InteropLibrary lib) {
+            // TODO(fa): once we support HPy module state, we need to allocate it here
+            Object execSlotsObj = module.getNativeModuleDef();
+            if (execSlotsObj instanceof LinkedList<?> execSlots) {
+                for (Object execSlot : execSlots) {
+                    callExec(inliningTarget, hpyContext, execSlot, module, checkFunctionResultNode, asHandleNode, lib);
+                }
+            }
+        }
+
+        /**
+         * Call the exec slot function.
+         * <p>
+         * TODO(fa): This method shares some logic with
+         * {@link com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionInvokeNode}.
+         * We should refactor the node such that we can use it here.
+         * </p>
+         */
+        static void callExec(Node inliningTarget, GraalHPyContext hPyContext, Object callable, PythonModule module,
+                        HPyCheckPrimitiveResultNode checkFunctionResultNode, HPyAsHandleNode asHandleNode, InteropLibrary lib) {
+
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext ctx = hPyContext.getContext();
+            PythonThreadState pythonThreadState = ctx.getThreadState(language);
+
+            GraalHPyHandle hModule = asHandleNode.execute(module);
+            try {
+                checkFunctionResultNode.execute(pythonThreadState, T_EXEC, lib.execute(callable, hPyContext.getBackend(), hModule));
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, T_EXEC, e);
+            } catch (ArityException e) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, T_EXEC, e.getExpectedMinArity(), e.getActualArity());
+            } finally {
+                // close all handles (if necessary)
+                hModule.closeAndInvalidate(hPyContext);
+            }
         }
     }
 
@@ -618,6 +922,22 @@ public class GraalHPyNodes {
         static boolean keyExists(ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType, Object key) {
             return readAttributeFromObjectNode.execute(enclosingType, key) != PNone.NO_VALUE;
         }
+
+    }
+
+    /**
+     * A simple helper class to return the parsed data of an {@code HPySlot} structure.
+     *
+     * <pre>
+     * typedef struct {
+     *     HPySlot_Slot slot;     // The slot to fill
+     *     void *impl;            // Function pointer to the implementation
+     *     void *cpy_trampoline;  // Used by CPython to call impl
+     * } HPySlot;
+     * </pre>
+     */
+    @ValueType
+    record HPySlotData(HPySlot slot, Object impl) {
     }
 
     @GenerateUncached
@@ -853,19 +1173,18 @@ public class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
-    public abstract static class HPyCreateSlotNode extends PNodeWithContext {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HPyReadSlotNode extends PNodeWithContext {
 
-        public abstract Object execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+        public abstract HPySlotData execute(Node inliningTarget, GraalHPyContext context, Object slotDef);
 
         @Specialization(limit = "1")
-        static Object doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+        static HPySlotData doIt(Node inliningTarget, GraalHPyContext context, Object slotDef,
                         @CachedLibrary("slotDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
-                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode) {
             assert checkLayout(slotDef);
 
             int slotNr;
@@ -878,18 +1197,14 @@ public class GraalHPyNodes {
                 }
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_SLOT_S_ISNT_INT, slotDef);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_SLOT_S_ISNT_INT, slotDef);
             }
 
             HPySlot slot = HPySlot.fromValue(slotNr);
             if (slot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_SLOT_VALUE, slotNr);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_SLOT_VALUE, slotNr);
             }
-
-            HPyProperty property = null;
-            Object[] methodNames = slot.getAttributeKeys();
-            HPySlotWrapper[] slotWrappers = slot.getSignatures();
 
             // read and check the function pointer
             Object methodFunctionPointer;
@@ -900,11 +1215,46 @@ public class GraalHPyNodes {
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_STRUCT_MEMBER, e.getUnknownIdentifier());
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_STRUCT_MEMBER, e.getUnknownIdentifier());
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH);
             }
+
+            return new HPySlotData(slot, methodFunctionPointer);
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object slotDef) {
+            String[] members = new String[]{"slot", "impl", "cpy_trampoline"};
+            InteropLibrary lib = InteropLibrary.getUncached(slotDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(slotDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyCreateSlotNode extends PNodeWithContext {
+
+        public abstract Object execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+
+        @Specialization
+        static Object doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyReadSlotNode readSlotNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            HPySlotData slotData = readSlotNode.execute(inliningTarget, context, slotDef);
+            HPySlot slot = slotData.slot;
+            HPyProperty property = null;
+            Object[] methodNames = slot.getAttributeKeys();
+            HPySlotWrapper[] slotWrappers = slot.getSignatures();
 
             /*
              * Special case: DESTROYFUNC. This won't be usable from Python, so we just store the
@@ -913,7 +1263,7 @@ public class GraalHPyNodes {
             if (HPY_TP_DESTROY.equals(slot)) {
                 assert enclosingType instanceof PythonClass : "HPy destroy functions are only possible for user classes";
                 if (enclosingType instanceof PythonClass) {
-                    ((PythonClass) enclosingType).hpyDestroyFunc = methodFunctionPointer;
+                    ((PythonClass) enclosingType).hpyDestroyFunc = slotData.impl();
                 }
             } else if (HPY_TP_TRAVERSE.equals(slot)) {
                 assert methodNames.length == 0;
@@ -935,26 +1285,14 @@ public class GraalHPyNodes {
                     Object function;
                     PythonLanguage language = PythonLanguage.get(raiseNode);
                     if (HPY_TP_NEW.equals(slot)) {
-                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, null, factory);
+                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), null, factory);
                     } else {
-                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, enclosingType, factory);
+                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), enclosingType, factory);
                     }
                     property = new HPyProperty(methodName, function, property);
                 }
             }
             return property;
-        }
-
-        @TruffleBoundary
-        private static boolean checkLayout(Object slotDef) {
-            String[] members = new String[]{"slot", "impl", "cpy_trampoline"};
-            InteropLibrary lib = InteropLibrary.getUncached(slotDef);
-            for (String member : members) {
-                if (!lib.isMemberReadable(slotDef, member)) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 

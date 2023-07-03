@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -50,27 +48,31 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltinsClinicProviders.HPyUniversalLoadNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = GraalHPyUniversalModuleBuiltins.J_HPY_UNIVERSAL)
@@ -84,12 +86,21 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         return GraalHPyUniversalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "load", parameterNames = {"name", "path", "debug"}, minNumOfPositionalArgs = 2)
+    @Override
+    public void initialize(Python3Core core) {
+        for(HPyMode mode : HPyMode.values()) {
+            addBuiltinConstant(mode.name(), mode.getValue());
+        }
+        super.initialize(core);
+    }
+
+    @Builtin(name = "load", parameterNames = {"name", "path", "spec", "debug", "mode"}, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "debug", conversion = ClinicConversion.Boolean, defaultValue = "false")
-    abstract static class HPyUniversalLoadNode extends PythonTernaryClinicBuiltinNode {
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    abstract static class HPyUniversalLoadNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -97,14 +108,29 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PythonModule doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, boolean debug,
-                        @Cached HPyCheckHandleResultNode checkHandleResultNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+        Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, Object spec, boolean debug, int mode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return loadHPyModule(context, name, path, debug, checkHandleResultNode);
+                HPyMode hmode = debug ? HPyMode.MODE_DEBUG : HPyMode.MODE_UNIVERSAL;
+                // 'mode' just overwrites 'debug'
+                if (mode > 0) {
+                    hmode = HPyMode.fromValue(mode);
+                }
+                Object hpyModuleDefPtr = loadHPyModule(context, name, path, hmode);
+                if (lib.isNull(hpyModuleDefPtr)) {
+                    throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.ERROR_LOADING_HPY_EXT_S_S, path, name);
+                }
+
+                Object module = GraalHPyModuleCreateNodeGen.getUncached().execute(context.getHPyContext(), name, spec, hpyModuleDefPtr);
+
+                if (module instanceof PythonModule pythonModule) {
+                    GraalHPyModuleExecNodeGen.getUncached().execute(this, context.getHPyContext(), pythonModule);
+                }
+                return module;
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -117,20 +143,11 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PythonModule loadHPyModule(PythonContext context, TruffleString name, TruffleString path, boolean debug,
-                        HPyCheckHandleResultNode checkHandleResultNode) throws IOException, ApiInitException, ImportException {
-            Object result = GraalHPyContext.loadHPyModule(this, context, name, path, debug, checkHandleResultNode);
-            if (!(result instanceof PythonModule)) {
-                /*
-                 * HPy does currently not support multi-phase extension module initialization. This
-                 * means there is no structure defined in HPy that we could parse. Hence, whenever
-                 * we reach this point, it's an error.
-                 */
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.SystemError, ErrorMessages.INIT_S_RETURNED_AN_UNEXPECTED_VALUE, name);
-            }
-            PythonModule module = (PythonModule) result;
-            module.setAttribute(T___FILE__, path);
-            return module;
+        private Object loadHPyModule(PythonContext context, TruffleString name, TruffleString path, HPyMode mode) throws IOException, ApiInitException, ImportException {
+            Object hpyModuleDefPtr = GraalHPyContext.loadHPyModule(this, context, name, path, mode);
+            // HPy only supports multi-phase extension module initialization.
+            assert !(hpyModuleDefPtr instanceof PythonModule);
+            return hpyModuleDefPtr;
         }
     }
 }

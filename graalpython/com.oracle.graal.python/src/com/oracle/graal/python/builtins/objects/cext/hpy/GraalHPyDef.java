@@ -267,7 +267,8 @@ public abstract class GraalHPyDef {
         TRAVERSE(LLVMType.HPyFunc_traverseproc),
         DESTRUCTOR(LLVMType.HPyFunc_destructor),
         GETBUFFER(LLVMType.HPyFunc_getbufferproc),
-        RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc);
+        RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc),
+        MOD_CREATE;
 
         /** The C function's type (basically it's signature). */
         private final LLVMType llvmFunctionType;
@@ -376,7 +377,9 @@ public abstract class GraalHPyDef {
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, T___MATMUL__, HPySlotWrapper.BINARYFUNC_R, T___RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, T___IMATMUL__),
         HPY_TP_FINALIZE(80, HPySlotWrapper.DESTRUCTOR),
-        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC);
+        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC),
+        HPY_MOD_CREATE(2000, HPySlotWrapper.MOD_CREATE),
+        HPY_MOD_EXEC(2001, HPySlotWrapper.INQUIRYPRED);
 
         /** The corresponding C enum value. */
         private final int value;

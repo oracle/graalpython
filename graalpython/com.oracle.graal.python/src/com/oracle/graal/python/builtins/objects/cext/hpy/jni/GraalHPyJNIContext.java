@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -259,9 +260,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         // NFI doesn't know if a symbol is executable, so it always reports false
         assert !InteropLibrary.getUncached().isExecutable(initFunction);
 
-        // bind the signature to the NFI (function) pointer
-        initFunction = HPyAttachJNIFunctionTypeNodeGen.getUncached().execute(context, initFunction, LLVMType.HPyModule_init);
-        return InteropLibrary.getUncached().execute(initFunction, this);
+        // coerce 'initFunction' to a native pointer and invoke it via JNI trampoline
+        long initFunctionPtr = coerceToPointer(initFunction);
+        long moduleDefPtr;
+        if (debug) {
+            assert hPyDebugContext != 0;
+            moduleDefPtr = GraalHPyJNITrampolines.executeDebugModuleInit(initFunctionPtr, hPyDebugContext);
+        } else {
+            assert nativePointer != 0;
+            moduleDefPtr = GraalHPyJNITrampolines.executeModuleInit(initFunctionPtr, nativePointer);
+        }
+        return convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, moduleDefPtr);
     }
 
     protected HPyUpcall[] getUpcalls() {
@@ -1518,11 +1527,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    public long ctxModuleCreate(long def) {
-        increment(HPyJNIUpcall.HPyModuleCreate);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_MODULE_CREATE, def);
-    }
-
     public long ctxLongFromUnsignedLong(long value) {
         increment(HPyJNIUpcall.HPyLongFromUnsignedLong);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG, value);
@@ -2326,6 +2330,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private long createConstant(Object value) {
         return context.getHPyContextHandle(value);
+    }
+
+    private long createBuiltinsConstant() {
+        return createConstant(GetOrCreateDictNode.getUncached().execute(context.getContext().getBuiltins()));
     }
 
     private static long createSingletonConstant(Object value, int handle) {

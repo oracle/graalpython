@@ -1002,6 +1002,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
+    public static final TruffleString ERROR_LOADING_HPY_EXT_S_S = tsLiteral("Error during loading of the HPy extension module at path '%s'. Function HPyInit_'%s' returned NULL.");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

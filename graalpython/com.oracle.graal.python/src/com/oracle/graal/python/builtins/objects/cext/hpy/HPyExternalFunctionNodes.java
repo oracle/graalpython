@@ -120,8 +120,10 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -1064,24 +1066,11 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    public abstract static class HPyCheckFunctionResultNode extends CheckFunctionResultNode {
-        @Child private GetThreadStateNode getThreadStateNode;
+    public abstract static class HPyCheckFunctionResultNode extends Node {
 
-        /**
-         * Compatibility method to satisfy the generic interface.
-         */
-        @Override
-        public final Object execute(PythonContext context, TruffleString name, Object result) {
-            return execute(getThreadState(context), name, result);
-        }
-
-        /**
-         * This is the preferred way for executing the node since it avoids unnecessary field reads
-         * in the interpreter or multi-context mode.
-         */
         public abstract Object execute(PythonThreadState pythonThreadState, TruffleString name, Object value);
 
-        protected final void checkFunctionResult(TruffleString name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory) {
+        protected static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = pythonThreadState.getCurrentException();
             boolean errOccurred = currentException != null;
             if (indicatesError) {
@@ -1097,32 +1086,26 @@ public abstract class HPyExternalFunctionNodes {
                 pythonThreadState.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
-                PythonLanguage language = PythonLanguage.get(this);
-                throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                throw PException.fromObject(sysExc, inliningTarget, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
-        }
-
-        private PythonThreadState getThreadState(PythonContext context) {
-            if (getThreadStateNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getThreadStateNode = insert(GetThreadStateNodeGen.create());
-            }
-            return getThreadStateNode.execute(context);
         }
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
-        Object doLongNull(PythonThreadState pythonThreadState, TruffleString name, Object value,
+        static Object doLongNull(PythonThreadState pythonThreadState, TruffleString name, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached ConditionProfile isNullProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             Object delegate = closeAndGetHandleNode.execute(value);
-            checkFunctionResult(name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), pythonThreadState, raiseNode, factory);
+            checkFunctionResult(inliningTarget, name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), pythonThreadState, raiseNode, factory);
             return delegate;
         }
     }
@@ -1131,6 +1114,7 @@ public abstract class HPyExternalFunctionNodes {
      * Similar to {@link HPyCheckFunctionResultNode}, this node checks a primitive result of a
      * native function. This node guarantees that an {@code int} or {@code long} is returned.
      */
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
         public abstract int executeInt(PythonThreadState context, TruffleString name, int value);
@@ -1138,30 +1122,33 @@ public abstract class HPyExternalFunctionNodes {
         public abstract long executeLong(PythonThreadState context, TruffleString name, long value);
 
         @Specialization
-        int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
+        static int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(inliningTarget, name, value == -1, pythonThreadState, raiseNode, factory);
             return value;
         }
 
         @Specialization(replaces = "doInteger")
-        long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
+        static long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(inliningTarget, name, value == -1, pythonThreadState, raiseNode, factory);
             return value;
         }
 
         @Specialization(limit = "1")
-        Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
+        static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (lib.fitsInLong(value)) {
                 try {
                     long lvalue = lib.asLong(value);
-                    checkFunctionResult(name, lvalue == -1, pythonThreadState, raiseNode, factory);
+                    checkFunctionResult(inliningTarget, name, lvalue == -1, pythonThreadState, raiseNode, factory);
                     return lvalue;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1175,11 +1162,13 @@ public abstract class HPyExternalFunctionNodes {
      * Does not actually check the result of a function (since this is used when {@code void}
      * functions are called) but checks if an error occurred during execution of the function.
      */
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckVoidResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
-        Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
+        static Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             /*
@@ -1187,7 +1176,7 @@ public abstract class HPyExternalFunctionNodes {
              * must also be checked. The actual result value (which will be something like NULL or
              * 0) is not used.
              */
-            checkFunctionResult(name, false, threadState, raiseNode, factory);
+            checkFunctionResult(inliningTarget, name, false, threadState, raiseNode, factory);
             return value;
         }
     }

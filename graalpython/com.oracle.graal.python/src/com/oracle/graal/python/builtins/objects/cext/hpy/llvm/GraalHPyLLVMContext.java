@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesF
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
@@ -396,6 +397,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     private static Object createConstant(Object value) {
         return GraalHPyHandle.create(value);
+    }
+
+    private Object createBuiltinsConstant() {
+        return createConstant(GetOrCreateDictNode.getUncached().execute(context.getContext().getBuiltins()));
     }
 
     private static Object createSingletonConstant(Object value, int handle) {
