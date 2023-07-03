@@ -644,7 +644,7 @@ suite = {
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
             "cflags": [
-                "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                "-DHPY_ABI_HYBRID", "-DNDEBUG",
                 "-O3", "-Werror", "-fPIC",
                 "-I\"<path:com.oracle.graal.python.cext>/include\"",
                 "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
