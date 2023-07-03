@@ -734,7 +734,8 @@ public abstract class CExtNodes {
                         @Cached CStructAccess.ReadByteNode read,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
-                        @Cached TruffleString.FromByteArrayNode fromBytes) {
+                        @Cached TruffleString.FromByteArrayNode fromBytes,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int length = 0;
             while (read.readArrayElement(charPtr, length) != 0) {
@@ -742,10 +743,10 @@ public abstract class CExtNodes {
             }
 
             if (lib.isPointer(charPtr)) {
-                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy);
+                return switchEncodingNode.execute(fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy), TS_ENCODING);
             }
             byte[] result = read.readByteArray(charPtr, length);
-            return fromBytes.execute(result, Encoding.UTF_8, false);
+            return switchEncodingNode.execute(fromBytes.execute(result, Encoding.UTF_8, false), TS_ENCODING);
         }
 
         static boolean isCArrayWrapper(Object object) {
@@ -1363,14 +1364,14 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeI64MemberInMRONode extends Node {
 
-        public final long execute(Object cls, CFields nativeMemberName, HiddenKey managedMemberName) {
+        public final long execute(Object cls, CFields nativeMemberName, Object managedMemberName) {
             return execute(cls, nativeMemberName, managedMemberName, null);
         }
 
-        public abstract long execute(Object cls, CFields nativeMemberName, HiddenKey managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
+        public abstract long execute(Object cls, CFields nativeMemberName, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
 
         @Specialization
-        static long doSingleContext(Object cls, CFields nativeMemberName, HiddenKey managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
+        static long doSingleContext(Object cls, CFields nativeMemberName, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
@@ -1397,7 +1398,7 @@ public abstract class CExtNodes {
                 }
             }
             // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
-            return nativeMemberName == CFields.PyTypeObject__tp_basicsize ? CStructs.PyObject.size() : 0L;
+            return nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
         }
     }
 

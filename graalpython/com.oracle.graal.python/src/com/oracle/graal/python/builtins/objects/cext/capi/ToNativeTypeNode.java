@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ALLOC;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
@@ -95,11 +96,10 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONodeGen;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -336,10 +336,13 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
-            Object val = lookupAttrNode.execute(clazz, T___WEAKLISTOFFSET__);
-            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
-            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, val == PNone.NO_VALUE ? 0L : asSizeNode.executeExact(null, val));
+            long weaklistoffset;
+            if (clazz instanceof PythonBuiltinClass builtin) {
+                weaklistoffset = builtin.getType().getWeaklistoffset();
+            } else {
+                weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, T___WEAKLISTOFFSET__);
+            }
+            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
@@ -375,7 +378,7 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, TYPE_ALLOC));
             // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
             // expects to get the function
-            Object newFunction = getAttrNode.execute(clazz, T___NEW__);
+            Object newFunction = lookupAttrNode.execute(clazz, T___NEW__);
             if (newFunction instanceof PDecoratedMethod) {
                 newFunction = ((PDecoratedMethod) newFunction).getCallable();
             }
@@ -409,7 +412,6 @@ public abstract class ToNativeTypeNode extends Node {
     void doPythonNativeWrapper(PythonClassNativeWrapper obj,
                     @Cached InitializeTypeNode initializeType) {
         assert !obj.isNative();
-        assert !(obj.getDelegate() instanceof PythonBuiltinClass) || IsSubtypeNode.getUncached().execute(obj.getDelegate(), PythonBuiltinClassType.PBaseException);
 
         Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
         initializeType.execute(obj, ptr);

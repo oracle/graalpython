@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Creat
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -81,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -546,14 +548,15 @@ public final class CApiContext extends CExtContext {
 
                 Object capiLibrary = capiLibraryCallTarget.call();
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
+                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
+                context.setCApiContext(cApiContext);
                 if (!U.isExecutable(initFunction)) {
                     Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
                     initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                    U.execute(initFunction, new GetBuiltin());
+                } else {
+                    U.execute(initFunction, new PointerContainer(0), new GetBuiltin());
                 }
-                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
-                context.setCApiContext(cApiContext);
-
-                U.execute(initFunction, new GetBuiltin());
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
                 PyDateTimeCAPIWrapper.initWrapper(cApiContext);

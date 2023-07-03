@@ -424,26 +424,36 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, pythonObject);
 
             // if the object is a type, a weak ref is allowed
+            boolean allowed = false;
             if (profile.profileClass(inliningTarget, clazz, PythonBuiltinClassType.PythonClass)) {
-                return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
-            }
-
-            // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
-            if (PGuards.isNativeClass(clazz) || clazz instanceof PythonClass && ((PythonClass) clazz).needsNativeAllocation()) {
-                for (Object base : getMroNode.execute(clazz)) {
-                    if (PGuards.isNativeClass(base)) {
-                        if (getTpWeaklistoffsetNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getTpWeaklistoffsetNode = insert(CStructAccess.ReadI64Node.create());
-                        }
-                        long tpWeaklistoffset = getTpWeaklistoffsetNode.readFromObj((PythonNativeClass) base, PyTypeObject__tp_weaklistoffset);
-                        if (tpWeaklistoffset != 0) {
-                            return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
+                allowed = true;
+            } else {
+                // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
+                if (PGuards.isNativeClass(clazz) || clazz instanceof PythonClass && ((PythonClass) clazz).needsNativeAllocation()) {
+                    for (Object base : getMroNode.execute(clazz)) {
+                        if (PGuards.isNativeClass(base)) {
+                            if (getTpWeaklistoffsetNode == null) {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                getTpWeaklistoffsetNode = insert(CStructAccess.ReadI64Node.create());
+                            }
+                            long tpWeaklistoffset = getTpWeaklistoffsetNode.readFromObj((PythonNativeClass) base, PyTypeObject__tp_weaklistoffset);
+                            if (tpWeaklistoffset != 0) {
+                                allowed = true;
+                                break;
+                            }
+                        } else if (base instanceof PythonClass /* not PythonBuiltinClass */) {
+                            // any subclass of a normal (non-builtin) class supports weakrefs
+                            allowed = true;
+                            break;
                         }
                     }
                 }
             }
-            return refType(cls, pythonObject, actualCallback);
+            if (allowed) {
+                return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
+            } else {
+                return refType(cls, pythonObject, actualCallback);
+            }
         }
 
         @Fallback
