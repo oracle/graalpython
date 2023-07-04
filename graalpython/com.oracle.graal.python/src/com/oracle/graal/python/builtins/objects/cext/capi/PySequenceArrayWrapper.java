@@ -46,8 +46,8 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSub
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -182,7 +182,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SetItemScalarNode setItemNode,
                         @Cached GetItemScalarNode getItemNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached PythonToNativeNode toSulongNode) {
             SequenceStorage sequenceStorage = list.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
@@ -205,7 +205,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SetItemScalarNode setItemNode,
                         @Cached GetItemScalarNode getItemNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached PythonToNativeNode toSulongNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
@@ -266,7 +266,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         static Object doGeneric(Object object, long idx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallNode callGetItemNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached PythonToNativeNode toSulongNode) {
             Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.T___GETITEM__);
             return toSulongNode.execute(callGetItemNode.execute(attrGetItem, object, idx));
         }
@@ -416,7 +416,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             }
             // switch to native storage
             setStorage.execute(inliningTarget, sequence, nativeStorage);
-            return PythonNativeWrapper.coerceToLong(nativeStorage.getPtr(), lib);
+            return PythonUtils.coerceToLong(nativeStorage.getPtr(), lib);
         }
 
         @Specialization(guards = "!isPSequence(object.getDelegate())")
@@ -493,7 +493,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         if (getDelegate() instanceof PSequence) {
             PSequence sequence = (PSequence) getDelegate();
             if (sequence.getSequenceStorage() instanceof NativeSequenceStorage) {
-                return PythonNativeWrapper.coerceToLong(((NativeSequenceStorage) sequence.getSequenceStorage()).getPtr(), lib);
+                return PythonUtils.coerceToLong(((NativeSequenceStorage) sequence.getSequenceStorage()).getPtr(), lib);
             }
         }
         throw UnsupportedMessageException.create();

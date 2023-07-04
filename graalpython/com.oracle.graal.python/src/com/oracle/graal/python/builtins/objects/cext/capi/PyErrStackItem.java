@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -95,7 +95,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
                     @Bind("$node") Node inliningTarget,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
-                    @Cached ToSulongNode toSulongNode) {
+                    @Cached PythonToNativeNode toSulongNode) {
         Object result = null;
         if (exception != null) {
             switch (key) {

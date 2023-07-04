@@ -109,14 +109,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeW
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNode.InitializeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -151,14 +150,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1721,8 +1714,7 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         @Specialization
         Object set(TruffleString tsName, Object pointer,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Cached InitializeTypeNode initializeNode) {
+                        @Cached TruffleString.EqualNode eqNode) {
             try {
                 LOGGER.fine(() -> "initializing built-in class " + tsName + " at " + PythonUtils.formatPointer(pointer));
                 Python3Core core = getCore();
@@ -1754,50 +1746,7 @@ public final class PythonCextBuiltins {
                     throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
                 }
 
-                PythonClassNativeWrapper wrapper = PythonClassNativeWrapper.wrap(clazz, TypeNodes.GetNameNode.getUncached().execute(clazz));
-                assert !wrapper.isNative();
-
-                CStructAccess.ReadI64Node readI64 = CStructAccess.ReadI64Node.getUncached();
-                CStructAccess.ReadPointerNode readPointer = CStructAccess.ReadPointerNode.getUncached();
-                WriteAttributeToObjectNode writeAttr = WriteAttributeToObjectNode.getUncached();
-                InteropLibrary lib = InteropLibrary.getUncached();
-
-                // some values are retained from the native representation
-                long basicsize = readI64.read(pointer, CFields.PyTypeObject__tp_basicsize);
-                if (basicsize != 0) {
-                    SetBasicSizeNodeGen.getUncached().execute(null, clazz, basicsize);
-                }
-                long itemsize = readI64.read(pointer, CFields.PyTypeObject__tp_itemsize);
-                if (itemsize != 0) {
-                    SetItemSizeNodeGen.getUncached().execute(null, clazz, itemsize);
-                }
-                long vectorcall_offset = readI64.read(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
-                if (vectorcall_offset != 0) {
-                    writeAttr.execute(clazz, TypeBuiltins.TYPE_VECTORCALL_OFFSET, vectorcall_offset);
-                }
-                Object alloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_alloc);
-                if (!PGuards.isNullOrZero(alloc_fun, lib)) {
-                    writeAttr.execute(clazz, TypeBuiltins.TYPE_ALLOC, alloc_fun);
-                }
-                Object dealloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_dealloc);
-                if (!PGuards.isNullOrZero(dealloc_fun, lib)) {
-                    writeAttr.execute(clazz, TypeBuiltins.TYPE_DEALLOC, dealloc_fun);
-                }
-                Object free_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_free);
-                if (!PGuards.isNullOrZero(free_fun, lib)) {
-                    writeAttr.execute(clazz, TypeBuiltins.TYPE_FREE, free_fun);
-                }
-                Object as_buffer = readPointer.read(pointer, CFields.PyTypeObject__tp_as_buffer);
-                if (!PGuards.isNullOrZero(as_buffer, lib)) {
-                    writeAttr.execute(clazz, TypeBuiltins.TYPE_AS_BUFFER, as_buffer);
-                }
-
-                // initialize flags:
-                long flags = GetTypeFlagsNode.getUncached().execute(clazz);
-                flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
-                SetTypeFlagsNode.getUncached().execute(clazz, flags);
-
-                initializeNode.execute(wrapper, pointer);
+                PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.getUncached().execute(clazz), pointer);
                 return PNone.NO_VALUE;
             } catch (PException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

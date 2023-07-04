@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -135,13 +137,13 @@ public class CStructAccess {
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
         static void freePointer(Object pointer,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
             freeLong(asPointer(pointer, lib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
         static void freeManaged(Object pointer,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_FREE, pointer);
@@ -437,6 +439,7 @@ public class CStructAccess {
             return CStructAccessFactory.ReadI64NodeGen.getUncached();
         }
 
+        @NeverDefault
         public static ReadI64Node create() {
             return CStructAccessFactory.ReadI64NodeGen.create();
         }
@@ -501,6 +504,7 @@ public class CStructAccess {
             return CStructAccessFactory.ReadFloatNodeGen.getUncached();
         }
 
+        @NeverDefault
         public static ReadFloatNode create() {
             return CStructAccessFactory.ReadFloatNodeGen.create();
         }
@@ -562,6 +566,7 @@ public class CStructAccess {
             return CStructAccessFactory.ReadDoubleNodeGen.getUncached();
         }
 
+        @NeverDefault
         public static ReadDoubleNode create() {
             return CStructAccessFactory.ReadDoubleNodeGen.create();
         }
@@ -1122,7 +1127,7 @@ public class CStructAccess {
         static void writeLong(long pointer, long offset, Object value,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib) {
             assert offset >= 0;
-            UNSAFE.putLong(pointer + offset, PythonNativeWrapper.coerceToLong(value, valueLib));
+            UNSAFE.putLong(pointer + offset, PythonUtils.coerceToLong(value, valueLib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
@@ -1239,13 +1244,13 @@ public class CStructAccess {
         static void writeLong(long pointer, long offset, Object value,
                         @Shared @Cached NativePtrToPythonNode toPython,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
-                        @CachedLibrary(limit = "3") InteropLibrary valueLib) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary valueLib) {
             assert offset >= 0;
             long old = UNSAFE.getLong(pointer + offset);
             if (old != 0) {
                 toPython.execute(old, true);
             }
-            UNSAFE.putLong(pointer + offset, PythonNativeWrapper.coerceToLong(toNative.execute(value), valueLib));
+            UNSAFE.putLong(pointer + offset, PythonUtils.coerceToLong(toNative.execute(value), valueLib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
@@ -1253,7 +1258,7 @@ public class CStructAccess {
                         @Shared @Cached NativePtrToPythonNode toPython,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @CachedLibrary(limit = "3") InteropLibrary valueLib) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary valueLib) {
             writeLong(asPointer(pointer, lib), offset, value, toPython, toNative, valueLib);
         }
 
@@ -1279,7 +1284,7 @@ public class CStructAccess {
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
     static long asPointer(Object value, InteropLibrary lib) {
-        assert validPointer(value);
+        assert validPointer(value) || value instanceof PySequenceArrayWrapper;
         try {
             return lib.asPointer(value);
         } catch (final UnsupportedMessageException e) {

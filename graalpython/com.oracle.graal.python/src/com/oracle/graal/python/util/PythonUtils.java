@@ -916,4 +916,19 @@ public final class PythonUtils {
         }
         return String.valueOf(pointer);
     }
+
+    public static long coerceToLong(Object allocated, InteropLibrary lib) {
+        if (allocated instanceof Long) {
+            return (long) allocated;
+        } else {
+            if (!lib.isPointer(allocated)) {
+                lib.toNative(allocated);
+            }
+            try {
+                return lib.asPointer(allocated);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
 }

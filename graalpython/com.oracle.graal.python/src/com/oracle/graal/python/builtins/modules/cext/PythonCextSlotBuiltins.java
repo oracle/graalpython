@@ -730,22 +730,6 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyThreadState}, call = Ignored)
-    abstract static class Py_get_PyThreadState_dict extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        static Object get(PThreadState receiver,
-                        @Cached PythonObjectFactory factory) {
-            PDict threadStateDict = receiver.getThreadState().getDict();
-            if (threadStateDict == null) {
-                threadStateDict = factory.createDict();
-                receiver.getThreadState().setDict(threadStateDict);
-            }
-            return threadStateDict;
-        }
-    }
-
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 

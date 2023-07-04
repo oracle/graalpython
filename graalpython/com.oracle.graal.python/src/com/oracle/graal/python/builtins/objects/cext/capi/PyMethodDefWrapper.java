@@ -48,158 +48,125 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wrapper object for {@code PyMethodDef}.
  */
-@ExportLibrary(InteropLibrary.class)
-public class PyMethodDefWrapper extends PythonNativeWrapper {
+public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
 
     public PyMethodDefWrapper(PythonObject delegate) {
         super(delegate);
     }
 
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
+    private static Object getMethFromBuiltinMethod(PBuiltinMethod object, PythonToNativeNode toSulongNode) {
+        return getMethFromBuiltinFunction(object.getBuiltinFunction(), toSulongNode);
     }
 
-    @ExportMessage
-    long asPointer() {
-        return getNativePointer();
+    private static Object getMethFromBuiltinFunction(PBuiltinFunction object, PythonToNativeNode toSulongNode) {
+        PKeyword[] kwDefaults = object.getKwDefaults();
+        for (int i = 0; i < kwDefaults.length; i++) {
+            if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                return kwDefaults[i].getValue();
+            }
+        }
+        return createFunctionWrapper(object, toSulongNode);
     }
 
-    @GenerateUncached
-    public abstract static class AllocateNode extends PNodeWithContext {
-
-        public abstract Object execute(Object obj);
-
-        static Object getMethFromBuiltinMethod(PBuiltinMethod object, ToSulongNode toSulongNode) {
-            return getMethFromBuiltinFunction(object.getBuiltinFunction(), toSulongNode);
+    private static Object getMeth(PythonObject object, PythonToNativeNode toSulongNode) {
+        if (object instanceof PBuiltinMethod) {
+            return getMethFromBuiltinMethod((PBuiltinMethod) object, toSulongNode);
+        } else if (object instanceof PBuiltinFunction) {
+            return getMethFromBuiltinFunction((PBuiltinFunction) object, toSulongNode);
         }
+        return createFunctionWrapper(object, toSulongNode);
+    }
 
-        static Object getMethFromBuiltinFunction(PBuiltinFunction object, ToSulongNode toSulongNode) {
-            PKeyword[] kwDefaults = object.getKwDefaults();
-            for (int i = 0; i < kwDefaults.length; i++) {
-                if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
-                    return kwDefaults[i].getValue();
-                }
-            }
-            return createFunctionWrapper(object, toSulongNode);
+    @TruffleBoundary
+    private static Object createFunctionWrapper(PythonObject object, PythonToNativeNode toSulongNode) {
+        int flags = getFlags(object);
+        PythonNativeWrapper wrapper;
+        if (CExtContext.isMethNoArgs(flags)) {
+            wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
+        } else if (CExtContext.isMethO(flags)) {
+            wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
+        } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
+            wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
+        } else if (CExtContext.isMethVarargs(flags)) {
+            wrapper = PyProcsWrapper.createVarargWrapper(object);
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
+        return toSulongNode.execute(wrapper);
+    }
 
-        private static Object getMeth(PythonObject object, ToSulongNode toSulongNode) {
-            if (object instanceof PBuiltinMethod) {
-                return getMethFromBuiltinMethod((PBuiltinMethod) object, toSulongNode);
-            } else if (object instanceof PBuiltinFunction) {
-                return getMethFromBuiltinFunction((PBuiltinFunction) object, toSulongNode);
-            }
-            return createFunctionWrapper(object, toSulongNode);
+    private static int getFlags(PythonObject object) {
+        if (object instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) object).getFlags();
+        } else if (object instanceof PBuiltinMethod) {
+            return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
         }
+        return 0;
+    }
 
-        @TruffleBoundary
-        private static Object createFunctionWrapper(PythonObject object, ToSulongNode toSulongNode) {
-            int flags = getFlags(object);
-            PythonNativeWrapper wrapper;
-            if (CExtContext.isMethNoArgs(flags)) {
-                wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
-            } else if (CExtContext.isMethO(flags)) {
-                wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                wrapper = PyProcsWrapper.createVarargWrapper(object);
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
+    @Override
+    protected Object allocateReplacememtObject() {
+        PythonObject obj = (PythonObject) getDelegate();
+
+        CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
+        CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
+        CStructAccess.WriteIntNode writeIntNode = CStructAccessFactory.WriteIntNodeGen.getUncached();
+        PythonAbstractObject.PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
+        PythonToNativeNode toSulongNode = PythonToNativeNodeGen.getUncached();
+        CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
+        Object mem = allocNode.alloc(CStructs.PyMethodDef);
+
+        Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
+
+        Object name = getAttrNode.execute(obj, SpecialAttributeNames.T___NAME__);
+        if (PGuards.isPNone(name)) {
+            name = nullValue;
+        } else {
+            try {
+                name = new CStringWrapper(castToStringNode.execute(name));
+            } catch (CannotCastException e) {
+                // fall through
             }
-            return toSulongNode.execute(wrapper);
         }
+        writePointerNode.write(mem, PyMethodDef__ml_name, name);
 
-        private static int getFlags(PythonObject object) {
-            if (object instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) object).getFlags();
-            } else if (object instanceof PBuiltinMethod) {
-                return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
-            }
-            return 0;
-        }
+        writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj, toSulongNode));
+        writeIntNode.write(mem, PyMethodDef__ml_flags, getFlags(obj));
 
-        @Specialization
-        @TruffleBoundary
-        Object alloc(PythonObject obj,
-                        @Cached CStructAccess.AllocateNode allocNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CStructAccess.WriteIntNode writeIntNode) {
-            PythonAbstractObject.PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
-            ToSulongNode toSulongNode = ToSulongNode.getUncached();
-            CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
-            Object mem = allocNode.alloc(CStructs.PyMethodDef);
-
-            Object nullValue = getContext().getNativeNull().getPtr();
-
-            Object name = getAttrNode.execute(obj, SpecialAttributeNames.T___NAME__);
-            if (PGuards.isPNone(name)) {
-                name = nullValue;
-            } else {
-                try {
-                    name = new CStringWrapper(castToStringNode.execute(name));
-                } catch (CannotCastException e) {
-                    // fall through
-                }
-            }
-            writePointerNode.write(mem, PyMethodDef__ml_name, name);
-
-            writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj, toSulongNode));
-            writeIntNode.write(mem, PyMethodDef__ml_flags, getFlags(obj));
-
-            Object doc = getAttrNode.execute(obj, T___DOC__);
-            if (PGuards.isPNone(doc)) {
+        Object doc = getAttrNode.execute(obj, T___DOC__);
+        if (PGuards.isPNone(doc)) {
+            doc = nullValue;
+        } else {
+            try {
+                doc = new CStringWrapper(castToStringNode.execute(doc));
+            } catch (CannotCastException e) {
                 doc = nullValue;
-            } else {
-                try {
-                    doc = new CStringWrapper(castToStringNode.execute(doc));
-                } catch (CannotCastException e) {
-                    doc = nullValue;
-                }
             }
-            writePointerNode.write(mem, PyMethodDef__ml_doc, doc);
-
-            return mem;
         }
-    }
+        writePointerNode.write(mem, PyMethodDef__ml_doc, doc);
 
-    @ExportMessage
-    protected void toNative(
-                    @CachedLibrary(limit = "3") InteropLibrary lib,
-                    @Cached AllocateNode alloc) {
-        if (!isNative()) {
-            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-            long ptr = coerceToLong(alloc.execute(getDelegate()), lib);
-            CApiTransitions.firstToNative(this, ptr);
-        }
+        return mem;
     }
 }

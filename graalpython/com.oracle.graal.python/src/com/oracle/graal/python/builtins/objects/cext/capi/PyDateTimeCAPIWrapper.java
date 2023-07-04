@@ -48,11 +48,13 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetBasicSizeNode;
@@ -61,12 +63,7 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -97,8 +94,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * } PyDateTime_CAPI
  * </pre>
  */
-@ExportLibrary(InteropLibrary.class)
-public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
+public final class PyDateTimeCAPIWrapper extends PythonReplacingNativeWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
     static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
@@ -110,111 +106,78 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     public static final TruffleString T_FROMTIMESTAMP = tsLiteral("fromtimestamp");
     public static final TruffleString T_FOLD = tsLiteral("fold");
 
-    private Object dateType;
-    private Object datetimeType;
-    private Object timeType;
-    private Object deltaType;
-    private Object tzInfoType;
-    private Object timezoneUTC;
+    private final Object datetimeModule;
 
-    private Object dateFromDateWrapper;
-    private Object datetimeFromDateAndTimeWrapper;
-    private Object timeFromTimeWrapper;
-    private Object deltaFromDeltaWrapper;
-
-    private Object datetimeFromDateAndTimeAdFoldWrapper;
-    private Object timeFromTimeAndFold;
-    private Object timezoneFromTimezoneWrapper;
-    private Object datetimeFromTimestamp;
-    private Object dateFromTimestamp;
-
-    public PyDateTimeCAPIWrapper() {
+    public PyDateTimeCAPIWrapper(Object datetimeModule) {
         super(PythonObjectFactory.getUncached().createPythonObject(PythonBuiltinClassType.PythonObject));
+        this.datetimeModule = datetimeModule;
     }
 
     public static void initWrapper(CApiContext capiContext) {
-        Object datetime = AbstractImportNode.importModule(T_DATETIME);
-        PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper();
 
-        PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        ToSulongNode toSulongNode = ToSulongNode.getUncached();
-        PyObjectSetAttr setAttr = PyObjectSetAttr.getUncached();
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
-
-        PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetime, T_DATE);
-        SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
-        wrapper.dateType = toSulongNode.execute(date);
-
-        PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetime, T_DATETIME);
-        SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
-        wrapper.datetimeType = toSulongNode.execute(dt);
-
-        PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetime, T_TIME);
-        SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
-        wrapper.timeType = toSulongNode.execute(time);
-
-        PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetime, T_TIMEDELTA);
-        SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
-        wrapper.deltaType = toSulongNode.execute(delta);
-
-        wrapper.tzInfoType = toSulongNode.execute(getAttr.execute(null, datetime, T_TZINFO));
-        Object timezoneType = capiContext.timezoneType = getAttr.execute(null, datetime, T_TIMEZONE);
-        wrapper.timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, T_UTC));
-
-        wrapper.dateFromDateWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromDate;
-        wrapper.datetimeFromDateAndTimeWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTime;
-        wrapper.timeFromTimeWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTime;
-        wrapper.deltaFromDeltaWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Delta_FromDelta;
-        wrapper.timezoneFromTimezoneWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_TimeZone_FromTimeZone;
-        wrapper.datetimeFromTimestamp = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromTimestamp;
-        wrapper.dateFromTimestamp = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromTimestamp;
-        wrapper.datetimeFromDateAndTimeAdFoldWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold;
-        wrapper.timeFromTimeAndFold = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold;
-
         callCapiFunction.call(FUN_SET_PY_DATETIME_TYPES);
 
-        setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, T_PYDATETIME_CAPSULE_NAME, null));
-        assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
+        PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
+        PyObjectSetAttr setAttr = PyObjectSetAttr.getUncached();
+
+        Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
+        capiContext.timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
+
+        PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper(datetimeModule);
+        InteropLibrary.getUncached().toNative(wrapper);
+        Object replacement = wrapper.getReplacement();
+
+        setAttr.execute(null, datetimeModule, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(replacement, T_PYDATETIME_CAPSULE_NAME, null));
+        assert getAttr.execute(null, datetimeModule, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
+    @Override
+    protected Object allocateReplacememtObject() {
+        setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+        CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
+        CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
 
-    @ExportMessage
-    long asPointer() {
-        return getNativePointer();
-    }
+        PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
+        PythonToNativeNode toSulongNode = PythonToNativeNodeGen.getUncached();
 
-    @ExportMessage
-    @TruffleBoundary
-    protected void toNative(
-                    @Cached CStructAccess.AllocateNode allocNode,
-                    @Cached CStructAccess.WritePointerNode writePointerNode,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
-        if (!isNative()) {
-            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+        PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
+        SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
+        Object dateType = toSulongNode.execute(date);
 
-            Object mem = allocNode.alloc(CStructs.PyDateTime_CAPI);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateType, dateType);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTimeType, datetimeType);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeType, timeType);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, dateFromDateWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, datetimeFromDateAndTimeWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, timeFromTimeWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, deltaFromDeltaWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, timezoneFromTimezoneWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, datetimeFromTimestamp);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, dateFromTimestamp);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, datetimeFromDateAndTimeAdFoldWrapper);
-            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, timeFromTimeAndFold);
+        PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATETIME);
+        SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
+        Object datetimeType = toSulongNode.execute(dt);
 
-            long ptr = coerceToLong(mem, lib);
-            CApiTransitions.firstToNative(this, ptr);
-        }
+        PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIME);
+        SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
+        Object timeType = toSulongNode.execute(time);
+
+        PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIMEDELTA);
+        SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
+        Object deltaType = toSulongNode.execute(delta);
+
+        Object tzInfoType = toSulongNode.execute(getAttr.execute(null, datetimeModule, T_TZINFO));
+        Object timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
+        Object timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, T_UTC));
+
+        Object mem = allocNode.alloc(CStructs.PyDateTime_CAPI);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateType, dateType);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTimeType, datetimeType);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeType, timeType);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromDate);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTime);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTime);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Delta_FromDelta);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_TimeZone_FromTimeZone);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromTimestamp);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromTimestamp);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold);
+        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold);
+
+        return mem;
     }
 }

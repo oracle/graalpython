@@ -81,8 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -93,6 +91,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Ensu
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
@@ -113,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -129,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -142,7 +139,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -152,9 +148,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -187,7 +181,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -249,7 +242,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCAPISymbolNode importCAPISymbolNode) {
@@ -285,7 +278,7 @@ public abstract class CExtNodes {
 
         private static final NativeCAPISymbol NEW_FUNCTION = getFunction(BuiltinNames.J_TUPLE);
 
-        @Child private ToSulongNode toSulongNode;
+        @Child private PythonToNativeNode toSulongNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -295,7 +288,7 @@ public abstract class CExtNodes {
         public final Object call(Object object, Object arg) {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
+                toSulongNode = insert(PythonToNativeNodeGen.create());
             }
             return execute(object, toSulongNode.execute(arg));
         }
@@ -310,7 +303,7 @@ public abstract class CExtNodes {
 
         private static final NativeCAPISymbol NEW_FUNCTION = getFunction(J_UNICODE);
 
-        @Child private ToSulongNode toSulongNode;
+        @Child private PythonToNativeNode toSulongNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -320,7 +313,7 @@ public abstract class CExtNodes {
         public final Object call(Object object, Object arg) {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
+                toSulongNode = insert(PythonToNativeNodeGen.create());
             }
             return execute(object, toSulongNode.execute(arg));
         }
@@ -362,175 +355,6 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class ToSulongNode extends CExtToNativeNode {
-
-        @Specialization
-        static Object doString(TruffleString str,
-                        @Cached PythonObjectFactory factory,
-                        @Cached ConditionProfile noWrapperProfile) {
-            return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
-        }
-
-        @Specialization
-        PythonNativeWrapper doBoolean(boolean b,
-                        @Cached ConditionProfile profile) {
-            Python3Core core = PythonContext.get(this);
-            PInt boxed = b ? core.getTrue() : core.getFalse();
-            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
-            if (profile.profile(nativeWrapper == null)) {
-                nativeWrapper = PrimitiveNativeWrapper.createBool(b);
-                boxed.setNativeWrapper(nativeWrapper);
-            }
-            return nativeWrapper;
-        }
-
-        @Specialization(guards = "isSmallInteger(i)")
-        PrimitiveNativeWrapper doIntegerSmall(int i) {
-            PythonContext context = getContext();
-            if (context.getCApiContext() != null) {
-                return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
-            }
-            return PrimitiveNativeWrapper.createInt(i);
-        }
-
-        @Specialization(guards = "!isSmallInteger(i)")
-        static PrimitiveNativeWrapper doInteger(int i) {
-            return PrimitiveNativeWrapper.createInt(i);
-        }
-
-        private static PrimitiveNativeWrapper doLongSmall(long l, PythonContext context) {
-            if (context.getCApiContext() != null) {
-                return context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
-            }
-            return PrimitiveNativeWrapper.createLong(l);
-        }
-
-        @Specialization(guards = "isSmallLong(l)")
-        PrimitiveNativeWrapper doLongSmall(long l) {
-            return doLongSmall(l, getContext());
-        }
-
-        @Specialization(guards = "!isSmallLong(l)")
-        static PrimitiveNativeWrapper doLong(long l) {
-            return PrimitiveNativeWrapper.createLong(l);
-        }
-
-        @Specialization(guards = "!isNaN(d)")
-        static Object doDouble(double d) {
-            return PrimitiveNativeWrapper.createDouble(d);
-        }
-
-        @Specialization(guards = "isNaN(d)")
-        PythonNativeWrapper doDouble(@SuppressWarnings("unused") double d,
-                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            PFloat boxed = getContext().getNaN();
-            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
-            // Use a counting profile since we should enter the branch just once per context.
-            if (noWrapperProfile.profile(nativeWrapper == null)) {
-                // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
-                // code will happen just once per context.
-                CompilerDirectives.transferToInterpreter();
-                nativeWrapper = PrimitiveNativeWrapper.createDouble(Double.NaN);
-                boxed.setNativeWrapper(nativeWrapper);
-            }
-            return nativeWrapper;
-        }
-
-        @Specialization
-        static Object doNativeObject(PythonAbstractNativeObject nativeObject) {
-            return nativeObject.getPtr();
-        }
-
-        @Specialization
-        static Object doNativeNull(PythonNativePointer object) {
-            return object.getPtr();
-        }
-
-        @Specialization
-        Object doDeleteMarker(DescriptorDeleteMarker marker) {
-            assert marker == DescriptorDeleteMarker.INSTANCE;
-            return getNativeNullPtr(this);
-        }
-
-        private static Object doSingleton(@SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
-            PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
-            if (nativeWrapper == null) {
-                // this will happen just once per context and special singleton
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeWrapper = new PythonObjectNativeWrapper(object);
-                // this should keep the native wrapper alive forever
-                CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
-                context.setSingletonNativeWrapper(object, nativeWrapper);
-            }
-            return nativeWrapper;
-        }
-
-        @Specialization(guards = "isSpecialSingleton(object)")
-        Object doSingleton(PythonAbstractObject object) {
-            return doSingleton(object, getContext());
-        }
-
-        @Specialization
-        static Object doPythonClassUncached(PythonManagedClass object,
-                        @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
-        }
-
-        @Specialization
-        static Object doPythonTypeUncached(PythonBuiltinClassType object,
-                        @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
-        }
-
-        @Specialization(guards = {"!isClass(object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
-        static Object runAbstractObject(PythonAbstractObject object,
-                        @Cached ConditionProfile noWrapperProfile,
-                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
-            assert object != PNone.NO_VALUE;
-            return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
-        }
-
-        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(Object object,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-            return TruffleObjectNativeWrapper.wrap(object);
-        }
-
-        @Specialization(guards = "isFallback(object, isForeignObjectNode)")
-        static Object run(Object object,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-            assert object != null : "Java 'null' cannot be a Sulong value";
-            assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
-            return object;
-        }
-
-        static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
-            return !(object instanceof TruffleString || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                            object instanceof PythonBuiltinClassType || object instanceof PythonNativePointer || object == DescriptorDeleteMarker.INSTANCE ||
-                            object instanceof PythonAbstractObject) && !(isForeignObjectNode.execute(object) && !CApiGuards.isNativeWrapper(object));
-        }
-
-        protected static boolean isNaN(double d) {
-            return Double.isNaN(d);
-        }
-
-        private static Object getNativeNullPtr(Node node) {
-            return PythonContext.get(node).getNativeNull().getPtr();
-        }
-
-        @NeverDefault
-        public static ToSulongNode create() {
-            return CExtNodesFactory.ToSulongNodeGen.create();
-        }
-
-        public static ToSulongNode getUncached() {
-            return CExtNodesFactory.ToSulongNodeGen.getUncached();
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     /**
      * Materializes a primitive value of a primitive native wrapper to ensure pointer equality.
      */
@@ -541,7 +365,7 @@ public abstract class CExtNodes {
         public abstract Object execute(PythonNativeWrapper object);
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
-        PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        PInt doBoolNativeWrapper(PrimitiveNativeWrapper object) {
             // Special case for True and False: use singletons
             Python3Core core = PythonContext.get(this);
             PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
@@ -558,7 +382,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
-        static PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doIntNativeWrapper(PrimitiveNativeWrapper object,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getInt());
             object.setMaterializedObject(materializedInt);
@@ -567,7 +391,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
-        static PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doLongNativeWrapper(PrimitiveNativeWrapper object,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getLong());
             object.setMaterializedObject(materializedInt);
@@ -576,7 +400,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "!isNaN(object)"})
-        static PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PFloat doDoubleNativeWrapper(PrimitiveNativeWrapper object,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PFloat materializedInt = factory.createFloat(object.getDouble());
             materializedInt.setNativeWrapper(object);
@@ -585,7 +409,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "isNaN(object)"})
-        PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        PFloat doDoubleNativeWrapperNaN(PrimitiveNativeWrapper object) {
             // Special case for double NaN: use singleton
             PFloat materializedFloat = PythonContext.get(this).getNaN();
             object.setMaterializedObject(materializedFloat);
@@ -602,7 +426,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isMaterialized(object)")
-        static Object doMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static Object doMaterialized(PrimitiveNativeWrapper object) {
             return object.getDelegate();
         }
 
@@ -612,7 +436,7 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+            return object instanceof PrimitiveNativeWrapper;
         }
 
         protected static boolean isNaN(PrimitiveNativeWrapper object) {
@@ -620,7 +444,7 @@ public abstract class CExtNodes {
             return Double.isNaN(object.getDouble());
         }
 
-        static boolean isMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper wrapper) {
+        static boolean isMaterialized(PrimitiveNativeWrapper wrapper) {
             return wrapper.getDelegate() != null;
         }
     }
@@ -1119,12 +943,12 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
@@ -1586,7 +1410,7 @@ public abstract class CExtNodes {
         }
 
         private static boolean isSmallIntegerWrapperSingleton(PrimitiveNativeWrapper nativeWrapper, PythonContext context) {
-            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(nativeWrapper.getLong(), context) == nativeWrapper;
+            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && GetNativeWrapperNode.doLongSmall(nativeWrapper.getLong(), context) == nativeWrapper;
         }
     }
 
@@ -2274,7 +2098,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
@@ -2335,7 +2159,7 @@ public abstract class CExtNodes {
             for (int i = 0; i < values.length; i++) {
                 Object value = values[i];
                 if (value instanceof PythonObject) {
-                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
+                    PythonNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
                     // only traverse if refCnt != 0; this will break the cycle
                     if (nativeWrapper != null) {
                         subRefCntNode.dec(nativeWrapper);

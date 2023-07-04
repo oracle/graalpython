@@ -58,10 +58,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeI64MemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeMemberInMRONodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
@@ -108,7 +106,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -116,7 +113,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 public abstract class ToNativeTypeNode extends Node {
 
-    public abstract void execute(PythonClassNativeWrapper obj);
+    public abstract Object execute(PythonClassNativeWrapper obj);
 
     @GenerateUncached
     public abstract static class AllocatePyMappingMethodsNode extends PNodeWithContext {
@@ -270,7 +267,6 @@ public abstract class ToNativeTypeNode extends Node {
             obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
             boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
-            ToSulongNode toSulong = ToSulongNode.getUncached();
             PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
             PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
             IsBuiltinClassProfile isBuiltin = IsBuiltinClassProfile.getUncached();
@@ -292,7 +288,7 @@ public abstract class ToNativeTypeNode extends Node {
                 // self-reference
                 writePtrNode.write(mem, PyObject__ob_type, mem);
             } else {
-                writePtrNode.write(mem, PyObject__ob_type, toSulong.execute(GetClassNode.getUncached().execute(clazz)));
+                writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.getUncached().execute(clazz)));
             }
 
             Object superClass = GetSuperClassNodeGen.getUncached().execute(clazz);
@@ -330,8 +326,10 @@ public abstract class ToNativeTypeNode extends Node {
                 docObj = new CStringWrapper((TruffleString) docObj);
             } else if (docObj instanceof PString) {
                 docObj = new CStringWrapper(castToStringNode.execute(docObj));
+            } else {
+                docObj = toNative.execute(docObj);
             }
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, toSulong.execute(docObj));
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
             // TODO: return a proper traverse/clear function, or at least a dummy
             writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, nullValue);
@@ -400,20 +398,17 @@ public abstract class ToNativeTypeNode extends Node {
             writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_finalize, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_vectorcall, nullValue);
-
-            if (!obj.isNative()) {
-                CApiTransitions.firstToNative(obj, PythonNativeWrapper.coerceToLong(mem, InteropLibrary.getUncached()));
-            }
         }
     }
 
     @Specialization
     @TruffleBoundary
-    void doPythonNativeWrapper(PythonClassNativeWrapper obj,
+    Object doPythonNativeWrapper(PythonClassNativeWrapper obj,
                     @Cached InitializeTypeNode initializeType) {
         assert !obj.isNative();
 
         Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyTypeObject);
         initializeType.execute(obj, ptr);
+        return ptr;
     }
 }

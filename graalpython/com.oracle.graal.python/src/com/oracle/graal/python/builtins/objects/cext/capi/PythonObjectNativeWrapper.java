@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+/**
+ * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
+ * correct shape of the corresponding native type {@code struct _object}.
+ */
 @ExportLibrary(InteropLibrary.class)
-public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
+public final class PythonObjectNativeWrapper extends PythonNativeWrapper {
 
-    public TruffleObjectNativeWrapper(Object foreignObject) {
-        super(foreignObject);
+    public PythonObjectNativeWrapper(PythonAbstractObject object) {
+        super(object);
     }
 
-    public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
-        assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
-        return new TruffleObjectNativeWrapper(foreignObject);
+    public static PythonNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
+        // important: native wrappers are cached
+        PythonNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (noWrapperProfile.profile(nativeWrapper == null)) {
+            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonUtils.formatJString("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
     @ExportMessage
-    boolean isPointer() {
-        return isNative();
+    protected boolean isNull() {
+        return getDelegate() == PNone.NO_VALUE;
     }
 
     @ExportMessage
-    long asPointer() {
-        return getNativePointer();
+    protected boolean isPointer() {
+        return getDelegate() == PNone.NO_VALUE || isNative();
     }
 
     @ExportMessage
-    void toNative() {
-        if (!isNative()) {
-            CApiTransitions.firstToNative(this);
+    protected long asPointer() {
+        return getDelegate() == PNone.NO_VALUE ? 0L : getNativePointer();
+    }
+
+    @ExportMessage
+    protected void toNative() {
+        if (getDelegate() != PNone.NO_VALUE) {
+            if (!isNative()) {
+                CApiTransitions.firstToNative(this);
+            }
         }
     }
 }

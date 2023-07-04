@@ -57,10 +57,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonReplacingNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -96,6 +97,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -714,7 +716,7 @@ public class CApiTransitions {
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
         public final long executeLong(Object obj) {
-            return PythonNativeWrapper.coerceToLong(execute(obj), LIB);
+            return PythonUtils.coerceToLong(execute(obj), LIB);
         }
 
         @TruffleBoundary
@@ -757,6 +759,7 @@ public class CApiTransitions {
         @Specialization(guards = "isOther(obj)")
         Object doOther(Object obj,
                         @Cached GetNativeWrapperNode getWrapper,
+                        @Cached ConditionProfile isReplacementProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
@@ -766,6 +769,10 @@ public class CApiTransitions {
             }
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
+            }
+            if (isReplacementProfile.profile(wrapper instanceof PythonReplacingNativeWrapper)) {
+                assert ((PythonReplacingNativeWrapper) wrapper).getReplacement() != null;
+                return ((PythonReplacingNativeWrapper) wrapper).getReplacement();
             }
             return wrapper;
         }

@@ -61,7 +61,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteShortNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteUIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
@@ -254,7 +255,7 @@ public class CApiMemberAccessNodes {
     public abstract static class ReadMemberNode extends PythonUnaryBuiltinNode {
         private static final Builtin BUILTIN = ReadMemberNode.class.getAnnotation(Builtin.class);
 
-        @Child private ToSulongNode toSulongNode;
+        @Child private PythonToNativeNode toSulongNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
         @Child private PForeignToPTypeNode fromForeign;
         @Child private PRaiseNode raiseNode;
@@ -299,10 +300,10 @@ public class CApiMemberAccessNodes {
             }
         }
 
-        private ToSulongNode ensureToSulongNode() {
+        private PythonToNativeNode ensureToSulongNode() {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
+                toSulongNode = insert(PythonToNativeNodeGen.create());
             }
             return toSulongNode;
         }
@@ -577,7 +578,7 @@ public class CApiMemberAccessNodes {
     public abstract static class WriteMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin BUILTIN = WriteMemberNode.class.getAnnotation(Builtin.class);
 
-        @Child private ToSulongNode toSulongNode;
+        @Child private PythonToNativeNode toSulongNode;
         @Child private GetClassNode getClassNode;
         @Child private IsSameTypeNode isSameTypeNode;
         @Child private WriteTypeNode write;
@@ -593,7 +594,7 @@ public class CApiMemberAccessNodes {
             this.type = type;
             this.offset = offset;
             this.write = getWriteNode(type);
-            this.toSulongNode = ToSulongNode.create();
+            this.toSulongNode = PythonToNativeNodeGen.create();
             this.getElement = CStructAccessFactory.GetElementPtrNodeGen.create();
         }
 

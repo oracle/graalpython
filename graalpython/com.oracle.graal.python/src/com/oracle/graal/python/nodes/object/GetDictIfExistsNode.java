@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -111,7 +112,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     @Specialization
     PDict doNativeObject(PythonAbstractNativeObject object,
-                    @Cached CExtNodes.ToSulongNode toSulong,
+                    @Cached PythonToNativeNode toSulong,
                     @Cached NativeToPythonNode toJava,
                     @Cached CExtNodes.PCallCapiFunction callGetDictNode) {
         Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(object)));

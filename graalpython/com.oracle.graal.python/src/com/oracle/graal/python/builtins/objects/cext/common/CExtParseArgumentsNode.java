@@ -62,13 +62,13 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
@@ -323,7 +323,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached CStructAccess.WriteFloatNode writeFloatNode,
                         @Cached CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached PRaiseNativeNode raiseNode,
                         @Cached ConvertParArgNode convertParArgNode,
                         @Cached ConvertExtendedArgNode convertExtendedArgNode,
@@ -662,7 +662,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCapiFunction callGetBufferRwNode,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Cached ToSulongNode argToSulongNode,
+                        @Cached PythonToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
             if (la == '*') {
                 /* formatIdx++; */
@@ -688,7 +688,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached CStructAccess.WriteIntNode writeIntNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached StringLenNode stringLenNode,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '*') {
                 /* formatIdx++; */
@@ -728,7 +728,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached NativeToPythonNode typeToJavaNode,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '!') {
@@ -755,7 +755,7 @@ public abstract class CExtParseArgumentsNode {
         void doBufferRW(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCapiFunction callGetBufferRwNode,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la != '*') {
                 throw raise(raiseNode, TypeError, ErrorMessages.INVALID_USE_OF_W_FORMAT_CHAR);
@@ -1003,7 +1003,7 @@ public abstract class CExtParseArgumentsNode {
                         @CachedLibrary("signature") SignatureLibrary signatureLib,
                         @CachedLibrary(limit = "1") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
             Object boundConverter = signatureLib.bind(signature, converter);
@@ -1014,7 +1014,7 @@ public abstract class CExtParseArgumentsNode {
         static void doExecuteConverterGeneric(Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Cached ToSulongNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
             try {

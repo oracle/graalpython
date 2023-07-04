@@ -38,23 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
-public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
+public abstract class PythonReplacingNativeWrapper extends PythonNativeWrapper {
 
-    public TruffleObjectNativeWrapper(Object foreignObject) {
-        super(foreignObject);
+    protected Object replacement;
+
+    public PythonReplacingNativeWrapper() {
+        // empty
     }
 
-    public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
-        assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
-        return new TruffleObjectNativeWrapper(foreignObject);
+    public PythonReplacingNativeWrapper(Object delegate) {
+        super(delegate);
+    }
+
+    public final Object getReplacement() {
+        return replacement;
+    }
+
+    protected final void setReplacement(Object pointer, InteropLibrary lib) {
+        if (pointer instanceof Long) {
+            // need to convert to actual pointer
+            replacement = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_CONVERT_POINTER, pointer);
+            long ptr = (long) pointer;
+            CApiTransitions.firstToNative(this, ptr);
+        } else {
+            assert pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
+            replacement = pointer;
+            long ptr = PythonUtils.coerceToLong(pointer, lib);
+            CApiTransitions.firstToNative(this, ptr);
+        }
     }
 
     @ExportMessage
@@ -64,13 +88,20 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
+        assert getNativePointer() != -1;
         return getNativePointer();
     }
 
+    protected abstract Object allocateReplacememtObject();
+
     @ExportMessage
-    void toNative() {
+    @TruffleBoundary
+    protected void toNative(
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (!isNative()) {
-            CApiTransitions.firstToNative(this);
+            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+
+            setReplacement(allocateReplacememtObject(), lib);
         }
     }
 }

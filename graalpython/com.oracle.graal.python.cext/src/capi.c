@@ -755,6 +755,10 @@ PyAPI_FUNC(void*) truffle_va_arg_pointer(va_list* va) {
 	return va_arg(*va, void*);
 }
 
+PyAPI_FUNC(void*) truffle_convert_pointer(Py_ssize_t value) {
+	return (void*) value;
+}
+
 PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 	// this needs to correspond to CApiContext.resolveConstant
 	switch(entry) {

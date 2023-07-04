@@ -165,7 +165,7 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.Tex
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -940,7 +940,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
             }
 
-            DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+            PythonNativeWrapper wrapper = object.getNativeWrapper();
             if (wrapper == null) {
                 return -1;
             } else {

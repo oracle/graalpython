@@ -270,6 +270,23 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    public static final class ToNativeReplacedNode extends CExtToNativeNode {
+
+        private final ConditionProfile profile = ConditionProfile.create();
+        @Child private InteropLibrary lib = InteropLibrary.getFactory().createDispatched(3);
+
+        @Override
+        public Object execute(Object object) {
+            if (profile.profile(object instanceof PythonReplacingNativeWrapper)) {
+                if (!lib.isPointer(object)) {
+                    lib.toNative(object);
+                }
+                return ((PythonReplacingNativeWrapper) object).getReplacement();
+            }
+            return object;
+        }
+    }
+
     public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
 
         @Override
@@ -1982,14 +1999,7 @@ public abstract class ExternalFunctionNodes {
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization
-        Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
-            return result;
-        }
-
-        @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
+        Object doNativeWrapper(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             checkFunctionResult(this, name, false, true, context, errOccurredProfile);
             return result;
@@ -2035,12 +2045,12 @@ public abstract class ExternalFunctionNodes {
         }
 
         /*
-         * Our fallback case, but with some cached params. PythonObjectNativeWrapper results should
-         * be unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
+         * Our fallback case, but with some cached params. PythonNativeWrapper results should be
+         * unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
          * specially, because we consider it as null in #doNoValue and as not null in
          * #doPythonObject
          */
-        @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
+        @Specialization(guards = {"!isPythonNativeWrapper(result)", "!isPNone(result)"})
         Object doForeign(PythonContext context, TruffleString name, Object result,
                         @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -2108,8 +2118,8 @@ public abstract class ExternalFunctionNodes {
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
 
-        protected static boolean isPythonObjectNativeWrapper(Object object) {
-            return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+        protected static boolean isPythonNativeWrapper(Object object) {
+            return object instanceof PythonNativeWrapper;
         }
     }
 

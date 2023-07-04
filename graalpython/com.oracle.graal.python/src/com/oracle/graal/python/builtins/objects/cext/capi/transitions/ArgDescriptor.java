@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FinishArgNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeReplacedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrappedPointerToPythonNode;
@@ -69,6 +70,7 @@ enum ArgBehavior {
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
+    ReplacedPointer("POINTER", "J", "jlong", "long", ToNativeReplacedNode::new, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
@@ -227,7 +229,7 @@ public enum ArgDescriptor {
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
     PY_SSIZE_T_PTR(ArgBehavior.Pointer, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
-    PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
+    PyThreadState(ArgBehavior.ReplacedPointer, "PyThreadState*"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
     PyTryBlock("PyTryBlock*"),

@@ -1383,8 +1383,8 @@ public abstract class HPyExternalFunctionNodes {
                 getNativeSpacePointerNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             /*
-             * We now need to pass the native space pointer in a way that the ToSulongNode correctly
-             * exposes the bare pointer object. For this, we pack the pointer into a
+             * We now need to pass the native space pointer in a way that the PythonToNativeNode
+             * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
             Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
@@ -1468,8 +1468,8 @@ public abstract class HPyExternalFunctionNodes {
                 getNativeSpacePointerNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             /*
-             * We now need to pass the native space pointer in a way that the ToSulongNode correctly
-             * exposes the bare pointer object. For this, we pack the pointer into a
+             * We now need to pass the native space pointer in a way that the PythonToNativeNode
+             * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
             Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
