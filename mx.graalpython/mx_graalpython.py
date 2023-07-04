@@ -86,7 +86,9 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
+GRAAL_VERSION_NODOT = GRAAL_VERSION.replace('.', '')
 PYTHON_VERSION = "3.10"
+PYTHON_VERSION_NODOT = "3.10".replace('.', '')
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -129,11 +131,10 @@ def _get_stdlib_home():
 
 
 def _get_capi_home():
-    return mx.dependency("com.oracle.graal.python.cext").get_output_root()
+    return mx.distribution("GRAALPYTHON_NATIVE_LIBS").get_output()
 
 
-def _get_jni_home():
-    return mx.distribution("GRAALPYTHON_JNI").get_output()
+_get_jni_home = _get_capi_home
 
 
 def _extract_graalpython_internal_options(args):
@@ -343,7 +344,13 @@ def punittest(ars, report=False):
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
-PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.cext"]
+PYTHON_NATIVE_PROJECTS = ["python-libbz2",
+                          "python-liblzma",
+                          "python-libzsupport",
+                          "python-libposix",
+                          "com.oracle.graal.python.hpy.llvm",
+                          "com.oracle.graal.python.jni",
+                          "com.oracle.graal.python.cext"]
 
 
 def nativebuild(args):
@@ -1603,12 +1610,37 @@ def _get_output_root(projectname):
     mx.abort("Could not find out dir for project %s" % projectname)
 
 
-def py_version_short(*args):
+def py_version_short(variant=None, **kwargs):
+    if variant == 'major_minor_nodot':
+        return PYTHON_VERSION_NODOT
     return PYTHON_VERSION
 
 
-def graal_version_short(*args):
+def graal_version_short(variant=None, **kwargs):
+    if variant == 'major_minor_nodot':
+        return GRAAL_VERSION_NODOT
     return GRAAL_VERSION
+
+def graalpy_ext(llvm_mode, **kwargs):
+    if not llvm_mode:
+        mx.abort("substitution 'graalpy_ext' is missing argument 'llvm_mode'")
+    os = mx_subst.path_substitutions.substitute('<os>')
+    arch = mx_subst.path_substitutions.substitute('<arch>')
+    if arch == 'amd64':
+        # be compatible with CPython's designation
+        # (see also: 'PythonUtils.getPythonArch')
+        arch = 'x86_64'
+
+    # 'pyos' also needs to be compatible with CPython's designation.
+    # See class 'com.oracle.graal.python.builtins.PythonOS'
+    # In this case, we can just use 'sys.platform' of the Python running MX.
+    pyos = sys.platform
+
+    # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
+    # https://github.com/python/cpython/issues/37510
+    ext = 'pyd' if os == 'windows' else 'so'
+
+    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -1616,6 +1648,9 @@ mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
+
+mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
+mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
 
 
 def delete_self_if_testdownstream(args):
@@ -2473,77 +2508,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         return 0
 
 
-class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
-    def run(self, args, env=None, cwd=None, **kwargs):
-        env = env.copy() if env else os.environ.copy()
-        # n.b.: we don't want derived projects to also have to depend on our build env vars
-        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
-        env.update(self.subject.getBuildEnv())
-
-        # we need to use the sulong toolchain for this
-        args.insert(0, "--python.UseSystemToolchain=false")
-
-        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them,
-        # besides keeping custom sysroot, since our toolchain forwards to the system headers
-        for var in ["CC", "CFLAGS", "LDFLAGS"]:
-            value = env.pop(var, None)
-            new_value = []
-            if value:
-                if wants_debug_build(value):
-                    new_value.append("-ggdb3")
-                if "--sysroot" in value:
-                    seen_sysroot = False
-                    for element in shlex.split(value):
-                        if element == "--sysroot":
-                            seen_sysroot = True
-                        elif seen_sysroot:
-                            new_value.append(f"--sysroot {element}")
-                            break
-            if new_value:
-                env[var] = " ".join(new_value)
-        return super().run(args, env=env, cwd=cwd, **kwargs)
-
-    def _dev_headers_dir(self):
-        if sys.platform == "win32":
-            return os.path.join(SUITE.dir, "graalpython", "include")
-        else:
-            return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
-
-    def _prepare_headers(self):
-        target_dir = self._dev_headers_dir()
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        mx.logv("Preparing header files (dest: {!s})".format(target_dir))
-        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir, symlinks=True)
-        shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
-
-    def build(self):
-        self._prepare_headers()
-        # n.b.: we do the following to ensure that there's a directory when the
-        # importlib PathFinder initializes it's directory finders
-        mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
-        # TODO: backwards compat, remove once EE is updated
-        if not hasattr(self.subject, "args"):
-            self.subject.args = [
-                os.path.join(self.src_dir(), "setup.py"),
-                self.subject.get_output_root()
-            ]
-        return super().build()
-
-    def clean(self, forBuild=False):
-        result = 0
-        if not forBuild:
-            try:
-                mx.logv('Cleaning {0}...'.format(self._dev_headers_dir()))
-                shutil.rmtree(self._dev_headers_dir(), ignore_errors=True)
-                mx.logv('Cleaning {0}...'.format(self.subject.get_output_root()))
-                shutil.rmtree(self.subject.get_output_root(), ignore_errors=True)
-            except BaseException as e:
-                mx.logv('Error while cleaning: {0}'.format(e))
-                result = 1
-        return max(result, super().clean(forBuild=forBuild))
-
-
 class GraalpythonProject(mx.ArchivableProject):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs): # pylint: disable=super-init-not-called
         context = 'project ' + name
@@ -2583,16 +2547,6 @@ class GraalpythonProject(mx.ArchivableProject):
             for key, value in self.buildEnv.items():
                 ret[key] = replaceVar.substitute(value, dependency=self)
         return ret
-
-
-class GraalpythonCAPIProject(GraalpythonProject):
-    def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
-        super().__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
-        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
-            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
-
-    def getBuildTask(self, args):
-        return GraalpythonCAPIBuildTask(args, self)
 
 
 orig_clean = mx.command_function("clean")

@@ -115,8 +115,6 @@
 #define CHAR_BIT __CHAR_BIT__
 #endif
 // #define Py_LIMITED_API 1
-#define _Py_BEGIN_SUPPRESS_IPH
-#define _Py_END_SUPPRESS_IPH
 // END TRUFFLE DEFS
 
 #define HAVE_ACOSH 1

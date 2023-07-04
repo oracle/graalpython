@@ -39,7 +39,12 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -94,6 +99,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
@@ -192,16 +198,23 @@ public final class PythonContext extends Python3Core {
     public final HandleContext nativeContext = new HandleContext();
     private volatile boolean finalizing;
 
-    private static String getJniSoExt() {
-        if (getPythonOS() == PLATFORM_DARWIN) {
-            return ".dylib";
-        } else if (getPythonOS() == PLATFORM_WIN32) {
-            return ".dll";
-        }
-        return ".so";
+    @TruffleBoundary
+    public static String getSupportLibName(PythonOS os, String libName) {
+        // note: this should be aligned with MX's "lib" substitution
+        return switch (os) {
+            case PLATFORM_LINUX, PLATFORM_FREEBSD, PLATFORM_SUNOS -> J_LIB_PREFIX + libName + J_EXT_SO;
+            case PLATFORM_DARWIN -> J_LIB_PREFIX + libName + J_EXT_DYLIB;
+            case PLATFORM_WIN32 -> libName + J_EXT_DLL;
+            default -> libName;
+        };
     }
 
-    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
+    @TruffleBoundary
+    public static String getSupportLibName(String libName) {
+        return getSupportLibName(getPythonOS(), libName);
+    }
+
+    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", getSupportLibName("pythonjni"));
 
     /**
      * An enum of events which can currently be traced using python's tracing
@@ -2474,6 +2487,18 @@ public final class PythonContext extends Python3Core {
 
     public long getDeserializationId(TruffleString fileName) {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public String getLLVMSupportExt(String libName) {
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+        String toolchainIdentifier = toolchain.getIdentifier();
+        if (J_NATIVE.equals(toolchainIdentifier)) {
+            return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
+        }
+        // if not native, we always assume a Linux-like system
+        return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
     }
 
     @TruffleBoundary

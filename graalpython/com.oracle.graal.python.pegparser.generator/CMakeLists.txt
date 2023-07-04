@@ -1,5 +1,5 @@
-project(pegparser)
 cmake_minimum_required(VERSION 3.0)
+project(pegparser)
 
 set(PEGPARSER_SRC_PATH "${CMAKE_CURRENT_LIST_DIR}/../com.oracle.graal.python.pegparser/src")
 set(GRAALPY_SRC_PATH "${CMAKE_CURRENT_LIST_DIR}/../com.oracle.graal.python/src")
@@ -22,13 +22,13 @@ set(TOKENS "${INPUT_PATH}/Tokens")
 set(ASDL "${INPUT_PATH}/Python.asdl")
 
 file(GLOB_RECURSE PEGEN_FILES
-    LIST_DIRECTORIES TRUE
+    LIST_DIRECTORIES FALSE
     "${CMAKE_CURRENT_LIST_DIR}/pegen/*.py")
 file(GLOB_RECURSE PEGJAVA_FILES
-    LIST_DIRECTORIES TRUE
+    LIST_DIRECTORIES FALSE
     "${CMAKE_CURRENT_LIST_DIR}/pegen/*.py")
 file(GLOB_RECURSE ASDL_FILES
-    LIST_DIRECTORIES TRUE
+    LIST_DIRECTORIES FALSE
     "${CMAKE_CURRENT_LIST_DIR}/asdl/*.py")
 
 set(ASDL_STAMP "Python.asdl.stamp")

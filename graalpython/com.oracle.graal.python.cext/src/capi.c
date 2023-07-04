@@ -103,6 +103,7 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* tuple);
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
+PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyHeapTypeObject), sizeof(PyMemberDef));
 PyTypeObject _PyExc_BaseException = 		PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
 PyTypeObject _PyExc_StopIteration = 		PY_TRUFFLE_TYPE("StopIteration", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyStopIterationObject));
 PyTypeObject _PyNamespace_Type = 			PY_TRUFFLE_TYPE("SimpleNamespace", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(_PyNamespaceObject));
@@ -147,7 +148,6 @@ PyTypeObject PyStaticMethod_Type = 			PY_TRUFFLE_TYPE("staticmethod", &PyType_Ty
 PyTypeObject PySuper_Type = 				PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 PyTypeObject PyTraceBack_Type = 			PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
 PyTypeObject PyTuple_Type = 				PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0);
-PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyHeapTypeObject), sizeof(PyMemberDef));
 PyTypeObject PyUnicode_Type = 				PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
 PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));

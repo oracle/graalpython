@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
@@ -125,7 +126,7 @@ import sun.misc.Unsafe;
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public final class NFIPosixSupport extends PosixSupport {
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
@@ -335,7 +336,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // Temporary - will be replaced with something else when we move this to Truffle
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
-            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached();
+            String libPythonName = PythonContext.getSupportLibName(NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME);
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();
@@ -345,7 +346,7 @@ public final class NFIPosixSupport extends PosixSupport {
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
             String backend = posix.nfiBackend.toJavaStringUncached();
-            String withClause = backend.equals("native") ? "" : "with " + backend;
+            String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
 
