@@ -110,28 +110,30 @@ class TestObject(object):
         assert int(tester) == 42
 
     def test_inherit_slots_with_managed_class(self):
-        TestTpAllocWithManaged = CPyExtType("TestTpAllocWithManaged",
-                             """
-                             static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
-                                 PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
-                                 return NULL;
-                             }
-                             """,
-                             tp_alloc="test_alloc"
+        ClassWithTpAlloc = CPyExtType(
+            "ClassWithTpAlloc",
+            """
+            static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
+                PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
+                return NULL;
+            }
+            static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
+                return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
+            }
+            """,
+            tp_alloc="test_alloc",
+            tp_methods='{"call_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_O | METH_STATIC, ""}',
+            tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC',
+            tp_free='PyObject_GC_Del',
+            ready_code="ClassWithTpAllocType.tp_new = PyBaseObject_Type.tp_new;"
         )
-        TestTpAllocCall = CPyExtType("TestTpAllocCall",
-                                '''
-                                static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
-                                    return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
-                                }
-                                ''',
-                                tp_methods='{"createObj", (PyCFunction)testslots_tp_alloc, METH_O, ""}'
-                                )
-        class managed(TestTpAllocWithManaged):
-            pass
-        t = TestTpAllocCall()
 
-        assert t.createObj(managed) != None
+        class ManagedSubclass(ClassWithTpAlloc):
+            pass
+
+        assert ClassWithTpAlloc.call_tp_alloc(ManagedSubclass)
+        assert type(ManagedSubclass()) is ManagedSubclass
+        assert type(object.__new__(ManagedSubclass)) is ManagedSubclass
         
 
     def test_float_binops(self):

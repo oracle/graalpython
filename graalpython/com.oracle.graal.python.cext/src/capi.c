@@ -801,8 +801,8 @@ PyAPI_FUNC(void*) PyTruffle_AsciiToString(void* ptr) {
 /* To be used from Java code only.
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
-PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
-    return dominatingNativeClass->tp_alloc(cls, 0);
+PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls) {
+    return cls->tp_alloc(cls, 0);
 }
 
 PyAPI_FUNC(void) PyTruffle_PatchType(PyTypeObject* result, PyTypeObject* base) {
