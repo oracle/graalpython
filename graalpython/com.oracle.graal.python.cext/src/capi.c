@@ -1720,6 +1720,10 @@ PyAPI_FUNC(int) PyFile_WriteObject(PyObject* a, PyObject* b, int c) {
 PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
     return GraalPyFloat_FromDouble(a);
 }
+#undef PyFloat_FromString
+PyAPI_FUNC(PyObject*) PyFloat_FromString(PyObject* a) {
+    return GraalPyFloat_FromString(a);
+}
 #undef PyFrame_GetBack
 PyAPI_FUNC(PyFrameObject*) PyFrame_GetBack(PyFrameObject* a) {
     return GraalPyFrame_GetBack(a);
@@ -2251,6 +2255,10 @@ PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
 #undef PyTruffle_DebugTrace
 PyAPI_FUNC(void) PyTruffle_DebugTrace() {
     GraalPyTruffle_DebugTrace();
+}
+#undef PyTruffle_PyDateTime_GET_TZINFO
+PyAPI_FUNC(PyObject*) PyTruffle_PyDateTime_GET_TZINFO(PyObject* a) {
+    return GraalPyTruffle_PyDateTime_GET_TZINFO(a);
 }
 #undef PyTruffle_ToNative
 PyAPI_FUNC(int) PyTruffle_ToNative(void* a) {

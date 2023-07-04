@@ -130,6 +130,23 @@ class TestPyFloat(CPyExtTestCase):
         cmpfunc=_float_compare
     )
 
+    test_PyFloat_FromString = CPyExtFunction(
+        lambda args: float(args[0]),
+        lambda: (
+            ("1",),
+            ("0.0",),
+            ("-1.0",),
+            ("-11.123456789123456789",),
+            ("nan",),
+            ("-inf",),
+            ("not-a-float",),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* string"],
+        cmpfunc=_float_compare
+    )
+
     test_PyFloat_Check = CPyExtFunction(
         lambda args: isinstance(args[0], float),
         lambda: (

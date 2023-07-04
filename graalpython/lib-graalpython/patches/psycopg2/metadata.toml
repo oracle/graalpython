@@ -1,0 +1,2 @@
+[[rules]]
+patch = "psycopg2.patch"

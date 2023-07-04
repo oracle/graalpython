@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,6 +120,64 @@ static int PyLong_AsInt(PyObject *arg) {
 	}
 	return (int) ival;
 }
+
+#undef _PyDateTime_HAS_TZINFO
+#undef PyDateTime_GET_YEAR
+#undef PyDateTime_GET_MONTH
+#undef PyDateTime_GET_DAY
+#undef PyDateTime_DATE_GET_HOUR
+#undef PyDateTime_DATE_GET_MINUTE
+#undef PyDateTime_DATE_GET_SECOND
+#undef PyDateTime_DATE_GET_MICROSECOND
+#undef PyDateTime_DATE_GET_FOLD
+#undef PyDateTime_DATE_GET_TZINFO
+#undef PyDateTime_TIME_GET_HOUR
+#undef PyDateTime_TIME_GET_MINUTE
+#undef PyDateTime_TIME_GET_SECOND
+#undef PyDateTime_TIME_GET_MICROSECOND
+#undef PyDateTime_TIME_GET_FOLD
+#undef PyDateTime_TIME_GET_TZINFO
+#undef PyDateTime_DELTA_GET_DAYS
+#undef PyDateTime_DELTA_GET_SECONDS
+#undef PyDateTime_DELTA_GET_MICROSECONDS
+
+// Our normal datetime.h macros handle managed objects, redefine to handle only native
+
+#define _PyDateTime_HAS_TZINFO(o)  (((_PyDateTime_BaseTZInfo *)(o))->hastzinfo)
+
+#define PyDateTime_GET_YEAR(o)     ((((PyDateTime_Date*)o)->data[0] << 8) | \
+                     ((PyDateTime_Date*)o)->data[1])
+#define PyDateTime_GET_MONTH(o)    (((PyDateTime_Date*)o)->data[2])
+#define PyDateTime_GET_DAY(o)      (((PyDateTime_Date*)o)->data[3])
+
+#define PyDateTime_DATE_GET_HOUR(o)        (((PyDateTime_DateTime*)o)->data[4])
+#define PyDateTime_DATE_GET_MINUTE(o)      (((PyDateTime_DateTime*)o)->data[5])
+#define PyDateTime_DATE_GET_SECOND(o)      (((PyDateTime_DateTime*)o)->data[6])
+#define PyDateTime_DATE_GET_MICROSECOND(o)              \
+    ((((PyDateTime_DateTime*)o)->data[7] << 16) |       \
+     (((PyDateTime_DateTime*)o)->data[8] << 8)  |       \
+      ((PyDateTime_DateTime*)o)->data[9])
+#define PyDateTime_DATE_GET_FOLD(o)        (((PyDateTime_DateTime*)o)->fold)
+#define PyDateTime_DATE_GET_TZINFO(o)      (_PyDateTime_HAS_TZINFO(o) ? \
+    ((PyDateTime_DateTime *)(o))->tzinfo : Py_None)
+
+/* Apply for time instances. */
+#define PyDateTime_TIME_GET_HOUR(o)        (((PyDateTime_Time*)o)->data[0])
+#define PyDateTime_TIME_GET_MINUTE(o)      (((PyDateTime_Time*)o)->data[1])
+#define PyDateTime_TIME_GET_SECOND(o)      (((PyDateTime_Time*)o)->data[2])
+#define PyDateTime_TIME_GET_MICROSECOND(o)              \
+    ((((PyDateTime_Time*)o)->data[3] << 16) |           \
+     (((PyDateTime_Time*)o)->data[4] << 8)  |           \
+      ((PyDateTime_Time*)o)->data[5])
+#define PyDateTime_TIME_GET_FOLD(o)        (((PyDateTime_Time*)o)->fold)
+#define PyDateTime_TIME_GET_TZINFO(o)      (_PyDateTime_HAS_TZINFO(o) ? \
+    ((PyDateTime_Time *)(o))->tzinfo : Py_None)
+
+/* Apply for time delta instances */
+#define PyDateTime_DELTA_GET_DAYS(o)         (((PyDateTime_Delta*)o)->days)
+#define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
+#define PyDateTime_DELTA_GET_MICROSECONDS(o)            \
+    (((PyDateTime_Delta*)o)->microseconds)
 
 
 /* The following code is taken from CPython '_datetimemodule.c' */

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -113,9 +114,11 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -662,13 +665,12 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doManaged(Object delegate, Object position,
-                        @Cached PySequenceCheckNode pySequenceCheck,
-                        @Cached PyObjectGetItem getItem) {
-            if (!pySequenceCheck.execute(delegate)) {
-                throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
+        Object doManaged(Object delegate, long position,
+                        @Cached PySequenceGetItemNode getItemNode) {
+            if ((int) position != position) {
+                throw PRaiseNode.raiseUncached(this, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
             }
-            return getItem.execute(null, delegate, position);
+            return getItemNode.execute(null, delegate, (int) position);
         }
     }
 

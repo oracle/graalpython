@@ -790,6 +790,7 @@ void unimplemented(const char* name) {
 #undef PyTruffle_None
 #undef PyTruffle_NotImplemented
 #undef PyTruffle_Object_Free
+#undef PyTruffle_PyDateTime_GET_TZINFO
 #undef PyTruffle_Register_NULL
 #undef PyTruffle_SeqIter_New
 #undef PyTruffle_Set_Native_Slots
@@ -2454,7 +2455,8 @@ PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
     return result;
 }
 PyAPI_FUNC(PyObject*) PyFloat_FromString(PyObject* a) {
-    unimplemented("PyFloat_FromString"); exit(-1);
+    PyObject* result = (PyObject*) GraalPyFloat_FromString(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyFloat_GetInfo() {
     unimplemented("PyFloat_GetInfo"); exit(-1);
@@ -3968,6 +3970,10 @@ PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
 }
 PyAPI_FUNC(void) PyTruffle_DebugTrace() {
     GraalPyTruffle_DebugTrace();
+}
+PyAPI_FUNC(PyObject*) PyTruffle_PyDateTime_GET_TZINFO(PyObject* a) {
+    PyObject* result = (PyObject*) GraalPyTruffle_PyDateTime_GET_TZINFO(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyTruffle_SeqIter_New(PyObject* a) {
     unimplemented("PyTruffle_SeqIter_New"); exit(-1);

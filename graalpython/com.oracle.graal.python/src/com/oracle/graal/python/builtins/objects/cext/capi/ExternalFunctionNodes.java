@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
@@ -63,7 +64,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -140,6 +140,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -739,13 +740,12 @@ public abstract class ExternalFunctionNodes {
     /**
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
-    static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
+    public static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
         private final CApiTiming timing;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private CExtToJavaNode convertReturnValue;
         @Child private InteropLibrary lib;
-        @Child private PRaiseNode raiseNode;
         @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
         @Child private GilNode gilNode = GilNode.create();
 
@@ -810,13 +810,13 @@ public abstract class ExternalFunctionNodes {
                 if (convertReturnValue != null) {
                     result = convertReturnValue.execute(result);
                 }
-                return fromNative(result);
+                return fromForeign.executeConvert(result);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 CApiTiming.exit(timing);
                 /*
@@ -830,23 +830,14 @@ public abstract class ExternalFunctionNodes {
                  * Special case after calling a C function: transfer caught exception back to frame
                  * to simulate the global state semantics.
                  */
-                PArguments.setException(frame, threadState.getCaughtException());
+                if (frame != null) {
+                    PArguments.setException(frame, threadState.getCaughtException());
+                }
                 IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
-        private Object fromNative(Object result) {
-            return fromForeign.executeConvert(result);
-        }
-
-        private PRaiseNode ensureRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
+        @NeverDefault
         public static ExternalFunctionInvokeNode create(PExternalFunctionWrapper provider) {
             return new ExternalFunctionInvokeNode(provider);
         }

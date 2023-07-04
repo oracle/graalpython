@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,16 +36,243 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import datetime
 
-from . import CPyExtType
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
 __dir__ = __file__.rpartition("/")[0]
 
 
-class TestDateTime(object):   
-               
+class TestPyDateTime(CPyExtTestCase):
+
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super().compile_module(name)
+
+    test_PyDateTime_GET_YEAR = CPyExtFunction(
+        lambda args: args[0].year,
+        lambda: (
+            (datetime.date(year=2023, month=2, day=12),),
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_GET_MONTH = CPyExtFunction(
+        lambda args: args[0].month,
+        lambda: (
+            (datetime.date(year=2023, month=2, day=12),),
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_GET_DAY = CPyExtFunction(
+        lambda args: args[0].day,
+        lambda: (
+            (datetime.date(year=2023, month=2, day=12),),
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_HOUR = CPyExtFunction(
+        lambda args: args[0].hour,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_MINUTE = CPyExtFunction(
+        lambda args: args[0].minute,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_SECOND = CPyExtFunction(
+        lambda args: args[0].second,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_MICROSECOND = CPyExtFunction(
+        lambda args: args[0].microsecond,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_FOLD = CPyExtFunction(
+        lambda args: args[0].fold,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DATE_GET_TZINFO = CPyExtFunction(
+        lambda args: args[0].tzinfo,
+        lambda: (
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9),),
+            (datetime.datetime(year=2023, month=2, day=12, hour=3, minute=14, second=8, microsecond=9, tzinfo=datetime.timezone.utc),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="O",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_HOUR = CPyExtFunction(
+        lambda args: args[0].hour,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_MINUTE = CPyExtFunction(
+        lambda args: args[0].minute,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_SECOND = CPyExtFunction(
+        lambda args: args[0].second,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_MICROSECOND = CPyExtFunction(
+        lambda args: args[0].microsecond,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_FOLD = CPyExtFunction(
+        lambda args: args[0].fold,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_TIME_GET_TZINFO = CPyExtFunction(
+        lambda args: args[0].tzinfo,
+        lambda: (
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9),),
+            (datetime.time(hour=3, minute=14, second=8, microsecond=9, tzinfo=datetime.timezone.utc),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="O",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DELTA_GET_DAYS = CPyExtFunction(
+        lambda args: args[0].days,
+        lambda: (
+            (datetime.timedelta(days=3, seconds=8, microseconds=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DELTA_GET_SECONDS = CPyExtFunction(
+        lambda args: args[0].seconds,
+        lambda: (
+            (datetime.timedelta(days=3, seconds=8, microseconds=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyDateTime_DELTA_GET_MICROSECONDS = CPyExtFunction(
+        lambda args: args[0].microseconds,
+        lambda: (
+            (datetime.timedelta(days=3, seconds=8, microseconds=9),),
+        ),
+        code='#include "datetime.h"',
+        resultspec="i",
+        argspec='O',
+        arguments=("PyObject* datetime",),
+        cmpfunc=unhandled_error_compare,
+    )
+
+
+class TestDateTime(object):
+
     def test_date_type(self):
         TestDate = CPyExtType("TestDate",
                              """                             
@@ -77,7 +304,7 @@ class TestDateTime(object):
         )
         tester = TestDateTime()
         assert tester.getDateTimeType() == datetime.datetime
-        
+
     def test_time_type(self):
         TestTime = CPyExtType("TestTime",
                              """                             
@@ -93,7 +320,7 @@ class TestDateTime(object):
         )
         tester = TestTime()
         assert tester.getTimeType() == datetime.time
-        
+
     def test_timedelta_type(self):
         TestTimeDelta = CPyExtType("TestTimeDelta",
                              """                             
@@ -109,7 +336,7 @@ class TestDateTime(object):
         )
         tester = TestTimeDelta()
         assert tester.getTimeDeltaType() == datetime.timedelta
-        
+
     def test_tzinfo_type(self):
         TestTZInfo = CPyExtType("TestTZInfo",
                              """                             
@@ -125,7 +352,7 @@ class TestDateTime(object):
         )
         tester = TestTZInfo()
         assert tester.getTZInfoType() == datetime.tzinfo
-        
+
     def test_timezone(self):
         TestTimezone = CPyExtType("TestTimezone",
                              """                             
@@ -158,7 +385,7 @@ class TestDateTime(object):
         )
         tester = TestDateFromDate()
         assert tester.getDate() == datetime.date(1, 1, 1)
-        
+
     def test_datetime_from_date_and_time(self):
         TestDateTimeFromDateAndTime = CPyExtType("TestDateTimeFromDateAndTime",
                              """                             
@@ -174,7 +401,7 @@ class TestDateTime(object):
         )
         tester = TestDateTimeFromDateAndTime()
         assert tester.getDateTime() == datetime.datetime(1, 1, 1, 1, 1, 1, 1)
-        
+
     def test_time_from_time(self):
         TestTimeFromTime = CPyExtType("TestTimeFromTime",
                              """                             
@@ -189,7 +416,7 @@ class TestDateTime(object):
                              includes='#include "datetime.h"',
         )
         tester = TestTimeFromTime()
-        tester.getTime() == datetime.time(1, 1, 1, 1)
+        assert tester.getTime() == datetime.time(1, 1, 1, 1)
 
     def test_delta_from_delta(self):
         TestDeltaFromDelta = CPyExtType("TestDeltaFromDelta",
@@ -205,9 +432,9 @@ class TestDateTime(object):
                              includes='#include "datetime.h"',
         )
         tester = TestDeltaFromDelta()
-        
+
         assert tester.getDelta() == datetime.timedelta(1, 1, 1)
-        
+
     def test_timezone_from_timezone(self):
         TestTimezoneFromTimezone = CPyExtType("TestTimezoneFromTimezone",
                              """                             
@@ -224,8 +451,8 @@ class TestDateTime(object):
                              includes='#include "datetime.h"',
         )
         tester = TestTimezoneFromTimezone()
-        assert tester.getTZ() == datetime.timezone(datetime.timedelta(0,0,1,0), "CET")  
-        
+        assert tester.getTZ() == datetime.timezone(datetime.timedelta(0,0,1,0), "CET")
+
     def test_time_from_time_and_fold(self):
         TestTimeFromTimeAndFold = CPyExtType("TestTimeFromTimeAndFold",
                              """                             
@@ -241,7 +468,7 @@ class TestDateTime(object):
         )
         tester = TestTimeFromTimeAndFold()
         assert tester.getTime() == datetime.time(1, 1, 1, 1, None, fold=True)
-        
+
     def test_datetime_from_date_and_time_and_fold(self):
         TestDateTimeFromDateAndTimeAndFold = CPyExtType("TestDateTimeFromDateAndTimeAndFold",
                              """                             
@@ -257,7 +484,7 @@ class TestDateTime(object):
         )
         tester = TestDateTimeFromDateAndTimeAndFold()
         assert tester.getDateTime() == datetime.datetime(1, 1, 1, 1, 1, 1, 1, None, fold=True)
-        
+
     def test_date_from_timestamp(self):
         TestDateFromTimestamp = CPyExtType("TestDateFromTimestamp",
                              """                             
@@ -274,7 +501,7 @@ class TestDateTime(object):
         tester = TestDateFromTimestamp()
         ts = datetime.datetime(1995, 4, 12).timestamp()
         assert tester.getDate(int(ts)) == datetime.date.fromtimestamp(int(ts))
-        
+
     def test_datetime_from_timestamp(self):
         TestDatetimeFromTimestamp = CPyExtType("TestDatetimeFromTimestamp",
                              """                             
@@ -291,7 +518,7 @@ class TestDateTime(object):
         tester = TestDatetimeFromTimestamp()
         ts = datetime.datetime(1995, 4, 12).timestamp()
         assert tester.getDatetime(int(ts)) == datetime.datetime.fromtimestamp(int(ts))
-        
+
     def test_datetime_from_timestamp_and_tz(self):
         TestDatetimeFromTimestamp = CPyExtType("TestDatetimeFromTimestamp",
                              """                             
@@ -309,7 +536,7 @@ class TestDateTime(object):
         ts = datetime.datetime(1995, 4, 12).timestamp()
         tz = datetime.timezone(datetime.timedelta(hours=3))
         assert tester.getDatetime(int(ts), tz) == datetime.datetime.fromtimestamp(int(ts), tz)
-        
+
     def test_datetime_from_timestamp_and_tz_kwd(self):
         TestDatetimeFromTimestamp = CPyExtType("TestDatetimeFromTimestamp",
                              """                             
@@ -326,7 +553,7 @@ class TestDateTime(object):
         tester = TestDatetimeFromTimestamp()
         ts = datetime.datetime(1995, 4, 12).timestamp()
         tz = datetime.timezone(datetime.timedelta(hours=3))
-        assert tester.getDatetime(int(ts), tz=tz) == datetime.datetime.fromtimestamp(int(ts), tz=tz)        
+        assert tester.getDatetime(int(ts), tz=tz) == datetime.datetime.fromtimestamp(int(ts), tz=tz)
 
     def test_write_and_invoke_member(self):
         TestWriteAndInvokeMemeber = CPyExtType("TestWriteAndInvokeMemeber",

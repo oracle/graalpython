@@ -162,6 +162,7 @@ typedef struct {
     BUILTIN(PyException_SetTraceback, int, PyObject*, PyObject*) \
     BUILTIN(PyFile_WriteObject, int, PyObject*, PyObject*, int) \
     BUILTIN(PyFloat_FromDouble, PyObject*, double) \
+    BUILTIN(PyFloat_FromString, PyObject*, PyObject*) \
     BUILTIN(PyFrame_GetBack, PyFrameObject*, PyFrameObject*) \
     BUILTIN(PyFrame_GetBuiltins, PyObject*, PyFrameObject*) \
     BUILTIN(PyFrame_GetCode, PyCodeObject*, PyFrameObject*) \
@@ -367,6 +368,7 @@ typedef struct {
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
     BUILTIN(PyTruffle_Object_Free, void, void*) \
+    BUILTIN(PyTruffle_PyDateTime_GET_TZINFO, PyObject*, PyObject*) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
     BUILTIN(PyTruffle_Set_SulongType, void*, PyTypeObject*, void*) \

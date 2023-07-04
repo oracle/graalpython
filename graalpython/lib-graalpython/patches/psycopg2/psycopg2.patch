@@ -1,0 +1,15 @@
+diff --git a/psycopg/utils.c b/psycopg/utils.c
+index 16be906..c78a24b 100644
+--- a/psycopg/utils.c
++++ b/psycopg/utils.c
+@@ -392,7 +392,9 @@ psyco_set_error(PyObject *exc, cursorObject *curs, const char *msg)
+ static int
+ psyco_is_main_interp(void)
+ {
+-#if PY_VERSION_HEX >= 0x03080000
++#if GRAALVM_PYTHON
++    return 1;
++#elif PY_VERSION_HEX >= 0x03080000
+     /* tested with Python 3.8.0a2 */
+     return _PyInterpreterState_Get() == PyInterpreterState_Main();
+ #else

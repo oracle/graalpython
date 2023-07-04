@@ -62,8 +62,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -245,10 +245,17 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         Object next(VirtualFrame frame, PSequenceIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
+                        @Cached PySequenceGetItemNode getItem,
                         @Cached IsBuiltinObjectProfile profile) {
             try {
-                return callGetItem.executeObject(frame, self.getObject(), self.index++);
+                /*
+                 * This must use PySequence_GetItem and not any other get item nodes. The reason is
+                 * that other get item nodes call mp_subscript. Some extensions iterate self in
+                 * their mp_getitem which could result in infinite recursion.
+                 *
+                 * Example psycopg2:column_type.c:column_subscript
+                 */
+                return getItem.execute(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(inliningTarget, profile);
                 return stopIteration(self);

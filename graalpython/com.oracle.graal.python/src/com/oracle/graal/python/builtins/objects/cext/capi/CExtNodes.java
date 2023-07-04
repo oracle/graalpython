@@ -1591,17 +1591,6 @@ public abstract class CExtNodes {
         }
     }
 
-    /**
-     * Simple enum to abstract over common error indication values used in C extensions. We use this
-     * enum instead of concrete values to be able to safely share them between contexts.
-     */
-    public enum MayRaiseErrorResult {
-        NATIVE_NULL,
-        NONE,
-        INT,
-        FLOAT
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
 
     @GenerateUncached
