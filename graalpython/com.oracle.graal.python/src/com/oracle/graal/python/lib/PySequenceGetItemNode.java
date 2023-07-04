@@ -44,20 +44,21 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -67,7 +68,8 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PySequence_GetItem}. For native object it would only call
  * {@code sq_item} and never {@code mp_item}.
  */
-public abstract class PySequenceGetItemNode extends PNodeWithRaiseAndIndirectCall {
+@ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
+public abstract class PySequenceGetItemNode extends Node {
     public abstract Object execute(Frame frame, Object object, int index);
 
     @Specialization(guards = "!isNativeObject(object)")
@@ -96,16 +98,10 @@ public abstract class PySequenceGetItemNode extends PNodeWithRaiseAndIndirectCal
     Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached CApiTransitions.NativeToPythonNode toPythonNode,
-                    @Cached CExtNodes.PCallCapiFunction callGetItem,
-                    @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
-        Object savedState = ExecutionContext.IndirectCallContext.enter(frame, this);
-        try {
-            Object nativeResult = callGetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM, toNativeNode.execute(object), index);
-            checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM.getTsName(), nativeResult);
-            return toPythonNode.execute(nativeResult);
-        } finally {
-            ExecutionContext.IndirectCallContext.exit(frame, this, savedState);
-        }
+                    @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
+                    @Cached(parameters = "GETITEM") ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
+        NativeCAPISymbol symbol = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM;
+        Object executable = importCExtSymbolNode.execute(PythonContext.get(inliningTarget).getCApiContext(), symbol);
+        return invokeNode.execute(frame, symbol.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
     }
 }
