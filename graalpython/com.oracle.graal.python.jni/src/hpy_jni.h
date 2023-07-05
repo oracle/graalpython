@@ -67,15 +67,12 @@
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_INT0(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_LONG(jni_ctx, name, ...) ((long) DO_UPCALL_JLONG)
 #define DO_UPCALL_VOID(jni_ctx, name, ...) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_VOID0(jni_ctx, name) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
-#define DO_UPCALL_HPY_SSIZE_T DO_UPCALL_LONG
-#define DO_UPCALL_HPY_HASH_T DO_UPCALL_LONG
-#define DO_UPCALL_HPY_UCS4 DO_UPCALL_INT
-#define DO_UPCALL_UNSIGNED_LONG DO_UPCALL_LONG
-#define DO_UPCALL_LONG_LONG DO_UPCALL_LONG
-#define DO_UPCALL_UNSIGNED_LONG_LONG DO_UPCALL_LONG
+#define DO_UPCALL_HPY_SSIZE_T (HPy_ssize_t) DO_UPCALL_JLONG
+#define DO_UPCALL_HPY_HASH_T (HPy_hash_t) DO_UPCALL_JLONG
+#define DO_UPCALL_HPY_UCS4 (HPy_UCS4) DO_UPCALL_JINT
+#define DO_UPCALL_HPYTYPE_BUILTINSHAPE (HPyType_BuiltinShape) DO_UPCALL_JINT
 #define DO_UPCALL_INT (int) DO_UPCALL_JINT
 #define DO_UPCALL_INT32_T (int32_t) DO_UPCALL_JINT
 #define DO_UPCALL_UINT32_T (uint32_t) DO_UPCALL_JINT
