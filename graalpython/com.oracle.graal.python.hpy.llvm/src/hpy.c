@@ -40,12 +40,14 @@
  */
 #include "hpy.h"
 #include "hpytypes.h"
+#include "structmember.h"
 #include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
 
 #include <wchar.h>
 #include <string.h>
 #include <errno.h>
+
 
 #define SRC_CS "utf-8"
 #define UNWRAP(_h) ((_h)._i)
@@ -56,6 +58,9 @@ static HPyContext *g_universal_ctx;
 static HPyContext *g_debug_ctx;
 
 typedef HPyDef* HPyDefPtr;
+typedef PyMemberDef cpy_PyMemberDef;
+typedef PyGetSetDef cpy_PyGetSetDef;
+typedef PyType_Slot cpy_PyTypeSlot;
 
 POLYGLOT_DECLARE_TYPE(HPy)
 POLYGLOT_DECLARE_TYPE(HPyField)
@@ -153,10 +158,6 @@ void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 	    return polyglot_from_HPyType_SpecParam_array(ptr, len);
 	}
 	return NULL;
-}
-
-void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
-	return polyglot_from_string(moduleDef->name, SRC_CS);
 }
 
 void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
@@ -1534,7 +1535,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
 
 #define COPY(__member) native_context->__member = managed_context->__member
     COPY(name);
-    COPY(ctx_version);
+    COPY(abi_version);
     COPY(h_None);
     COPY(h_True);
     COPY(h_False);

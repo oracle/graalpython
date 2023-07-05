@@ -35,6 +35,7 @@
 */
 
 typedef HPy* _HPyPtr;
+typedef const HPy* _ConstHPyPtr;
 typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
 typedef HPyGlobal* _HPyGlobalPtr;
@@ -206,7 +207,7 @@ struct _HPyContext_s {
     void (*ctx_Err_WriteUnraisable)(HPyContext *ctx, HPy obj);
     int (*ctx_IsTrue)(HPyContext *ctx, HPy h);
     HPy (*ctx_Type_FromSpec)(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params);
-    HPy (*ctx_Type_GenericNew)(HPyContext *ctx, HPy type, const _HPyPtr args, HPy_ssize_t nargs, HPy kw);
+    HPy (*ctx_Type_GenericNew)(HPyContext *ctx, HPy type, _ConstHPyPtr args, HPy_ssize_t nargs, HPy kw);
     HPy (*ctx_GetAttr)(HPyContext *ctx, HPy obj, HPy name);
     HPy (*ctx_GetAttr_s)(HPyContext *ctx, HPy obj, const char *utf8_name);
     int (*ctx_HasAttr)(HPyContext *ctx, HPy obj, HPy name);
@@ -316,8 +317,8 @@ struct _HPyContext_s {
     HPy (*ctx_Dict_Copy)(HPyContext *ctx, HPy h);
     int (*ctx_Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
     int (*ctx_SetCallFunction)(HPyContext *ctx, HPy h, HPyCallFunction *func);
-    HPy (*ctx_Call)(HPyContext *ctx, HPy callable, const _HPyPtr args, size_t nargs, HPy kwnames);
-    HPy (*ctx_CallMethod)(HPyContext *ctx, HPy name, const _HPyPtr args, size_t nargs, HPy kwnames);
+    HPy (*ctx_Call)(HPyContext *ctx, HPy callable, _ConstHPyPtr args, size_t nargs, HPy kwnames);
+    HPy (*ctx_CallMethod)(HPyContext *ctx, HPy name, _ConstHPyPtr args, size_t nargs, HPy kwnames);
 };
 
 #ifdef GRAALVM_PYTHON_LLVM

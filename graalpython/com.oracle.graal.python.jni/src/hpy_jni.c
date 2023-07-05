@@ -418,7 +418,7 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugContext)(JNIEnv *env, jclass claz
     HPyContext *dctx = (HPyContext *) malloc(sizeof(HPyContext));
     dctx->name = "HPy Debug Mode ABI";
     dctx->_private = NULL;
-    dctx->ctx_version = 1;
+    dctx->abi_version = HPY_ABI_VERSION;
 
     hpy_debug_ctx_init(dctx, uctx);
     return PTR_UP(dctx);

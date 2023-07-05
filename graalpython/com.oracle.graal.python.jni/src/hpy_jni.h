@@ -65,7 +65,6 @@
 #define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_INTPTR_T(jni_ctx, name, ...) (intptr_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_INT(jni_ctx, name, ...) ((int) DO_UPCALL_JINT)
 #define DO_UPCALL_INT0(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_LONG(jni_ctx, name, ...) ((long) DO_UPCALL_JLONG)
@@ -77,10 +76,11 @@
 #define DO_UPCALL_UNSIGNED_LONG DO_UPCALL_LONG
 #define DO_UPCALL_LONG_LONG DO_UPCALL_LONG
 #define DO_UPCALL_UNSIGNED_LONG_LONG DO_UPCALL_LONG
-#define DO_UPCALL_INT32_T(jni_ctx, name, ...) ((int32_t) DO_UPCALL_JINT)
-#define DO_UPCALL_UINT32_T(jni_ctx, name, ...) ((uint32_t) DO_UPCALL_JINT)
-#define DO_UPCALL_INT64_T(jni_ctx, name, ...) ((int64_t) DO_UPCALL_JLONG)
-#define DO_UPCALL_UINT64_T(jni_ctx, name, ...) ((uint64_t) DO_UPCALL_JLONG)
+#define DO_UPCALL_INT (int) DO_UPCALL_JINT
+#define DO_UPCALL_INT32_T (int32_t) DO_UPCALL_JINT
+#define DO_UPCALL_UINT32_T (uint32_t) DO_UPCALL_JINT
+#define DO_UPCALL_INT64_T (int64_t) DO_UPCALL_JLONG
+#define DO_UPCALL_UINT64_T (uint64_t) DO_UPCALL_JLONG
 
 #define HPY_UP(_h) ((jlong)((_h)._i))
 #define PTR_UP(_h) ((jlong)_h)
