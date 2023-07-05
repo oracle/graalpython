@@ -646,11 +646,11 @@ suite = {
             "cflags": [
                 "-DHPY_ABI_HYBRID", "-DNDEBUG",
                 "-O3", "-Werror", "-fPIC",
+                "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
+                "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
                 "-I\"<path:com.oracle.graal.python.cext>/include\"",
                 "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
                 "-I\"<path:com.oracle.graal.python.cext>/src\"",
-                "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
-                "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
                 "-I\"<path:com.oracle.truffle.nfi.native>/include\""
             ],
             "ldlibs": [

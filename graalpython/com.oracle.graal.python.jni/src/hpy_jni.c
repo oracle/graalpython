@@ -434,7 +434,7 @@ JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIDebugContext)(JNIEnv *env, jclass c
 
 JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNIDebugModule\n");
-    return HPY_UP(HPyInit__debug((HPyContext *) uctxPointer));
+    return PTR_UP(HPyInit__debug());
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {

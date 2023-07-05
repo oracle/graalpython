@@ -52,12 +52,15 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -461,29 +464,26 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         assert getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI;
 
         // force the universal context to native; we need a real pointer for JNI
-        try {
-            toNativeInternal();
+        toNativeInternal();
 
-            // initialize the debug module via JNI
-            long debugCtxPtr = initJNIDebugModule(nativePointer);
-            if (debugCtxPtr == 0) {
-                throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
-            }
-            int handle = GraalHPyBoxing.unboxHandle(debugCtxPtr);
-            Object nativeDebugModule = context.getObjectForHPyHandle(handle);
-            context.releaseHPyHandleForObject(handle);
-            if (!(nativeDebugModule instanceof PythonModule)) {
-                /*
-                 * Since we have the debug module fully under control, this is clearly an internal
-                 * error.
-                 */
-                throw CompilerDirectives.shouldNotReachHere("Debug module is expected to be a Python module object");
-            }
-            return (PythonModule) nativeDebugModule;
-        } catch (CannotCastException e) {
-            // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
+        // initialize the debug module via JNI
+        long debugModuleDef = initJNIDebugModule(nativePointer);
+        if (debugModuleDef == 0) {
             throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
+        /* Note: we don't need a 'spec' object since that's only required if the module has slot HPy_mod_create which is guaranteed to be missing in this case. */
+        TruffleString name = tsLiteral("_debug");
+        Object debugModuleDefPtrObj = convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, debugModuleDef);
+        Object nativeDebugModule = GraalHPyModuleCreateNodeGen.getUncached().execute(context, name, null, debugModuleDefPtrObj);
+        if (nativeDebugModule instanceof PythonModule pythonDebugModule) {
+            GraalHPyModuleExecNodeGen.getUncached().execute(null, context, pythonDebugModule);
+            return (PythonModule) nativeDebugModule;
+        }
+        /*
+         * Since we have the debug module fully under control, this is clearly an internal
+         * error.
+         */
+        throw CompilerDirectives.shouldNotReachHere("Debug module is expected to be a Python module object");
     }
 
     @Override
@@ -2509,7 +2509,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR,
+                            argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }

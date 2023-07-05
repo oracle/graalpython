@@ -488,7 +488,8 @@ public abstract class GraalHPyNodes {
                             methodDefs[nMethodDefs++] = moduleDefine;
                             break;
                         case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                            HPySlotData slotData = readSlotNode.execute(inliningTarget, hpyContext, moduleDefine);
+                            Object slotDef = callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
+                            HPySlotData slotData = readSlotNode.execute(inliningTarget, hpyContext, slotDef);
                             switch (slotData.slot) {
                                 case HPY_MOD_CREATE -> {
                                     if (createFunction != null) {
@@ -635,11 +636,10 @@ public abstract class GraalHPyNodes {
     @GenerateCached(false)
     public abstract static class GraalHPyModuleExecNode extends Node {
 
-        public abstract void execute(Node inliningTarget, GraalHPyContext hpyContext, PythonModule module);
+        public abstract void execute(Node node, GraalHPyContext hpyContext, PythonModule module);
 
         @Specialization
-        static void doGeneric(GraalHPyContext hpyContext, PythonModule module,
-                             @Bind("this") Node inliningTarget,
+        static void doGeneric(Node node, GraalHPyContext hpyContext, PythonModule module,
                              @Cached HPyCheckPrimitiveResultNode checkFunctionResultNode,
                              @Cached HPyAsHandleNode asHandleNode,
                              @CachedLibrary(limit = "1") InteropLibrary lib) {
@@ -647,7 +647,7 @@ public abstract class GraalHPyNodes {
             Object execSlotsObj = module.getNativeModuleDef();
             if (execSlotsObj instanceof LinkedList<?> execSlots) {
                 for (Object execSlot : execSlots) {
-                    callExec(inliningTarget, hpyContext, execSlot, module, checkFunctionResultNode, asHandleNode, lib);
+                    callExec(node, hpyContext, execSlot, module, checkFunctionResultNode, asHandleNode, lib);
                 }
             }
         }
@@ -660,10 +660,10 @@ public abstract class GraalHPyNodes {
          * We should refactor the node such that we can use it here.
          * </p>
          */
-        static void callExec(Node inliningTarget, GraalHPyContext hPyContext, Object callable, PythonModule module,
+        static void callExec(Node node, GraalHPyContext hPyContext, Object callable, PythonModule module,
                         HPyCheckPrimitiveResultNode checkFunctionResultNode, HPyAsHandleNode asHandleNode, InteropLibrary lib) {
 
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = PythonLanguage.get(node);
             PythonContext ctx = hPyContext.getContext();
             PythonThreadState pythonThreadState = ctx.getThreadState(language);
 
@@ -671,9 +671,9 @@ public abstract class GraalHPyNodes {
             try {
                 checkFunctionResultNode.execute(pythonThreadState, T_EXEC, lib.execute(callable, hPyContext.getBackend(), hModule));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, T_EXEC, e);
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, T_EXEC, e);
             } catch (ArityException e) {
-                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, T_EXEC, e.getExpectedMinArity(), e.getActualArity());
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, T_EXEC, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // close all handles (if necessary)
                 hModule.closeAndInvalidate(hPyContext);

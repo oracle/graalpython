@@ -73,6 +73,7 @@ public enum HPyContextSignatureType {
     HPyTupleBuilder("HPyTupleBuilder", "POINTER", long.class),
     HPyListBuilder("HPyListBuilder", "POINTER", long.class),
     Cpy_PyObjectPtr("cpy_PyObject*", "POINTER", long.class),
+    HPyModuleDefPtr("HPyModuleDef*", "POINTER", long.class),
     HPyType_SpecPtr("HPyType_Spec*", "POINTER", long.class),
     HPyType_SpecParamPtr("HPyType_SpecParam*", "POINTER", long.class),
     HPyDefPtr("HPyDef*", "POINTER", long.class),
