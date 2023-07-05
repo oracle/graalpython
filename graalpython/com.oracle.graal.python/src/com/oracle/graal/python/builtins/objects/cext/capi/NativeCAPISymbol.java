@@ -153,7 +153,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObject, PyTypeObject, PyObject),
     FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new", PyObject, PyTypeObject, Pointer, Py_ssize_t),
     FUN_FLOAT_SUBTYPE_NEW("float_subtype_new", PyObject, PyTypeObject, ArgDescriptor.Double),
-    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new"),
+    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new", PyObject, PyTypeObject, PyObject),
     FUN_SUBCLASS_CHECK("truffle_subclass_check", Int, PyObject),
     FUN_BASETYPE_CHECK("truffle_BASETYPE_check", Int, PyObject),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes", ArgDescriptor.Void, Pointer, SIZE_T, Pointer, SIZE_T, SIZE_T),

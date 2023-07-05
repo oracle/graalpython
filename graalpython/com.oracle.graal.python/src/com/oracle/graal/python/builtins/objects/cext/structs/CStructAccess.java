@@ -50,14 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
@@ -689,73 +687,6 @@ public class CStructAccess {
 
         public static ReadObjectNode getUncached() {
             return ReadObjectNodeGen.getUncached();
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    public abstract static class ReadObjectStealingNode extends ReadBaseNode {
-        abstract Object execute(Object pointer, long offset);
-
-        public final Object read(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
-        }
-
-        public final Object readFromObj(PythonNativeObject self, CFields field) {
-            return read(self.getPtr(), field);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isPyObject();
-        }
-
-        public final Object readArrayElement(Object pointer, long element) {
-            return execute(pointer, element * POINTER_SIZE);
-        }
-
-        public final Object[] readPyObjectArray(Object pointer, int elements) {
-            return readPyObjectArray(pointer, elements, 0);
-        }
-
-        public final Object[] readPyObjectArray(Object pointer, int elements, int offset) {
-            Object[] result = new Object[elements];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = execute(pointer, (i + offset) * POINTER_SIZE);
-            }
-            return result;
-        }
-
-        public final Object readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
-        @Specialization
-        static Object readLong(long pointer, long offset,
-                        @Shared @Cached NativePtrToPythonNode toPython) {
-            assert offset >= 0;
-            return toPython.execute(UNSAFE.getLong(pointer + offset), true);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
-        static Object readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached NativePtrToPythonNode toPython) {
-            return readLong(asPointer(pointer, lib), offset, toPython);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static Object readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call,
-                        @Cached NativeToPythonStealingNode toPython) {
-            assert validPointer(pointer);
-            return toPython.execute(call.call(NativeCAPISymbol.FUN_READ_POINTER_MEMBER, pointer, offset));
-        }
-
-        public static ReadObjectStealingNode getUncached() {
-            return ReadObjectStealingNodeGen.getUncached();
         }
     }
 

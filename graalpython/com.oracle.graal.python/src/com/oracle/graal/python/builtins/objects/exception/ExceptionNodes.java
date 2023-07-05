@@ -137,8 +137,10 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+                        @Cached CStructAccess.WriteObjectNewRefNode writeObject,
+                        @Cached CStructAccess.WriteByteNode writeByte) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__cause, noneToNativeNull(inliningTarget, value));
+            writeByte.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, (byte) 1);
         }
 
         @Specialization

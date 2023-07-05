@@ -386,7 +386,6 @@ typedef struct {
     BUILTIN(PyTruffle_Unicode_AsWideChar, PyObject*, PyObject*, int) \
     BUILTIN(PyTruffle_Unicode_DecodeUTF32, PyObject*, void*, Py_ssize_t, const char*, int) \
     BUILTIN(PyTruffle_Unicode_FromFormat, PyObject*, const char*, va_list*) \
-    BUILTIN(PyTruffle_Unicode_FromWchar, PyObject*, void*, Py_ssize_t, size_t) \
     BUILTIN(PyTruffle_tss_create, long) \
     BUILTIN(PyTruffle_tss_delete, void, long) \
     BUILTIN(PyTruffle_tss_get, void*, long) \
@@ -411,6 +410,7 @@ typedef struct {
     BUILTIN(PyUnicode_FromObject, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_FromOrdinal, PyObject*, int) \
     BUILTIN(PyUnicode_FromString, PyObject*, const char*) \
+    BUILTIN(PyUnicode_FromWideChar, PyObject*, const wchar_t*, Py_ssize_t) \
     BUILTIN(PyUnicode_Join, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_ReadChar, Py_UCS4, PyObject*, Py_ssize_t) \
     BUILTIN(PyUnicode_Replace, PyObject*, PyObject*, PyObject*, PyObject*, Py_ssize_t) \
@@ -471,7 +471,6 @@ typedef struct {
     BUILTIN(Py_get_PySliceObject_start, PyObject*, PySliceObject*) \
     BUILTIN(Py_get_PySliceObject_step, PyObject*, PySliceObject*) \
     BUILTIN(Py_get_PySliceObject_stop, PyObject*, PySliceObject*) \
-    BUILTIN(Py_get_PyThreadState_dict, PyObject*, PyThreadState*) \
     BUILTIN(Py_get_PyTupleObject_ob_item, PyObject**, PyTupleObject*) \
     BUILTIN(Py_get_PyUnicodeObject_data, void*, PyUnicodeObject*) \
     BUILTIN(Py_get_PyVarObject_ob_size, Py_ssize_t, PyVarObject*) \
@@ -582,7 +581,6 @@ typedef struct {
 #define PySliceObject_start(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_start((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->start )
 #define PySliceObject_step(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_step((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->step )
 #define PySliceObject_stop(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_stop((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->stop )
-#define PyThreadState_dict(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyThreadState_dict((PyThreadState*) (OBJ)) : ((PyThreadState*) (OBJ))->dict )
 #define PyTupleObject_ob_item(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyTupleObject_ob_item((PyTupleObject*) (OBJ)) : ((PyTupleObject*) (OBJ))->ob_item )
 #define PyUnicodeObject_data(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyUnicodeObject_data((PyUnicodeObject*) (OBJ)) : ((PyUnicodeObject*) (OBJ))->data )
 #define PyVarObject_ob_size(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyVarObject_ob_size((PyVarObject*) (OBJ)) : ((PyVarObject*) (OBJ))->ob_size )

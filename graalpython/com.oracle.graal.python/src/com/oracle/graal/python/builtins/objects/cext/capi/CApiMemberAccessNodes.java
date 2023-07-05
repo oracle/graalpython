@@ -500,9 +500,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Cached CStructAccess.ReadObjectStealingNode read,
                         @Cached CStructAccess.WriteObjectNewRefNode write) {
-            read.readGeneric(pointer, 0);
             write.write(pointer, newValue);
         }
     }
@@ -511,7 +509,7 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
-                        @Cached CStructAccess.ReadObjectStealingNode read,
+                        @Cached CStructAccess.ReadObjectNode read,
                         @Cached CStructAccess.WriteObjectNewRefNode write,
                         @Cached PRaiseNode raise) {
             Object current = read.readGeneric(pointer, 0);
