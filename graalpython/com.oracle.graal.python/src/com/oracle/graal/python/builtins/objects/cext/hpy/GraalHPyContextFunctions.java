@@ -47,10 +47,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
@@ -104,7 +102,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAndNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAsIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAsPyObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBoolFromLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBoolFromBoolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderCancelNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderSetNodeGen;
@@ -126,7 +124,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarSetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictCheckNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDivmodNodeGen;
@@ -177,7 +174,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsCallableNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsNumberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsSequenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsTrueNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLeavePythonExecutionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLengthNodeGen;
@@ -186,16 +182,20 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyListCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyListNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsDoubleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsInt32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsSsizeTNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUnsignedLongMaskNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUnsignedLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromUnsignedLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUInt32MaskNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUInt32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUInt64MaskNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsUInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromInt32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromUInt32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromUInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLshiftNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyMatrixMultiplyNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyMaybeGetAttrSNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyMultiplyNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyNegativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyNewExceptionNodeGen;
@@ -210,12 +210,10 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyRichcompareBoolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyRichcompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyRshiftNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySeqIterNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetAttrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetAttrSNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetItemSNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySliceUnpackNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyStrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySubtractNodeGen;
@@ -228,7 +226,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTupleCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTupleFromArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeCheckNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeCheckSlotNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeFromSpecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGenericNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGetNameNodeGen;
@@ -247,11 +244,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromEncodedObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromWcharNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeInternFromStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeReadCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeSubstringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyXorNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
@@ -265,7 +260,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -277,7 +271,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -285,11 +278,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNodeWithSlice;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -304,11 +294,9 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
-import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
@@ -367,7 +355,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -440,16 +427,20 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_INPLACEAND -> GraalHPyInPlaceAndNodeGen.create();
                 case CTX_INPLACEXOR -> GraalHPyInPlaceXorNodeGen.create();
                 case CTX_INPLACEOR -> GraalHPyInPlaceOrNodeGen.create();
-                case CTX_BOOL_FROMLONG -> GraalHPyBoolFromLongNodeGen.create();
-                case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> GraalHPyLongFromLongNodeGen.create();
-                case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROMUNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> GraalHPyLongFromUnsignedLongNodeGen.create();
-                case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> GraalHPyLongAsLongNodeGen.create();
-                case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> GraalHPyLongAsUnsignedLongNodeGen.create();
-                case CTX_LONG_ASUNSIGNEDLONGMASK, CTX_LONG_ASUNSIGNEDLONGLONGMASK -> GraalHPyLongAsUnsignedLongMaskNodeGen.create();
+                case CTX_BOOL_FROMBOOL -> GraalHPyBoolFromBoolNodeGen.create();
+                case CTX_LONG_FROMINT32_T -> GraalHPyLongFromInt32NodeGen.create();
+                case CTX_LONG_FROMUINT32_T -> GraalHPyLongFromUInt32NodeGen.create();
+                case CTX_LONG_FROMINT64_T, CTX_LONG_FROMSSIZE_T -> GraalHPyLongFromInt64NodeGen.create();
+                case CTX_LONG_FROMUINT64_T, CTX_LONG_FROMSIZE_T -> GraalHPyLongFromUInt64NodeGen.create();
+                case CTX_LONG_ASINT32_T -> GraalHPyLongAsInt32NodeGen.create();
+                case CTX_LONG_ASUINT32_T -> GraalHPyLongAsUInt32NodeGen.create();
+                case CTX_LONG_ASUINT32_TMASK -> GraalHPyLongAsUInt32MaskNodeGen.create();
+                case CTX_LONG_ASINT64_T -> GraalHPyLongAsInt64NodeGen.create();
+                case CTX_LONG_ASUINT64_T, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> GraalHPyLongAsUInt64NodeGen.create();
+                case CTX_LONG_ASUINT64_TMASK -> GraalHPyLongAsUInt64MaskNodeGen.create();
                 case CTX_LONG_ASSSIZE_T -> GraalHPyLongAsSsizeTNodeGen.create();
                 case CTX_LONG_ASDOUBLE -> GraalHPyLongAsDoubleNodeGen.create();
                 case CTX_DICT_NEW -> GraalHPyDictNewNodeGen.create();
-                case CTX_DICT_GETITEM -> GraalHPyDictGetItemNodeGen.create();
                 case CTX_LIST_NEW -> GraalHPyListNewNodeGen.create();
                 case CTX_LIST_APPEND -> GraalHPyListAppendNodeGen.create();
                 case CTX_FLOAT_FROMDOUBLE -> GraalHPyFloatFromDoubleNodeGen.create();
@@ -490,7 +481,6 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_ISTRUE -> GraalHPyIsTrueNodeGen.create();
                 case CTX_GETATTR -> GraalHPyGetAttrNodeGen.create();
                 case CTX_GETATTR_S -> GraalHPyGetAttrSNodeGen.create();
-                case CTX_MAYBEGETATTR_S -> GraalHPyMaybeGetAttrSNodeGen.create();
                 case CTX_TYPE_FROMSPEC -> GraalHPyTypeFromSpecNodeGen.create();
                 case CTX_HASATTR -> GraalHPyHasAttrNodeGen.create();
                 case CTX_HASATTR_S -> GraalHPyHasAttrSNodeGen.create();
@@ -502,7 +492,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_SETITEM_S -> GraalHPySetItemSNodeGen.create();
                 case CTX_FROMPYOBJECT -> GraalHPyFromPyObjectNodeGen.create();
                 case CTX_NEW -> GraalHPyNewNodeGen.create();
-                case CTX_ASSTRUCT, CTX_ASSTRUCTLEGACY -> GraalHPyCastNodeGen.create();
+                case CTX_ASSTRUCT_OBJECT, CTX_ASSTRUCT_LEGACY, CTX_ASSTRUCT_TYPE, CTX_ASSTRUCT_LONG, CTX_ASSTRUCT_FLOAT, CTX_ASSTRUCT_UNICODE, CTX_ASSTRUCT_TUPLE, CTX_ASSTRUCT_LIST -> GraalHPyCastNodeGen.create();
                 case CTX_TYPE_GENERICNEW -> GraalHPyTypeGenericNewNodeGen.create();
                 case CTX_ABSOLUTE -> GraalHPyAbsoluteNodeGen.create();
                 case CTX_LONG -> GraalHPyLongNodeGen.create();
@@ -528,14 +518,13 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TRACKER_CLOSE -> GraalHPyTrackerCleanupNodeGen.create();
                 case CTX_TRACKER_FORGETALL -> GraalHPyTrackerForgetAllNodeGen.create();
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.create();
-                case CTX_SEQUENCE_CHECK -> GraalHPyIsSequenceNodeGen.create();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.create();
                 case CTX_DUMP -> GraalHPyDumpNodeGen.create();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.create();
-                case CTX_TYPECHECK, CTX_TYPECHECK_G -> GraalHPyTypeCheckNodeGen.create();
+                case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.create();
                 case CTX_ERR_NEWEXCEPTIONWITHDOC -> GraalHPyNewExceptionWithDocNodeGen.create();
                 case CTX_ERR_NEWEXCEPTION -> GraalHPyNewExceptionNodeGen.create();
-                case CTX_IS, CTX_IS_G -> GraalHPyIsNodeGen.create();
+                case CTX_IS -> GraalHPyIsNodeGen.create();
                 case CTX_IMPORT_IMPORTMODULE -> GraalHPyImportModuleNodeGen.create();
                 case CTX_FIELD_STORE -> GraalHPyFieldStoreNodeGen.create();
                 case CTX_FIELD_LOAD -> GraalHPyFieldLoadNodeGen.create();
@@ -547,20 +536,16 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_ISSUBTYPE -> GraalHPyTypeIsSubtypeNodeGen.create();
                 case CTX_TYPE_GETNAME -> GraalHPyTypeGetNameNodeGen.create();
                 case CTX_DICT_KEYS -> GraalHPyDictKeysNodeGen.create();
-                case CTX_UNICODE_INTERNFROMSTRING -> GraalHPyUnicodeInternFromStringNodeGen.create();
                 case CTX_CAPSULE_NEW -> GraalHPyCapsuleNewNodeGen.create();
                 case CTX_CAPSULE_GET -> GraalHPyCapsuleGetNodeGen.create();
                 case CTX_CAPSULE_SET -> GraalHPyCapsuleSetNodeGen.create();
                 case CTX_CAPSULE_ISVALID -> GraalHPyCapsuleIsValidNodeGen.create();
-                case CTX_SETTYPE -> GraalHPySetTypeNodeGen.create();
                 case CTX_CONTEXTVAR_NEW -> GraalHPyContextVarNewNodeGen.create();
                 case CTX_CONTEXTVAR_GET -> GraalHPyContextVarGetNodeGen.create();
                 case CTX_CONTEXTVAR_SET -> GraalHPyContextVarSetNodeGen.create();
                 case CTX_UNICODE_FROMENCODEDOBJECT -> GraalHPyUnicodeFromEncodedObjectNodeGen.create();
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.create();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.create();
-                case CTX_TYPE_CHECKSLOT -> GraalHPyTypeCheckSlotNodeGen.create();
-                case CTX_SEQITER_NEW -> GraalHPySeqIterNewNodeGen.create();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -599,16 +584,20 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_INPLACEAND -> GraalHPyInPlaceAndNodeGen.getUncached();
                 case CTX_INPLACEXOR -> GraalHPyInPlaceXorNodeGen.getUncached();
                 case CTX_INPLACEOR -> GraalHPyInPlaceOrNodeGen.getUncached();
-                case CTX_BOOL_FROMLONG -> GraalHPyBoolFromLongNodeGen.getUncached();
-                case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> GraalHPyLongFromLongNodeGen.getUncached();
-                case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROMUNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> GraalHPyLongFromUnsignedLongNodeGen.getUncached();
-                case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> GraalHPyLongAsLongNodeGen.getUncached();
-                case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> GraalHPyLongAsUnsignedLongNodeGen.getUncached();
-                case CTX_LONG_ASUNSIGNEDLONGMASK, CTX_LONG_ASUNSIGNEDLONGLONGMASK -> GraalHPyLongAsUnsignedLongMaskNodeGen.getUncached();
+                case CTX_BOOL_FROMBOOL -> GraalHPyBoolFromBoolNodeGen.getUncached();
+                case CTX_LONG_FROMINT32_T -> GraalHPyLongFromInt32NodeGen.getUncached();
+                case CTX_LONG_FROMUINT32_T -> GraalHPyLongFromUInt32NodeGen.getUncached();
+                case CTX_LONG_FROMINT64_T, CTX_LONG_FROMSSIZE_T -> GraalHPyLongFromInt64NodeGen.getUncached();
+                case CTX_LONG_FROMUINT64_T, CTX_LONG_FROMSIZE_T -> GraalHPyLongFromUInt64NodeGen.getUncached();
+                case CTX_LONG_ASINT32_T -> GraalHPyLongAsInt32NodeGen.getUncached();
+                case CTX_LONG_ASUINT32_T -> GraalHPyLongAsUInt32NodeGen.getUncached();
+                case CTX_LONG_ASUINT32_TMASK -> GraalHPyLongAsUInt32MaskNodeGen.getUncached();
+                case CTX_LONG_ASINT64_T -> GraalHPyLongAsInt64NodeGen.getUncached();
+                case CTX_LONG_ASUINT64_T, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> GraalHPyLongAsUInt64NodeGen.getUncached();
+                case CTX_LONG_ASUINT64_TMASK -> GraalHPyLongAsUInt64MaskNodeGen.getUncached();
                 case CTX_LONG_ASSSIZE_T -> GraalHPyLongAsSsizeTNodeGen.getUncached();
                 case CTX_LONG_ASDOUBLE -> GraalHPyLongAsDoubleNodeGen.getUncached();
                 case CTX_DICT_NEW -> GraalHPyDictNewNodeGen.getUncached();
-                case CTX_DICT_GETITEM -> GraalHPyDictGetItemNodeGen.getUncached();
                 case CTX_LIST_NEW -> GraalHPyListNewNodeGen.getUncached();
                 case CTX_LIST_APPEND -> GraalHPyListAppendNodeGen.getUncached();
                 case CTX_FLOAT_FROMDOUBLE -> GraalHPyFloatFromDoubleNodeGen.getUncached();
@@ -649,7 +638,6 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_ISTRUE -> GraalHPyIsTrueNodeGen.getUncached();
                 case CTX_GETATTR -> GraalHPyGetAttrNodeGen.getUncached();
                 case CTX_GETATTR_S -> GraalHPyGetAttrSNodeGen.getUncached();
-                case CTX_MAYBEGETATTR_S -> GraalHPyMaybeGetAttrSNodeGen.getUncached();
                 case CTX_TYPE_FROMSPEC -> GraalHPyTypeFromSpecNodeGen.getUncached();
                 case CTX_HASATTR -> GraalHPyHasAttrNodeGen.getUncached();
                 case CTX_HASATTR_S -> GraalHPyHasAttrSNodeGen.getUncached();
@@ -661,7 +649,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_SETITEM_S -> GraalHPySetItemSNodeGen.getUncached();
                 case CTX_FROMPYOBJECT -> GraalHPyFromPyObjectNodeGen.getUncached();
                 case CTX_NEW -> GraalHPyNewNodeGen.getUncached();
-                case CTX_ASSTRUCT, CTX_ASSTRUCTLEGACY -> GraalHPyCastNodeGen.getUncached();
+                case CTX_ASSTRUCT_OBJECT, CTX_ASSTRUCT_LEGACY, CTX_ASSTRUCT_TYPE, CTX_ASSTRUCT_LONG, CTX_ASSTRUCT_FLOAT, CTX_ASSTRUCT_UNICODE, CTX_ASSTRUCT_TUPLE, CTX_ASSTRUCT_LIST -> GraalHPyCastNodeGen.getUncached();
                 case CTX_TYPE_GENERICNEW -> GraalHPyTypeGenericNewNodeGen.getUncached();
                 case CTX_ABSOLUTE -> GraalHPyAbsoluteNodeGen.getUncached();
                 case CTX_LONG -> GraalHPyLongNodeGen.getUncached();
@@ -687,14 +675,13 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TRACKER_CLOSE -> GraalHPyTrackerCleanupNodeGen.getUncached();
                 case CTX_TRACKER_FORGETALL -> GraalHPyTrackerForgetAllNodeGen.getUncached();
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.getUncached();
-                case CTX_SEQUENCE_CHECK -> GraalHPyIsSequenceNodeGen.getUncached();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.getUncached();
                 case CTX_DUMP -> GraalHPyDumpNodeGen.getUncached();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.getUncached();
-                case CTX_TYPECHECK, CTX_TYPECHECK_G -> GraalHPyTypeCheckNodeGen.getUncached();
+                case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.getUncached();
                 case CTX_ERR_NEWEXCEPTIONWITHDOC -> GraalHPyNewExceptionWithDocNodeGen.getUncached();
                 case CTX_ERR_NEWEXCEPTION -> GraalHPyNewExceptionNodeGen.getUncached();
-                case CTX_IS, CTX_IS_G -> GraalHPyIsNodeGen.getUncached();
+                case CTX_IS -> GraalHPyIsNodeGen.getUncached();
                 case CTX_IMPORT_IMPORTMODULE -> GraalHPyImportModuleNodeGen.getUncached();
                 case CTX_FIELD_STORE -> GraalHPyFieldStoreNodeGen.getUncached();
                 case CTX_FIELD_LOAD -> GraalHPyFieldLoadNodeGen.getUncached();
@@ -706,20 +693,16 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_ISSUBTYPE -> GraalHPyTypeIsSubtypeNodeGen.getUncached();
                 case CTX_TYPE_GETNAME -> GraalHPyTypeGetNameNodeGen.getUncached();
                 case CTX_DICT_KEYS -> GraalHPyDictKeysNodeGen.getUncached();
-                case CTX_UNICODE_INTERNFROMSTRING -> GraalHPyUnicodeInternFromStringNodeGen.getUncached();
                 case CTX_CAPSULE_NEW -> GraalHPyCapsuleNewNodeGen.getUncached();
                 case CTX_CAPSULE_GET -> GraalHPyCapsuleGetNodeGen.getUncached();
                 case CTX_CAPSULE_SET -> GraalHPyCapsuleSetNodeGen.getUncached();
                 case CTX_CAPSULE_ISVALID -> GraalHPyCapsuleIsValidNodeGen.getUncached();
-                case CTX_SETTYPE -> GraalHPySetTypeNodeGen.getUncached();
                 case CTX_CONTEXTVAR_NEW -> GraalHPyContextVarNewNodeGen.getUncached();
                 case CTX_CONTEXTVAR_GET -> GraalHPyContextVarGetNodeGen.getUncached();
                 case CTX_CONTEXTVAR_SET -> GraalHPyContextVarSetNodeGen.getUncached();
                 case CTX_UNICODE_FROMENCODEDOBJECT -> GraalHPyUnicodeFromEncodedObjectNodeGen.getUncached();
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.getUncached();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.getUncached();
-                case CTX_TYPE_CHECKSLOT -> GraalHPyTypeCheckSlotNodeGen.getUncached();
-                case CTX_SEQITER_NEW -> GraalHPySeqIterNewNodeGen.getUncached();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -1154,22 +1137,20 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_Bool_FromLong")
+    @HPyContextFunction("ctx_Bool_FromBool")
     @GenerateUncached
-    public abstract static class GraalHPyBoolFromLong extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyBoolFromBool extends HPyBinaryContextFunction {
 
         @Specialization
-        static PInt doGeneric(GraalHPyContext hpyContext, long value) {
+        static PInt doGeneric(GraalHPyContext hpyContext, byte value) {
             Python3Core core = hpyContext.getContext();
             return value != 0 ? core.getTrue() : core.getFalse();
         }
     }
 
-    @HPyContextFunction("ctx_Long_FromLong")
-    @HPyContextFunction("ctx_Long_FromLongLong")
-    @HPyContextFunction("ctx_Long_FromSsize_t")
+    @HPyContextFunction("ctx_Long_FromInt32_t")
     @GenerateUncached
-    public abstract static class GraalHPyLongFromLong extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyLongFromInt32 extends HPyBinaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
@@ -1179,11 +1160,9 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_Long_FromUnsignedLong")
-    @HPyContextFunction("ctx_Long_FromUnsignedLongLong")
-    @HPyContextFunction("ctx_Long_FromSize_t")
+    @HPyContextFunction("ctx_Long_FromUInt32_t")
     @GenerateUncached
-    public abstract static class GraalHPyLongFromUnsignedLong extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyLongFromUInt32 extends HPyBinaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
@@ -1193,23 +1172,49 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_Long_AsLong")
-    @HPyContextFunction("ctx_Long_AsLongLong")
+    @HPyContextFunction("ctx_Long_FromInt64_t")
+    @HPyContextFunction("ctx_Long_FromSsize_t")
     @GenerateUncached
-    public abstract static class GraalHPyLongAsLong extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyLongFromInt64 extends HPyBinaryContextFunction {
+
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(object, 1, Long.BYTES, true);
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLongFromLong fromLongNode) {
+            return fromLongNode.execute(inliningTarget, value, true);
         }
     }
 
-    @HPyContextFunction("ctx_Long_AsUnsignedLong")
-    @HPyContextFunction("ctx_Long_AsUnsignedLongLong")
-    @HPyContextFunction("ctx_Long_AsSize_t")
-    @HPyContextFunction("ctx_Long_AsVoidPtr")
+    @HPyContextFunction("ctx_Long_FromUInt64_t")
+    @HPyContextFunction("ctx_Long_FromSize_t")
     @GenerateUncached
-    public abstract static class GraalHPyLongAsUnsignedLong extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyLongFromUInt64 extends HPyBinaryContextFunction {
+
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLongFromLong fromLongNode) {
+            return fromLongNode.execute(inliningTarget, value, false);
+        }
+    }
+
+    private static final int SIZEOF_INT32 = 4;
+    private static final int SIZEOF_INT64 = 8;
+    private static final int SIZEOF_INTPTR = 8;
+
+    @HPyContextFunction("ctx_Long_AsInt32_t")
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsInt32 extends HPyBinaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(object, 1, SIZEOF_INT32, true);
+        }
+    }
+
+    @HPyContextFunction("ctx_Long_AsUInt32_t")
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsUInt32 extends HPyBinaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
@@ -1220,18 +1225,56 @@ public abstract class GraalHPyContextFunctions {
             if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
-            return asNativePrimitiveNode.execute(object, 0, Long.BYTES, true);
+            return asNativePrimitiveNode.execute(object, 0, SIZEOF_INT32, true);
         }
     }
 
-    @HPyContextFunction("ctx_Long_AsUnsignedLongMask")
-    @HPyContextFunction("ctx_Long_AsUnsignedLongLongMask")
+    @HPyContextFunction("ctx_Long_AsUInt32_tMask")
     @GenerateUncached
-    public abstract static class GraalHPyLongAsUnsignedLongMask extends HPyBinaryContextFunction {
+    public abstract static class GraalHPyLongAsUInt32Mask extends HPyBinaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(object, 0, Long.BYTES, false);
+            return asNativePrimitiveNode.execute(object, 0, SIZEOF_INT32, false);
+        }
+    }
+
+    @HPyContextFunction("ctx_Long_AsInt64_t")
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsInt64 extends HPyBinaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(object, 1, SIZEOF_INT64, true);
+        }
+    }
+
+    @HPyContextFunction("ctx_Long_AsUInt64_t")
+    @HPyContextFunction("ctx_Long_AsSize_t")
+    @HPyContextFunction("ctx_Long_AsVoidPtr")
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsUInt64 extends HPyBinaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
+                throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+            }
+            return asNativePrimitiveNode.execute(object, 0, SIZEOF_INT64, true);
+        }
+    }
+
+    @HPyContextFunction("ctx_Long_AsUInt64_tMask")
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsUInt64Mask extends HPyBinaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(object, 0, SIZEOF_INT64, false);
         }
     }
 
@@ -1248,7 +1291,7 @@ public abstract class GraalHPyContextFunctions {
             if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
-            return asNativePrimitiveNode.execute(object, 1, Long.BYTES, true);
+            return asNativePrimitiveNode.execute(object, 1, SIZEOF_INTPTR, true);
         }
     }
 
@@ -1271,34 +1314,6 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext,
                         @Cached PythonObjectFactory factory) {
             return factory.createDict();
-        }
-    }
-
-    @HPyContextFunction("ctx_Dict_GetItem")
-    @GenerateUncached
-    public abstract static class GraalHPyDictGetItem extends HPyTernaryContextFunction {
-
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object left, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached InlinedExactClassProfile profile,
-                        @Cached PRaiseNode raiseNode) {
-            Object leftProfiled = profile.profile(inliningTarget, left);
-            if (!PGuards.isDict(leftProfiled)) {
-                throw raiseNode.raise(SystemError, ErrorMessages.BAD_INTERNAL_CALL);
-            }
-            PDict dict = (PDict) left;
-            try {
-                Object item = getItem.execute(null, dict.getDictStorage(), key);
-                return item != null ? item : NULL_HANDLE_DELEGATE;
-            } catch (PException e) {
-                /*
-                 * This function has the same (odd) error behavior as PyDict_GetItem: If an error
-                 * occurred, the error is cleared and NULL is returned.
-                 */
-                return NULL_HANDLE_DELEGATE;
-            }
         }
     }
 
@@ -2021,17 +2036,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_MaybeGetAttr_s")
-    @GenerateUncached
-    public abstract static class GraalHPyMaybeGetAttrS extends HPyTernaryContextFunction {
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.execute(null, receiver, fromCharPointerNode.execute(charPtr));
-        }
-    }
-
     @HPyContextFunction("ctx_Type_FromSpec")
     @GenerateUncached
     public abstract static class GraalHPyTypeFromSpec extends HPyTernaryContextFunction {
@@ -2215,8 +2219,14 @@ public abstract class GraalHPyContextFunctions {
             }
     }
 
-    @HPyContextFunction("ctx_AsStruct")
-    @HPyContextFunction("ctx_AsStructLegacy")
+    @HPyContextFunction("ctx_AsStruct_Object")
+    @HPyContextFunction("ctx_AsStruct_Legacy")
+    @HPyContextFunction("ctx_AsStruct_Type")
+    @HPyContextFunction("ctx_AsStruct_Long")
+    @HPyContextFunction("ctx_AsStruct_Float")
+    @HPyContextFunction("ctx_AsStruct_Unicode")
+    @HPyContextFunction("ctx_AsStruct_Tuple")
+    @HPyContextFunction("ctx_AsStruct_List")
     @GenerateUncached
     public abstract static class GraalHPyCast extends HPyBinaryContextFunction {
 
@@ -2700,17 +2710,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_Sequence_Check")
-    @GenerateUncached
-    public abstract static class GraalHPyIsSequence extends HPyBinaryContextFunction {
-
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
-                        @Cached PySequenceCheckNode sequenceCheck) {
-            return PInt.intValue(sequenceCheck.execute(object));
-        }
-    }
-
     @HPyContextFunction("ctx_CallTupleDict")
     @GenerateUncached
     public abstract static class GraalHPyCallTupleDict extends HPyQuaternaryContextFunction {
@@ -2800,7 +2799,6 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @HPyContextFunction("ctx_TypeCheck")
-    @HPyContextFunction("ctx_TypeCheck_g")
     @GenerateUncached
     public abstract static class GraalHPyTypeCheck extends HPyTernaryContextFunction {
 
@@ -2919,7 +2917,6 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @HPyContextFunction("ctx_Is")
-    @HPyContextFunction("ctx_Is_g")
     @GenerateUncached
     public abstract static class GraalHPyIs extends HPyTernaryContextFunction {
 
@@ -3206,23 +3203,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_Unicode_InternFromString")
-    @GenerateUncached
-    public abstract static class GraalHPyUnicodeInternFromString extends HPyBinaryContextFunction {
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr,
-                        @Cached InternStringNode internStringNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PRaiseNode raiseNode) {
-            TruffleString string = fromCharPointerNode.execute(charPtr);
-            PString interned = internStringNode.execute(string);
-            if (interned == null) {
-                throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_INTERN_P, string);
-            }
-            return interned;
-        }
-    }
-
     // see _HPyCapsule_key in the HPy API
     public static final class CapsuleKey {
         public static final byte Pointer = 0;
@@ -3337,23 +3317,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @HPyContextFunction("ctx_SetType")
-    @GenerateUncached
-    public abstract static class GraalHPySetType extends HPyTernaryContextFunction {
-        /*
-         * If 'object' is not a 'PythonObject', we will crash with a fatal
-         * UnsupportedSpecializationException. This is intentional because CPython's Py_SET_TYPE
-         * would also just segfault if the given object is not a PyObject*. Same applies to the type
-         * parameter.
-         */
-        @Specialization
-        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, PythonObject object, PythonAbstractClass type,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            object.setPythonClass(type, dylib);
-            return 0;
-        }
-    }
-
     @HPyContextFunction("ctx_ContextVar_New")
     @GenerateUncached
     public abstract static class GraalHPyContextVarNew extends HPyTernaryContextFunction {
@@ -3457,62 +3420,6 @@ public abstract class GraalHPyContextFunctions {
                 return 0;
             }
             return -1;
-        }
-    }
-
-    @HPyContextFunction("ctx_Type_CheckSlot")
-    @GenerateUncached
-    public abstract static class GraalHPyTypeCheckSlot extends HPyTernaryContextFunction {
-        @Specialization
-        static Object doGeneric(GraalHPyContext hpyContext, Object type, Object slotDefPtr,
-                        @Cached PCallHPyFunction callHelperFunctionNode,
-                        @CachedLibrary(limit = "2") InteropLibrary slotLib,
-                        @CachedLibrary(limit = "2") InteropLibrary slotDefLib,
-                        @Cached ReadAttributeFromObjectNode readFunction) {
-            Object slotDef = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_DEF_GET_SLOT, slotDefPtr);
-            Object slotObj = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_SLOT_GET_SLOT, slotDef);
-            HPySlot slot;
-            if (slotLib.fitsInInt(slotObj)) {
-                try {
-                    slot = HPySlot.fromValue(slotLib.asInt(slotObj));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return 0;
-            }
-            if (slot == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return 0;
-            }
-            Object methodName = slot.getAttributeKeys()[0];
-            Object methodFunctionPointer;
-            try {
-                methodFunctionPointer = slotDefLib.readMember(slotDef, "impl");
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-            Object slotFunc = readFunction.execute(type, methodName);
-            if (slotFunc instanceof PBuiltinFunction) {
-                PKeyword[] kwDefaults = ((PBuiltinFunction) slotFunc).getKwDefaults();
-                if (kwDefaults.length > 1 && kwDefaults[0].getName() == HPyExternalFunctionNodes.KW_CALLABLE) {
-                    if (kwDefaults[1].getValue() == methodFunctionPointer) {
-                        return 1;
-                    }
-                }
-            }
-            return 0;
-        }
-    }
-
-    @HPyContextFunction("ctx_SeqIter_New")
-    @GenerateUncached
-    public abstract static class GraalHPySeqIterNew extends HPyBinaryContextFunction {
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object seq,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createSequenceIterator(seq);
         }
     }
 }

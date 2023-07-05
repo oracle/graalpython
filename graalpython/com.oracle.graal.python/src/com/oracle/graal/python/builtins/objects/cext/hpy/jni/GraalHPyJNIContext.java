@@ -58,10 +58,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
@@ -94,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseN
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
@@ -134,6 +132,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -845,10 +844,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     /**
      * Expects an object that can be casted (without coercion) to a native pointer (i.e. a
-     * {@code void *}; represented as Java {@code long}). This will throw a
-     * {@link CannotCastException} if that is not possible
+     * {@code void *}; represented as Java {@code long}). This method will return {@code 0} in case
+     * of errors.
      */
-    public static long expectPointer(Object value) throws CannotCastException {
+    public static long expectPointer(Object value) {
         if (value instanceof Long) {
             return (long) value;
         }
@@ -860,7 +859,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw CompilerDirectives.shouldNotReachHere("cannot cast " + value);
             }
         }
-        throw CannotCastException.INSTANCE;
+        return 0;
     }
 
     // {{start ctx funcs}}
@@ -1169,8 +1168,32 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    public long ctxLongAsLong(long handle) {
-        increment(HPyJNIUpcall.HPyLongAsLong);
+    public int ctxLongAsInt32t(long h) {
+        increment(HPyJNIUpcall.HPyLongAsInt32t);
+        if (GraalHPyBoxing.isBoxedInt(h)) {
+            return GraalHPyBoxing.unboxInt(h);
+        }
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_LONG_ASINT32_T, h);
+    }
+
+    public int ctxLongAsUInt32t(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUInt32t);
+        if (GraalHPyBoxing.isBoxedInt(h)) {
+            return GraalHPyBoxing.unboxInt(h);
+        }
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT32_T, h);
+    }
+
+    public int ctxLongAsUInt32tMask(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUInt32tMask);
+        if (GraalHPyBoxing.isBoxedInt(h)) {
+            return GraalHPyBoxing.unboxInt(h);
+        }
+        return executeIntBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT32_TMASK, h);
+    }
+
+    public long ctxLongAsInt64t(long handle) {
+        increment(HPyJNIUpcall.HPyLongAsInt64t);
 
         if (GraalHPyBoxing.isBoxedInt(handle)) {
             return GraalHPyBoxing.unboxInt(handle);
@@ -1183,6 +1206,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 return -1L;
             }
         }
+    }
+
+    public long ctxLongAsUInt64t(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUInt64t);
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT64_T, h);
+    }
+
+    public long ctxLongAsUInt64tMask(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUInt64tMask);
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT64_TMASK, h);
     }
 
     public double ctxLongAsDouble(long handle) {
@@ -1201,23 +1234,81 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    public long ctxLongFromLong(long l) {
-        increment(HPyJNIUpcall.HPyLongFromLong);
-
-        if (com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(l)) {
-            return GraalHPyBoxing.boxInt((int) l);
-        }
-        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(l));
+    public long ctxLongFromInt32t(int v) {
+        increment(HPyJNIUpcall.HPyLongFromInt32t);
+        return GraalHPyBoxing.boxInt(v);
     }
 
-    public long ctxAsStruct(long handle) {
-        increment(HPyJNIUpcall.HPyAsStruct);
-        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
-        try {
-            return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
-        } catch (CannotCastException e) {
-            return 0;
+    public long ctxLongFromUInt32t(int value) {
+        increment(HPyJNIUpcall.HPyLongFromUInt32t);
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUINT32_T, value);
+    }
+
+    public long ctxLongFromInt64t(long v) {
+        increment(HPyJNIUpcall.HPyLongFromInt64t);
+        if (PInt.isIntRange(v)) {
+            return GraalHPyBoxing.boxInt((int) v);
         }
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMINT64_T, v);
+    }
+
+    public long ctxLongFromUInt64t(long v) {
+        increment(HPyJNIUpcall.HPyLongFromUInt64t);
+        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUINT64_T, v);
+    }
+
+    public long ctxBoolFromBool(boolean v) {
+        increment(HPyJNIUpcall.HPyBoolFromBool);
+        Python3Core core = context.getContext();
+        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(v ? core.getTrue() : core.getFalse()));
+    }
+
+    public long ctxAsStructObject(long h) {
+        increment(HPyJNIUpcall.HPyAsStructObject);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructLegacy(long h) {
+        increment(HPyJNIUpcall.HPyAsStructLegacy);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructType(long h) {
+        increment(HPyJNIUpcall.HPyAsStructType);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructLong(long h) {
+        increment(HPyJNIUpcall.HPyAsStructLong);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructFloat(long h) {
+        increment(HPyJNIUpcall.HPyAsStructFloat);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructUnicode(long h) {
+        increment(HPyJNIUpcall.HPyAsStructUnicode);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructTuple(long h) {
+        increment(HPyJNIUpcall.HPyAsStructTuple);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+    }
+
+    public long ctxAsStructList(long h) {
+        increment(HPyJNIUpcall.HPyAsStructList);
+        Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+        return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
@@ -1527,21 +1618,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    public long ctxLongFromUnsignedLong(long value) {
-        increment(HPyJNIUpcall.HPyLongFromUnsignedLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG, value);
-    }
-
-    public long ctxLongFromLongLong(long v) {
-        increment(HPyJNIUpcall.HPyLongFromLongLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMLONGLONG, v);
-    }
-
-    public long ctxLongFromUnsignedLongLong(long v) {
-        increment(HPyJNIUpcall.HPyLongFromUnsignedLongLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG, v);
-    }
-
     public long ctxLongFromSizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSizet);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMSIZE_T, value);
@@ -1550,31 +1626,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxLongFromSsizet(long value) {
         increment(HPyJNIUpcall.HPyLongFromSsizet);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMSSIZE_T, value);
-    }
-
-    public long ctxLongAsUnsignedLong(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUnsignedLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONG, h);
-    }
-
-    public long ctxLongAsUnsignedLongMask(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUnsignedLongMask);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK, h);
-    }
-
-    public long ctxLongAsLongLong(long h) {
-        increment(HPyJNIUpcall.HPyLongAsLongLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASLONGLONG, h);
-    }
-
-    public long ctxLongAsUnsignedLongLong(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUnsignedLongLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG, h);
-    }
-
-    public long ctxLongAsUnsignedLongLongMask(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUnsignedLongLongMask);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK, h);
     }
 
     public long ctxLongAsSizet(long h) {
@@ -1590,16 +1641,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxLongAsVoidPtr(long h) {
         increment(HPyJNIUpcall.HPyLongAsVoidPtr);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASVOIDPTR, h);
-    }
-
-    public long ctxBoolFromLong(long v) {
-        increment(HPyJNIUpcall.HPyBoolFromLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_BOOL_FROMLONG, v);
-    }
-
-    public int ctxSequenceCheck(long h) {
-        increment(HPyJNIUpcall.HPySequenceCheck);
-        return executeIntBinaryContextFunction(HPyContextMember.CTX_SEQUENCE_CHECK, h);
     }
 
     public long ctxAdd(long h1, long h2) {
@@ -1862,11 +1903,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeLongTernaryContextFunction(HPyContextMember.CTX_GETATTR, obj, name);
     }
 
-    public long ctxMaybeGetAttrs(long obj, long name) {
-        increment(HPyJNIUpcall.HPyMaybeGetAttrs);
-        return executeLongTernaryContextFunction(HPyContextMember.CTX_MAYBEGETATTR_S, obj, name);
-    }
-
     public int ctxHasAttr(long obj, long name) {
         increment(HPyJNIUpcall.HPyHasAttr);
         return executeIntTernaryContextFunction(HPyContextMember.CTX_HASATTR, obj, name);
@@ -1897,19 +1933,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeIntTernaryContextFunction(HPyContextMember.CTX_CONTAINS, container, key);
     }
 
-    public int ctxSetType(long obj, long type) {
-        increment(HPyJNIUpcall.HPySetType);
-        return executeIntTernaryContextFunction(HPyContextMember.CTX_SETTYPE, obj, type);
-    }
-
     public int ctxTypeIsSubtype(long sub, long type) {
         increment(HPyJNIUpcall.HPyTypeIsSubtype);
         return executeIntTernaryContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE, sub, type);
-    }
-
-    public long ctxAsStructLegacy(long h) {
-        increment(HPyJNIUpcall.HPyAsStructLegacy);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCTLEGACY, h);
     }
 
     public long ctxRepr(long obj) {
@@ -1945,11 +1971,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxHash(long obj) {
         increment(HPyJNIUpcall.HPyHash);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_HASH, obj);
-    }
-
-    public long ctxSeqIterNew(long seq) {
-        increment(HPyJNIUpcall.HPySeqIterNew);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_SEQITER_NEW, seq);
     }
 
     public int ctxBytesCheck(long h) {
@@ -2052,11 +2073,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeLongContextFunction(HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT, new long[]{obj, encoding, errors});
     }
 
-    public long ctxUnicodeInternFromString(long str) {
-        increment(HPyJNIUpcall.HPyUnicodeInternFromString);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_UNICODE_INTERNFROMSTRING, str);
-    }
-
     public long ctxUnicodeSubstring(long obj, long start, long end) {
         increment(HPyJNIUpcall.HPyUnicodeSubstring);
         return executeLongContextFunction(HPyContextMember.CTX_UNICODE_SUBSTRING, new long[]{obj, start, end});
@@ -2075,11 +2091,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxDictKeys(long h) {
         increment(HPyJNIUpcall.HPyDictKeys);
         return executeLongBinaryContextFunction(HPyContextMember.CTX_DICT_KEYS, h);
-    }
-
-    public long ctxDictGetItem(long op, long key) {
-        increment(HPyJNIUpcall.HPyDictGetItem);
-        return executeLongTernaryContextFunction(HPyContextMember.CTX_DICT_GETITEM, op, key);
     }
 
     public int ctxTupleCheck(long h) {
@@ -2182,66 +2193,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         executeIntBinaryContextFunction(HPyContextMember.CTX_DUMP, h);
     }
 
-    public int ctxTypeCheckSlot(long type, long value) {
-        increment(HPyJNIUpcall.HPyTypeCheckSlot);
-        return executeIntTernaryContextFunction(HPyContextMember.CTX_TYPE_CHECKSLOT, type, value);
-    }
-
-    public long ctxLongFromInt32t(long value) {
-        increment(HPyJNIUpcall.HPyLongFromInt32t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMINT32_T, value);
-    }
-
-    public long ctxLongFromUInt32t(long value) {
-        increment(HPyJNIUpcall.HPyLongFromUInt32t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUINT32_T, value);
-    }
-
-    public long ctxLongFromInt64t(long v) {
-        increment(HPyJNIUpcall.HPyLongFromInt64t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMINT64_T, v);
-    }
-
-    public long ctxLongFromUInt64t(long v) {
-        increment(HPyJNIUpcall.HPyLongFromUInt64t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_FROMUINT64_T, v);
-    }
-
-    public long ctxLongAsInt32t(long h) {
-        increment(HPyJNIUpcall.HPyLongAsInt32t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASINT32_T, h);
-    }
-
-    public long ctxLongAsUInt32t(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUInt32t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT32_T, h);
-    }
-
-    public long ctxLongAsUInt32tMask(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUInt32tMask);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT32_TMASK, h);
-    }
-
-    public long ctxLongAsInt64t(long h) {
-        increment(HPyJNIUpcall.HPyLongAsInt64t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASINT64_T, h);
-    }
-
-    public long ctxLongAsUInt64t(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUInt64t);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT64_T, h);
-    }
-
-    public long ctxLongAsUInt64tMask(long h) {
-        increment(HPyJNIUpcall.HPyLongAsUInt64tMask);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT64_TMASK, h);
-    }
-
-    public long ctxBoolFromBool(long v) {
-        increment(HPyJNIUpcall.HPyBoolFromBool);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_BOOL_FROMBOOL, v);
-    }
-
     public long ctxCall(long callable, long args, long nargs, long kwnames) {
         increment(HPyJNIUpcall.HPyCall);
         return executeLongContextFunction(HPyContextMember.CTX_CALL, new long[]{callable, args, nargs, kwnames});
@@ -2265,41 +2216,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public int ctxDelItems(long obj, long utf8_key) {
         increment(HPyJNIUpcall.HPyDelItems);
         return executeIntTernaryContextFunction(HPyContextMember.CTX_DELITEM_S, obj, utf8_key);
-    }
-
-    public long ctxAsStructObject(long h) {
-        increment(HPyJNIUpcall.HPyAsStructObject);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_OBJECT, h);
-    }
-
-    public long ctxAsStructType(long h) {
-        increment(HPyJNIUpcall.HPyAsStructType);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_TYPE, h);
-    }
-
-    public long ctxAsStructLong(long h) {
-        increment(HPyJNIUpcall.HPyAsStructLong);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_LONG, h);
-    }
-
-    public long ctxAsStructFloat(long h) {
-        increment(HPyJNIUpcall.HPyAsStructFloat);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_FLOAT, h);
-    }
-
-    public long ctxAsStructUnicode(long h) {
-        increment(HPyJNIUpcall.HPyAsStructUnicode);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_UNICODE, h);
-    }
-
-    public long ctxAsStructTuple(long h) {
-        increment(HPyJNIUpcall.HPyAsStructTuple);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_TUPLE, h);
-    }
-
-    public long ctxAsStructList(long h) {
-        increment(HPyJNIUpcall.HPyAsStructList);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_ASSTRUCT_LIST, h);
     }
 
     public long ctxTypeGetBuiltinShape(long h_type) {
@@ -2590,18 +2506,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
-            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
+            case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR,
-                            argBits);
+            case HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }
 
     private Object convertArg(HPyContextSignatureType type, Object arg) {
         return switch (type) {
-            case Int, HPy_UCS4 -> (Integer) arg;
+            case Int, Int32_t, Uint32_t, HPy_UCS4 -> (Integer) arg;
             default -> convertLongArg(type, (Long) arg);
         };
     }
@@ -2610,14 +2525,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
             case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> coerceToPointer(result);
-            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> (Long) HPyAsNativeInt64NodeGen.getUncached().execute(result);
+            case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t -> (Long) HPyAsNativeInt64NodeGen.getUncached().execute(result);
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
     private int convertIntRet(HPyContextSignatureType type, Object result) {
         return switch (type) {
-            case Int, HPy_UCS4 -> (int) result;
+            case Int, Int32_t, Uint32_t, HPy_UCS4 -> (int) result;
             case CVoid -> 0;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
@@ -2626,14 +2541,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private long getLongErrorValue(HPyContextSignatureType type) {
         return switch (type) {
             case HPy, VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr, HPyListBuilder, HPyTupleBuilder, HPyThreadState -> 0;
-            case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
+            case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }
 
     private int getIntErrorValue(HPyContextSignatureType type) {
         return switch (type) {
-            case Int, HPy_UCS4 -> -1;
+            case Int, Int32_t, Uint32_t, HPy_UCS4 -> -1;
             case CVoid -> 0;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };

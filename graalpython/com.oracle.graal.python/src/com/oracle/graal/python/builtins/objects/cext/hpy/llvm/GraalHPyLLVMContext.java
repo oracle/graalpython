@@ -876,8 +876,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
         private static Object getErrorValue(Node inliningTarget, HPyContextSignatureType type) {
             return switch (type) {
-                case Int, HPy_UCS4 -> -1;
-                case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
+                case Int, Int32_t, Uint32_t, HPy_UCS4 -> -1;
+                case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
                 case CDouble -> -1.0;
                 case HPy -> GraalHPyHandle.NULL_HANDLE;
                 case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(inliningTarget).getNativeNull().getPtr();

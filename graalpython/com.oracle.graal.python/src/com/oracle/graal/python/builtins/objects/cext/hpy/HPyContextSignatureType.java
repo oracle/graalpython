@@ -45,18 +45,19 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
  */
 public enum HPyContextSignatureType {
     HPyContextPtr("HPyContext*", "POINTER", long.class),
-    HPyModuleDefPtr("HPyModuleDef*", "POINTER", long.class),
     CVoid("void", "VOID", void.class),
     VoidPtr("void*", "POINTER", long.class),
     VoidPtrPtr("void**", "POINTER", long.class),
+    Bool("bool", "UINT8", boolean.class),
     Int("int", "SINT32", int.class),
-    CLong("long", "SINT64", long.class),
+    Int32_t("int32_t", "SINT32", int.class),
+    Uint32_t("uint32_t", "UINT32", int.class),
     CDouble("double", "DOUBLE", double.class),
-    UnsignedLongLong("unsigned long long", "UINT64", long.class),
-    LongLong("long long", "SINT64", long.class),
-    UnsignedLong("unsigned long", "UINT64", long.class),
+    Int64_t("int64_t", "SINT64", int.class),
+    Uint64_t("uint64_t", "UINT64", int.class),
     HPy("HPy", "POINTER", long.class),
     HPyPtr("HPy*", "POINTER", long.class),
+    ConstHPyPtr("const HPy*", "POINTER", long.class),
     Wchar_tPtr("wchar_t*", "POINTER", long.class),
     ConstWchar_tPtr("const wchar_t*", "POINTER", long.class),
     CharPtr("char*", "POINTER", long.class),
@@ -80,8 +81,11 @@ public enum HPyContextSignatureType {
     HPyFieldPtr("HPyField*", "POINTER", long.class),
     HPyGlobal("HPyGlobal", "POINTER", long.class),
     HPyGlobalPtr("HPyGlobal*", "POINTER", long.class),
-    HPyCapsule_Destructor("HPyCapsule_Destructor", "POINTER", long.class),
-    _HPyCapsule_key("_HPyCapsule_key", "SINT32", int.class);
+    HPyCapsule_DestructorPtr("HPyCapsule_Destructor*", "POINTER", long.class),
+    _HPyCapsule_key("_HPyCapsule_key", "SINT32", int.class),
+    HPyType_BuiltinShape("HPyType_BuiltinShape", "SINT32", int.class),
+    HPy_SourceKind("HPy_SourceKind", "SINT32", int.class),
+    HPyCallFunctionPtr("HPyCallFunction*", "POINTER", long.class);
 
     /**
      * The type definition used in C source code.
