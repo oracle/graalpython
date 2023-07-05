@@ -491,13 +491,13 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Close = &ctx_Close_jni;
-    jniMethod_ctx_Long_FromInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromInt32t", "(J)J");
+    jniMethod_ctx_Long_FromInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromInt32t", "(I)J");
     if (jniMethod_ctx_Long_FromInt32_t == NULL) {
         LOGS("ERROR: Java method ctxLongFromInt32t not found found !\n");
         return 1;
     }
     ctx->ctx_Long_FromInt32_t = &ctx_Long_FromInt32_t_jni;
-    jniMethod_ctx_Long_FromUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromUInt32t", "(J)J");
+    jniMethod_ctx_Long_FromUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongFromUInt32t", "(I)J");
     if (jniMethod_ctx_Long_FromUInt32_t == NULL) {
         LOGS("ERROR: Java method ctxLongFromUInt32t not found found !\n");
         return 1;
@@ -527,19 +527,19 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Long_FromSsize_t = &ctx_Long_FromSsize_t_jni;
-    jniMethod_ctx_Long_AsInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsInt32t", "(J)J");
+    jniMethod_ctx_Long_AsInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsInt32t", "(J)I");
     if (jniMethod_ctx_Long_AsInt32_t == NULL) {
         LOGS("ERROR: Java method ctxLongAsInt32t not found found !\n");
         return 1;
     }
     ctx->ctx_Long_AsInt32_t = &ctx_Long_AsInt32_t_jni;
-    jniMethod_ctx_Long_AsUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32t", "(J)J");
+    jniMethod_ctx_Long_AsUInt32_t = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32t", "(J)I");
     if (jniMethod_ctx_Long_AsUInt32_t == NULL) {
         LOGS("ERROR: Java method ctxLongAsUInt32t not found found !\n");
         return 1;
     }
     ctx->ctx_Long_AsUInt32_t = &ctx_Long_AsUInt32_t_jni;
-    jniMethod_ctx_Long_AsUInt32_tMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32tMask", "(J)J");
+    jniMethod_ctx_Long_AsUInt32_tMask = (*env)->GetMethodID(env, clazz, "ctxLongAsUInt32tMask", "(J)I");
     if (jniMethod_ctx_Long_AsUInt32_tMask == NULL) {
         LOGS("ERROR: Java method ctxLongAsUInt32tMask not found found !\n");
         return 1;
@@ -599,7 +599,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Float_AsDouble = &ctx_Float_AsDouble_jni;
-    jniMethod_ctx_Bool_FromBool = (*env)->GetMethodID(env, clazz, "ctxBoolFromBool", "(J)J");
+    jniMethod_ctx_Bool_FromBool = (*env)->GetMethodID(env, clazz, "ctxBoolFromBool", "(Z)J");
     if (jniMethod_ctx_Bool_FromBool == NULL) {
         LOGS("ERROR: Java method ctxBoolFromBool not found found !\n");
         return 1;
@@ -1502,12 +1502,12 @@ static void ctx_Close_jni(HPyContext *ctx, HPy h)
 
 static HPy ctx_Long_FromInt32_t_jni(HPyContext *ctx, int32_t value)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromInt32_t, LONG_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromInt32_t, INT32_UP(value));
 }
 
 static HPy ctx_Long_FromUInt32_t_jni(HPyContext *ctx, uint32_t value)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUInt32_t, LONG_UP(value));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Long_FromUInt32_t, UINT32_UP(value));
 }
 
 static HPy ctx_Long_FromInt64_t_jni(HPyContext *ctx, int64_t v)

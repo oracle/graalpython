@@ -280,7 +280,11 @@ JNI_UPCALL_TYPE_CASTS = {
     'HPy': 'HPY_UP',
     'void *': 'PTR_UP',
     'int': 'INT_UP',
+    'int32_t': 'INT_UP',
+    'uint32_t': 'INT_UP',
     'long': 'LONG_UP',
+    'int64_t': 'LONG_UP',
+    'uint64_t': 'LONG_UP',
     'double': 'DOUBLE_UP',
     'size_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
@@ -299,8 +303,10 @@ JNI_UPCALLS = {
     # "DO_UPCALL_PTR_NOARGS",
     'DO_UPCALL_SIZE_T',
     'int', 'DO_UPCALL_INT',
+    'int32_t', 'DO_UPCALL_INT32',
     'double', 'DO_UPCALL_DOUBLE',
     'long', 'DO_UPCALL_LONG',
+    'int64_t', 'DO_UPCALL_INT64',
     'HPy_UCS4', 'DO_UPCALL_UCS4',
 }
 
@@ -417,6 +423,10 @@ def get_cast_fun(type_name):
         return 'PTR_UP'
     elif type_name in ('int', '_HPyCapsule_key'):
         return 'INT_UP'
+    elif type_name == 'int32_t':
+        return 'INT32_UP'
+    elif type_name == 'uint32_t':
+        return 'UINT32_UP'
     elif type_name == 'long':
         return 'LONG_UP'
     elif type_name == 'double':
@@ -432,7 +442,7 @@ def get_cast_fun(type_name):
     return 'LONG_UP'
 
 def get_jni_signature_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'I'
     elif type_name == 'long':
         return 'J'
@@ -440,25 +450,31 @@ def get_jni_signature_type(type_name):
         return 'D'
     elif type_name == 'void':
         return 'V'
+    elif type_name == 'bool':
+        return 'Z'
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
     elif type_name == 'void':
         return 'void'
+    elif type_name == 'bool':
+        return 'jboolean'
     # also covers type_name == 'long'
     return 'jlong'
 
 def get_java_signature_type(type):
     type_name = toC(type)
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
         return 'int'
+    if type_name == 'bool':
+        return 'boolean'
+    # also covers type_name == 'long'
     if type_name == 'double' or type_name == 'void':
         return type_name
-    # also covers type_name == 'long'
     return 'long'
 
 def type_is_pointer(type):
