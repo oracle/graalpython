@@ -638,8 +638,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         private static final TruffleString MACOS_Security_LIB = tsLiteral("/System/Library/Frameworks/Security.framework/Security");
         private static final TruffleString MACOS_CoreFoundation_LIB = tsLiteral("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
-        // "LibFFILibrary(" + handle + ")"
-        private static final int LIBFFI_ADR_FORMAT_START = "LibFFILibrary".length() + 1;
 
         private static final String T_RTLD_LOCAL = "RTLD_LOCAL|RTLD_NOW";
         private static final String T_RTLD_GLOBAL = "RTLD_GLOBAL|RTLD_NOW";
@@ -668,19 +666,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object handler = load(context, src, name);
             InteropLibrary lib = InteropLibrary.getUncached();
-            String handleStr;
             try {
-                handleStr = lib.asString(lib.toDisplayString(handler));
+                return new DLHandler(handler, lib.asPointer(handler), name, false);
             } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
-            }
-            String adrStr = handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - 1);
-            try {
-                long adr = Long.parseLong(adrStr, 10);
-                return new DLHandler(handler, adr, name, false);
-            } catch (NumberFormatException e) {
-                // TODO handle exception [GR-38101]
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere("Cannot convert NFI library to pointer", e);
             }
         }
 
