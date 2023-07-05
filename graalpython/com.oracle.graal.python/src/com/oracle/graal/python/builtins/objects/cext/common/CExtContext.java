@@ -53,8 +53,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 
-import com.ibm.icu.impl.Punycode;
-import com.ibm.icu.text.StringPrepParseException;
+import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
+import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;

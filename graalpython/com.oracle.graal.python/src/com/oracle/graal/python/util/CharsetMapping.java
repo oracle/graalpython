@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.ibm.icu.charset.CharsetICU;
+import org.graalvm.shadowed.com.ibm.icu.charset.CharsetICU;
 import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
 import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
