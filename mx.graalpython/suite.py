@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "94c1573a7d826751192eede90f8963b2ad5d460a",
+                "version": "e719fdc44f86e90c73298e2d5754eeb97eb6e541",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "94c1573a7d826751192eede90f8963b2ad5d460a",
+                "version": "e719fdc44f86e90c73298e2d5754eeb97eb6e541",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "94c1573a7d826751192eede90f8963b2ad5d460a",
+                "version": "e719fdc44f86e90c73298e2d5754eeb97eb6e541",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -68,7 +68,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "94c1573a7d826751192eede90f8963b2ad5d460a",
+                "version": "e719fdc44f86e90c73298e2d5754eeb97eb6e541",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -114,6 +114,7 @@ suite = {
                 "artifactId": "xz",
                 "version": "1.8",
             },
+            "moduleName": "org.tukaani.xz",
         },
         "XZ-5.2.6": {
             "urls": [
@@ -130,6 +131,7 @@ suite = {
               "artifactId": "bcprov-jdk15on",
               "version": "1.68",
             },
+            "moduleName": "org.bouncycastle.provider",
         },
         "BOUNCYCASTLE-PKIX": {
             "sha1": "81da950604ff0b2652348cbd2b48fde46ced9867",
@@ -139,6 +141,7 @@ suite = {
                 "artifactId": "bcpkix-jdk15on",
                 "version": "1.68",
             },
+            "moduleName": "org.bouncycastle.pkix",
         },
         "BZIP2": {
             "urls": [
@@ -765,6 +768,12 @@ suite = {
     # --------------------------------------------------------------------------------------------------------------
     "distributions": {
         "GRAALPYTHON-LAUNCHER": {
+            "moduleInfo" : {
+                "name" : "org.graalvm.py.launcher",
+                "exports" : [
+                    "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell",
+                ],
+            },
             "dependencies": [
                 "com.oracle.graal.python.shell",
             ],
@@ -835,24 +844,33 @@ suite = {
             "maven": True,
         },
 
-        "GRAALPYTHON_PEGPARSER": {
-            "dependencies": [
-                "com.oracle.graal.python.pegparser",
-            ],
-            "exclude": [
-                "truffle:ICU4J",
-            ],
-            "description": "GraalPython PEG parser",
-            "internal": True,
-        },
-
         "GRAALPYTHON": {
+            "moduleInfo" : {
+                "name" : "org.graalvm.py",
+                "exports" : [
+                    "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.buffer to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.bytes to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.floats to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.function to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.ints to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.object to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.lib to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.nodes to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.nodes.function to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.nodes.function.builtins to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.runtime.exception to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.util to org.graalvm.py.enterprise",
+                ],
+                "uses": [
+                    "com.oracle.graal.python.builtins.PythonBuiltins",
+                ],
+            },
             "dependencies": [
                 "com.oracle.graal.python",
                 "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
-                "GRAALPYTHON-LAUNCHER",
                 "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
@@ -861,6 +879,14 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
+            "requires": [
+                "java.base",
+                "java.logging",
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
             ],
             "exclude": [
                 "BOUNCYCASTLE-PROVIDER",
