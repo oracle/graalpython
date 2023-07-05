@@ -1,16 +1,14 @@
-From df4bb6b9a55edb35701b3592d32f338d60ad2948 Mon Sep 17 00:00:00 2001
+From 8b3416e182ddbba1142dda53252f7f9254ed3a34 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
 Date: Thu, 22 Jun 2023 14:15:50 +0300
 Subject: [PATCH] patch 2.10.4
 
 ---
  include/pybind11/cast.h                    |  8 ++++----
- include/pybind11/chrono.h                  |  8 +++++---
  include/pybind11/detail/class.h            | 10 +++++-----
  include/pybind11/detail/common.h           |  6 +++---
  include/pybind11/detail/internals.h        | 14 +++++++-------
  include/pybind11/detail/type_caster_base.h |  6 +++---
- include/pybind11/embed.h                   |  2 +-
  include/pybind11/eval.h                    |  2 +-
  include/pybind11/gil.h                     |  4 ++--
  include/pybind11/pybind11.h                | 10 +++++-----
@@ -27,7 +25,7 @@ Subject: [PATCH] patch 2.10.4
  tests/test_iostream.py                     |  2 +-
  tests/test_pytypes.cpp                     |  2 +-
  tests/test_virtual_functions.py            |  2 +-
- 23 files changed, 60 insertions(+), 58 deletions(-)
+ 21 files changed, 54 insertions(+), 54 deletions(-)
 
 diff --git a/include/pybind11/cast.h b/include/pybind11/cast.h
 index 3a40460..a602012 100644
@@ -69,44 +67,6 @@ index 3a40460..a602012 100644
          return UTF_N == 8    ? PyUnicode_DecodeUTF8(buffer, nbytes, nullptr)
                 : UTF_N == 16 ? PyUnicode_DecodeUTF16(buffer, nbytes, nullptr, nullptr)
                               : PyUnicode_DecodeUTF32(buffer, nbytes, nullptr, nullptr);
-diff --git a/include/pybind11/chrono.h b/include/pybind11/chrono.h
-index 167ea0e..5249c86 100644
---- a/include/pybind11/chrono.h
-+++ b/include/pybind11/chrono.h
-@@ -42,13 +42,13 @@ public:
-             return false;
-         }
-         // If invoked with datetime.delta object
--        if (PyDelta_Check(src.ptr())) {
-+        /*if (PyDelta_Check(src.ptr())) {
-             value = type(duration_cast<duration<rep, period>>(
-                 days(PyDateTime_DELTA_GET_DAYS(src.ptr()))
-                 + seconds(PyDateTime_DELTA_GET_SECONDS(src.ptr()))
-                 + microseconds(PyDateTime_DELTA_GET_MICROSECONDS(src.ptr()))));
-             return true;
--        }
-+        }*/
-         // If invoked with a float we assume it is seconds and convert
-         if (PyFloat_Check(src.ptr())) {
-             value = type(duration_cast<duration<rep, period>>(
-@@ -135,6 +135,8 @@ public:
-         std::tm cal;
-         microseconds msecs;
- 
-+        return false;
-+        /*
-         if (PyDateTime_Check(src.ptr())) {
-             cal.tm_sec = PyDateTime_DATE_GET_SECOND(src.ptr());
-             cal.tm_min = PyDateTime_DATE_GET_MINUTE(src.ptr());
-@@ -167,7 +169,7 @@ public:
-         }
- 
-         value = time_point_cast<Duration>(system_clock::from_time_t(std::mktime(&cal)) + msecs);
--        return true;
-+        return true;*/
-     }
- 
-     static handle cast(const std::chrono::time_point<std::chrono::system_clock, Duration> &src,
 diff --git a/include/pybind11/detail/class.h b/include/pybind11/detail/class.h
 index bc2b40c..19388e8 100644
 --- a/include/pybind11/detail/class.h
@@ -281,19 +241,6 @@ index 0b710d7..e0ccbf9 100644
      return PyThreadState_GET();
  #else
      return _PyThreadState_UncheckedGet();
-diff --git a/include/pybind11/embed.h b/include/pybind11/embed.h
-index 749c75b..e52a0f9 100644
---- a/include/pybind11/embed.h
-+++ b/include/pybind11/embed.h
-@@ -15,7 +15,7 @@
- #include <memory>
- #include <vector>
- 
--#if defined(PYPY_VERSION)
-+#if defined(PYPY_VERSION)  || defined(GRAALVM_PYTHON)
- #    error Embedding the interpreter is not supported with PyPy
- #endif
- 
 diff --git a/include/pybind11/eval.h b/include/pybind11/eval.h
 index bd5f981..c25f036 100644
 --- a/include/pybind11/eval.h
