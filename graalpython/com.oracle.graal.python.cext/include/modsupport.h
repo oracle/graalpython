@@ -138,7 +138,7 @@ PyAPI_FUNC(PyObject * const *) _PyArg_UnpackKeywords(
      _PyArg_UnpackKeywords((args), (nargs), (kwargs), (kwnames), (parser), \
                            (minpos), (maxpos), (minkw), (buf)))
 
-void _PyArg_Fini(void);
+PyAPI_FUNC(void) _PyArg_Fini(void);
 #endif   /* Py_LIMITED_API */
 
 // Add an attribute with name 'name' and value 'obj' to the module 'mod.

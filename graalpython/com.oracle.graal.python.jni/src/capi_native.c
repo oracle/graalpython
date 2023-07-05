@@ -56,8 +56,6 @@
 #include <stdint.h>
 #include <time.h>
 
-#define MUST_INLINE __attribute__((always_inline)) inline
-
 TruffleContext* TRUFFLE_CONTEXT;
 
 #define PY_TYPE_OBJECTS(OBJECT) \
@@ -460,7 +458,7 @@ Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
 void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
 	// do nothing
 }
-void finalizeCAPI() {
+PyAPI_FUNC(void) finalizeCAPI() {
 	GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
 	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
 }

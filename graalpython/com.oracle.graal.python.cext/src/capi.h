@@ -41,8 +41,13 @@
 #ifndef CAPI_H
 #define CAPI_H
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define MUST_INLINE inline
+#define NO_INLINE __declspec(noinline)
+#else
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
+#endif
 
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us

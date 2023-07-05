@@ -1350,11 +1350,11 @@ PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
     type->tp_flags = flags;
 }
 
-int truffle_BASETYPE_check(PyObject* type) {
+PyAPI_FUNC(int) truffle_BASETYPE_check(PyObject* type) {
     return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
 }
 
-void* truffle_get_constant(int entry) {
+PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 	// this needs to correspond to CApiContext.resolveConstant
 	switch(entry) {
 	case 0:

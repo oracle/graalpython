@@ -54,14 +54,18 @@ typedef struct {
     HPyContext hpy_context;
 } GraalHPyContext;
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define MUST_INLINE static inline
+#else
 #define MUST_INLINE __attribute__((always_inline)) static inline
+#endif
 
 MUST_INLINE HPyContext *graal_native_context_get_hpy_context(GraalHPyContext *native_context) {
 	return &(native_context->hpy_context);
 }
 
 MUST_INLINE GraalHPyContext *graal_hpy_context_get_native_context(HPyContext *hpy_context) {
-	return (GraalHPyContext *)(((void *)hpy_context) - offsetof(GraalHPyContext, hpy_context));
+	return (GraalHPyContext *)(((char *)hpy_context) - offsetof(GraalHPyContext, hpy_context));
 }
 
 #endif /* HPY_HPYNATIVE_H_ */

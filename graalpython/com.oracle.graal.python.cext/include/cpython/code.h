@@ -181,13 +181,13 @@ PyAPI_FUNC(int) _PyCode_SetExtra(PyObject *code, Py_ssize_t index,
                                  void *extra);
 
 /** API for initializing the line number table. */
-int _PyCode_InitAddressRange(PyCodeObject* co, PyCodeAddressRange *bounds);
+PyAPI_FUNC(int) _PyCode_InitAddressRange(PyCodeObject* co, PyCodeAddressRange *bounds);
 
 /** Out of process API for initializing the line number table. */
-void PyLineTable_InitAddressRange(const char *linetable, Py_ssize_t length, int firstlineno, PyCodeAddressRange *range);
+PyAPI_FUNC(void) PyLineTable_InitAddressRange(const char *linetable, Py_ssize_t length, int firstlineno, PyCodeAddressRange *range);
 
 /** API for traversing the line number table. */
-int PyLineTable_NextAddressRange(PyCodeAddressRange *range);
-int PyLineTable_PreviousAddressRange(PyCodeAddressRange *range);
+PyAPI_FUNC(int) PyLineTable_NextAddressRange(PyCodeAddressRange *range);
+PyAPI_FUNC(int) PyLineTable_PreviousAddressRange(PyCodeAddressRange *range);
 
 

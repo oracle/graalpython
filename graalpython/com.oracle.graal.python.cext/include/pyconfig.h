@@ -74,6 +74,22 @@
 // required for __UINT32_MAX__ etc.
 #include <limits.h>
 
+#if defined(_MSC_VER) && !defined(__clang__)
+// defines based on MSVC documentation
+#define __SIZEOF_INT__ 4
+#define __SIZEOF_SHORT__ 2
+#define __SIZEOF_LONG__ 4
+#define __SIZEOF_LONG_LONG__ 8
+#define __SIZEOF_INT128__ 16
+#define __SIZEOF_FLOAT__ 4
+#define __SIZEOF_DOUBLE__ 8
+#define __SIZEOF_LONG_DOUBLE__ 8
+#define __SIZEOF_SIZE_T__ 8
+#define __SIZEOF_UINTPTR_T__ 8
+#define __SIZEOF_POINTER__ 8
+#define __SIZEOF_WCHAR_T__ 2
+#endif
+
 // defines based on Clang defines
 #define SIZEOF_DOUBLE __SIZEOF_DOUBLE__
 #define SIZEOF_FLOAT __SIZEOF_FLOAT__
@@ -140,6 +156,9 @@
 #define HAVE_SYS_WAIT_H
 #define TIME_WITH_SYS_TIME 1
 #else
+#define HAVE_COPYSIGN 1
+#define HAVE_ROUND 1
+#define HAVE_HYPOT 1
 #define NT_THREADS 1
 #endif
 

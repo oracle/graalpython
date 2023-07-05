@@ -546,7 +546,6 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "defaultBuild": False,
                         "cmakeConfig" : {
                             "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -565,7 +564,6 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
                         "cmakeConfig" : {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
@@ -646,29 +644,36 @@ suite = {
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
-            "cflags": [
-                "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
-                "-O3", "-Werror", "-fPIC",
-                "-I\"<path:com.oracle.graal.python.cext>/include\"",
-                "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
-                "-I\"<path:com.oracle.graal.python.cext>/src\"",
-                "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
-                "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
-                "-I\"<path:com.oracle.truffle.nfi.native>/include\""
-            ],
             "ldlibs": [
                 "-lm"
             ],
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
-                        "defaultBuild": False,
+                        "cflags": [
+                            "-DHPY_UNIVERSAL_ABI", "-DNDEBUG", "-DMS_WINDOWS",
+                            "/Z7", "/O2", "/W3", # cflags to replace -g -O3. -Werror would be /WX
+                            "-I\"<path:com.oracle.graal.python.cext>/include\"",
+                            "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
+                            "-I\"<path:com.oracle.graal.python.cext>/src\"",
+                            "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
+                            "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
+                            "-I\"<path:com.oracle.truffle.nfi.native>/include\""
+                        ],
                     },
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
+                        "cflags": [
+                            "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                            "-O3", "-Werror", "-fPIC",
+                            "-I\"<path:com.oracle.graal.python.cext>/include\"",
+                            "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
+                            "-I\"<path:com.oracle.graal.python.cext>/src\"",
+                            "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
+                            "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
+                            "-I\"<path:com.oracle.truffle.nfi.native>/include\""
+                        ],
                     },
                 },
             },
@@ -799,11 +804,12 @@ suite = {
                     "<others>": {
                         "dependencies": [
                             "com.oracle.graal.python.cext",
+                            "com.oracle.graal.python.jni",
                             "com.oracle.graal.python.hpy.llvm"
                         ],
                         "layout": {
                             "./": [
-                                "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
+                                "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
                             ]
@@ -823,12 +829,7 @@ suite = {
                         ],
                         "layout": {
                             "./": [
-                                {
-                                    "source_type": "dependency",
-                                    "dependency": "com.oracle.graal.python.jni",
-                                    "path": "*",
-                                    "exclude": ["JNI-WINDOWS-README.md"],
-                                },
+                                "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:python-libzsupport/*",
                                 "dependency:python-libposix/*",

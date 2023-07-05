@@ -16,7 +16,14 @@ typedef enum {
 static float_format_type double_format, float_format;
 static float_format_type detected_double_format, detected_float_format;
 
+#ifdef _MSC_VER
+#pragma section(".CRT$XCU",read)
+static void init_formats(void);
+__declspec(allocate(".CRT$XCU")) void (*init_formats_)(void) = init_formats;
+__pragma(comment(linker,"/include:" "init_formats_"))
+#else
 __attribute__((constructor))
+#endif
 static void init_formats(void) {
 #if SIZEOF_DOUBLE == 8
     {

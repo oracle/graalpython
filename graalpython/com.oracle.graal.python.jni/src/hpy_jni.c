@@ -261,7 +261,11 @@ static int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy 
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
+#ifdef _MSC_VER
+        char *message = (char *)alloca(buffer_size);
+#else
         char message[buffer_size];
+#endif
         snprintf(message, buffer_size,
                  "'%s' object does not support item assignment", getBoxedPrimitiveName(bits));
         HPyErr_SetString(ctx, ctx->h_TypeError, message);
@@ -275,7 +279,11 @@ static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
+#ifdef _MSC_VER
+        char *message = (char *)alloca(buffer_size);
+#else
         char message[buffer_size];
+#endif
         snprintf(message, buffer_size,
                  "'%s' object is not subscriptable", getBoxedPrimitiveName(bits));
         return HPyErr_SetString(ctx, ctx->h_TypeError, message);
