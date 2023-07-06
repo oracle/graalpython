@@ -114,6 +114,7 @@ public final class PosixConstants {
     public static final OptionalIntConstant O_DIRECT;
     public static final OptionalIntConstant O_RSYNC;
     public static final OptionalIntConstant O_TMPFILE;
+    public static final OptionalIntConstant O_TEMPORARY;
     public static final OptionalIntConstant O_DIRECTORY;
     public static final OptionalIntConstant O_BINARY;
     public static final OptionalIntConstant O_TEXT;
@@ -406,6 +407,7 @@ public final class PosixConstants {
         O_DIRECT = reg.createOptionalInt("O_DIRECT");
         O_RSYNC = reg.createOptionalInt("O_RSYNC");
         O_TMPFILE = reg.createOptionalInt("O_TMPFILE");
+        O_TEMPORARY = reg.createOptionalInt("O_TEMPORARY");
         O_DIRECTORY = reg.createOptionalInt("O_DIRECTORY");
         O_BINARY = reg.createOptionalInt("O_BINARY");
         O_TEXT = reg.createOptionalInt("O_TEXT");
@@ -636,7 +638,7 @@ public final class PosixConstants {
         SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
-                        O_TMPFILE, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT};
+                        O_TMPFILE, O_TEMPORARY, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
         mmapFlags = new IntConstant[]{MAP_SHARED, MAP_PRIVATE, MAP_ANONYMOUS, MAP_DENYWRITE, MAP_EXECUTABLE};
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};

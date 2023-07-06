@@ -76,6 +76,7 @@ includes = '''
 # include <sys/unistd.h>
 # include <sys/utsname.h>
 # include <sys/wait.h>
+# include <sysexits.h>
 #else
 # include <winsock2.h>
 # include <ws2tcpip.h>
@@ -90,7 +91,6 @@ includes = '''
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <sysexits.h>
 #include <sys/types.h>
 '''
 
@@ -159,6 +159,7 @@ constant_defs = '''
 * x O_DIRECT
 * x O_RSYNC
 * x O_TMPFILE
+* x O_TEMPORARY
 * x O_DIRECTORY
 * x O_BINARY
 * x O_TEXT
@@ -609,8 +610,9 @@ def generate_platform():
         f.write('    return 0;\n}\n')
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
+    flags += '' if platform == 'Win32' else ' -Wall -Werror -Wno-format '
     cc = os.environ.get('CC', 'cc')
-    subprocess.run(f'{cc} -Wall -Werror -Wno-format {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
+    subprocess.run(f'{cc} {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
 
     output = subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1]
     uname = " ".join(tuple(plat.uname()))
