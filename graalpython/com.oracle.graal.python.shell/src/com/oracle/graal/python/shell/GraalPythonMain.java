@@ -622,7 +622,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 contextBuilder.option("python.UseSystemToolchain", "false");
             }
             if (!hasContextOptionSetViaCommandLine("NativeModules")) {
-                contextBuilder.option("python.NativeModules", "");
+                contextBuilder.option("python.NativeModules", "false");
             }
         }
 
