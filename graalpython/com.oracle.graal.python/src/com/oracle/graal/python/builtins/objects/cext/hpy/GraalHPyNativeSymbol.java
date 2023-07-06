@@ -91,6 +91,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_FROM_HPY_TYPE_SPEC("graal_hpy_from_HPyType_Spec"),
     GRAAL_HPY_TYPE_SPEC_GET_DEFINES("graal_hpy_type_spec_get_defines"),
     GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS("graal_hpy_type_spec_get_legacy_slots"),
+    GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE("graal_hpy_type_spec_get_builtin_shape"),
     GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY("graal_hpy_from_HPyType_SpecParam_array"),
     GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND("graal_hpy_HPyType_SpecParam_get_kind"),
     GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT("graal_hpy_HPyType_SpecParam_get_object"),

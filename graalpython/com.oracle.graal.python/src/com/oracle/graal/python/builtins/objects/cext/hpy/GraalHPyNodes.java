@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_INIT_GLOBALS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
@@ -137,7 +138,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -2361,7 +2362,7 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetSuperClassNode getSuperClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
@@ -2434,13 +2435,13 @@ public abstract class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
-                long legacy = castToLong(valueLib, ptrLib.readMember(typeSpec, "legacy"));
+                long builtinShape = castToLong(valueLib, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE, typeSpec));
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, legacy == 0);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY);
                 newType.basicSize = basicSize;
                 newType.flags = flags;
                 newType.itemSize = itemSize;
@@ -2507,7 +2508,7 @@ public abstract class GraalHPyNodes {
                 // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
                 Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
                 if (!ptrLib.isNull(legacySlots)) {
-                    if (legacy == 0) {
+                    if (builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY) {
                         throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG);
                     }
                     int nLegacySlots = PInt.intValueExact(ptrLib.getArraySize(legacySlots));
@@ -2530,7 +2531,7 @@ public abstract class GraalHPyNodes {
                 if (basicSize > 0 && !seenNew) {
                     Object inheritedConstructor = null;
 
-                    if (!isSameTypeNode.execute(baseClass, PythonBuiltinClassType.PythonObject)) {
+                    if (!isSameTypeNode.execute(this, baseClass, PythonBuiltinClassType.PythonObject)) {
                         // Lookup the inherited constructor and pass it to the HPy decorator.
                         inheritedConstructor = lookupNewNode.execute(baseClass);
                     }
@@ -2546,8 +2547,8 @@ public abstract class GraalHPyNodes {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
                 }
-                checkInheritanceConstraints(flags, baseFlags, legacy == 0, readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_IS_PURE), raiseNode);
-
+                checkInheritanceConstraints(flags, baseFlags, builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_IS_PURE),
+                                raiseNode);
                 return newType;
             } catch (CannotCastException | InteropException e) {
                 throw raiseNode.raise(SystemError, ErrorMessages.COULD_NOT_CREATE_TYPE_FROM_SPEC_BECAUSE, e);

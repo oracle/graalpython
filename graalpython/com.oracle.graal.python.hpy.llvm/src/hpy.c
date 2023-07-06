@@ -380,6 +380,10 @@ void* graal_hpy_type_spec_get_legacy_slots(HPyType_Spec *type_spec) {
 	return NULL;
 }
 
+int64_t graal_hpy_type_spec_get_builtin_shape(HPyType_Spec *type_spec) {
+	return (int64_t) type_spec->builtin_shape;
+}
+
 
 /*
  * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.

@@ -319,6 +319,16 @@ public abstract class GraalHPyDef {
     public static final long HPy_TPFLAGS_HAVE_GC = (1L << 14);
     public static final long HPy_TPFLAGS_DEFAULT = _Py_TPFLAGS_HEAPTYPE;
 
+    /* enum values of 'HPyType_BuiltinShape' */
+    public static final int HPyType_BUILTIN_SHAPE_LEGACY = -1;
+    public static final int HPyType_BUILTIN_SHAPE_OBJECT = 0;
+    public static final int HPyType_BUILTIN_SHAPE_TYPE = 1;
+    public static final int HPyType_BUILTIN_SHAPE_LONG = 2;
+    public static final int HPyType_BUILTIN_SHAPE_FLOAT = 3;
+    public static final int HPyType_BUILTIN_SHAPE_UNICODE = 4;
+    public static final int HPyType_BUILTIN_SHAPE_TUPLE = 5;
+    public static final int HPyType_BUILTIN_SHAPE_ = 6;
+
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
         HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
