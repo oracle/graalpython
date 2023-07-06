@@ -675,18 +675,13 @@ int PyObject_Print(PyObject *op, FILE *fp, int flags)
 // taken from CPython "Objects/object.c"
 PyObject * PyObject_GetAttrString(PyObject *v, const char *name) {
 
-//    printf("looking for %s\n", name);
     if (Py_TYPE(v)->tp_getattr != NULL) {
-//    	printf("calling tp_getattr\n");
         return (*Py_TYPE(v)->tp_getattr)(v, (char*)name);
     }
-//	printf("calling PyUnicode_FromString\n");
     PyObject *w = PyUnicode_FromString(name);
-//	printf("calling NULL?\n");
     if (w == NULL) {
         return NULL;
     }
-//	printf("calling PyObject_GetAttr\n");
     PyObject *res = PyObject_GetAttr(v, w);
     Py_DecRef(w);
     return res;
@@ -717,29 +712,23 @@ int PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w) {
 // taken from CPython "Objects/object.c"
 PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
     PyTypeObject *tp = Py_TYPE(v);
-//	printf("PyObject_GetAttr: calling PyUnicode_Check\n");
 
     if (!PyUnicode_Check(name)) {
-//    	printf("PyObject_GetAttr: calling PyExc_TypeError\n");
         PyErr_Format(PyExc_TypeError,
                      "attribute name must be string, not '%.200s'",
 					 Py_TYPE(name)->tp_name);
         return NULL;
     }
     if (tp->tp_getattro != NULL) {
-//    	printf("PyObject_GetAttr: calling tp_getattro\n");
-//        GraalPyTruffle_Debug(v, name);
         return (*tp->tp_getattro)(v, name);
     }
     if (tp->tp_getattr != NULL) {
-//    	printf("PyObject_GetAttr: calling PyUnicode_AsUTF8\n");
         const char *name_str = PyUnicode_AsUTF8(name);
         if (name_str == NULL) {
             return NULL;
         }
         return (*tp->tp_getattr)(v, (char *)name_str);
     }
-//	printf("PyObject_GetAttr: calling PyExc_AttributeError\n");
     PyErr_Format(PyExc_AttributeError,
                  "'%.50s' object has no attribute '%U'",
                  tp->tp_name, name);

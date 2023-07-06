@@ -48,8 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -76,31 +75,31 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         super(delegate);
     }
 
-    private static Object getMethFromBuiltinMethod(PBuiltinMethod object, PythonToNativeNode toSulongNode) {
-        return getMethFromBuiltinFunction(object.getBuiltinFunction(), toSulongNode);
+    private static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
+        return getMethFromBuiltinFunction(object.getBuiltinFunction());
     }
 
-    private static Object getMethFromBuiltinFunction(PBuiltinFunction object, PythonToNativeNode toSulongNode) {
+    private static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
                 return kwDefaults[i].getValue();
             }
         }
-        return createFunctionWrapper(object, toSulongNode);
+        return createFunctionWrapper(object);
     }
 
-    private static Object getMeth(PythonObject object, PythonToNativeNode toSulongNode) {
+    private static Object getMeth(PythonObject object) {
         if (object instanceof PBuiltinMethod) {
-            return getMethFromBuiltinMethod((PBuiltinMethod) object, toSulongNode);
+            return getMethFromBuiltinMethod((PBuiltinMethod) object);
         } else if (object instanceof PBuiltinFunction) {
-            return getMethFromBuiltinFunction((PBuiltinFunction) object, toSulongNode);
+            return getMethFromBuiltinFunction((PBuiltinFunction) object);
         }
-        return createFunctionWrapper(object, toSulongNode);
+        return createFunctionWrapper(object);
     }
 
     @TruffleBoundary
-    private static Object createFunctionWrapper(PythonObject object, PythonToNativeNode toSulongNode) {
+    private static Object createFunctionWrapper(PythonObject object) {
         int flags = getFlags(object);
         PythonNativeWrapper wrapper;
         if (CExtContext.isMethNoArgs(flags)) {
@@ -114,7 +113,7 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         } else {
             throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
-        return toSulongNode.execute(wrapper);
+        return ToNativeReplacedNodeGen.getUncached().execute(wrapper);
     }
 
     private static int getFlags(PythonObject object) {
@@ -134,7 +133,6 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         CStructAccess.WriteIntNode writeIntNode = CStructAccessFactory.WriteIntNodeGen.getUncached();
         PythonAbstractObject.PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
-        PythonToNativeNode toSulongNode = PythonToNativeNodeGen.getUncached();
         CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
         Object mem = allocNode.alloc(CStructs.PyMethodDef);
 
@@ -152,7 +150,7 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         }
         writePointerNode.write(mem, PyMethodDef__ml_name, name);
 
-        writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj, toSulongNode));
+        writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj));
         writeIntNode.write(mem, PyMethodDef__ml_flags, getFlags(obj));
 
         Object doc = getAttrNode.execute(obj, T___DOC__);

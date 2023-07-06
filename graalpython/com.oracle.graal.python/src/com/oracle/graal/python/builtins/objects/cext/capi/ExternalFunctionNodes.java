@@ -132,6 +132,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -154,6 +155,7 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ExternalFunctionNodes {
@@ -270,14 +272,15 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class ToNativeReplacedNode extends CExtToNativeNode {
+    @GenerateUncached
+    public abstract static class ToNativeReplacedNode extends CExtToNativeNode {
 
-        private final ConditionProfile profile = ConditionProfile.create();
-        @Child private InteropLibrary lib = InteropLibrary.getFactory().createDispatched(3);
-
-        @Override
-        public Object execute(Object object) {
-            if (profile.profile(object instanceof PythonReplacingNativeWrapper)) {
+        @Specialization
+        public Object execute(Object object,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            if (profile.profile(inliningTarget, object instanceof PythonReplacingNativeWrapper)) {
                 if (!lib.isPointer(object)) {
                     lib.toNative(object);
                 }
