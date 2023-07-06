@@ -258,7 +258,7 @@ public class PythonCextObjectBuiltins {
                     PTuple kwTuple = (PTuple) kwargs;
                     SequenceStorage storage = kwTuple.getSequenceStorage();
                     int kwcount = storage.length();
-                    Object[] kwValues = readKwNode.readPyObjectArray(args, kwcount, (int) nargs);
+                    Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
                     keywords = new PKeyword[kwcount];
                     for (int i = 0; i < kwcount; i++) {
                         TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));

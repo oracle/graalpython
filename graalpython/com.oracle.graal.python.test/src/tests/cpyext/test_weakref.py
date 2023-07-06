@@ -86,7 +86,8 @@ class TestWeakRef(object):
         y = weakref.ref(x)
         assert type(y) == weakref.ReferenceType
 
-    def test_native_sub2(self):
+    # fails on CPython
+    def ignored_test_native_sub2(self):
         class Foo:
             pass
         clazz = helper.create_type((Foo,))
