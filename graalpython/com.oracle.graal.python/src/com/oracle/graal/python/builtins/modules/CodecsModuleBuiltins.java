@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.appendXmlCharRefReplacement;
 import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.getXmlCharRefReplacementLength;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_CP437;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
@@ -105,6 +107,7 @@ import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeEnc
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecRegisterErrorNode;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -1532,10 +1535,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "mbcs_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
     abstract static class MBCSEncodeNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("mbcs_encode"));
+        Object encode(VirtualFrame frame, Object obj, Object errors,
+                        @Cached CodecsEncodeNode encode,
+                        @Cached WarnNode warnNode) {
+            warnNode.execute(frame, null, RuntimeWarning, toTruffleStringUncached("mbcs_encode assumes cp437"), 1);
+            return encode.execute(frame, obj, T_CP437, errors);
         }
     }
 
@@ -1544,8 +1549,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class MBCSDecodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object decode(Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("mbcs_decode"));
+        Object decode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
+                        @Cached CodecsDecodeNode decode,
+                        @Cached WarnNode warnNode) {
+            warnNode.execute(frame, null, RuntimeWarning, toTruffleStringUncached("mbcs_decode assumes cp437"), 1);
+            return decode.execute(frame, obj, T_CP437, errors, ffinal);
         }
     }
 
