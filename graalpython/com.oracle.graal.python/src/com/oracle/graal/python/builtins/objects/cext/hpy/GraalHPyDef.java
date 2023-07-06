@@ -450,12 +450,11 @@ public abstract class GraalHPyDef {
             return signatures;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final HPySlot[] BY_VALUE = new HPySlot[100];
 
         static {
-            for (var entry : VALUES) {
-                if (entry != HPY_TP_DESTROY) {
+            for (var entry : values()) {
+                if (entry.value >= 0 && entry.value < BY_VALUE.length) {
                     assert BY_VALUE[entry.value] == null;
                     BY_VALUE[entry.value] = entry;
                 }
@@ -463,7 +462,17 @@ public abstract class GraalHPyDef {
         }
 
         static HPySlot fromValue(int value) {
-            return value == HPY_TP_DESTROY.value ? HPY_TP_DESTROY : value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
+            if (value >= 0 && value < BY_VALUE.length) {
+                return BY_VALUE[value];
+            }
+            if (HPY_TP_DESTROY.value == value) {
+                return HPY_TP_DESTROY;
+            } else if (HPY_MOD_CREATE.value == value) {
+                return HPY_MOD_CREATE;
+            } else if (HPY_MOD_EXEC.value == value) {
+                return HPY_MOD_EXEC;
+            }
+            return null;
         }
 
         private static HPySlotWrapper[] w(HPySlotWrapper... wrappers) {
