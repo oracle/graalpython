@@ -52,13 +52,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
  */
-@ExportLibrary(InteropLibrary.class)
 public final class PThreadState extends PythonReplacingNativeWrapper {
     public static final String J_CUR_EXC_TYPE = "curexc_type";
     public static final String J_CUR_EXC_VALUE = "curexc_value";

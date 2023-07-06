@@ -178,7 +178,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
     }
 
-    @Specialization(guards = {"!isClass(object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
+    @Specialization(guards = {"!isClass(object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "1")
     static PythonNativeWrapper runAbstractObject(PythonAbstractObject object,
                     @Exclusive @Cached ConditionProfile noWrapperProfile,
                     @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
@@ -186,7 +186,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
     }
 
-    @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+    @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
     static PythonNativeWrapper doForeignObject(Object object,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
         assert !CApiTransitions.isBackendPointerObject(object);

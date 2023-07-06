@@ -74,6 +74,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
+@SuppressWarnings("truffle-inlining")
 public class CStructAccess {
 
     private static boolean validPointer(Object pointer) {

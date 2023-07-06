@@ -276,7 +276,7 @@ public abstract class ExternalFunctionNodes {
     public abstract static class ToNativeReplacedNode extends CExtToNativeNode {
 
         @Specialization
-        public Object execute(Object object,
+        public Object replace(Object object,
                         @Bind("$node") Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {

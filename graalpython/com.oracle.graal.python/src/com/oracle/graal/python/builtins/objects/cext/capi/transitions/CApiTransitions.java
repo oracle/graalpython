@@ -97,7 +97,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -758,8 +757,9 @@ public class CApiTransitions {
 
         @Specialization(guards = "isOther(obj)")
         Object doOther(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
-                        @Cached ConditionProfile isReplacementProfile,
+                        @Cached InlinedConditionProfile isReplacementProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
@@ -770,7 +770,7 @@ public class CApiTransitions {
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
             }
-            if (isReplacementProfile.profile(wrapper instanceof PythonReplacingNativeWrapper)) {
+            if (isReplacementProfile.profile(inliningTarget, wrapper instanceof PythonReplacingNativeWrapper)) {
                 assert ((PythonReplacingNativeWrapper) wrapper).getReplacement() != null;
                 return ((PythonReplacingNativeWrapper) wrapper).getReplacement();
             }

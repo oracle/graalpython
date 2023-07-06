@@ -2039,7 +2039,7 @@ public abstract class CExtNodes {
 
         public abstract PBuiltinFunction execute(Object legacyMethodDef, int element);
 
-        @Specialization(limit = "1")
+        @Specialization
         static PBuiltinFunction doIt(Object methodDef, int element,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
