@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -105,9 +105,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -640,6 +638,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private PythonObjectFactory factory;
 
         @TruffleBoundary
         public HPyMethKeywordsRoot(PythonLanguage language, TruffleString name) {
@@ -648,8 +647,26 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
-            Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length, getKwargs(frame)};
+            Object[] positionalArgs = getVarargs(frame);
+            PKeyword[] keywords = getKwargs(frame);
+            long nPositionalArgs = positionalArgs.length;
+
+            Object[] args;
+            Object kwnamesTuple;
+            // this condition is implicitly profiled by 'getKwnamesTuple'
+            if (keywords.length > 0) {
+                args = PythonUtils.arrayCopyOf(positionalArgs, positionalArgs.length + keywords.length);
+                TruffleString[] kwnames = new TruffleString[keywords.length];
+                for (int i = 0; i < keywords.length; i++) {
+                    args[positionalArgs.length + i] = keywords[i].getValue();
+                    kwnames[i] = keywords[i].getName();
+                }
+                kwnamesTuple = getKwnamesTuple(kwnames);
+            } else {
+                args = positionalArgs;
+                kwnamesTuple = GraalHPyHandle.NULL_HANDLE_DELEGATE;
+            }
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), nPositionalArgs, kwnamesTuple};
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -660,15 +677,23 @@ public abstract class HPyExternalFunctionNodes {
             return readVarargsNode.executeObjectArray(frame);
         }
 
-        private Object getKwargs(VirtualFrame frame) {
+        private PKeyword[] getKwargs(VirtualFrame frame) {
             if (PArguments.getKeywordArguments(frame).length == 0) {
-                return PNone.NO_VALUE;
+                return PKeyword.EMPTY_KEYWORDS;
             }
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(EMPTY_TRUFFLESTRING_ARRAY));
+                readKwargsNode = insert(ReadVarKeywordsNode.create());
             }
-            return readKwargsNode.execute(frame);
+            return (PKeyword[]) readKwargsNode.execute(frame);
+        }
+
+        private PTuple getKwnamesTuple(TruffleString[] kwnames) {
+            if (factory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                factory = insert(PythonObjectFactory.create());
+            }
+            return factory.createTuple(kwnames);
         }
 
         @Override
