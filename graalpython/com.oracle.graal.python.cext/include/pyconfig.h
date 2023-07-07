@@ -43,6 +43,18 @@
 
 #define GRAALVM_PYTHON 1
 
+// The graalpy build always sets MS_WINDOWS, so when this is not set, we are
+// dealing with an extension build. In that case, if we're on Windows, we need
+// to set the appropriate flags to link against our python C API dll.
+#if !defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE) && !defined(MS_WINDOWS)
+# ifdef _MSC_VER
+#  define MS_WINDOWS
+#  define Py_ENABLE_SHARED
+#  define HAVE_DECLSPEC_DLL
+#  pragma comment(lib, "python-native.lib")
+# endif
+#endif
+
 /* If Cython is involved, avoid accesses to internal structures. While we are
  * supporting this in many cases, it still involves overhead. */
 #define CYTHON_USE_TYPE_SLOTS 0

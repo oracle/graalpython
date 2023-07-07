@@ -42,6 +42,8 @@
 #include <stdlib.h>
 #ifndef MS_WINDOWS
 #include <unistd.h>
+#else
+#include <winsock.h>
 #endif
 
 /* For size_t? */

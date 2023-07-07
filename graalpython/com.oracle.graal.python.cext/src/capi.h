@@ -944,7 +944,7 @@ PyAPI_DATA(ptr_cache_t) ptr_cache;
 PyAPI_DATA(cache_query_t) points_to_py_handle_space;
 PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 
-void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
+PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
 extern ptr_cache_t pythonToNative;
 extern void_ptr_cache_t javaStringToTruffleString;

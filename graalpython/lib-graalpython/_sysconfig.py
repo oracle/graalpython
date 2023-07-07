@@ -63,11 +63,14 @@ def _get_posix_vars():
     toolchain_cxx = get_toolchain('CXX')
     have_cxx = toolchain_cxx is not None
 
-    python_inc = os.path.join(
-        os.path.normpath(sys.base_prefix),
-        'include',
-        f'python{sys.version_info[0]}.{sys.version_info[1]}{sys.abiflags}'
-    )
+    if win32_native:
+        python_inc = os.path.join(os.path.normpath(sys.base_prefix), 'Include')
+    else:
+        python_inc = os.path.join(
+            os.path.normpath(sys.base_prefix),
+            'include',
+            f'python{sys.version_info[0]}.{sys.version_info[1]}{sys.abiflags}'
+        )
 
     fpic = "" if win32_native else "-fPIC"
 
@@ -110,7 +113,7 @@ def _get_posix_vars():
     g['RANLIB'] = get_toolchain('RANLIB')
     g['ARFLAGS'] = "rc"
     g['LD'] = get_toolchain('LD')
-    g['EXE'] = ""
+    g['EXE'] = ".exe" if win32_native else ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
     g['VERSION'] = ".".join(sys.version.split(".")[:2])
     g['Py_HASH_ALGORITHM'] = 0 # does not give any specific info about the hashing algorithm
@@ -120,6 +123,7 @@ def _get_posix_vars():
     g['Py_DEBUG'] = 0
     g['Py_ENABLE_SHARED'] = 0
     g['LIBDIR'] = __graalpython__.capi_home
+    g['LIBDEST'] = __graalpython__.capi_home
     g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
     g['WITH_THREAD'] = 1
     return g

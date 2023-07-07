@@ -930,8 +930,7 @@ _default_compilers = (
 
     # OS name mappings
     ('posix', 'unix'),
-    # Truffle change ('nt', 'msvc'),
-    ('nt', 'unix'),
+    ('nt', 'msvc'),
     )
 
 def get_default_compiler(osname=None, platform=None):

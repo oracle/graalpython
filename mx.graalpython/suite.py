@@ -555,6 +555,7 @@ suite = {
                         },
                         "results" : [
                             "bin/<lib:python-native>",
+                            "bin/python-native.lib",
                             "bin/modules/_mmap<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
@@ -978,9 +979,17 @@ suite = {
                             "./Lib/": [
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
+                            "./libs/": [
+                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
+                            ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/*",
+                                {
+                                    "source_type": "extracted-dependency",
+                                    "dependency": "GRAALPYTHON_NATIVE_LIBS",
+                                    "path": "*",
+                                    "exclude": ["python-native.lib"],
+                                },
                                 "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                             ],
                             "./lib-graalpython/modules/graalpy_virtualenv": [
