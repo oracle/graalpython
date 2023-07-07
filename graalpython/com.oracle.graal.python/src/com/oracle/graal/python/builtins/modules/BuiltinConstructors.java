@@ -123,12 +123,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -166,7 +164,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -174,7 +171,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
@@ -1803,13 +1799,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
 
-        @Child private PCallCapiFunction callCapiFunction;
-        @Children private CExtNodes.ToSulongNode[] toSulongNodes;
-        @Child private NativeToPythonNode asPythonObjectNode;
         @Child private SplitArgsNode splitArgsNode;
         @Child private LookupCallableSlotInMRONode lookupInit;
         @Child private LookupCallableSlotInMRONode lookupNew;
-        @Child private ReportAbstractClassNode reportAbstractClassNode;
         @CompilationFinal private ValueProfile profileInit;
         @CompilationFinal private ValueProfile profileNew;
         @CompilationFinal private ValueProfile profileInitFactory;
@@ -1867,14 +1859,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "self.needsNativeAllocation()")
         Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetMroNode getMroNode,
-                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode) {
+                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode,
+                        @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
             checkExcessArgs(self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw reportAbstractClassNode.execute(frame, inliningTarget, self);
             }
-            Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
-            return callNativeGenericNewNode(self, nativeBaseClass, varargs, kwargs);
+            return callNativeGenericNewNode.execute(inliningTarget, self);
         }
 
         @Specialization(guards = "isNativeClass(self)")
@@ -1882,53 +1873,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
-                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode) {
+                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode,
+                        @Shared @Cached CallNativeGenericNewNode callNativeGenericNewNode) {
             checkExcessArgs(self, varargs, kwargs);
             if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
                 throw reportAbstractClassNode.execute(frame, inliningTarget, self);
             }
-            return callNativeGenericNewNode(self, self, varargs, kwargs);
+            return callNativeGenericNewNode.execute(inliningTarget, self);
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        protected abstract static class CallNativeGenericNewNode extends Node {
+            abstract Object execute(Node inliningTarget, Object cls);
+
+            @Specialization
+            static Object call(Object cls,
+                            @Cached PythonToNativeNode toNativeNode,
+                            @Cached NativeToPythonNode toPythonNode,
+                            @Cached PCallCapiFunction callCapiFunction) {
+                return toPythonNode.execute(callCapiFunction.call(FUN_PY_OBJECT_NEW, toNativeNode.execute(cls)));
+            }
         }
 
         @SuppressWarnings("unused")
         @Fallback
         Object fallback(Object o, Object[] varargs, PKeyword[] kwargs) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
-        }
-
-        private static Object findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
-            for (Object cls : methodResolutionOrder) {
-                if (PGuards.isNativeClass(cls)) {
-                    return cls;
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("class needs native allocation but has not native base class");
-        }
-
-        private Object callNativeGenericNewNode(Object type, Object nativeBase, Object[] varargs, PKeyword[] kwargs) {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(PCallCapiFunction.create());
-            }
-            if (toSulongNodes == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                CExtNodes.ToSulongNode[] newToSulongNodes = new CExtNodes.ToSulongNode[4];
-                for (int i = 0; i < newToSulongNodes.length; i++) {
-                    newToSulongNodes[i] = CExtNodesFactory.ToSulongNodeGen.create();
-                }
-                toSulongNodes = insert(newToSulongNodes);
-            }
-            if (asPythonObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(NativeToPythonNodeGen.create());
-            }
-            PKeyword[] kwarr = kwargs.length > 0 ? kwargs : null;
-            PTuple targs = factory().createTuple(varargs);
-            PDict dkwargs = factory().createDict(kwarr);
-            return asPythonObjectNode.execute(
-                            callCapiFunction.call(FUN_PY_OBJECT_NEW, toSulongNodes[0].execute(type), toSulongNodes[1].execute(nativeBase), toSulongNodes[2].execute(targs),
-                                            toSulongNodes[3].execute(dkwargs)));
         }
 
         private void checkExcessArgs(Object type, Object[] varargs, PKeyword[] kwargs) {
