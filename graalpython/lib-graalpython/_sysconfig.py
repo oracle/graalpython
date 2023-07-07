@@ -100,7 +100,7 @@ def _get_posix_vars():
         g['LDSHARED'] = get_toolchain('CC') + " -bundle -undefined dynamic_lookup"
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
     elif win32_native:
-        g['LDFLAGS'] = f"-L{__graalpython__.capi_home.replace(os.path.sep, '/')} -llibpython.{so_abi}"
+        g['LDFLAGS'] = f"-L{__graalpython__.capi_home.replace(os.path.sep, '/')}"
         g['LDSHARED_WINDOWS'] = f"{g['LDSHARED_LINUX']} {g['LDFLAGS']}"
         g['LDSHARED'] = g['LDSHARED_WINDOWS']
     else:
