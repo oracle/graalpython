@@ -826,7 +826,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
             double q = Math.floor(a / b);
-            return factory().createTuple(new Object[]{q, FloatBuiltins.ModNode.op(a, b)});
+            return factory().createTuple(new Object[]{q, FloatBuiltins.ModNode.mod(a, b)});
         }
 
         @Specialization

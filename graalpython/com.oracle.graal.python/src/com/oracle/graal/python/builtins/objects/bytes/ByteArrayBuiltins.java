@@ -182,7 +182,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(self)")
         public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___INIT__, "bytearray", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
         }
     }
 
@@ -534,7 +534,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__delitem__", "bytearray", idx);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__delitem__", "bytearray", idx);
         }
     }
 
@@ -841,7 +841,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         Object error(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyByteArrayCheckNode check) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, J___EQ__, J_BYTEARRAY, self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTEARRAY, self);
         }
     }
 

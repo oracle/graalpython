@@ -259,7 +259,8 @@ public abstract class ErrorMessages {
     public static final TruffleString DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P = tsLiteral("descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object");
     public static final TruffleString DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P = tsLiteral("descriptor for index '%d' for %s doesn't apply to '%p' object");
     public static final TruffleString DESC_S_FOR_S_DOESNT_APPLY_TO_S = tsLiteral("descriptor '%s' for '%s' objects doesn't apply to '%s' object");
-    public static final TruffleString DESCRIPTOR_REQUIRES_OBJ = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
+    public static final TruffleString DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
+    public static final TruffleString DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_NEED_OBJ = tsLiteral("descriptor '%s' of '%s' object needs an argument");
     public static final TruffleString DICT_CHANGED_DURING_COMPARISON = tsLiteral("dictionary changed during comparison operation");
     public static final TruffleString CHANGED_SIZE_DURING_ITERATION = tsLiteral("%s changed size during iteration");

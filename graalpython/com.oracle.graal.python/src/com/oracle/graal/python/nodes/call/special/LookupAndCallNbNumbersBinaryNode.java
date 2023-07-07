@@ -321,7 +321,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             // see descrobject.c/wrapperdescr_call()
             Object enclosing = getEnclosingType.execute(inliningTarget, callable);
             if (isEnclosingProfile.profile(inliningTarget, enclosing != null && !isSubtype.execute(lClass, enclosing))) {
-                throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op.getName(), getNameNode.execute(lClass), leftValue);
+                throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), getNameNode.execute(lClass), leftValue);
             }
             return dispatch.executeObject(frame, callable, leftValue, rightValue);
         }

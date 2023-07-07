@@ -326,7 +326,7 @@ public class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPythonModule(self)")
         Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETATTRIBUTE__, "module", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
         }
     }
 

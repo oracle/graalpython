@@ -448,19 +448,19 @@ public enum BinaryArithmetic {
         @Specialization
         final double doDL(double left, long right) {
             raiseDivisionByZero(right == 0);
-            return FloatBuiltins.ModNode.op(left, right);
+            return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
         final double doDD(double left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return FloatBuiltins.ModNode.op(left, right);
+            return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
         final double doLD(long left, double right) {
             raiseDivisionByZero(right == 0.0);
-            return FloatBuiltins.ModNode.op(left, right);
+            return FloatBuiltins.ModNode.mod(left, right);
         }
 
         @Specialization
@@ -636,21 +636,21 @@ public enum BinaryArithmetic {
         final PTuple doDL(double left, long right,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
         final PTuple doDD(double left, double right,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0.0);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization
         final PTuple doLD(long left, double right,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             raiseDivisionByZero(right == 0.0);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
         }
 
         @Specialization

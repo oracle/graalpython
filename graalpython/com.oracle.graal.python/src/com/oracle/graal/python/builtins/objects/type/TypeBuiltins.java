@@ -338,7 +338,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object doit(Object object) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_MRO, "type", object);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_MRO, "type", object);
         }
     }
 
