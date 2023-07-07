@@ -756,14 +756,15 @@ public class CApiTransitions {
         }
 
         @Specialization(guards = "isOther(obj)")
-        Object doOther(Object obj,
+        static Object doOther(Object obj,
+                        @Bind("needsTransfer()") boolean needsTransfer,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached InlinedConditionProfile isReplacementProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
-            if (needsTransfer()) {
+            if (needsTransfer) {
                 // native part needs to decRef to release
                 incRef(wrapper, 1);
             }

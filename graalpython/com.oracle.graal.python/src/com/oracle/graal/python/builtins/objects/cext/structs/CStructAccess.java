@@ -134,15 +134,15 @@ public class CStructAccess {
             UNSAFE.freeMemory(pointer);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void freePointer(Object pointer,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             freeLong(asPointer(pointer, lib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
         static void freeManaged(Object pointer,
-                        @Shared @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_FREE, pointer);
@@ -183,9 +183,9 @@ public class CStructAccess {
             return pointer + offset;
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static Object getPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return getLong(asPointer(pointer, lib), offset);
         }
 
@@ -245,9 +245,9 @@ public class CStructAccess {
             return UNSAFE.getByte(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static int readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -289,9 +289,9 @@ public class CStructAccess {
             return UNSAFE.getShort(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static int readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -338,9 +338,9 @@ public class CStructAccess {
             return UNSAFE.getInt(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static int readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -411,9 +411,9 @@ public class CStructAccess {
             return UNSAFE.getLong(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static long readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -476,9 +476,9 @@ public class CStructAccess {
             return UNSAFE.getFloat(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static double readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -538,9 +538,9 @@ public class CStructAccess {
             return UNSAFE.getDouble(pointer + offset);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static double readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -605,9 +605,9 @@ public class CStructAccess {
             return new PointerContainer(UNSAFE.getLong(pointer + offset));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static Object readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             return readLong(asPointer(pointer, lib), offset);
         }
 
@@ -670,9 +670,9 @@ public class CStructAccess {
             return toPython.execute(UNSAFE.getLong(pointer + offset), false);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static Object readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary("pointer") InteropLibrary lib,
                         @Shared @Cached NativePtrToPythonNode toPython) {
             return readLong(asPointer(pointer, lib), offset, toPython);
         }
@@ -725,9 +725,9 @@ public class CStructAccess {
             return toPython.execute(UNSAFE.getLong(pointer + offset));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static TruffleString readPointer(Object pointer, long offset,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary("pointer") InteropLibrary lib,
                         @Shared @Cached FromCharPointerNode toPython) {
             return readLong(asPointer(pointer, lib), offset, toPython);
         }
@@ -789,9 +789,9 @@ public class CStructAccess {
             UNSAFE.putByte(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, byte value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -833,9 +833,9 @@ public class CStructAccess {
             UNSAFE.putDouble(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, double value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -873,9 +873,9 @@ public class CStructAccess {
             UNSAFE.putFloat(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, float value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -913,9 +913,9 @@ public class CStructAccess {
             UNSAFE.putShort(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, short value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -967,9 +967,9 @@ public class CStructAccess {
             UNSAFE.putInt(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, int value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -1021,9 +1021,9 @@ public class CStructAccess {
             UNSAFE.putLong(pointer + offset, value);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, long value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value);
         }
 
@@ -1055,17 +1055,17 @@ public class CStructAccess {
             return desc.isPyObjectOrPointer();
         }
 
-        @Specialization
+        @Specialization(limit = "3")
         static void writeLong(long pointer, long offset, Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary valueLib) {
+                        @CachedLibrary("value") InteropLibrary valueLib) {
             assert offset >= 0;
             UNSAFE.putLong(pointer + offset, PythonUtils.coerceToLong(value, valueLib));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @CachedLibrary(limit = "3") InteropLibrary valueLib) {
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @CachedLibrary("value") InteropLibrary valueLib) {
             writeLong(asPointer(pointer, lib), offset, value, valueLib);
         }
 
@@ -1118,10 +1118,10 @@ public class CStructAccess {
             UNSAFE.putLong(pointer + offset, toNative.executeLong(value));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, Object value,
                         @Shared @Cached PythonToNativeNode toNative,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             writeLong(asPointer(pointer, lib), offset, value, toNative);
         }
 
@@ -1189,14 +1189,14 @@ public class CStructAccess {
         static void writePointer(Object pointer, long offset, Object value,
                         @Shared @Cached NativePtrToPythonNode toPython,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary valueLib) {
             writeLong(asPointer(pointer, lib), offset, value, toPython, toNative, valueLib);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
         static void writeManaged(Object pointer, long offset, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached PythonToNativeNewRefNode toNative,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
