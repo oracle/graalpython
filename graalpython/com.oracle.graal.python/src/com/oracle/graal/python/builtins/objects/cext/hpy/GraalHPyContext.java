@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -66,6 +67,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
@@ -79,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -162,7 +166,7 @@ public final class GraalHPyContext extends CExtContext {
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadHPyModule(Node location, PythonContext context, TruffleString name, TruffleString path, HPyMode mode) throws IOException, ApiInitException, ImportException {
+    public static Object loadHPyModule(Node location, PythonContext context, TruffleString name, TruffleString path, Object spec, HPyMode mode) throws IOException, ApiInitException, ImportException {
 
         /*
          * Unfortunately, we need eagerly initialize the HPy context because the ctors of the
@@ -177,7 +181,18 @@ public final class GraalHPyContext extends CExtContext {
         boolean saved = hpyUniversalContext.debugMode;
         hpyUniversalContext.debugMode = debug;
         try {
-            return backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
+            Object hpyModuleDefPtr =  backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
+            // HPy only supports multi-phase extension module initialization.
+            assert !(hpyModuleDefPtr instanceof PythonModule);
+            if (InteropLibrary.getUncached().isNull(hpyModuleDefPtr)) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.ERROR_LOADING_HPY_EXT_S_S, path, name);
+            }
+
+            Object module = GraalHPyModuleCreateNodeGen.getUncached().execute(context.getHPyContext(), name, spec, hpyModuleDefPtr);
+            if (module instanceof PythonModule pythonModule) {
+                GraalHPyModuleExecNodeGen.getUncached().execute(location, context.getHPyContext(), pythonModule);
+            }
+            return module;
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         } finally {
