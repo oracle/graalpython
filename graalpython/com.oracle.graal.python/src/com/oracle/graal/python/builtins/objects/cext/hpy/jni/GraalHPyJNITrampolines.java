@@ -48,10 +48,7 @@ public abstract class GraalHPyJNITrampolines {
     /* manual HPY JNI trampoline declarations */
 
     @TruffleBoundary
-    public static native long executeModuleInit(long target, long ctx);
-
-    @TruffleBoundary
-    public static native long executeDebugModuleInit(long target, long ctx);
+    public static native long executeModuleInit(long target);
 
     @TruffleBoundary
     public static native void executeDestroyfunc(long target, long dataptr);

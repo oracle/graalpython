@@ -263,15 +263,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         assert !InteropLibrary.getUncached().isExecutable(initFunction);
 
         // coerce 'initFunction' to a native pointer and invoke it via JNI trampoline
-        long initFunctionPtr = coerceToPointer(initFunction);
         long moduleDefPtr;
-        if (debug) {
-            assert hPyDebugContext != 0;
-            moduleDefPtr = GraalHPyJNITrampolines.executeDebugModuleInit(initFunctionPtr, hPyDebugContext);
-        } else {
-            assert nativePointer != 0;
-            moduleDefPtr = GraalHPyJNITrampolines.executeModuleInit(initFunctionPtr, nativePointer);
-        }
+        moduleDefPtr = GraalHPyJNITrampolines.executeModuleInit(coerceToPointer(initFunction));
         return convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, moduleDefPtr);
     }
 

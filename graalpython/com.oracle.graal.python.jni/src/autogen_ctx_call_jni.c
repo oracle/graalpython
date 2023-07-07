@@ -60,9 +60,9 @@
  *                    UNIVERSAL MODE TRAMPOLINES                   *
  ******************************************************************/
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx)
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeModuleInit)(JNIEnv *env, jclass clazz, jlong target)
 {
-    return _h2jlong(((DHPy (*)(HPyContext *)) target)((HPyContext *) ctx));
+    return (jlong) (((HPyModuleDef *(*)(void)) target)());
 }
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeNoargs)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self)
@@ -279,12 +279,6 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeMod_create)(JNIEnv *env, jclass clazz,
 /*******************************************************************
  *                      DEBUG MODE TRAMPOLINES                     *
  ******************************************************************/
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx)
-{
-    HPyContext *dctx = (HPyContext *) ctx;
-    return from_dh(dctx, ((DHPy (*)(HPyContext *)) target)(dctx));
-}
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugNoargs)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self)
 {
