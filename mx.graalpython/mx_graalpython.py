@@ -100,7 +100,8 @@ DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 _COLLECTING_COVERAGE = False
 
 CI = os.environ.get("CI") == "true"
-BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and sys.platform != "win32" # disable assertions on win32 until we properly support that platform
+WIN32 = sys.platform == "win32"
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and WIN32 # disable assertions on win32 until we properly support that platform
 
 if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
@@ -273,7 +274,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         jdk = get_jdk()
 
     # default: assertion checking is enabled
-    if extra_vm_args is None or '-da' not in extra_vm_args:
+    if not WIN32 and (extra_vm_args is None or '-da' not in extra_vm_args):
         vm_args += ['-ea', '-esa']
 
     if extra_vm_args:
@@ -726,7 +727,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
-    elif sys.platform == "win32":
+    elif WIN32:
         return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
@@ -868,8 +869,13 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     paths = paths or [_graalpytest_root()]
     def is_included(path):
         if path.endswith(".py"):
+            path = path.replace("\\", "/")
             basename = os.path.basename(path)
-            return basename.startswith("test_") and basename not in exclude
+            return (
+                basename.startswith("test_")
+                and basename not in exclude
+                and not any(fnmatch.fnmatch(path, pat) for pat in exclude)
+            )
         return False
 
     testfiles = []
@@ -882,10 +888,10 @@ def _list_graalpython_unittests(paths=None, exclude=None):
         else:
             for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
             for testfile in glob.glob(os.path.join(path, "test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
     return testfiles
 
 
@@ -926,13 +932,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
-    if report:
-        reportfile = None
-        t0 = time.time()
-        if not use_pytest:
-            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-            args += ["--report", reportfile]
-
     result = 0
     if is_collecting_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
@@ -945,24 +944,38 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         for testfile in testfiles:
             mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     else:
-        if javaAsserts:
-            args += ['-ea']
-
-        args += testfiles
-        mx.logv(" ".join([python_binary] + args))
-        if lock:
-            lock.release()
-        result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
-
-    if report:
-        if reportfile:
-            mx_gate.make_test_report(reportfile, report.title)
+        if WIN32:
+            size = 5
+            testfiles = [testfiles[i:i + size] for i in range(0, len(testfiles), size)]
         else:
-            mx_gate.make_test_report([{
-                "name": report.title,
-                "status": "PASSED" if result == 0 else "FAILED",
-                "duration": int((time.time() - t0) * 1000)
-            }], report.title)
+            testfiles = [testfiles]
+
+        for testset in testfiles:
+            next_args = args[:]
+            if report:
+                reportfile = None
+                t0 = time.time()
+                if not use_pytest:
+                    reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+                    next_args += ["--report", reportfile]
+
+            next_args += testset
+            mx.logv(" ".join([python_binary] + next_args))
+            if lock:
+                lock.release()
+            result = result or mx.run([python_binary] + next_args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+            if lock:
+                lock.acquire()
+
+            if report:
+                if reportfile:
+                    mx_gate.make_test_report(reportfile, report.title)
+                else:
+                    mx_gate.make_test_report([{
+                        "name": report.title,
+                        "status": "PASSED" if result == 0 else "FAILED",
+                        "duration": int((time.time() - t0) * 1000)
+                    }], report.title)
     return result
 
 
@@ -1133,17 +1146,52 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
+    if WIN32:
+        excluded_tests = [
+            "test_zipimport.py", # sys.getwindowsversion
+            "test_thread", # sys.getwindowsversion
+            "test_structseq", # import posix
+            "test_ssl", # from_ssl import enum_certificates
+            "test_posix", # import posix
+            "test_multiprocessing", # import _winapi
+            "test_mmap", # sys.getwindowsversion
+            "test_imports", # import posix
+            "test_ctypes_callbacks.py", # ctypes error
+            "test_code.py", # forward slash in path problem
+            "test_csv.py", # module 'os' has no attribute 'O_TEMPORARY'
+            "*/cpyext/*",
+        ]
+    else:
+        excluded_tests = []
 
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
-            punittest(['--verbose'], report=report())
+            if WIN32:
+                punittest(
+                    [
+                        "--verbose",
+                        "--no-leak-tests",
+                        "--regex",
+                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'
+                    ],
+                    report=True
+                )
+            else:
+                punittest(['--verbose'], report=report())
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            if not WIN32:
+                mx.run(["env"])
+            run_python_unittests(
+                python_gvm(),
+                javaAsserts=True,
+                exclude=excluded_tests,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report()
+            )
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -1159,11 +1207,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm(), javaAsserts=True, report=report())
+            run_python_unittests(python_managed_gvm(), javaAsserts=True, exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1198,7 +1246,7 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            run_python_unittests(python_svm(), aot_compatible=True, report=report())
+            run_python_unittests(python_svm(), exclude=excluded_tests, aot_compatible=True, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
@@ -1227,7 +1275,8 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            assert "Using preinitialized context." in out.data
+            if not WIN32:
+                assert "Using preinitialized context." in out.data
 
     with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
         if task:

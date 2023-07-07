@@ -700,11 +700,12 @@ class TestRunner(object):
         return None
 
     def load_module(self, path):
+        path = path.replace("\\", "/")
         name = path.rpartition("/")[2].partition(".")[0].replace('.py', '')
         directory = path.rpartition("/")[0]
         pkg = []
         while directory and any(f.endswith("__init__.py") for f in os.listdir(directory)):
-            directory, slash, postfix = directory.rpartition("/")
+            directory, slash, postfix = directory.replace("\\", "/").rpartition("/")
             pkg.insert(0, postfix)
         if pkg:
             sys.path.insert(0, directory)
@@ -864,6 +865,7 @@ if __name__ == "__main__":
     else:
         verbose = False
         paths = argv[1:]
+    paths = [p.replace("\\", "/") for p in paths]
 
     python_paths = set()
     for pth in paths:
