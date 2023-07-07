@@ -41,11 +41,6 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
-#ifdef MS_WINDOWS
-#include "libloaderapi.h"
-#include "pathcch.h"
-#pragma comment(lib, "Pathcch.lib")
-#endif
 
 #define ASSERTIONS
 
@@ -1452,63 +1447,6 @@ PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cac
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
-
-#ifdef MS_WINDOWS
-    // when initializing the C API, the appropriate libraries (like
-    // python-native.dll or graalvm-llvm.dll) are loaded with their full paths.
-    // However, they are not automatically on the search path when any
-    // extension modules are loaded later, and Windows wants to resolve them
-    // again. So we get their runtime paths here and add those to the dll
-    // search path.
-    LPSTR lpMsgBuf;
-    wchar_t path[MAX_PATH];
-    char pathA[MAX_PATH];
-    HMODULE hm = NULL;
-    if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           (LPCWSTR) &initialize_graal_capi, &hm) == 0) {
-        int ret = GetLastError();
-        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL, ret, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &lpMsgBuf, 0, NULL);
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "finding python-native.dll handle failed, error = %s\n", lpMsgBuf);
-        LocalFree(lpMsgBuf);
-    } else {
-        if (GetModuleFileNameW(hm, (LPWSTR)path, sizeof(path)) == 0) {
-            int ret = GetLastError();
-            FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                           NULL, ret, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &lpMsgBuf, 0, NULL);
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "finding python-native.dll path failed, error = %s\n", lpMsgBuf);
-            LocalFree(lpMsgBuf);
-        } else {
-            wcstombs(pathA, path, sizeof(pathA));
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "Adding python-native.dll path '%s' to search path.\n", pathA);
-            PathCchRemoveFileSpec((PWSTR)path, sizeof(path));
-            AddDllDirectory((LPWSTR)path);
-        }
-    }
-    if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           (LPCWSTR) &polyglot_from_string, &hm) == 0) {
-        int ret = GetLastError();
-        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL, ret, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &lpMsgBuf, 0, NULL);
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "finding graalvm-llvm.dll handle failed, error = %s\n", lpMsgBuf);
-        LocalFree(lpMsgBuf);
-    } else {
-        if (GetModuleFileNameW(hm, (LPWSTR)path, sizeof(path)) == 0) {
-            int ret = GetLastError();
-            FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                           NULL, ret, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &lpMsgBuf, 0, NULL);
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "finding graalvm-llvm.dll path failed, error = %s\n", lpMsgBuf);
-            LocalFree(lpMsgBuf);
-        } else {
-            wcstombs(pathA, path, sizeof(pathA));
-            PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "Adding graalvm-llvm.dll path '%s' to search path.\n", pathA);
-            PathCchRemoveFileSpec((LPWSTR)path, sizeof(path));
-            AddDllDirectory((LPWSTR)path);
-        }
-    }
-#endif
 
     // TODO: initialize during cext initialization doesn't work at the moment
     // This is hardcoded the same way in capi_native.c

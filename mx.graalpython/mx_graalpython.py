@@ -116,7 +116,21 @@ def wants_debug_build(flags=os.environ.get("CFLAGS", "")):
 
 
 if wants_debug_build():
-    mx_native.DefaultNativeProject.cflags = property(lambda self: self._cflags + ["-fPIC", "-ggdb3"])
+    mx_native.DefaultNativeProject._original_cflags = mx_native.DefaultNativeProject.cflags
+    mx_native.DefaultNativeProject.cflags = property(
+        lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
+    )
+
+
+if WIN32:
+    # we need the .lib for pythonjni
+    original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
+    def getArchivableResultsWithLib(self, *args, **kwargs):
+        for result in original_DefaultNativeProject_getArchivableResults(self, *args, **kwargs):
+            if any(r.endswith("pythonjni.dll") for r in result):
+                yield tuple(r.replace(".dll", ".lib") for r in result)
+            yield result
+    mx_native.DefaultNativeProject.getArchivableResults = getArchivableResultsWithLib
 
 
 def _sibling(filename):
@@ -1147,6 +1161,9 @@ def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
     if WIN32:
+        # Windows support is still experimental. we exclude a number of our
+        # unittests on Windows for now. If you add unittests and cannot get
+        # them to work on Windows, yet, add their files here.
         excluded_tests = [
             "test_zipimport.py", # sys.getwindowsversion
             "test_thread", # sys.getwindowsversion
@@ -1158,8 +1175,27 @@ def graalpython_gate_runner(args, tasks):
             "test_imports", # import posix
             "test_ctypes_callbacks.py", # ctypes error
             "test_code.py", # forward slash in path problem
-            "test_csv.py", # module 'os' has no attribute 'O_TEMPORARY'
-            "*/cpyext/*",
+            "*/cpyext/test_wiki.py",
+            "*/cpyext/test_unicode.py",
+            "*/cpyext/test_thread.py",
+            "*/cpyext/test_simple.py",
+            "*/cpyext/test_object.py",
+            "*/cpyext/test_modsupport.py",
+            "*/cpyext/test_mmap.py",
+            "*/cpyext/test_mixed_inheritance.py",
+            "*/cpyext/test_method.py",
+            "*/cpyext/test_memoryview.py",
+            "*/cpyext/test_member.py",
+            "*/cpyext/test_long.py",
+            "*/cpyext/test_functions.py",
+            "*/cpyext/test_float.py",
+            "*/cpyext/test_exceptionobject.py",
+            "*/cpyext/test_err.py",
+            "*/cpyext/test_descr.py",
+            "*/cpyext/test_datetime.py",
+            "*/cpyext/test_bytes.py",
+            "*/cpyext/test_bool.py",
+            "*/cpyext/test_abstract.py",
         ]
     else:
         excluded_tests = []

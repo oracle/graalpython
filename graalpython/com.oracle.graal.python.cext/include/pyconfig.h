@@ -51,7 +51,11 @@
 #  define MS_WINDOWS
 #  define Py_ENABLE_SHARED
 #  define HAVE_DECLSPEC_DLL
-#  pragma comment(lib, "python-native.lib")
+// This pragma is only understood by MSVC, not our LLVM toolchain, so it's only
+// relevant for code that is compiled without bitcode and will run only
+// natively. Since the pythonjni library contains all the trampolines to call
+// into the python-native.dll in this case, we must only depend on that.
+#  pragma comment(lib, "pythonjni.lib")
 # endif
 #endif
 

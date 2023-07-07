@@ -980,7 +980,7 @@ suite = {
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
                             "./libs/": [
-                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
+                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/pythonjni.lib",
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
@@ -988,7 +988,7 @@ suite = {
                                     "source_type": "extracted-dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
                                     "path": "*",
-                                    "exclude": ["python-native.lib"],
+                                    "exclude": ["pythonjni.lib"],
                                 },
                                 "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                             ],
