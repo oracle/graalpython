@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
@@ -121,6 +122,7 @@ public final class GraalHPyContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
+    private static final long NATIVE_ARGUMENT_STACK_SIZE = (2 ^ 15) * SIZEOF_LONG; // 32k entries
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
@@ -200,12 +202,49 @@ public final class GraalHPyContext extends CExtContext {
         }
     }
 
-    public long createNativeArguments(Object[] delegate, InteropLibrary delegateLib) {
-        return backend.createNativeArguments(delegate, delegateLib);
+    public Object createArgumentsArray(Object[] args) {
+        return backend.createArgumentsArray(args);
+    }
+
+    public void freeArgumentsArray(Object argsArray) {
+        backend.freeArgumentsArray(argsArray);
+    }
+
+    public long createNativeArguments(Object[] delegate) {
+        if (nativeArgumentsStack == 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // we use 'getContext().getUnsafe()' because this will check if native access is allowed
+            nativeArgumentsStack = getContext().getUnsafe().allocateMemory(NATIVE_ARGUMENT_STACK_SIZE);
+            nativeArgumentStackTop = nativeArgumentsStack + NATIVE_ARGUMENT_STACK_SIZE;
+        }
+        long arraySize = delegate.length * SIZEOF_LONG;
+        if (nativeArgumentsStack + arraySize > nativeArgumentStackTop) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new InternalError("overflow on native argument stack");
+        }
+        long arrayPtr = nativeArgumentsStack;
+        nativeArgumentsStack += arraySize;
+
+        for (int i = 0; i < delegate.length; i++) {
+            Object element = delegate[i];
+            UNSAFE.putLong(arrayPtr + i * SIZEOF_LONG, pythonObjectAsBits(element));
+        }
+        return arrayPtr;
     }
 
     public void freeNativeArgumentsArray(int nargs) {
-        backend.freeNativeArgumentsArray(nargs);
+        freeNativeArgumentsUntil(nativeArgumentsStack - nargs * SIZEOF_LONG);
+    }
+
+    public void freeNativeArgumentsUntil(long basePtr) {
+        assert basePtr <= nativeArgumentsStack;
+        for (long cur = basePtr; cur < nativeArgumentsStack; cur += SIZEOF_LONG) {
+            long h = UNSAFE.getLong(cur);
+            if (GraalHPyBoxing.isBoxedHandle(h)) {
+                releaseHPyHandleForObject(GraalHPyBoxing.unboxHandle(h));
+            }
+        }
+        nativeArgumentsStack = basePtr;
     }
 
     public interface HPyUpcall {
@@ -315,6 +354,9 @@ public final class GraalHPyContext extends CExtContext {
     private Thread hpyReferenceCleanerThread;
 
     private long nativeSpacePointers;
+
+    private long nativeArgumentsStack = 0;
+    private long nativeArgumentStackTop = 0;
 
     private final ScheduledExecutorService scheduler;
 
@@ -788,6 +830,31 @@ public final class GraalHPyContext extends CExtContext {
         return handle;
     }
 
+    public Object bitsAsPythonObject(long bits) {
+        if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+            return GraalHPyBoxing.unboxInt(bits);
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+    }
+
+    public long pythonObjectAsBits(Object object) {
+        if (GraalHPyBoxing.isBoxablePrimitive(object)) {
+            if (object instanceof Integer) {
+                return GraalHPyBoxing.boxInt((Integer) object);
+            }
+            assert object instanceof Double;
+            return GraalHPyBoxing.boxDouble((Double) object);
+        } else if (object == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
+            return 0;
+        }
+        return getHPyHandleForObject(object);
+    }
+
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class GetHPyHandleForSingleton extends Node {
@@ -1054,6 +1121,10 @@ public final class GraalHPyContext extends CExtContext {
             }
         }
         backend.finalizeNativeContext();
+        if (nativeArgumentsStack != 0) {
+            UNSAFE.freeMemory(nativeArgumentsStack);
+            nativeArgumentsStack = 0;
+        }
         if (scheduler != null) {
             scheduler.shutdown();
         }

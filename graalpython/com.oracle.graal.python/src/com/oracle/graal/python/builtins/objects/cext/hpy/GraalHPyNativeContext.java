@@ -113,10 +113,6 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract int[] getUpcallCounts();
 
-    public abstract long createNativeArguments(Object[] delegate, InteropLibrary lib);
-
-    public abstract void freeNativeArgumentsArray(int nargs);
-
     public abstract void initHPyDebugContext() throws ApiInitException;
 
     public abstract PythonModule getHPyDebugModule() throws ImportException;
@@ -124,6 +120,10 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     protected abstract void setNativeCache(long cachePtr);
 
     protected abstract long getWcharSize();
+
+    protected abstract Object createArgumentsArray(Object[] args);
+
+    protected abstract void freeArgumentsArray(Object argsArray);
 
     public abstract HPyCallHelperFunctionNode createCallHelperFunctionNode();
 

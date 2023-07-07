@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_ELIPSIS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SIZEOF_LONG;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -59,8 +58,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -94,6 +91,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
@@ -101,9 +103,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -182,7 +181,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private static final String J_NAME = "HPy Universal ABI (GraalVM JNI backend)";
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyJNIContext.class);
-    private static final long NATIVE_ARGUMENT_STACK_SIZE = (2 ^ 15) * SIZEOF_LONG; // 32k entries
 
     private static boolean jniBackendLoaded = false;
 
@@ -191,9 +189,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private long hPyDebugContext;
     private long nativePointer;
-
-    private long nativeArgumentsStack = 0;
-    private int nativeArgumentStackPos = 0;
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -367,43 +362,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             finalizeJNIDebugContext(hPyDebugContext);
             hPyDebugContext = 0;
         }
-        if (nativeArgumentsStack != 0) {
-            UNSAFE.freeMemory(nativeArgumentsStack);
-            nativeArgumentsStack = 0;
-        }
         loadedExtensions.clear();
-    }
-
-    @Override
-    public long createNativeArguments(Object[] delegate, InteropLibrary delegateLib) {
-        if (nativeArgumentsStack == 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nativeArgumentsStack = UNSAFE.allocateMemory(NATIVE_ARGUMENT_STACK_SIZE);
-        }
-        long arraySize = delegate.length * SIZEOF_LONG;
-        if (nativeArgumentStackPos + arraySize > NATIVE_ARGUMENT_STACK_SIZE) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new InternalError("overflow on native argument stack");
-        }
-        long arrayPtr = nativeArgumentsStack;
-        nativeArgumentsStack += arraySize;
-
-        for (int i = 0; i < delegate.length; i++) {
-            Object element = delegate[i];
-            delegateLib.toNative(element);
-            try {
-                UNSAFE.putLong(arrayPtr + i * SIZEOF_LONG, delegateLib.asPointer(element));
-            } catch (UnsupportedMessageException ex) {
-                throw CompilerDirectives.shouldNotReachHere(ex);
-            }
-        }
-        return arrayPtr;
-    }
-
-    @Override
-    public void freeNativeArgumentsArray(int size) {
-        long arraySize = size * SIZEOF_LONG;
-        nativeArgumentsStack -= arraySize;
     }
 
     @Override
@@ -424,6 +383,18 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
                 throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
             }
+        }
+    }
+
+    @Override
+    protected Object createArgumentsArray(Object[] args) {
+        return context.createNativeArguments(args);
+    }
+
+    @Override
+    protected void freeArgumentsArray(Object argsArray) {
+        if (argsArray instanceof Long argsArrayPtr) {
+            context.freeNativeArgumentsUntil(argsArrayPtr);
         }
     }
 
@@ -746,18 +717,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (counts != null) {
             counts[upcall.ordinal()]++;
         }
-    }
-
-    private Object bitsAsPythonObject(long bits) {
-        if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
-            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
-        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
-            return GraalHPyBoxing.unboxInt(bits);
-        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
-            return GraalHPyBoxing.unboxDouble(bits);
-        }
-        assert GraalHPyBoxing.isBoxedHandle(bits);
-        return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
     }
 
     private static PythonBuiltinClassType getBuiltinClass(Object cls) {
@@ -1125,7 +1084,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxGetAttrs(long receiverHandle, String name) {
         increment(HPyJNIUpcall.HPyGetAttrs);
-        Object receiver = bitsAsPythonObject(receiverHandle);
+        Object receiver = context.bitsAsPythonObject(receiverHandle);
         TruffleString tsName = toTruffleStringUncached(name);
         Object result;
         try {
@@ -1134,7 +1093,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return 0;
         }
-        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
+        return context.pythonObjectAsBits(result);
     }
 
     @SuppressWarnings("static-method")
@@ -1309,7 +1268,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public int ctxSetItems(long receiverHandle, String name, long valueHandle) {
         increment(HPyJNIUpcall.HPySetItems);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
-        Object value = bitsAsPythonObject(valueHandle);
+        Object value = context.bitsAsPythonObject(valueHandle);
         if (value == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
             HPyRaiseNode.raiseIntUncached(context, -1, SystemError, ErrorMessages.HPY_UNEXPECTED_HPY_NULL);
             return -1;
@@ -2497,7 +2456,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private Object convertLongArg(HPyContextSignatureType type, long argBits) {
         return switch (type) {
-            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> bitsAsPythonObject(argBits);
+            case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> context.bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
             case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);

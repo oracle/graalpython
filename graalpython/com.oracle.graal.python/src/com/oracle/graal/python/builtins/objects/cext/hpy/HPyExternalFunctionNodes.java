@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -456,13 +455,15 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         public Object execute(VirtualFrame frame) {
+            Object callable = ensureReadCallableNode().execute(frame);
+            GraalHPyContext hpyContext = readContext(frame);
+            Object[] cArguments = prepareCArguments(frame, hpyContext);
             getCalleeContext().enter(frame);
             try {
-                Object callable = ensureReadCallableNode().execute(frame);
-                GraalHPyContext hpyContext = readContext(frame);
-                return processResult(frame, invokeNode.execute(frame, name, callable, hpyContext, prepareCArguments(frame, hpyContext)));
+                return processResult(frame, invokeNode.execute(frame, name, callable, hpyContext, cArguments));
             } finally {
                 getCalleeContext().exit(frame, this);
+                closeCArguments(frame, hpyContext, cArguments);
             }
         }
 
@@ -470,6 +471,11 @@ public abstract class HPyExternalFunctionNodes {
 
         protected Object processResult(@SuppressWarnings("unused") VirtualFrame frame, Object result) {
             return result;
+        }
+
+        @SuppressWarnings("unused")
+        protected void closeCArguments(VirtualFrame frame, GraalHPyContext hpyContext, Object[] cArguments) {
+            // nothing to do by default
         }
 
         protected final HPyExternalFunctionInvokeNode getInvokeNode() {
@@ -616,7 +622,12 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
             Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length};
+            return new Object[]{getSelf(frame), hpyContext.createArgumentsArray(args), (long) args.length};
+        }
+
+        @Override
+        protected void closeCArguments(VirtualFrame frame, GraalHPyContext hpyContext, Object[] cArguments) {
+            hpyContext.freeArgumentsArray(cArguments[1]);
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -666,7 +677,16 @@ public abstract class HPyExternalFunctionNodes {
                 args = positionalArgs;
                 kwnamesTuple = GraalHPyHandle.NULL_HANDLE_DELEGATE;
             }
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), nPositionalArgs, kwnamesTuple};
+            return new Object[]{getSelf(frame), createArgumentsArray(hpyContext, args), nPositionalArgs, kwnamesTuple};
+        }
+
+        @Override
+        protected void closeCArguments(VirtualFrame frame, GraalHPyContext hpyContext, Object[] cArguments) {
+            hpyContext.freeArgumentsArray(cArguments[1]);
+        }
+
+        private Object createArgumentsArray(GraalHPyContext hpyContext, Object[] args) {
+            return hpyContext.createArgumentsArray(args);
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -716,7 +736,12 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
             Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length, getKwargs(frame)};
+            return new Object[]{getSelf(frame), hpyContext.createArgumentsArray(args), (long) args.length, getKwargs(frame)};
+        }
+
+        @Override
+        protected void closeCArguments(VirtualFrame frame, GraalHPyContext hpyContext, Object[] cArguments) {
+            hpyContext.freeArgumentsArray(cArguments[1]);
         }
 
         @Override
