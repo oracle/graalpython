@@ -307,7 +307,9 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugVarargs)(JNIEnv *env, jclass claz
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_varargs f = (HPyFunc_varargs)target;
     DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy dh_result = f(dctx, dh_self, (const HPy *)args, (size_t)nargs);
+    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
+    DHPy dh_result = f(dctx, dh_self, dh_args, (size_t)nargs);
+    _ARR_DH_CLOSE(dctx, dh_args, nargs)
     DHPy_close_and_check(dctx, dh_self);
     return from_dh(dctx, dh_result);
 }
@@ -318,7 +320,9 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass cla
     HPyFunc_keywords f = (HPyFunc_keywords)target;
     DHPy dh_self = _jlong2dh(dctx, self);
     DHPy dh_kwnames = _jlong2dh(dctx, kwnames);
-    DHPy dh_result = f(dctx, dh_self, (const HPy *)args, (size_t)nargs, dh_kwnames);
+    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
+    DHPy dh_result = f(dctx, dh_self, dh_args, (size_t)nargs, dh_kwnames);
+    _ARR_DH_CLOSE(dctx, dh_args, nargs)
     DHPy_close_and_check(dctx, dh_self);
     DHPy_close_and_check(dctx, dh_kwnames);
     return from_dh(dctx, dh_result);
@@ -579,7 +583,9 @@ JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInitproc)(JNIEnv *env, jclass claz
     HPyFunc_initproc f = (HPyFunc_initproc)target;
     DHPy dh_self = _jlong2dh(dctx, self);
     DHPy dh_kw = _jlong2dh(dctx, kw);
-    jint result = (jint) f(dctx, dh_self, (const HPy *)args, (HPy_ssize_t)nargs, dh_kw);
+    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
+    jint result = (jint) f(dctx, dh_self, dh_args, (HPy_ssize_t)nargs, dh_kw);
+    _ARR_DH_CLOSE(dctx, dh_args, nargs)
     DHPy_close_and_check(dctx, dh_self);
     DHPy_close_and_check(dctx, dh_kw);
     return result;
@@ -591,7 +597,9 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugNewfunc)(JNIEnv *env, jclass claz
     HPyFunc_newfunc f = (HPyFunc_newfunc)target;
     DHPy dh_type = _jlong2dh(dctx, type);
     DHPy dh_kw = _jlong2dh(dctx, kw);
-    DHPy dh_result = f(dctx, dh_type, (const HPy *)args, (HPy_ssize_t)nargs, dh_kw);
+    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
+    DHPy dh_result = f(dctx, dh_type, dh_args, (HPy_ssize_t)nargs, dh_kw);
+    _ARR_DH_CLOSE(dctx, dh_args, nargs)
     DHPy_close_and_check(dctx, dh_type);
     DHPy_close_and_check(dctx, dh_kw);
     return from_dh(dctx, dh_result);

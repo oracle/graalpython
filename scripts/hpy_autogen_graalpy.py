@@ -937,7 +937,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
                     dh_arg = f'dh_{pname}'
                     dh_init.append(pname)
                     args.append(dh_arg)
-                elif c_param_type == 'HPy *' and pname == 'args':
+                elif (c_param_type == 'HPy *' or c_param_type == 'const HPy *') and pname == 'args':
                     dh_init.append('')
                     args.append('dh_args')
                     has_args_param = True
