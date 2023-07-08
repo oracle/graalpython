@@ -1938,6 +1938,7 @@ def _python_checkpatchfiles():
             "MIT",
             "BSD",
             "BSD-3-Clause",
+            "3-Clause BSD License",
             "Apache License, Version 2.0",
             "PSF",
             "Apache",
