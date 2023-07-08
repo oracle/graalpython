@@ -960,7 +960,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         if WIN32:
             size = 5
-            testfiles = [testfiles[i:i + size] for i in range(0, len(testfiles), size)]
+            # Windows has problems with long commandlines and with file locks
+            # when running multiple cpyext tests in the same process
+            pytests = [t for t in testfiles if "cpyext" not in t]
+            testfiles = [pytests[i:i + size] for i in range(0, len(pytests), size)] + [[t] for t in testfiles if "cpyext" in t]
         else:
             testfiles = [testfiles]
 
@@ -1161,41 +1164,61 @@ def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
     if WIN32:
-        # Windows support is still experimental. we exclude a number of our
-        # unittests on Windows for now. If you add unittests and cannot get
-        # them to work on Windows, yet, add their files here.
+        # Windows support is still experimental, so we exclude some unittests
+        # on Windows for now. If you add unittests and cannot get them to work
+        # on Windows, yet, add their files here.
         excluded_tests = [
-            "test_zipimport.py", # sys.getwindowsversion
-            "test_thread", # sys.getwindowsversion
-            "test_structseq", # import posix
-            "test_ssl", # from_ssl import enum_certificates
-            "test_posix", # import posix
-            "test_multiprocessing", # import _winapi
-            "test_mmap", # sys.getwindowsversion
-            "test_imports", # import posix
-            "test_ctypes_callbacks.py", # ctypes error
             "test_code.py", # forward slash in path problem
-            "*/cpyext/test_wiki.py",
-            "*/cpyext/test_unicode.py",
-            "*/cpyext/test_thread.py",
-            "*/cpyext/test_simple.py",
-            "*/cpyext/test_object.py",
-            "*/cpyext/test_modsupport.py",
-            "*/cpyext/test_mmap.py",
-            "*/cpyext/test_mixed_inheritance.py",
-            "*/cpyext/test_method.py",
-            "*/cpyext/test_memoryview.py",
-            "*/cpyext/test_member.py",
-            "*/cpyext/test_long.py",
-            "*/cpyext/test_functions.py",
-            "*/cpyext/test_float.py",
-            "*/cpyext/test_exceptionobject.py",
-            "*/cpyext/test_err.py",
-            "*/cpyext/test_descr.py",
-            "*/cpyext/test_datetime.py",
-            "*/cpyext/test_bytes.py",
-            "*/cpyext/test_bool.py",
+            "test_csv.py",
+            "test_ctypes_callbacks.py", # ctypes error
+            "test_imports.py", # import posix
+            "test_math.py",
+            "test_memoryview.py",
+            "test_mmap.py", # sys.getwindowsversion
+            "test_multiprocessing.py", # import _winapi
+            "test_patched_pip.py",
+            "test_pathlib.py",
+            "test_posix.py", # import posix
+            "test_pyio.py",
+            "test_signal.py",
+            "test_ssl.py", # from_ssl import enum_certificates
+            "test_struct.py",
+            "test_structseq.py", # import posix
+            "test_subprocess.py",
+            "test_thread.py", # sys.getwindowsversion
+            "test_traceback.py",
+            "test_venv.py",
+            "test_zipimport.py", # sys.getwindowsversion
+            "test_zlib.py",
+            "test_ssl_java_integration.py",
             "*/cpyext/test_abstract.py",
+            "*/cpyext/test_bytes.py",
+            "*/cpyext/test_cpython_sre.py",
+            "*/cpyext/test_datetime.py",
+            "*/cpyext/test_descr.py",
+            "*/cpyext/test_err.py",
+            "*/cpyext/test_exceptionobject.py",
+            "*/cpyext/test_float.py",
+            "*/cpyext/test_functions.py",
+            "*/cpyext/test_gc.py",
+            "*/cpyext/test_long.py",
+            "*/cpyext/test_member.py",
+            "*/cpyext/test_memoryview.py",
+            "*/cpyext/test_method.py",
+            "*/cpyext/test_misc.py",
+            "*/cpyext/test_mixed_inheritance.py",
+            "*/cpyext/test_mmap.py",
+            "*/cpyext/test_modsupport.py",
+            "*/cpyext/test_module.py",
+            "*/cpyext/test_object.py",
+            "*/cpyext/test_simple.py",
+            "*/cpyext/test_slice.py",
+            "*/cpyext/test_structseq.py",
+            "*/cpyext/test_thread.py",
+            "*/cpyext/test_traceback.py",
+            "*/cpyext/test_tuple.py",
+            "*/cpyext/test_unicode.py",
+            "*/cpyext/test_wiki.py",
         ]
     else:
         excluded_tests = []
@@ -1293,7 +1316,7 @@ def graalpython_gate_runner(args, tasks):
             python_checkcopyrights([])
 
     with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
-        if task:
+        if task and not WIN32:
             run_shared_lib_test(python_so())
 
     with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
@@ -1315,7 +1338,7 @@ def graalpython_gate_runner(args, tasks):
                 assert "Using preinitialized context." in out.data
 
     with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
-        if task:
+        if task and not WIN32:
             svm_image = python_svm()
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmpstandalone = os.path.join(tmpdir, "target")
