@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 23.1.0
+* Support compilation and execution of C extensions using the native MSVC toolchain on Windows.
+
 ## Version 23.0.0
 * Update `numpy` and `pandas` versions, add support for `scipy` and `scikit_learn` with `ginstall`. This automatically applies some fixes that make it possible to use these new versions with GraalPy.
 * Update language version and standard library to 3.10.8, making it compatible with more recent modules and packages.
