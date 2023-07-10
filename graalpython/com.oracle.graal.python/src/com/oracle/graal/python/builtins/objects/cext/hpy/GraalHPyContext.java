@@ -122,7 +122,7 @@ public final class GraalHPyContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
-    private static final long NATIVE_ARGUMENT_STACK_SIZE = (2 ^ 15) * SIZEOF_LONG; // 32k entries
+    private static final long NATIVE_ARGUMENT_STACK_SIZE = 1 << 15; // 32 kB stack size
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
@@ -220,7 +220,9 @@ public final class GraalHPyContext extends CExtContext {
         long arraySize = delegate.length * SIZEOF_LONG;
         if (nativeArgumentsStack + arraySize > nativeArgumentStackTop) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new InternalError("overflow on native argument stack");
+            String msg = String.format("overflow on native argument stack (requested size: %d bytes)", arraySize);
+            LOGGER.severe(msg);
+            throw new InternalError(msg);
         }
         long arrayPtr = nativeArgumentsStack;
         nativeArgumentsStack += arraySize;
