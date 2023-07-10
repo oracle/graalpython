@@ -1999,6 +1999,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public long setsid() {
+        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public TruffleString ctermid() {
         return T_DEV_TTY;
     }

@@ -215,6 +215,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_setpgid("(sint64,sint64):sint32"),
         call_getpgrp("():sint64"),
         call_getsid("(sint64):sint64"),
+        call_setsid("():sint64"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
         call_unsetenv("([sint8]):sint32"),
@@ -1150,6 +1151,16 @@ public final class NFIPosixSupport extends PosixSupport {
     public long getsid(long pid,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long res = invokeNode.callLong(this, PosixNativeFunction.call_getsid, pid);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public long setsid(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_setsid);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
