@@ -231,8 +231,7 @@ static int
 parser_init(struct _PyArg_Parser *parser)
 {
     const char * const *keywords;
-    const char *format, *msg;
-    int i, len, min, max, nkw;
+    int i, len, nkw;
     PyObject *kwtuple;
 
     assert(parser->keywords != NULL);

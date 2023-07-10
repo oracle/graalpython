@@ -142,6 +142,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.STAT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_STAT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIMESPEC_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIMEVAL_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIME_T;
@@ -704,8 +705,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_FdIsInteractive", ret = Int, args = {FILE_PTR, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_fopen_obj", ret = FILE_PTR, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_FreeCharPArray", ret = Void, args = {CHAR_CONST_ARRAY}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_fstat_noraise", ret = Int, args = {Int, STAT_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_fstat", ret = Int, args = {Int, STAT_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_Py_fstat_noraise", ret = Int, args = {Int, PY_STAT_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_Py_fstat", ret = Int, args = {Int, PY_STAT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_get_blocking", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_get_inheritable", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_GetAllocatedBlocks", ret = Py_ssize_t, args = {}, call = NotImplemented)

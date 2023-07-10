@@ -104,7 +104,7 @@ static int32_t unclosedHandleTop = 0;
 static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 
 static inline jsize get_handle_table_size(HPyContext *ctx) {
-    return HANDLE_TABLE_SIZE(ctx->_private);
+    return (jsize)HANDLE_TABLE_SIZE(ctx->_private);
 }
 
 static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, jobject element, bool update_native_cache) {
@@ -220,7 +220,7 @@ _HPy_HIDDEN HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *u, 
 }
 
 _HPy_HIDDEN HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
-    long bits = toBits(global);
+    uint64_t bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
         jobject hpyContext = graal_hpy_context_get_native_context(ctx)->jni_context;
         jobject element = get_object_for_hpy_global(hpyContext, bits);

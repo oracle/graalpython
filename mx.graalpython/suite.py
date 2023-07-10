@@ -653,7 +653,8 @@ suite = {
                     "<others>": {
                         "cflags": [
                             "-DHPY_UNIVERSAL_ABI", "-DNDEBUG", "-DMS_WINDOWS",
-                            "/Z7", "/O2", "/W3", # cflags to replace -g -O3. -Werror would be /WX
+                            # cflags equivalent to -g -O3 -Wall (/WX would be -Werror)
+                            "-D_CRT_SECURE_NO_WARNINGS", "/Z7", "/O2", "/W3",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
                             "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",
