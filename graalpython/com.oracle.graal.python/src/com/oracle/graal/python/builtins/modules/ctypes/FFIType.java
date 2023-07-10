@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -189,10 +190,11 @@ public final class FFIType {
         return type.type.getNFIType();
     }
 
-    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype, boolean isCallback,
-                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+    @TruffleBoundary
+    static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype, boolean isCallback) {
         TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
         boolean first = true;
+        TruffleStringBuilder.AppendStringNode appendStringNode = TruffleStringBuilder.AppendStringNode.getUncached();
         appendStringNode.execute(sb, T_LPAREN);
         for (FFIType type : atypes) {
             if (first) {
@@ -201,8 +203,7 @@ public final class FFIType {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
             }
             if (type.isCallback()) {
-                TruffleString subSignature = buildNFISignature(type.callback.atypes, type.callback.ffi_restype, true,
-                                appendStringNode, toStringNode);
+                TruffleString subSignature = buildNFISignature(type.callback.atypes, type.callback.ffi_restype, true);
                 appendStringNode.execute(sb, subSignature);
             } else {
                 appendStringNode.execute(sb, isCallback ? getNFICallback(type) : getNFIType(type));
@@ -210,12 +211,12 @@ public final class FFIType {
         }
         appendStringNode.execute(sb, T_LEFT_PAREN_COLON);
         appendStringNode.execute(sb, getNFIReturnType(restype));
-        return toStringNode.execute(sb);
+        return TruffleStringBuilder.ToStringNode.getUncached().execute(sb);
     }
 
-    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype,
-                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
-        return buildNFISignature(atypes, restype, false, appendStringNode, toStringNode);
+    @TruffleBoundary
+    static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype) {
+        return buildNFISignature(atypes, restype, false);
     }
 
     enum FieldSet {
