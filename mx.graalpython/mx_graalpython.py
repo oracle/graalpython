@@ -1781,7 +1781,8 @@ def update_import_cmd(args):
         join(overlaydir, "python", "graal", "common.json"))
     shutil.copytree(
         join(mx.suite("truffle").dir, "..", "ci"),
-        join(overlaydir, "python", "graal", "ci"))
+        join(overlaydir, "python", "graal", "ci"),
+        dirs_exist_ok=True)
 
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
