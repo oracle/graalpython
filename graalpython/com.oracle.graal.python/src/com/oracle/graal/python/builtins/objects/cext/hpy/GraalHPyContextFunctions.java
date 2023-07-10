@@ -3497,13 +3497,15 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyContextVarSet extends HPyTernaryContextFunction {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object var, Object val,
-                        @Cached PRaiseNode raiseNode) {
-            if (!(var instanceof PContextVar)) {
+                                @Cached PRaiseNode raiseNode,
+                                @Cached PythonObjectFactory factory) {
+            if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonThreadState threadState = hpyContext.getContext().getThreadState(PythonLanguage.get(raiseNode));
-            ((PContextVar) var).setValue(threadState, val);
-            return PNone.NONE;
+            Object oldValue = contextVar.getValue(threadState);
+            contextVar.setValue(threadState, val);
+            return factory.createContextVarsToken(contextVar, oldValue);
         }
     }
 
