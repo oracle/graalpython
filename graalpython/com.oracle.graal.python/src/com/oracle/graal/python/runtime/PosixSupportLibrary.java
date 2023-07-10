@@ -288,6 +288,11 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long setsid(Object receiver) throws PosixException;
 
+    public record OpenPtyResult(int masterFd, int slaveFd) {
+    }
+
+    public abstract OpenPtyResult openpty(Object receiver) throws PosixException;
+
     public abstract TruffleString ctermid(Object receiver) throws PosixException;
 
     // note: this leaks memory in nfi backend and is not synchronized

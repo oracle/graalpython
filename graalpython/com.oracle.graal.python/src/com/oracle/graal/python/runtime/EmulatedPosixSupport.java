@@ -229,6 +229,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -2001,6 +2002,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public long setsid() {
         throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public OpenPtyResult openpty() {
+        throw new UnsupportedPosixFeatureException("Emulated openpty not supported");
     }
 
     @ExportMessage

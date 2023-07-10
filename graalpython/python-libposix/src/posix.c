@@ -75,6 +75,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <pty.h>
 
 
 int64_t call_getpid() {
@@ -579,6 +580,10 @@ int64_t call_getsid(int64_t pid) {
 
 int64_t call_setsid() {
     return setsid();
+}
+
+int32_t call_openpty(int32_t *outvars) {
+    return openpty(outvars, outvars + 1, NULL, NULL, NULL);
 }
 
 int32_t call_ctermid(char *buf) {

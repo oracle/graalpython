@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -885,6 +886,16 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("mmapReadBytes", "%s", lib.mmapReadBytes(delegate, mmap, index, bytes, length));
         } catch (PosixException e) {
             throw logException("mmapReadBytes", e);
+        }
+    }
+
+    @ExportMessage
+    final OpenPtyResult openpty(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("openpty", "");
+        try {
+            return logExit("openpty", "%s", lib.openpty(delegate));
+        } catch (PosixException e) {
+            throw logException("openpty", e);
         }
     }
 
