@@ -81,27 +81,27 @@ class TestHPyGlobal(HPyTest):
             HPyGlobal myglobal1;
             HPyGlobal myglobal2;
 
-            HPyDef_METH(setg1, "setg1", setg1_impl, HPyFunc_O)
+            HPyDef_METH(setg1, "setg1", HPyFunc_O)
             static HPy setg1_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPyGlobal_Store(ctx, &myglobal1, arg);
                 return HPy_Dup(ctx, ctx->h_None);
             }
 
-            HPyDef_METH(setg2, "setg2", setg2_impl, HPyFunc_O)
+            HPyDef_METH(setg2, "setg2", HPyFunc_O)
             static HPy setg2_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPyGlobal_Store(ctx, &myglobal2, arg);
                 return HPy_Dup(ctx, ctx->h_None);
             }
 
-            HPyDef_METH(getg1, "getg1", getg1_impl, HPyFunc_NOARGS)
+            HPyDef_METH(getg1, "getg1", HPyFunc_NOARGS)
             static HPy getg1_impl(HPyContext *ctx, HPy self)
             {
                 return HPyGlobal_Load(ctx, myglobal1);
             }
 
-            HPyDef_METH(getg2, "getg2", getg2_impl, HPyFunc_NOARGS)
+            HPyDef_METH(getg2, "getg2", HPyFunc_NOARGS)
             static HPy getg2_impl(HPyContext *ctx, HPy self)
             {
                 return HPyGlobal_Load(ctx, myglobal2);
