@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_ELIPSIS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SIZEOF_LONG;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -91,18 +92,19 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPackKeywordArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -111,10 +113,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -131,6 +135,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
@@ -2145,9 +2150,53 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         executeIntBinaryContextFunction(HPyContextMember.CTX_DUMP, h);
     }
 
-    public long ctxCall(long callable, long args, long nargs, long kwnames) {
+    public long ctxCall(long callable, long args, long lnargs, long kwnames) {
         increment(HPyJNIUpcall.HPyCall);
-        return executeLongContextFunction(HPyContextMember.CTX_CALL, new long[]{callable, args, nargs, kwnames});
+        // some assumptions that may be made
+        assert callable != 0 && GraalHPyBoxing.isBoxedHandle(callable);
+        assert kwnames == 0 || GraalHPyBoxing.isBoxedHandle(kwnames);
+        assert args != 0 || lnargs == 0;
+        try {
+            if (!PInt.isIntRange(lnargs)) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+            }
+            int nargs = (int) lnargs;
+            Object callableObj = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(callable));
+
+            PKeyword[] keywords;
+            Object[] argsArr = new Object[nargs];
+            for (int i = 0; i < argsArr.length; i++) {
+                long argBits = UNSAFE.getLong(args + i * SIZEOF_LONG);
+                argsArr[i] = context.bitsAsPythonObject(argBits);
+            }
+
+            if (kwnames != 0) {
+                Object kwnamesObj = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(kwnames));
+                if (kwnamesObj instanceof PTuple kwnamesTuple) {
+                    int nkw = kwnamesTuple.getSequenceStorage().length();
+                    Object[] kwvalues = new Object[nkw];
+                    long kwvaluesPtr = args + nargs * SIZEOF_LONG;
+                    for (int i = 0; i < kwvalues.length; i++) {
+                        long argBits = UNSAFE.getLong(kwvaluesPtr + i * SIZEOF_LONG);
+                        kwvalues[i] = context.bitsAsPythonObject(argBits);
+                    }
+                    keywords = HPyPackKeywordArgsNodeGen.getUncached().execute(null, kwvalues, kwnamesTuple);
+                } else {
+                    // fatal error (CPython would just cause a memory corruption)
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                keywords = PKeyword.EMPTY_KEYWORDS;
+            }
+
+            Object result = CallNode.getUncached().execute(callableObj, argsArr, keywords);
+            return context.pythonObjectAsBits(result);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(e);
+            return 0;
+        } catch (Throwable t) {
+            throw checkThrowableBeforeNative(t, "HPy context function", HPyJNIUpcall.HPyCall.getName());
+        }
     }
 
     public long ctxCallMethod(long name, long args, long nargs, long kwnames) {

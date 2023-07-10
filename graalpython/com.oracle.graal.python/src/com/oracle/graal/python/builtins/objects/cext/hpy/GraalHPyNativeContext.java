@@ -63,6 +63,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -166,6 +167,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract void initNativeFastPaths();
 
+    @TruffleBoundary
     public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
         if (t instanceof PException pe) {
             // this is ok, and will be handled correctly
