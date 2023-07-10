@@ -314,20 +314,6 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugVarargs)(JNIEnv *env, jclass claz
     return from_dh(dctx, dh_result);
 }
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kwnames)
-{
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_keywords f = (HPyFunc_keywords)target;
-    DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy dh_kwnames = _jlong2dh(dctx, kwnames);
-    _ARR_JLONG2DH(dctx, dh_args, args, nargs)
-    DHPy dh_result = f(dctx, dh_self, dh_args, (size_t)nargs, dh_kwnames);
-    _ARR_DH_CLOSE(dctx, dh_args, nargs)
-    DHPy_close_and_check(dctx, dh_self);
-    DHPy_close_and_check(dctx, dh_kwnames);
-    return from_dh(dctx, dh_result);
-}
-
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugUnaryfunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
 {
     HPyContext *dctx = (HPyContext *) ctx;
