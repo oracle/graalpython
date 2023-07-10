@@ -2510,8 +2510,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr -> PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR,
-                            argBits);
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr -> PCallHPyFunctionNodeGen.getUncached().call(context,
+                            GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }

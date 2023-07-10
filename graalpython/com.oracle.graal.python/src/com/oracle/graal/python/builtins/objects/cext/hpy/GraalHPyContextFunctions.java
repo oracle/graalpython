@@ -112,6 +112,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesFromStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesGetSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCallMethodNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCallTupleDictNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleGetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleIsValidNodeGen;
@@ -257,6 +259,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsure
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyPackKeywordArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
@@ -293,11 +296,13 @@ import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -519,6 +524,8 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TRACKER_FORGETALL -> GraalHPyTrackerForgetAllNodeGen.create();
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.create();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.create();
+                case CTX_CALL -> GraalHPyCallNodeGen.create();
+                case CTX_CALLMETHOD -> GraalHPyCallMethodNodeGen.create();
                 case CTX_DUMP -> GraalHPyDumpNodeGen.create();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.create();
                 case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.create();
@@ -676,6 +683,8 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TRACKER_FORGETALL -> GraalHPyTrackerForgetAllNodeGen.getUncached();
                 case CTX_CALLABLE_CHECK -> GraalHPyIsCallableNodeGen.getUncached();
                 case CTX_CALLTUPLEDICT -> GraalHPyCallTupleDictNodeGen.getUncached();
+                case CTX_CALL -> GraalHPyCallNodeGen.getUncached();
+                case CTX_CALLMETHOD -> GraalHPyCallMethodNodeGen.getUncached();
                 case CTX_DUMP -> GraalHPyDumpNodeGen.getUncached();
                 case CTX_TYPE -> GraalHPyTypeNodeGen.getUncached();
                 case CTX_TYPECHECK -> GraalHPyTypeCheckNodeGen.getUncached();
@@ -2757,6 +2766,112 @@ public abstract class GraalHPyContextFunctions {
 
         private static boolean isEmptyDict(Object delegate, HashingStorageLen lenNode) {
             return delegate instanceof PDict && lenNode.execute(((PDict) delegate).getDictStorage()) == 0;
+        }
+    }
+
+    @HPyContextFunction("ctx_Call")
+    @GenerateUncached
+    public abstract static class GraalHPyCall extends HPy5ContextFunction {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext hpyContext, Object callable, Object args, long lnargs, PTuple kwnames,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached PyTupleSizeNode tupleSizeNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyPackKeywordArgsNode packKeywordArgsNode,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            if (!PInt.isIntRange(lnargs)) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+            }
+            int nargs = (int) lnargs;
+            int nkw = tupleSizeNode.execute(kwnames);
+
+            Object typedArgsPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, args, nargs + nkw);
+            if (!lib.hasArrayElements(typedArgsPtr)) {
+                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
+            }
+
+            // positional args are from 'args[0]' ... 'args[nargs - 1]'
+            Object[] positionalArgs = readHPyArray(typedArgsPtr, 0, nargs, lib, asPythonObjectNode);
+
+            PKeyword[] keywords;
+            if (nkw > 0) {
+                // keyword arg values are from 'args[nargs]' ... 'args[nargs + nkw - 1]'
+                Object[] kwObjs = readHPyArray(typedArgsPtr, nargs, nkw, lib, asPythonObjectNode);
+                keywords = packKeywordArgsNode.execute(inliningTarget, kwObjs, kwnames);
+            } else {
+                keywords = PKeyword.EMPTY_KEYWORDS;
+            }
+
+            return callNode.execute(callable, positionalArgs, keywords);
+        }
+
+        static Object[] readHPyArray(Object typedArrPtr, int start, int n, InteropLibrary lib, HPyAsPythonObjectNode asPythonObjectNode) {
+            Object[] result = new Object[n];
+            for (int i = 0; i < n; i++) {
+                /*
+                 * This will read an element of a 'HPy arr[]' and the returned value will be an HPy
+                 * "structure". So, we also need to read element "_i" to get the internal handle
+                 * value.
+                 */
+                try {
+                    Object hpyStructPtr = lib.readArrayElement(typedArrPtr, start + i);
+                    result[i] = asPythonObjectNode.execute(lib.readMember(hpyStructPtr, GraalHPyHandle.J_I));
+                } catch (InvalidArrayIndexException | UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return result;
+        }
+    }
+
+    @HPyContextFunction("ctx_CallMethod")
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class GraalHPyCallMethod extends HPy5ContextFunction {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext hpyContext, TruffleString name, Object args, long lnargs, Object kwnames,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached PyTupleSizeNode tupleSizeNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyPackKeywordArgsNode packKeywordArgsNode,
+                        @Cached PyObjectGetMethod getMethodNode,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            if (!PInt.isIntRange(lnargs)) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+            }
+            int nargs = (int) lnargs;
+            int nkw = kwnames != PNone.NO_VALUE ? tupleSizeNode.execute(kwnames) : 0;
+
+            Object typedArgsPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, args, nargs + nkw);
+            if (!lib.hasArrayElements(typedArgsPtr)) {
+                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
+            }
+
+            // positional args are from 'args[0]' ... 'args[nargs - 1]' (including 'self')
+            Object[] positionalArgs = GraalHPyCall.readHPyArray(typedArgsPtr, 0, nargs, lib, asPythonObjectNode);
+            Object receiver = positionalArgs[0];
+
+            Object callable = getMethodNode.execute(null, receiver, name);
+
+            PKeyword[] keywords;
+            if (nkw > 0) {
+                // check and expand kwargs
+                Object[] kwObjs = GraalHPyCall.readHPyArray(typedArgsPtr, nargs, nkw, lib, asPythonObjectNode);
+                keywords = packKeywordArgsNode.execute(inliningTarget, kwObjs, (PTuple) kwnames);
+            } else {
+                keywords = PKeyword.EMPTY_KEYWORDS;
+            }
+            return callNode.execute(callable, positionalArgs, keywords);
         }
     }
 
