@@ -2516,7 +2516,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> context.bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
-            case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
+            case Int32_t, Uint32_t, Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
             case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr -> PCallHPyFunctionNodeGen.getUncached().call(context,
