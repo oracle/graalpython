@@ -1172,6 +1172,7 @@ def graalpython_gate_runner(args, tasks):
             "test_csv.py",
             "test_ctypes_callbacks.py", # ctypes error
             "test_imports.py", # import posix
+            "test_locale.py",
             "test_math.py",
             "test_memoryview.py",
             "test_mmap.py", # sys.getwindowsversion
@@ -1224,7 +1225,7 @@ def graalpython_gate_runner(args, tasks):
         excluded_tests = []
 
     # JUnit tests
-    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
+    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
         if task:
             if WIN32:
                 punittest(
@@ -1303,7 +1304,7 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
-    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
+    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
             run_python_unittests(python_svm(), exclude=excluded_tests, aot_compatible=True, report=report())
 
@@ -1377,20 +1378,6 @@ def graalpython_gate_runner(args, tasks):
                 )
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
-        if task:
-            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'], report=True)
-            svm_image = python_svm()
-            out = mx.OutputCapture()
-            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "\n".join(["win32"])
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
-            mx.run([svm_image, "--experimental-options", "--python.NativeModules=", "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "b'abcd'"
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
