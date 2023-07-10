@@ -112,6 +112,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_SET_GLOBAL_I("graal_hpy_set_global_i"),
     GRAAL_HPY_STRDUP("graal_hpy_strdup"),
     GRAAL_HPY_LONG2PTR("graal_hpy_long2ptr"),
+    GRAAL_HPY_FROM_HPYCAPSULE_DESTRUCTOR("graal_hpy_from_HPyCapsule_Destructor"),
 
     /* C functions for reading native members by offset */
     GRAAL_HPY_READ_S("graal_hpy_read_s"),

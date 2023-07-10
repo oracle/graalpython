@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpca
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
@@ -1040,9 +1039,19 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxCapsuleNew(long pointer, long name, long destructor) {
         if (pointer == 0) {
-            return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleNew.NULL_PTR_ERROR);
+            return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, ErrorMessages.HPYCAPSULE_NEW_NULL_PTR_ERROR);
         }
-        PyCapsule result = slowPathFactory.createCapsule(pointer, name, destructor);
+        long hpyDestructor;
+        if (destructor != 0) {
+            long cpyTrampoline = UNSAFE.getLong(destructor); // HPyCapsule_Destructor.cpy_trampoline
+            hpyDestructor = UNSAFE.getLong(destructor + SIZEOF_LONG); // HPyCapsule_Destructor.impl
+            if (cpyTrampoline == 0 || hpyDestructor == 0) {
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
+            }
+        } else {
+            hpyDestructor = 0;
+        }
+        PyCapsule result = slowPathFactory.createCapsule(pointer, name, hpyDestructor);
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
     }
 

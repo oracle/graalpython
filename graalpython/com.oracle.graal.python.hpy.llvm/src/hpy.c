@@ -84,6 +84,7 @@ POLYGLOT_DECLARE_TYPE(HPyModuleDef)
 POLYGLOT_DECLARE_TYPE(wchar_t)
 POLYGLOT_DECLARE_TYPE(HPyType_Spec)
 POLYGLOT_DECLARE_TYPE(HPyType_SpecParam)
+POLYGLOT_DECLARE_TYPE(HPyCapsule_Destructor)
 
 int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject) {
 	// save context in global for NFI upcalls
@@ -159,6 +160,11 @@ void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 	}
 	return NULL;
 }
+
+void* graal_hpy_from_HPyCapsule_Destructor(void *ptr) {
+	return polyglot_from_HPyCapsule_Destructor(ptr);
+}
+
 
 void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
 	const char *m_doc = moduleDef->doc;

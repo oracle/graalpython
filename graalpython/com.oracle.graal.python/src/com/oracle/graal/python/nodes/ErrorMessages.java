@@ -1457,6 +1457,9 @@ public abstract class ErrorMessages {
 
     public static final TruffleString NULL_ARG_INTERNAL = tsLiteral("null argument to internal routine");
 
+    public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
+    public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
+
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");
     public static final TruffleString BOOL_OP_WITH_LESS_THAN_2_VALUES = tsLiteral("BoolOp with less than 2 values");

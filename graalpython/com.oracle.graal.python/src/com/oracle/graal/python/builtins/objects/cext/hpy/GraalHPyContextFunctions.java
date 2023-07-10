@@ -3329,17 +3329,33 @@ public abstract class GraalHPyContextFunctions {
     @HPyContextFunction("ctx_Capsule_New")
     @GenerateUncached
     public abstract static class GraalHPyCapsuleNew extends HPyQuaternaryContextFunction {
-        public static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
         @Specialization
-        static PyCapsule doGeneric(@SuppressWarnings("unused") Object hpyContext, Object pointer, Object namePtr, Object dtorPtr,
+        static PyCapsule doGeneric(GraalHPyContext hpyContext, Object pointer, Object namePtr, Object dtorPtr,
+                        @Cached PCallHPyFunction callHelperNode,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached PRaiseNode raiseNode) {
             if (interopLib.isNull(pointer)) {
-                throw raiseNode.raise(ValueError, NULL_PTR_ERROR);
+                throw raiseNode.raise(ValueError, ErrorMessages.HPYCAPSULE_NEW_NULL_PTR_ERROR);
             }
-            return factory.createCapsule(pointer, namePtr, dtorPtr);
+            Object hpyDestructor = null;
+            if (!interopLib.isNull(dtorPtr)) {
+                Object typedDtorPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF);
+                Object cpyTrampoline;
+                boolean invalid;
+                try {
+                    cpyTrampoline = interopLib.readMember(typedDtorPtr, "cpy_trampoline");
+                    hpyDestructor = interopLib.readMember(typedDtorPtr, "impl");
+                    invalid = interopLib.isNull(cpyTrampoline) || interopLib.isNull(hpyDestructor);
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    invalid = true;
+                }
+                if (invalid) {
+                    throw raiseNode.raise(ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
+                }
+            }
+            return factory.createCapsule(pointer, namePtr, hpyDestructor);
         }
     }
 
