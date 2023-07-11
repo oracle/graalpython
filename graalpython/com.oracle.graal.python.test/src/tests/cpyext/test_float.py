@@ -79,7 +79,7 @@ class DummyFloatSubclass(float):
 
 
 NativeFloatSubclass = CPyExtType(
-    'NativeFloatSubclass',
+    'TestFloatNativeFloatSubclass',
     '',
     struct_base='PyFloatObject base',
     tp_base="&PyFloat_Type",
