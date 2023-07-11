@@ -269,7 +269,7 @@ JNIEXPORT void JNICALL TRAMPOLINE(executeDestructor)(JNIEnv *env, jclass clazz, 
     f((HPyContext *)ctx, _jlong2h(arg0));
 }
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeMod_create)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeModcreate)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
 {
     HPyFunc_mod_create f = (HPyFunc_mod_create)target;
     return _h2jlong(f((HPyContext *)ctx, _jlong2h(arg0)));
@@ -634,7 +634,7 @@ JNIEXPORT void JNICALL TRAMPOLINE(executeDebugDestructor)(JNIEnv *env, jclass cl
     DHPy_close_and_check(dctx, dh_arg0);
 }
 
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugMod_create)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModcreate)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg0)
 {
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_mod_create f = (HPyFunc_mod_create)target;

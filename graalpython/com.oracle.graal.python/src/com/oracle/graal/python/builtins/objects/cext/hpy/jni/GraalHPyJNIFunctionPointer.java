@@ -103,6 +103,8 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
             switch (signature) {
                 case HPyModule_init:
                     return GraalHPyJNITrampolines.executeModuleInit(receiver.pointer);
+                case HPyModule_create:
+                    return GraalHPyJNITrampolines.executeModcreate(receiver.pointer, convertHPyContext(arguments), convertArgNode.execute(arguments, 1));
                 case HPyFunc_noargs:
                     return GraalHPyJNITrampolines.executeNoargs(receiver.pointer, convertHPyContext(arguments), convertArgNode.execute(arguments, 1));
                 case HPyFunc_unaryfunc:
@@ -218,6 +220,8 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
                 case HPyModule_init:
                     // there is not difference to the universal mode
                     return GraalHPyJNITrampolines.executeModuleInit(receiver.pointer);
+                case HPyModule_create:
+                    return GraalHPyJNITrampolines.executeDebugModcreate(receiver.pointer, convertHPyDebugContext(arguments), convertArgNode.execute(arguments, 1));
                 case HPyFunc_noargs:
                     return GraalHPyJNITrampolines.executeDebugNoargs(receiver.pointer, convertHPyDebugContext(arguments), convertArgNode.execute(arguments, 1));
                 case HPyFunc_unaryfunc:

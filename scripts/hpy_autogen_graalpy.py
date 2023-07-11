@@ -802,6 +802,9 @@ NO_CALL = ('DESTROYFUNC', 'TRAVERSEPROC')
 NO_DEBUG_TRAMPOLINE = NO_CALL + ('KEYWORDS', 'GETBUFFERPROC', 'RELEASEBUFFERPROC')
 NO_UNIVERSAL_TRAMPOLINE = NO_CALL
 
+def get_jni_trampoline_name(base_name):
+    return base_name.replace('_', '').capitalize()
+
 
 class autogen_ctx_jni(AutoGenFilePart):
     """
@@ -818,7 +821,7 @@ class autogen_ctx_jni(AutoGenFilePart):
         lines_debug = []
         d = lines_debug.append
         for hpyfunc in self.api.hpyfunc_typedefs:
-            name = hpyfunc.base_name().capitalize()
+            name = get_jni_trampoline_name(hpyfunc.base_name())
             if name.upper() in NO_CALL:
                 continue
             #
@@ -897,7 +900,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
             trampoline_args = ', '.join(trampoline_args)
             args = ', '.join(args)
             #
-            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(execute{name.capitalize()})(JNIEnv *env, jclass clazz, {trampoline_args})')
+            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(execute{get_jni_trampoline_name(name)})(JNIEnv *env, jclass clazz, {trampoline_args})')
             w('{')
             w(f'    HPyFunc_{name} f = (HPyFunc_{name})target;')
             if c_rettype == 'void':
@@ -947,7 +950,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
             trampoline_args = ', '.join(trampoline_args)
             s_args = ', '.join(args)
             #
-            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(executeDebug{name.capitalize()})(JNIEnv *env, jclass clazz, {trampoline_args})')
+            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(executeDebug{get_jni_trampoline_name(name)})(JNIEnv *env, jclass clazz, {trampoline_args})')
             w('{')
             w('    HPyContext *dctx = (HPyContext *) ctx;')
             w(f'    HPyFunc_{name} f = (HPyFunc_{name})target;')

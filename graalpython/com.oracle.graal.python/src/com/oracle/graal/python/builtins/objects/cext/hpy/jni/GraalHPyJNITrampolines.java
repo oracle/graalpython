@@ -203,7 +203,7 @@ public abstract class GraalHPyJNITrampolines {
 
     // typedef HPy (*HPyFunc_mod_create)(HPyContext *ctx, HPy)
     @TruffleBoundary
-    public static native long executeMod_create(long target, long ctx, long arg0);
+    public static native long executeModcreate(long target, long ctx, long arg0);
 
     // typedef HPy (*HPyFunc_noargs)(HPyContext *ctx, HPy self)
     @TruffleBoundary
@@ -343,7 +343,7 @@ public abstract class GraalHPyJNITrampolines {
 
     // typedef HPy (*HPyFunc_mod_create)(HPyContext *ctx, HPy)
     @TruffleBoundary
-    public static native long executeDebugMod_create(long target, long ctx, long arg0);
+    public static native long executeDebugModcreate(long target, long ctx, long arg0);
 
     // @formatter:on
     // Checkstyle: resume
