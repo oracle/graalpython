@@ -349,6 +349,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1177,10 +1178,17 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyLongFromUInt32 extends HPyBinaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long value,
+        static Object doInt(@SuppressWarnings("unused") Object hpyContext, int value,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyLongFromLong fromLongNode) {
+                        @Shared @Cached HPyLongFromLong fromLongNode) {
             return fromLongNode.execute(inliningTarget, value, false);
+        }
+
+        @Specialization
+        static Object doLong(Object hpyContext, long value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached HPyLongFromLong fromLongNode) {
+            return doInt(hpyContext, (int) value, inliningTarget, fromLongNode);
         }
     }
 

@@ -441,7 +441,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (debugModuleDef == 0) {
             throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
-        /* Note: we don't need a 'spec' object since that's only required if the module has slot HPy_mod_create which is guaranteed to be missing in this case. */
+        /*
+         * Note: we don't need a 'spec' object since that's only required if the module has slot
+         * HPy_mod_create which is guaranteed to be missing in this case.
+         */
         TruffleString name = tsLiteral("_debug");
         Object debugModuleDefPtrObj = convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, debugModuleDef);
         Object nativeDebugModule = GraalHPyModuleCreateNodeGen.getUncached().execute(context, name, null, debugModuleDefPtrObj);
@@ -450,8 +453,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return (PythonModule) nativeDebugModule;
         }
         /*
-         * Since we have the debug module fully under control, this is clearly an internal
-         * error.
+         * Since we have the debug module fully under control, this is clearly an internal error.
          */
         throw CompilerDirectives.shouldNotReachHere("Debug module is expected to be a Python module object");
     }
@@ -1146,8 +1148,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public int ctxLongAsUInt32t(long h) {
         increment(HPyJNIUpcall.HPyLongAsUInt32t);
-        if (GraalHPyBoxing.isBoxedInt(h)) {
-            return GraalHPyBoxing.unboxInt(h);
+        // we may only unbox positive values; negative values will raise an error
+        int unboxedVal;
+        if (GraalHPyBoxing.isBoxedInt(h) && (unboxedVal = GraalHPyBoxing.unboxInt(h)) >= 0) {
+            return unboxedVal;
         }
         return executeIntBinaryContextFunction(HPyContextMember.CTX_LONG_ASUINT32_T, h);
     }
@@ -2525,7 +2529,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case HPy, HPyThreadState, HPyListBuilder, HPyTupleBuilder -> context.bitsAsPythonObject(argBits);
             case Int, HPy_UCS4 -> -1;
-            case Int32_t, Uint32_t, Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
+            case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
+            case Int32_t, Uint32_t -> argBits & 0xFFFFFFFFL;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
             case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr -> PCallHPyFunctionNodeGen.getUncached().call(context,
