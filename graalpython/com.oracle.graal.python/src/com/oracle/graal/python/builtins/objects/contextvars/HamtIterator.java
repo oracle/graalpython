@@ -138,6 +138,7 @@ public final class HamtIterator {
         }
     }
 
+    @CompilerDirectives.TruffleBoundary(allowInlining = true)
     public Hamt.Entry next() {
         if (level == -1) {
             return null;
