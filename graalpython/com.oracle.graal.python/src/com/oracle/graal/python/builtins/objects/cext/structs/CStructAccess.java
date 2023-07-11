@@ -58,11 +58,13 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -103,7 +105,12 @@ public class CStructAccess {
             return execute(size, allocatePyMem);
         }
 
-        @Specialization(guards = "!allocatePyMem")
+        @Idempotent
+        protected boolean nativeAccess() {
+            return PythonContext.get(this).isNativeAccessAllowed();
+        }
+
+        @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
         static long allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem) {
             assert size >= 0;
             long memory = UNSAFE.allocateMemory(size);
@@ -111,8 +118,15 @@ public class CStructAccess {
             return memory;
         }
 
-        @Specialization(guards = "allocatePyMem")
+        @Specialization(guards = {"!allocatePyMem", "!nativeAccess()"})
         static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem,
+                        @Cached PCallCapiFunction call) {
+            assert size >= 0;
+            return call.call(NativeCAPISymbol.FUN_CALLOC, size, 1);
+        }
+
+        @Specialization(guards = "allocatePyMem")
+        static Object allocLongPyMem(long size, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Cached PCallCapiFunction call) {
             assert size >= 0;
             return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, size, 1);

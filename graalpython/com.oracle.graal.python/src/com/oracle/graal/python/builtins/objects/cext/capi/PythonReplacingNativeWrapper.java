@@ -44,14 +44,19 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PythonReplacingNativeWrapper extends PythonNativeWrapper {
+
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonNativeWrapper.class);
 
     protected Object replacement;
 
@@ -68,16 +73,24 @@ public abstract class PythonReplacingNativeWrapper extends PythonNativeWrapper {
     }
 
     protected final void setReplacement(Object pointer, InteropLibrary lib) {
+        LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         if (pointer instanceof Long) {
             // need to convert to actual pointer
             replacement = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_CONVERT_POINTER, pointer);
-            long ptr = (long) pointer;
-            CApiTransitions.firstToNative(this, ptr);
+            CApiTransitions.firstToNative(this, (long) pointer);
         } else {
-            assert pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
             replacement = pointer;
-            long ptr = PythonUtils.coerceToLong(pointer, lib);
-            CApiTransitions.firstToNative(this, ptr);
+            if (lib.isPointer(pointer)) {
+                assert pointer.getClass().getSimpleName().contains("NFIPointer") || pointer.getClass().getSimpleName().contains("LLVMPointer");
+                try {
+                    CApiTransitions.firstToNative(this, lib.asPointer(pointer));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                assert pointer.getClass().getSimpleName().contains("LLVMPointer");
+                CApiTransitions.firstToNativeManaged(getDelegate(), pointer);
+            }
         }
     }
 

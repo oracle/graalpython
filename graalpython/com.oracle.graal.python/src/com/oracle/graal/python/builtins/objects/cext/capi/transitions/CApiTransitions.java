@@ -120,7 +120,7 @@ public class CApiTransitions {
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
-        public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
+        public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
         public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
@@ -571,6 +571,10 @@ public class CApiTransitions {
         }
     }
 
+    public static void firstToNativeManaged(Object delegate, Object pointer) {
+        getContext().managedNativeLookup.put(pointer, new WeakReference<>(delegate));
+    }
+
     // logging
 
     private static void log(Object... args) {
@@ -761,6 +765,7 @@ public class CApiTransitions {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached InlinedConditionProfile isReplacementProfile,
+                        @Cached InlinedConditionProfile needsReplacementProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
@@ -768,12 +773,14 @@ public class CApiTransitions {
                 // native part needs to decRef to release
                 incRef(wrapper, 1);
             }
-            if (!lib.isPointer(wrapper)) {
-                lib.toNative(wrapper);
-            }
             if (isReplacementProfile.profile(inliningTarget, wrapper instanceof PythonReplacingNativeWrapper)) {
-                assert ((PythonReplacingNativeWrapper) wrapper).getReplacement() != null;
-                return ((PythonReplacingNativeWrapper) wrapper).getReplacement();
+                Object replacement = ((PythonReplacingNativeWrapper) wrapper).getReplacement();
+                if (needsReplacementProfile.profile(inliningTarget, replacement == null)) {
+                    lib.toNative(wrapper);
+                    replacement = ((PythonReplacingNativeWrapper) wrapper).getReplacement();
+                }
+                assert replacement != null;
+                return replacement;
             }
             return wrapper;
         }
@@ -950,11 +957,11 @@ public class CApiTransitions {
         private static Object getManagedReference(Object value, HandleContext nativeContext) {
             assert value.toString().startsWith("ManagedMemoryBlock");
             assert PythonContext.get(null).ownsGil();
-            WeakReference<PythonAbstractNativeObject> ref = nativeContext.managedNativeLookup.computeIfAbsent(value, o -> new WeakReference<>(new PythonAbstractNativeObject(o)));
-            PythonAbstractNativeObject result = ref.get();
+            WeakReference<Object> ref = nativeContext.managedNativeLookup.computeIfAbsent(value, o -> new WeakReference<>(new PythonAbstractNativeObject(o)));
+            Object result = ref.get();
             if (result == null) {
                 // value is weak as well:
-                nativeContext.managedNativeLookup.put(value, new WeakReference<>(new PythonAbstractNativeObject(value)));
+                nativeContext.managedNativeLookup.put(value, new WeakReference<>(result = new PythonAbstractNativeObject(value)));
             }
             return result;
         }
