@@ -381,6 +381,7 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
             ],
             "requires": [
+                "java.logging",
                 "java.management",
                 "jdk.management",
                 "jdk.unsupported",
@@ -863,6 +864,10 @@ suite = {
                 ],
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
+                ],
+                "requires": [
+                    "static com.oracle.truffle.tools.coverage",
+                    "static com.oracle.truffle.tools.profiler",
                 ],
             },
             "dependencies": [
