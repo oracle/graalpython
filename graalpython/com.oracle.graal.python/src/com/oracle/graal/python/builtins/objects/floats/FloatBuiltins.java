@@ -701,7 +701,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         protected abstract boolean op(double a, double b);
 
         @Specialization
-        boolean eqDbDb(double a, double b) {
+        boolean doDD(double a, double b) {
             return op(a, b);
         }
 
@@ -710,8 +710,8 @@ public final class FloatBuiltins extends PythonBuiltins {
             return op(a, b);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "eqDbDb", limit = "1")
-        boolean eqODb(Object aObj, Object bObj,
+        @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
+        boolean doOO(Object aObj, Object bObj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Shared @Cached CastToJavaDoubleNode cast) {
@@ -728,7 +728,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqOLn(Object aObj, long b,
+        boolean doOL(Object aObj, long b,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
@@ -737,15 +737,22 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqOPI(Object aObj, PInt b,
+        boolean doOPInt(Object aObj, PInt b,
                         @Shared @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(aObj, cast);
             return op(compareDoubleToLargeInt(a, b), 0.0);
         }
 
+        @Specialization
+        boolean doOB(Object aObj, boolean b,
+                        @Shared @Cached CastToJavaDoubleNode cast) {
+            double a = castToDoubleChecked(aObj, cast);
+            return op(a, b ? 1 : 0);
+        }
+
         @Fallback
         @SuppressWarnings("unused")
-        static PNotImplemented eq(Object a, Object b) {
+        static PNotImplemented fallback(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
