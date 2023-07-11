@@ -2036,7 +2036,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     short_name='pyn',
     installable_id='python',
     dir_name='python',
-    standalone_dir_name='graalpy-<version>-<graalvm_os>-<arch>',
+    standalone_dir_name='graalpy-community-<version>-<graalvm_os>-<arch>',
+    standalone_dir_name_enterprise='graalpy-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
     dependencies=[
