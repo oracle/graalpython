@@ -75,7 +75,12 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <pwd.h>
+
+#ifdef __APPLE__
+#include <util.h>
+#else
 #include <pty.h>
+#endif
 
 
 int64_t call_getpid() {
