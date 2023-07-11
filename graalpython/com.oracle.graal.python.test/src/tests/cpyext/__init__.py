@@ -426,6 +426,7 @@ class CPyExtFunction():
             return self
         else:
             CPyExtFunction.test.__name__ = self.name
+            CPyExtFunction.test.__qualname__ = f'{CPyExtFunction.__name__}.test_{self.name}'
             return self.test
 
 
