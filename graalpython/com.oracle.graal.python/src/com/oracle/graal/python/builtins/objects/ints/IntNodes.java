@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -49,9 +51,11 @@ import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import java.math.BigInteger;
 
 /**
  * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
@@ -64,8 +68,11 @@ public final class IntNodes {
     /**
      * Equivalent of CPython's {@code _PyLong_Sign}. Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
      */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PyLongSign extends Node {
-        public abstract int execute(Object value);
+        public abstract int execute(Node inliningTarget, Object value);
 
         @Specialization
         static int doInt(int value) {

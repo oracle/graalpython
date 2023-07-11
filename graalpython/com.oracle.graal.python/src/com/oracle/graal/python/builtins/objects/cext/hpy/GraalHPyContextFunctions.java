@@ -281,6 +281,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfoLong;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNodeWithSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -3554,13 +3555,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPySliceUnpack extends HPy5ContextFunction {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object obj, Object startPtr, Object endPtr, Object stepPtr,
-                             @Cached PCallHPyFunction callWriteDataNode,
-                             @Cached SliceNodes.SliceUnpack sliceUnpack) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached SliceNodes.SliceUnpackLong sliceUnpack) {
             if (obj instanceof PSlice slice) {
-                SliceInfo info = sliceUnpack.execute(slice);
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, startPtr, 0L, info.start);
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, endPtr, 0L, info.stop);
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, stepPtr, 0L, info.step);
+                SliceInfoLong info = sliceUnpack.execute(inliningTarget, slice);
+                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, startPtr, 0L, info.start());
+                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, endPtr, 0L, info.stop());
+                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, stepPtr, 0L, info.step());
                 return 0;
             }
             return -1;

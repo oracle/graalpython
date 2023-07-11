@@ -47,8 +47,10 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.IntNodes.PyLongSign;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -64,6 +66,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -269,7 +273,7 @@ public abstract class SliceNodes {
         public abstract PSlice.SliceInfo execute(PSlice slice);
 
         @Specialization
-        PSlice.SliceInfo doSliceInt(PIntSlice slice) {
+        static PSlice.SliceInfo doSliceInt(PIntSlice slice) {
             int start = slice.getIntStart();
             if (slice.isStartNone()) {
                 start = slice.getIntStep() >= 0 ? 0 : Integer.MAX_VALUE;
@@ -278,7 +282,7 @@ public abstract class SliceNodes {
         }
 
         @Specialization
-        PSlice.SliceInfo doSliceObject(PObjectSlice slice,
+        static PSlice.SliceInfo doSliceObject(PObjectSlice slice,
                         @Cached SliceLossyCastToInt toInt,
                         @Cached PRaiseNode raiseNode) {
             /* this is harder to get right than you might think */
@@ -305,6 +309,75 @@ public abstract class SliceNodes {
             }
 
             return new PSlice.SliceInfo(start, stop, step);
+        }
+    }
+
+    /**
+     * This is basically the same node as {@link SliceUnpack} but unpacks to Java {@code long}
+     * fields. We need this to implement native {@code (H)PySlice_Unpack} functions where signed
+     * 64-bit integers are expected.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SliceUnpackLong extends PNodeWithContext {
+
+        public abstract PSlice.SliceInfoLong execute(Node inliningTarget, PSlice slice);
+
+        @Specialization
+        static PSlice.SliceInfoLong doSliceInt(PIntSlice slice,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            long step = slice.getIntStep();
+            if (step == 0) {
+                raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+            }
+
+            long start;
+            if (slice.isStartNone()) {
+                start = slice.getIntStep() >= 0 ? 0 : Long.MAX_VALUE;
+            } else {
+                start = slice.getIntStart();
+            }
+            return new PSlice.SliceInfoLong(start, slice.getIntStop(), slice.getIntStep());
+        }
+
+        @Specialization
+        static PSlice.SliceInfoLong doSliceObject(Node inliningTarget, PObjectSlice slice,
+                        @Cached SliceLossyCastToLong toInt,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            /* this is harder to get right than you might think */
+            long start, stop, step;
+            if (slice.getStep() == PNone.NONE) {
+                step = 1;
+            } else {
+                step = toInt.execute(inliningTarget, slice.getStep());
+                if (step == 0) {
+                    raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                }
+                /*
+                 * Same as in CPython 'PySlice_Unpack': Here step might be -Long.MAX_VALUE-1; in
+                 * this case we replace it with -Long.MAX_VALUE. This doesn't affect the semantics,
+                 * and it guards against later undefined behaviour resulting from code that does
+                 * "step = -step" as part of a slice reversal.
+                 */
+                if (step < -Long.MAX_VALUE) {
+                    step = -Long.MAX_VALUE;
+                }
+            }
+
+            if (slice.getStart() == PNone.NONE) {
+                start = step < 0 ? Long.MAX_VALUE : 0;
+            } else {
+                start = toInt.execute(inliningTarget, slice.getStart());
+            }
+
+            if (slice.getStop() == PNone.NONE) {
+                stop = step < 0 ? Long.MIN_VALUE : Long.MAX_VALUE;
+            } else {
+                stop = toInt.execute(inliningTarget, slice.getStop());
+            }
+
+            return new PSlice.SliceInfoLong(start, stop, step);
         }
     }
 
@@ -381,6 +454,34 @@ public abstract class SliceNodes {
             exceptionProfile.enter(inliningTarget);
             throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
 
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    public abstract static class SliceLossyCastToLong extends Node {
+
+        public abstract long execute(Node inliningTarget, Object x);
+
+        @Specialization(guards = "!isPNone(i)")
+        static long doGeneric(Node inliningTarget, Object i,
+                        @Cached PRaiseNode raise,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyLongSign signNode,
+                        @Cached PyLongAsLongAndOverflowNode asSizeNode) {
+            if (indexCheckNode.execute(i)) {
+                try {
+                    return asSizeNode.execute(null, i);
+                } catch (OverflowException e) {
+                    if (signNode.execute(inliningTarget, i) < 0) {
+                        return Long.MIN_VALUE;
+                    }
+                    return Long.MAX_VALUE;
+                }
+            }
+            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 

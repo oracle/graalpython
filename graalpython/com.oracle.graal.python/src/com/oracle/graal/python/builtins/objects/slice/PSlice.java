@@ -103,6 +103,10 @@ public abstract class PSlice extends PythonBuiltinObject {
 
     }
 
+    @ValueType
+    public record SliceInfoLong (long start, long stop, long step) {
+    }
+
     protected static void checkNegative(int length) {
         if (length < 0) {
             CompilerDirectives.transferToInterpreter();
