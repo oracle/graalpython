@@ -1097,7 +1097,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_AsStruct_List = &ctx_AsStruct_List_jni;
-    jniMethod_ctx_Type_GetBuiltinShape = (*env)->GetMethodID(env, clazz, "ctxTypeGetBuiltinShape", "(J)J");
+    jniMethod_ctx_Type_GetBuiltinShape = (*env)->GetMethodID(env, clazz, "ctxTypeGetBuiltinShape", "(J)I");
     if (jniMethod_ctx_Type_GetBuiltinShape == NULL) {
         LOGS("ERROR: Java method ctxTypeGetBuiltinShape not found found !\n");
         return 1;

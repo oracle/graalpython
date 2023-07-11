@@ -112,9 +112,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -126,7 +129,7 @@ public abstract class GraalHPyDef {
 
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
-    public static final HiddenKey TYPE_HPY_IS_PURE = new HiddenKey("hpy_is_pure");
+    public static final HiddenKey TYPE_HPY_BUILTIN_SHAPE = new HiddenKey("hpy_builtin_shape");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
@@ -327,7 +330,7 @@ public abstract class GraalHPyDef {
     public static final int HPyType_BUILTIN_SHAPE_FLOAT = 3;
     public static final int HPyType_BUILTIN_SHAPE_UNICODE = 4;
     public static final int HPyType_BUILTIN_SHAPE_TUPLE = 5;
-    public static final int HPyType_BUILTIN_SHAPE_ = 6;
+    public static final int HPyType_BUILTIN_SHAPE_LIST = 6;
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
@@ -492,5 +495,24 @@ public abstract class GraalHPyDef {
         private static TruffleString[] k(TruffleString... keys) {
             return keys;
         }
+    }
+
+    public static boolean isValidBuiltinShape(int i) {
+        return HPyType_BUILTIN_SHAPE_LEGACY <= i && i <= HPyType_BUILTIN_SHAPE_LIST;
+    }
+
+    public static int getBuiltinShapeFromHiddenAttribute(Object object, ReadAttributeFromObjectNode readNode) {
+        if (object instanceof PythonClass pythonClass) {
+            Object builtinShapeObj = readNode.execute(pythonClass, GraalHPyDef.TYPE_HPY_BUILTIN_SHAPE);
+            if (builtinShapeObj != PNone.NO_VALUE) {
+                return (Integer) builtinShapeObj;
+            }
+            return GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY;
+        }
+        return -2; // error
+    }
+
+    public static boolean isPureHPyType(int i) {
+        return false;
     }
 }

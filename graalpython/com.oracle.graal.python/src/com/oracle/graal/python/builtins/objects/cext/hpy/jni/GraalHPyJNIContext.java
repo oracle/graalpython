@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyBinaryContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyTernaryContextFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
@@ -134,6 +135,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -2228,9 +2230,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeIntTernaryContextFunction(HPyContextMember.CTX_DELITEM_S, obj, utf8_key);
     }
 
-    public long ctxTypeGetBuiltinShape(long h_type) {
+    public int ctxTypeGetBuiltinShape(long h_type) {
         increment(HPyJNIUpcall.HPyTypeGetBuiltinShape);
-        return executeLongBinaryContextFunction(HPyContextMember.CTX_TYPE_GETBUILTINSHAPE, h_type);
+        assert GraalHPyBoxing.isBoxedHandle(h_type);
+        Object typeObject = context.bitsAsPythonObject(h_type);
+        int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(typeObject, ReadAttributeFromObjectNode.getUncachedForceType());
+        if (result == -2) {
+            return HPyRaiseNode.raiseIntUncached(context, -2, TypeError, ErrorMessages.S_MUST_BE_S, "arg", "type");
+        }
+        assert GraalHPyDef.isValidBuiltinShape(result);
+        return result;
     }
 
     public long ctxDictCopy(long h) {
@@ -2561,6 +2570,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return switch (type) {
             case Int, Int32_t, Uint32_t, HPy_UCS4 -> -1;
             case CVoid -> 0;
+            case HPyType_BuiltinShape -> -2;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
     }

@@ -230,6 +230,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeFromSpecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGenericNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGetBuiltinShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeIsSubtypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeNodeGen;
@@ -553,6 +554,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_UNICODE_FROMENCODEDOBJECT -> GraalHPyUnicodeFromEncodedObjectNodeGen.create();
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.create();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.create();
+                case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.create();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -712,6 +714,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_UNICODE_FROMENCODEDOBJECT -> GraalHPyUnicodeFromEncodedObjectNodeGen.getUncached();
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.getUncached();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.getUncached();
+                case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.getUncached();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -3543,8 +3546,8 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPySliceUnpack extends HPy5ContextFunction {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object obj, Object startPtr, Object endPtr, Object stepPtr,
-                        @Cached PCallHPyFunction callWriteDataNode,
-                        @Cached SliceNodes.SliceUnpack sliceUnpack) {
+                             @Cached PCallHPyFunction callWriteDataNode,
+                             @Cached SliceNodes.SliceUnpack sliceUnpack) {
             if (obj instanceof PSlice slice) {
                 SliceInfo info = sliceUnpack.execute(slice);
                 callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, startPtr, 0L, info.start);
@@ -3553,6 +3556,25 @@ public abstract class GraalHPyContextFunctions {
                 return 0;
             }
             return -1;
+        }
+    }
+
+    @HPyContextFunction("ctx_Type_GetBuiltinShape")
+    @GenerateUncached
+    public abstract static class GraalHPyTypeGetBuiltinShape extends HPyBinaryContextFunction {
+
+        @Specialization
+        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object typeObject,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object profiledTypeObject = classProfile.profile(inliningTarget, typeObject);
+            int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            if (result == -2) {
+                throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S, "arg", "type");
+            }
+            return result;
         }
     }
 }

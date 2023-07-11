@@ -2433,13 +2433,13 @@ public abstract class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
-                long builtinShape = castToLong(valueLib, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE, typeSpec));
+                int builtinShape = castToInt(valueLib, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE, typeSpec));
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BUILTIN_SHAPE, builtinShape);
                 newType.basicSize = basicSize;
                 newType.flags = flags;
                 newType.itemSize = itemSize;
@@ -2545,8 +2545,8 @@ public abstract class GraalHPyNodes {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
                 }
-                checkInheritanceConstraints(flags, baseFlags, builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_IS_PURE),
-                                raiseNode);
+                int baseBuiltinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(baseClass, readHPyTypeFlagsNode);
+                checkInheritanceConstraints(flags, baseFlags, builtinShape, baseBuiltinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, raiseNode);
                 return newType;
             } catch (CannotCastException | InteropException e) {
                 throw raiseNode.raise(SystemError, ErrorMessages.COULD_NOT_CREATE_TYPE_FROM_SPEC_BECAUSE, e);
@@ -2663,19 +2663,19 @@ public abstract class GraalHPyNodes {
             return new TruffleString[]{null, specName};
         }
 
-        @SuppressWarnings("unused")
-        private static void checkInheritanceConstraints(long flags, long baseFlags, boolean isPure, Object baseIsPure, PRaiseNode raiseNode) {
+        private static void checkInheritanceConstraints(long flags, long baseFlags, int builtinShape, boolean baseIsPure, PRaiseNode raiseNode) {
             // Pure types may inherit from:
             //
             // * pure types, or
             // * PyBaseObject_Type, or
-            // * other builtin or legacy types as long as long as they do not
+            // * other builtin or legacy types as long as as they do not
             // access the struct layout (e.g. by using HPy_AsStruct or defining
             // a deallocator with HPy_tp_destroy).
             //
             // It would be nice to relax these restrictions or check them here.
             // See https://github.com/hpyproject/hpy/issues/169 for details.
-            if (!isPure && baseIsPure == Boolean.TRUE) {
+            assert GraalHPyDef.isValidBuiltinShape(builtinShape);
+            if (builtinShape == GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY && baseIsPure) {
                 throw raiseNode.raise(TypeError, ErrorMessages.LEG_TYPE_SHOULDNT_INHERIT_MEM_LAYOUT_FROM_PURE_TYPE);
             }
         }
@@ -2689,6 +2689,17 @@ public abstract class GraalHPyNodes {
                 }
             }
             throw OverflowException.INSTANCE;
+        }
+
+        private static int castToInt(InteropLibrary lib, Object value) {
+            if (lib.fitsInInt(value)) {
+                try {
+                    return lib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

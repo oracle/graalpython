@@ -421,7 +421,7 @@ def get_cast_fun(type_name):
         return 'HPY_FIELD_UP'
     elif type_is_pointer(type_name):
         return 'PTR_UP'
-    elif type_name in ('int', '_HPyCapsule_key'):
+    elif type_name in ('int', '_HPyCapsule_key', 'HPyType_BuiltinShape'):
         return 'INT_UP'
     elif type_name == 'int32_t':
         return 'INT32_UP'
@@ -442,7 +442,7 @@ def get_cast_fun(type_name):
     return 'LONG_UP'
 
 def get_jni_signature_type(type_name):
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
         return 'I'
     elif type_name == 'long':
         return 'J'
@@ -455,7 +455,7 @@ def get_jni_signature_type(type_name):
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
@@ -468,7 +468,7 @@ def get_jni_c_type(type_name):
 
 def get_java_signature_type(type):
     type_name = toC(type)
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
         return 'int'
     if type_name == 'bool':
         return 'boolean'
