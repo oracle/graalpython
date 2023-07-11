@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_MOD_CREATE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_MOD_EXEC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
@@ -439,10 +437,14 @@ public abstract class GraalHPyNodes {
 
             assert checkLayout(moduleDef);
 
-            Object mDoc;
+            TruffleString mDoc;
             try {
-                // docstring pointers are not required to be copied
-                mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "doc"), false);
+                Object docPtr = ptrLib.readMember(moduleDef, "doc");
+                if (!ptrLib.isNull(docPtr)) {
+                    mDoc = fromCharPointerNode.execute(docPtr);
+                } else {
+                    mDoc = null;
+                }
 
                 Object sizeObj = ptrLib.readMember(moduleDef, "size");
                 long size = valueLib.asLong(sizeObj);
@@ -499,9 +501,7 @@ public abstract class GraalHPyNodes {
                                         throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
                                     }
                                     createFunction = slotData.impl;
-                                    if (hpyContext.isDebugMode() || !createLib.isExecutable(createFunction)) {
-                                        createFunction = attachFunctionTypeNode.execute(hpyContext, createFunction, HPY_MOD_CREATE.getSignatures()[0].getLLVMFunctionType());
-                                    }
+                                    assert createLib.isExecutable(createFunction);
                                 }
                                 case HPY_MOD_EXEC -> {
                                     /*
@@ -510,9 +510,7 @@ public abstract class GraalHPyNodes {
                                      * in our case.
                                      */
                                     Object execFunction = slotData.impl;
-                                    if (hpyContext.isDebugMode() || !createLib.isExecutable(execFunction)) {
-                                        execFunction = attachFunctionTypeNode.execute(hpyContext, execFunction, HPY_MOD_EXEC.getSignatures()[0].getLLVMFunctionType());
-                                    }
+                                    assert InteropLibrary.getUncached().isExecutable(execFunction);
                                     executeSlots.add(execFunction);
                                 }
                                 default -> throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotData.slot);
@@ -535,6 +533,9 @@ public abstract class GraalHPyNodes {
             Object module;
             if (createFunction != null) {
                 module = callCreate(inliningTarget, createFunction, hpyContext, spec, checkFunctionResultNode, asHandleNode, createLib);
+                if (module instanceof PythonModule) {
+                    throw raiseNode.raise(SystemError, ErrorMessages.HPY_MOD_CREATE_RETURNED_BUILTIN_MOD);
+                }
             } else {
                 PythonModule pmodule = factory.createPythonModule(mName);
                 pmodule.setNativeModuleDef(executeSlots);
@@ -587,7 +588,9 @@ public abstract class GraalHPyNodes {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
-            writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
+            if (mDoc != null) {
+                writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
+            }
 
             return module;
         }
@@ -643,9 +646,9 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static void doGeneric(Node node, GraalHPyContext hpyContext, PythonModule module,
-                             @Cached HPyCheckPrimitiveResultNode checkFunctionResultNode,
-                             @Cached HPyAsHandleNode asHandleNode,
-                             @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached HPyCheckPrimitiveResultNode checkFunctionResultNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
             // TODO(fa): once we support HPy module state, we need to allocate it here
             Object execSlotsObj = module.getNativeModuleDef();
             if (execSlotsObj instanceof LinkedList<?> execSlots) {

@@ -271,7 +271,7 @@ public abstract class GraalHPyDef {
         DESTRUCTOR(LLVMType.HPyFunc_destructor),
         GETBUFFER(LLVMType.HPyFunc_getbufferproc),
         RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc),
-        MOD_CREATE;
+        MOD_CREATE(LLVMType.HPyModule_create);
 
         /** The C function's type (basically it's signature). */
         private final LLVMType llvmFunctionType;

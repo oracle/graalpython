@@ -293,7 +293,8 @@ public final class GraalHPyContext extends CExtContext {
         HPyFunc_getbufferproc,
         HPyFunc_releasebufferproc,
         HPyFunc_destroyfunc,
-        HPyModule_init;
+        HPyModule_init,
+        HPyModule_create
     }
 
     public static final int IMMUTABLE_HANDLE_COUNT = 256;

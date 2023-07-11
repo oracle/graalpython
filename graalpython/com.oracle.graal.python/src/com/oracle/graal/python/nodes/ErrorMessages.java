@@ -1457,6 +1457,7 @@ public abstract class ErrorMessages {
 
     public static final TruffleString NULL_ARG_INTERNAL = tsLiteral("null argument to internal routine");
 
+    public static final TruffleString HPY_MOD_CREATE_RETURNED_BUILTIN_MOD = tsLiteral("HPy_mod_create slot returned a builtin module object. This is currently not supported.");
     public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
     public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
 
