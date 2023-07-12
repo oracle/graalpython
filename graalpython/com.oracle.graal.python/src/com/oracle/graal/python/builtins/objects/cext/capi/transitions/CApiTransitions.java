@@ -782,6 +782,9 @@ public class CApiTransitions {
                 assert replacement != null;
                 return replacement;
             }
+            if (!lib.isPointer(wrapper)) {
+                lib.toNative(wrapper);
+            }
             return wrapper;
         }
     }
