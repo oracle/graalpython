@@ -79,7 +79,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.object.ShapeImpl;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
@@ -124,7 +123,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     protected static Object[] keyArray(Shape shape) {
-        return ((ShapeImpl) shape).getKeyArray();
+        return shape.getKeyList().toArray();
     }
 
     @GenerateUncached

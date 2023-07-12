@@ -350,7 +350,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
-                "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
@@ -370,7 +369,6 @@ suite = {
                 "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
-                "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
@@ -381,6 +379,7 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
             ],
             "requires": [
+                "java.logging",
                 "java.management",
                 "jdk.management",
                 "jdk.unsupported",
@@ -875,7 +874,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
-                "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
