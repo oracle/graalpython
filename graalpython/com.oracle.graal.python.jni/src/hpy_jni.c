@@ -104,7 +104,9 @@ static int32_t unclosedHandleTop = 0;
 static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 
 static inline jsize get_handle_table_size(HPyContext *ctx) {
-    return (jsize)HANDLE_TABLE_SIZE(ctx->_private);
+    uint64_t size = HANDLE_TABLE_SIZE(ctx->_private);
+    assert((jsize)size == size);
+    return (jsize)size;
 }
 
 static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, jobject element, bool update_native_cache) {
