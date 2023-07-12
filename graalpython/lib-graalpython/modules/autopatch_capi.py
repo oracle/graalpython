@@ -154,6 +154,7 @@ auto_replacements = {
                     # avoid direct access:
                     r'\W(ob_type)\W': (replace_field_access, 'Py_TYPE(%receiver)'),
                     r'\W(ob_refcnt)\W': (replace_field_access, 'Py_REFCNT(%receiver)'),
+                    r'\W(ob_item)\W': (replace_field_access, 'PySequence_Fast_ITEMS(%receiver)'),
                     r'^\s*()(std::)?free\((const_cast<char \*>)?\(?\w+->m_ml->ml_doc\)?\);': (simple_replace, '//'),
                     r'\W(m_ml\s*->\s*ml_doc)\W': (replace_field_access, 'PyObject_GetDoc((PyObject*)(%receiver))', 'PyObject_SetDoc((PyObject*)(%receiver), %value)'),
                     # already defined by GraalPy:
