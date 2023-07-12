@@ -127,7 +127,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM("PyTruffle_InitializeStorageItem", ArgDescriptor.Void, Pointer, Int, PyObject),
     FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict", PyObject, PyObject),
     FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
-    FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObject, PyTypeObject, PyTypeObject, PyObject, PyObject),
+    FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObject, PyTypeObject),
     FUN_ADD_NATIVE_SLOTS("PyTruffle_Type_AddSlots", ArgDescriptor.Void, PyTypeObject, Pointer, UINT64_T, Pointer, UINT64_T),
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
     FUN_GET_BUFFER_R("get_buffer_r", Int, PyObject, Pointer),
