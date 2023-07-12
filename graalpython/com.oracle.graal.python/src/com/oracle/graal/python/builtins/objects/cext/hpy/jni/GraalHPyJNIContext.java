@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -927,7 +928,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         Object[] objects = new Object[hItems.length];
         for (int i = 0; i < hItems.length; i++) {
             long hBits = hItems[i];
-            objects[i] = HPyAsPythonObjectNodeGen.getUncached().execute(hBits);
+            objects[i] = context.bitsAsPythonObject(hBits);
             if (steal) {
                 closeNativeHandle(hBits);
             }
@@ -1508,7 +1509,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             }
             return setItemGeneric(receiver, clazz, key, value);
         } catch (PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(context, e);
+            HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
             return -1;
         }
@@ -1562,6 +1563,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return false;
     }
 
+    @TruffleBoundary
     private static int setItemGeneric(Object receiver, Object clazz, Object key, Object value) {
         Object setItemAttribute = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.SetItem).execute(clazz);
         if (setItemAttribute == PNone.NO_VALUE) {
@@ -1947,7 +1949,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public int ctxBytesCheck(long h) {
         increment(HPyJNIUpcall.HPyBytesCheck);
-        return executeIntBinaryContextFunction(HPyContextMember.CTX_BYTES_CHECK, h);
+        if (GraalHPyBoxing.isBoxedHandle(h)) {
+            Object object = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(h));
+            if (object instanceof PBytes) {
+                return 1;
+            }
+            return executeIntBinaryContextFunction(HPyContextMember.CTX_BYTES_CHECK, h);
+        }
+        return 0;
     }
 
     public long ctxBytesSize(long h) {
@@ -2477,6 +2486,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
+    @TruffleBoundary
     private int executeIntBinaryContextFunction(HPyContextMember member, long arg0) {
         try {
             Object result = executeBinaryContextFunction(member, arg0);

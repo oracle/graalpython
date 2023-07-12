@@ -102,7 +102,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -183,7 +182,7 @@ public final class GraalHPyContext extends CExtContext {
         boolean saved = hpyUniversalContext.debugMode;
         hpyUniversalContext.debugMode = debug;
         try {
-            Object hpyModuleDefPtr =  backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
+            Object hpyModuleDefPtr = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
             // HPy only supports multi-phase extension module initialization.
             assert !(hpyModuleDefPtr instanceof PythonModule);
             if (InteropLibrary.getUncached().isNull(hpyModuleDefPtr)) {
