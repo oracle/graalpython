@@ -112,6 +112,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTy
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -1347,6 +1349,19 @@ public abstract class TypeNodes {
                             DynamicObjectLibrary.getUncached());
             Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
+
+            if (typeNewMethod instanceof PBuiltinFunction builtinFunction) {
+                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (typeDecorated != null) {
+                    typeNewMethod = typeDecorated;
+                }
+            }
+            if (baseNewMethod instanceof PBuiltinFunction builtinFunction) {
+                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (baseDecorated != null) {
+                    baseNewMethod = baseDecorated;
+                }
+            }
             return typeNewMethod != baseNewMethod;
         }
 

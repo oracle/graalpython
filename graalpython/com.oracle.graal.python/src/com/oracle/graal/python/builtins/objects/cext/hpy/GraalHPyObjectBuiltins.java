@@ -48,6 +48,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -119,7 +121,7 @@ public abstract class GraalHPyObjectBuiltins {
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
+    public abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
         private static final TruffleString KW_SUPER_CONSTRUCTOR = tsLiteral("$supercons");
 
         private static PKeyword[] createKwDefaults(Object superConstructor) {
@@ -181,7 +183,7 @@ public abstract class GraalHPyObjectBuiltins {
                 }
             }
 
-            Object inheritedConstructor = extractInheritedConstructor(arguments, keywords);
+            Object inheritedConstructor = extractInheritedConstructor(keywords);
             Object pythonObject;
             if (inheritedConstructor == null) {
                 // fast-path if the super class is 'object'
@@ -201,10 +203,13 @@ public abstract class GraalHPyObjectBuiltins {
             return pythonObject;
         }
 
-        @SuppressWarnings("unused")
-        private static Object extractInheritedConstructor(Object[] arguments, PKeyword[] keywords) {
-            // TODO(fa): not yet implemented
-            return null;
+        private static Object extractInheritedConstructor(PKeyword[] keywords) {
+            for (int i = 0; i < keywords.length; i++) {
+                if (keywords[i].getName() == KW_SUPER_CONSTRUCTOR) {
+                    return keywords[i].getValue();
+                }
+            }
+            return PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject).getAttribute(SpecialMethodNames.T___NEW__);
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
@@ -225,10 +230,26 @@ public abstract class GraalHPyObjectBuiltins {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object superConstructor) {
+            // do not decorate the decorator
+            if (superConstructor instanceof PBuiltinFunction builtinFunction && isHPyObjectNewDecorator(builtinFunction)) {
+                return builtinFunction;
+            }
+
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyObjectNewNodeFactory<>(HPyObjectNewNodeGen.create()), true),
                             HPyObjectNewNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
             return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.T___NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
+        }
+
+        private static boolean isHPyObjectNewDecorator(PBuiltinFunction builtinFunction) {
+            return builtinFunction.getFunctionRootNode() instanceof BuiltinFunctionRootNode rootNode && rootNode.getBuiltin() == BUILTIN;
+        }
+
+        public static Object getDecoratedSuperConstructor(PBuiltinFunction builtinFunction) {
+            if (isHPyObjectNewDecorator(builtinFunction)) {
+                return extractInheritedConstructor(builtinFunction.getKwDefaults());
+            }
+            return null;
         }
     }
 }
