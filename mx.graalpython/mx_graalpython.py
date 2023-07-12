@@ -993,6 +993,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
                         "status": "PASSED" if result == 0 else "FAILED",
                         "duration": int((time.time() - t0) * 1000)
                     }], report.title)
+        if lock:
+            lock.release()
     return result
 
 
