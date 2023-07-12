@@ -268,3 +268,40 @@ index 98b5e26..0f44675 100644
      return PyObject_RichCompareBool(s1, s2, equals);
  #else
      if (s1 == s2) {
+diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
+index a9e4923..ac9a2bd 100644
+--- a/Cython/Utility/arrayarray.h
++++ b/Cython/Utility/arrayarray.h
+@@ -109,6 +109,9 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
+ // fast resize (reallocation to the point)
+ // not designed for filing small increments (but for fast opaque array apps)
+ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
++#ifdef GRAALVM_PYTHON
++    return _PyArray_Resize((PyObject*)self, n);
++#else
+     void *items = (void*) self->data.ob_item;
+     PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
+     if (items == NULL) {
+@@ -119,10 +122,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = n;
+     return 0;
++#endif
+ }
+ 
+ // suitable for small increments; over allocation 50% ;
+ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
++#ifdef GRAALVM_PYTHON
++    return _PyArray_Resize((PyObject*)self, n);
++#else
+     void *items = (void*) self->data.ob_item;
+     Py_ssize_t newsize;
+     if (n < self->allocated && n*4 > self->allocated) {
+@@ -143,6 +150,7 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = newsize;
+     return 0;
++#endif
+ }
+ 
+ #endif

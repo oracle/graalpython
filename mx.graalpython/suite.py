@@ -719,7 +719,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "ldlibs": ["-lcrypt"],
+                        "ldlibs": ["-lutil", "-lcrypt"],
                         "defaultBuild" : True,
                     },
                 },

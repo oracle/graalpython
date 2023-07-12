@@ -203,7 +203,7 @@ def parse_unittest_output(output):
     # The whole reason for this function's complexity is that we want to consume arbitrary
     # warnings after the '...' part without accidentally consuming the next test result
     import re
-    re_test_result = re.compile(r"""\b(test\S+) \((\S+)\)(?:\n.*?)?? \.\.\. """, re.MULTILINE | re.DOTALL)
+    re_test_result = re.compile(r"""\b(test\S*) \((\S+)\)(?:\n.*?)?? \.\.\. """, re.MULTILINE | re.DOTALL)
     re_test_status = re.compile(r"""\b(ok|skipped (?:'[^']*'|"[^"]*")|FAIL|ERROR)$""", re.MULTILINE | re.DOTALL)
     pos = 0
     current_result = None

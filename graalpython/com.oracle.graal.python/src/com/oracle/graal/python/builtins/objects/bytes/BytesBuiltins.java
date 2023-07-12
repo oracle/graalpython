@@ -587,7 +587,7 @@ public class BytesBuiltins extends PythonBuiltins {
         Object error(Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyBytesCheckNode check) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, J___EQ__, J_BYTES, self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTES, self);
         }
     }
 

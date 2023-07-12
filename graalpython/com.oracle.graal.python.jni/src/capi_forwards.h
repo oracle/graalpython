@@ -1236,6 +1236,7 @@ void unimplemented(const char* name) {
 #undef _PyArg_VaParseTupleAndKeywordsFast_SizeT
 #undef _PyArg_VaParseTupleAndKeywords_SizeT
 #undef _PyArg_VaParse_SizeT
+#undef _PyArray_Resize
 #undef _PyAsyncGenValueWrapperNew
 #undef _PyByteArray_Start
 #undef _PyBytesWriter_Alloc
@@ -4795,6 +4796,10 @@ PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject* a, PyObject* b, c
 int (*__target___PyArg_VaParse_SizeT)(PyObject*, const char*, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject* a, const char* b, va_list c) {
     int result = (int) __target___PyArg_VaParse_SizeT(a, b, c);
+    return result;
+}
+PyAPI_FUNC(int) _PyArray_Resize(PyObject* a, Py_ssize_t b) {
+    int result = (int) Graal_PyArray_Resize(a, b);
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyAsyncGenValueWrapperNew(PyObject* a) {

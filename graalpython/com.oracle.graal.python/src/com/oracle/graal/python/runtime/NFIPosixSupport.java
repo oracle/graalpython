@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -215,6 +216,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_setpgid("(sint64,sint64):sint32"),
         call_getpgrp("():sint64"),
         call_getsid("(sint64):sint64"),
+        call_setsid("():sint64"),
+        call_openpty("([sint32]):sint32"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
         call_unsetenv("([sint8]):sint32"),
@@ -1154,6 +1157,26 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public long setsid(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_setsid);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public OpenPtyResult openpty(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] outvars = new int[2];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_openpty, wrap(outvars));
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new OpenPtyResult(outvars[0], outvars[1]);
     }
 
     @ExportMessage

@@ -115,7 +115,6 @@
 *test.test_asyncio.test_events.PolicyTests.test_new_event_loop
 *test.test_asyncio.test_events.PolicyTests.test_set_event_loop
 *test.test_asyncio.test_events.PolicyTests.test_set_event_loop_policy
-*test.test_asyncio.test_events.SelectEventLoopTests.test_bidirectional_pty
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_ssl_unix_connection
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_unix_connection
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_unix_server
@@ -123,8 +122,6 @@
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_unix_server_ssl
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_unix_server_ssl_verified
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_unix_server_ssl_verify_failed
-*test.test_asyncio.test_events.SelectEventLoopTests.test_read_pty_output
-*test.test_asyncio.test_events.SelectEventLoopTests.test_write_pty
 *test.test_asyncio.test_events.TestAbstractServer.test_close
 *test.test_asyncio.test_events.TestAbstractServer.test_get_loop
 *test.test_asyncio.test_events.TestAbstractServer.test_wait_closed

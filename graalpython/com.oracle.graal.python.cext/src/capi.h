@@ -607,6 +607,7 @@ typedef struct {
     BUILTIN(Py_set_PyTypeObject_tp_vectorcall_offset, void, PyTypeObject*, Py_ssize_t) \
     BUILTIN(Py_set_PyTypeObject_tp_weaklistoffset, void, PyTypeObject*, Py_ssize_t) \
     BUILTIN(Py_set_PyVarObject_ob_size, void, PyVarObject*, Py_ssize_t) \
+    BUILTIN(_PyArray_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(_PyBytes_Join, PyObject*, PyObject*, PyObject*) \
     BUILTIN(_PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \
     BUILTIN(_PyDict_SetItem_KnownHash, int, PyObject*, PyObject*, PyObject*, Py_hash_t) \

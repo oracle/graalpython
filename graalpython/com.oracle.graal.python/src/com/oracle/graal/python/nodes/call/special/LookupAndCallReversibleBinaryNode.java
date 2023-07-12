@@ -238,7 +238,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         // see descrobject.c/wrapperdescr_call()
         Object enclosing = getEnclosingType.execute(inliningTarget, callable);
         if (enclosing != null && !isSubtype.execute(leftClass, enclosing)) {
-            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op.getName(), ensureGetNameNode().execute(leftClass), leftValue);
+            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), ensureGetNameNode().execute(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }

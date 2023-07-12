@@ -1096,9 +1096,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
                         @Cached GetResultNode getResultNode,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
             int argcount = argarray.length;
             if (argcount > CTYPES_MAX_ARGCOUNT) {
                 throw raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
@@ -1151,7 +1149,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object result;
             if (mode == BackendMode.NFI) {
-                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
+                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib);
             } else {
                 result = callManagedFunction(pProc, avalues, ilib);
                 if (mode == BackendMode.INTRINSIC) {
@@ -1190,10 +1188,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * NFI compatible native function calls (temporary replacement)
          */
         Object callNativeFunction(NativeFunction pProc, Object[] avalues, FFIType[] atypes, FFIType restype,
-                        InteropLibrary ilib, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+                        InteropLibrary ilib) {
             Object function;
-            if (pProc.function == null) {
-                TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
+            if (pProc.function != null && equals(atypes, pProc.atypes) && restype == pProc.rtype) {
+                function = pProc.function;
+            } else {
+                TruffleString signature = FFIType.buildNFISignature(atypes, restype);
                 try {
                     function = getFunction(pProc, signature.toJavaStringUncached());
                 } catch (Exception e) {
@@ -1203,17 +1203,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pProc.rtype = restype;
                 pProc.function = function;
                 pProc.signature = signature;
-            } else {
-                if (equals(atypes, pProc.atypes) && restype == pProc.rtype) {
-                    function = pProc.function;
-                } else {
-                    TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
-                    try {
-                        function = getFunction(pProc, signature.toJavaStringUncached());
-                    } catch (Exception e) {
-                        throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
-                    }
-                }
             }
             try {
                 return ilib.execute(function, avalues);

@@ -76,6 +76,12 @@
 #include <unistd.h>
 #include <pwd.h>
 
+#ifdef __APPLE__
+#include <util.h>
+#else
+#include <pty.h>
+#endif
+
 
 int64_t call_getpid() {
     return getpid();
@@ -575,6 +581,14 @@ int64_t call_getpgrp() {
 
 int64_t call_getsid(int64_t pid) {
     return getsid(pid);
+}
+
+int64_t call_setsid() {
+    return setsid();
+}
+
+int32_t call_openpty(int32_t *outvars) {
+    return openpty(outvars, outvars + 1, NULL, NULL, NULL);
 }
 
 int32_t call_ctermid(char *buf) {

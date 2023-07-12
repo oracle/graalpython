@@ -550,7 +550,7 @@ public final class CApiCodeGen {
                     "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
                     "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length", "_Py_REFCNT",
                     "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE", "_PyTuple_SET_ITEM", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef",
-                    "PyCode_GetName", "PyCode_GetFileName", "_PyList_SET_ITEM",
+                    "PyCode_GetName", "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize",
                     // TODO GR-46546 The following are backports from 3.11. Remove when updating
                     "PyFrame_GetLasti", "PyFrame_GetLocals", "PyFrame_GetGlobals", "PyFrame_GetBuiltins"};
 

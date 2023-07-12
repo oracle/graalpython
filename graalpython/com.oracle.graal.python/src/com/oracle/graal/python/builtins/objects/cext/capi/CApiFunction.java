@@ -189,6 +189,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextArrayBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -1383,6 +1384,7 @@ public final class CApiFunction {
     static List<CApiBuiltinDesc> getJavaBuiltinDefinitions() {
         ArrayList<CApiBuiltinDesc> result = new ArrayList<>();
         addCApiBuiltins(result, PythonCextAbstractBuiltins.class);
+        addCApiBuiltins(result, PythonCextArrayBuiltins.class);
         addCApiBuiltins(result, PythonCextBoolBuiltins.class);
         addCApiBuiltins(result, PythonCextBuiltins.class);
         addCApiBuiltins(result, PythonCextBytesBuiltins.class);

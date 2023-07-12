@@ -292,7 +292,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(self)")
         @SuppressWarnings("unused")
         TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_FORMAT, "str", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
         }
     }
 
@@ -569,7 +569,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 return recurse.execute(frame, cast.execute(self), cast.execute(other));
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___ADD__, "str", self);
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
             }
         }
 
@@ -580,7 +580,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(self)", "!isNativeObject(self)", "!isNativeObject(other)"})
         Object doNoString(Object self, @SuppressWarnings("unused") Object other) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___ADD__, "str", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
         }
     }
 
@@ -2532,7 +2532,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETITEM__, "str", self);
+            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
             SliceInfo info = compute.execute(frame, sliceCast.execute(slice), codePointLengthNode.execute(str, TS_ENCODING));
             return getItemNodeWithSlice.execute(str, info);
         }
@@ -2543,7 +2543,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETITEM__, "str", self);
+            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
             int len = codePointLengthNode.execute(str, TS_ENCODING);
             int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {

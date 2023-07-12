@@ -279,7 +279,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         protected Object doGeneric(Object self, @SuppressWarnings("unused") Object objectIdx) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__delitem__", "list", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__delitem__", "list", self);
         }
     }
 

@@ -1,0 +1,40 @@
+diff --git a/h2o/backend/server.py b/h2o/backend/server.py
+index d9a166f..c9063f2 100644
+--- a/h2o/backend/server.py
++++ b/h2o/backend/server.py
+@@ -340,9 +340,8 @@ class H2OLocalServer(object):
+         # Launch the process
+         win32 = sys.platform == "win32"
+         flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if win32 else 0
+-        prex = os.setsid if not win32 else None
+         try:
+-            proc = subprocess.Popen(args=cmd, stdout=out, stderr=err, cwd=cwd, creationflags=flags, preexec_fn=prex)
++            proc = subprocess.Popen(args=cmd, stdout=out, stderr=err, cwd=cwd, creationflags=flags, start_new_session=True)
+         except OSError as e:
+             traceback = getattr(e, "child_traceback", None)
+             raise H2OServerError("Unable to start server: %s" % e, traceback)
+diff --git a/h2o/expr.py b/h2o/expr.py
+index 6c6a4c3..6d73046 100644
+--- a/h2o/expr.py
++++ b/h2o/expr.py
+@@ -158,14 +158,16 @@ class ExprNode(object):
+             # However, keeping it if this scope refers to an H2OFrame (has `_ex` entry)
+             return isinstance(ref, dict) and '_ex' not in ref
+ 
+-        referrers = gc.get_referrers(self)
++        # GraalVM change: we don't have referers, assume everything has multiple referers
++        # referrers = gc.get_referrers(self)
+         # removing frames from the referrers to get a consistent behaviour accross Py versions
+         #  as stack frames don't appear in the referrers from Py 3.7.
+         # also removing the AST expressions built in astfun.py
+         #  as they keep a reference to self if the lambda itself is using a free variable.
+-        proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r) or is_debug_ref(r))]
+-        ref_cnt = len(proper_ref)
+-        del referrers, proper_ref
++        # proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r) or is_debug_ref(r))]
++        # ref_cnt = len(proper_ref)
++        # del referrers, proper_ref
++        ref_cnt = 2
+         # if this self node is referenced by at least one other node (nested expr), then create a tmp frame
+         if top == 'frame' or (not top and ref_cnt > 1):
+             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)

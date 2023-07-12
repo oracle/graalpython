@@ -2420,6 +2420,10 @@ PyAPI_FUNC(PyObject*) Py_GenericAlias(PyObject* a, PyObject* b) {
 PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
     GraalPy_LeaveRecursiveCall();
 }
+#undef _PyArray_Resize
+PyAPI_FUNC(int) _PyArray_Resize(PyObject* a, Py_ssize_t b) {
+    return Graal_PyArray_Resize(a, b);
+}
 #undef _PyBytes_Join
 PyAPI_FUNC(PyObject*) _PyBytes_Join(PyObject* a, PyObject* b) {
     return Graal_PyBytes_Join(a, b);
