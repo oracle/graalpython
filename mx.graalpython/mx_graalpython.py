@@ -132,6 +132,20 @@ if WIN32:
             yield result
     mx_native.DefaultNativeProject.getArchivableResults = getArchivableResultsWithLib
 
+    # let's check if VS compilers are on the PATH
+    if not os.environ.get("LIB"):
+        mx.log("LIB not in environment, not a VS shell")
+    elif not os.environ.get("INCLUDE"):
+        mx.log("INCLUDE not in environment, not a VS shell")
+    else:
+        for p in os.environ.get("PATH", "").split(os.pathsep):
+            if os.path.isfile(os.path.join(os.path.abspath(p), "cl.exe")):
+                mx.log("LIB and INCLUDE set, cl.exe on PATH, assuming this is a VS shell")
+                os.environ["DISTUTILS_USE_SDK"] = "1"
+                break
+        else:
+            mx.log("cl.exe not on PATH, not a VS shell")
+
 
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
