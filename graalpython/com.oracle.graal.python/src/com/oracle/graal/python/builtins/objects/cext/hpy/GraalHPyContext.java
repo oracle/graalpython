@@ -774,9 +774,8 @@ public final class GraalHPyContext extends CExtContext {
     }
 
     public static int getHPyHandleForSingleton(Object object) {
-        CompilerAsserts.neverPartOfCompilation();
         assert !(object instanceof GraalHPyHandle);
-        return GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen.getUncached().execute(object);
+        return GetHPyHandleForSingleton.doGeneric(object);
     }
 
     /**
@@ -874,7 +873,7 @@ public final class GraalHPyContext extends CExtContext {
         }
 
         @Specialization
-        static int doElipsis(@SuppressWarnings("unused") PEllipsis x) {
+        static int doEllipsis(@SuppressWarnings("unused") PEllipsis x) {
             return SINGLETON_HANDLE_ELIPSIS;
         }
 
@@ -883,9 +882,27 @@ public final class GraalHPyContext extends CExtContext {
             return SINGLETON_HANDLE_NOT_IMPLEMENTED;
         }
 
-        @Fallback
+        @Specialization(guards = "!isSingleton(delegate)")
         static int doOthers(@SuppressWarnings("unused") Object delegate) {
             return -1;
+        }
+
+        @Specialization(replaces = {"doNoValue", "doNone", "doEllipsis", "doNotImplemented", "doOthers"})
+        static int doGeneric(Object object) {
+            if (object == PNone.NO_VALUE) {
+                return 0;
+            } else if (object == PNone.NONE) {
+                return SINGLETON_HANDLE_NONE;
+            } else if (object == PEllipsis.INSTANCE) {
+                return SINGLETON_HANDLE_ELIPSIS;
+            } else if (object == PNotImplemented.NOT_IMPLEMENTED) {
+                return SINGLETON_HANDLE_NOT_IMPLEMENTED;
+            }
+            return -1;
+        }
+
+        static boolean isSingleton(Object object) {
+            return object == PNone.NONE || object == PEllipsis.INSTANCE || object == PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
