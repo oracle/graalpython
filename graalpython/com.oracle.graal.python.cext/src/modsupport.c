@@ -51,6 +51,9 @@ PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
 PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
                                                   const char *, char **, va_list);
+PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *, PyObject *, struct _PyArg_Parser *, va_list);
+PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *, PyObject *, struct _PyArg_Parser *, ...);
+PyAPI_FUNC(int) _PyArg_ParseStack_SizeT(PyObject **, Py_ssize_t, const char*, ...);
 
 static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
     if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {

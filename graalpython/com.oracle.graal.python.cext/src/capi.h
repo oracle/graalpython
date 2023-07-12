@@ -41,8 +41,13 @@
 #ifndef CAPI_H
 #define CAPI_H
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define MUST_INLINE inline
+#define NO_INLINE __declspec(noinline)
+#else
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
+#endif
 
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us
@@ -940,7 +945,7 @@ PyAPI_DATA(ptr_cache_t) ptr_cache;
 PyAPI_DATA(cache_query_t) points_to_py_handle_space;
 PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 
-void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
+PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
 extern ptr_cache_t pythonToNative;
 extern void_ptr_cache_t javaStringToTruffleString;

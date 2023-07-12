@@ -6084,10 +6084,10 @@ PyAPI_FUNC(int) _Py_dup(int a) {
 PyAPI_FUNC(FILE*) _Py_fopen_obj(PyObject* a, const char* b) {
     unimplemented("_Py_fopen_obj"); exit(-1);
 }
-PyAPI_FUNC(int) _Py_fstat(int a, struct stat* b) {
+PyAPI_FUNC(int) _Py_fstat(int a, struct _Py_stat_struct* b) {
     unimplemented("_Py_fstat"); exit(-1);
 }
-PyAPI_FUNC(int) _Py_fstat_noraise(int a, struct stat* b) {
+PyAPI_FUNC(int) _Py_fstat_noraise(int a, struct _Py_stat_struct* b) {
     unimplemented("_Py_fstat_noraise"); exit(-1);
 }
 PyAPI_FUNC(int) _Py_get_blocking(int a) {

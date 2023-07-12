@@ -712,7 +712,7 @@ class build_ext(Command):
         # pyconfig.h that MSVC groks.  The other Windows compilers all seem
         # to need it mentioned explicitly, though, so that's what we do.
         # Append '_d' to the python import library on debug builds.
-        if sys.platform == "win32" and False: # Truffle change: never go this path
+        if sys.platform == "win32":
             from distutils._msvccompiler import MSVCCompiler
             if not isinstance(self.compiler, MSVCCompiler):
                 template = "python%d%d"
@@ -720,6 +720,9 @@ class build_ext(Command):
                     template = template + '_d'
                 pythonlib = (template %
                        (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+                # Begin Truffle change
+                pythonlib = f"python-{__graalpython__.platform_id}"
+                # End Truffle change
                 # don't extend ext.libraries, it may be shared with other
                 # extensions, it is a reference to the original list
                 return ext.libraries + [pythonlib]

@@ -148,6 +148,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                     }
                     throw handlePythonException(e);
                 } catch (StackOverflowError e) {
+                    CompilerDirectives.transferToInterpreter();
                     PythonContext context = getContext();
                     context.reacquireGilAfterStackOverflow();
                     PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{});

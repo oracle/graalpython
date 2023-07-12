@@ -42,6 +42,8 @@
 
 #include <stdio.h>
 
+// export the more functions, because we use them dynamically in contrast to cpython on windows
+PyAPI_FUNC(PyObject *) _Py_BuildValue_SizeT(const char *, ...);
 
 #define FLAG_SIZE_T 1
 typedef double va_double;
@@ -229,8 +231,7 @@ static int
 parser_init(struct _PyArg_Parser *parser)
 {
     const char * const *keywords;
-    const char *format, *msg;
-    int i, len, min, max, nkw;
+    int i, len, nkw;
     PyObject *kwtuple;
 
     assert(parser->keywords != NULL);

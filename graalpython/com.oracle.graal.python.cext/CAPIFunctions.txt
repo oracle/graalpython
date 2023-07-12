@@ -41,8 +41,8 @@ _Py_FatalErrorFunc;void;const char*|const char*
 _Py_FdIsInteractive;int;FILE*|PyObject*
 _Py_fopen_obj;FILE*;PyObject*|const char*
 _Py_FreeCharPArray;void;char*const []
-_Py_fstat_noraise;int;int|struct stat*
-_Py_fstat;int;int|struct stat*
+_Py_fstat_noraise;int;int|struct _Py_stat_struct*
+_Py_fstat;int;int|struct _Py_stat_struct*
 _Py_get_blocking;int;int
 _Py_get_inheritable;int;int
 _Py_GetAllocatedBlocks;Py_ssize_t;void

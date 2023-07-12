@@ -257,6 +257,7 @@ public enum ArgDescriptor {
     SIZE_T(ArgBehavior.Int64, "size_t"),
     SIZE_T_PTR("size_t*"),
     STAT_PTR("struct stat*"),
+    PY_STAT_PTR("struct _Py_stat_struct*"),
     TIME_T("time_t"),
     TIME_T_PTR("time_t*"),
     TIMESPEC_PTR("struct timespec*"),

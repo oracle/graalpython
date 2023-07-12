@@ -708,15 +708,15 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(intptr_t ptr, Py_ssize_t value) {
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
 		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
 	if ((obj->ob_refcnt + value) <= 0) {
 		char buf[1024];
-		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
-//	printf("refcnt value during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+//	printf("refcnt value during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 #endif // ASSERTIONS
 
 	return (obj->ob_refcnt += value);
@@ -728,15 +728,15 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
 		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
 	if ((obj->ob_refcnt - value) < 0) {
 		char buf[1024];
-		sprintf(buf, "refcnt below zero during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "refcnt below zero during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
-//	printf("refcnt value during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+//	printf("refcnt value during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
 #endif // ASSERTIONS
 
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
@@ -1350,11 +1350,11 @@ PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
     type->tp_flags = flags;
 }
 
-int truffle_BASETYPE_check(PyObject* type) {
+PyAPI_FUNC(int) truffle_BASETYPE_check(PyObject* type) {
     return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
 }
 
-void* truffle_get_constant(int entry) {
+PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 	// this needs to correspond to CApiContext.resolveConstant
 	switch(entry) {
 	case 0:

@@ -119,7 +119,7 @@ typedef struct
 } PyDateTime_DateTime;          /* hastzinfo true */
 
 
-PyObject* PyTruffle_PyDateTime_GET_TZINFO(PyObject*);
+PyAPI_FUNC(PyObject*) PyTruffle_PyDateTime_GET_TZINFO(PyObject*);
 
 /* Apply for date and datetime instances. */
 

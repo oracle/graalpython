@@ -1801,8 +1801,9 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, UNSIGNED_LONG}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_flags extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doTpFlags(PythonManagedClass object, long flags,
+        static Object doTpFlags(PythonManagedClass object, long signExtendedFlags,
                         @Cached TypeNodes.SetTypeFlagsNode setTypeFlagsNode) {
+            long flags = signExtendedFlags & 0xFFFFFFFFL;
             if (object instanceof PythonBuiltinClass) {
                 /*
                  * Assert that we try to set the same flags, except the abc flags for sequence and

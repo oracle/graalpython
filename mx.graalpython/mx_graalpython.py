@@ -100,7 +100,8 @@ DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 _COLLECTING_COVERAGE = False
 
 CI = os.environ.get("CI") == "true"
-BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and sys.platform != "win32" # disable assertions on win32 until we properly support that platform
+WIN32 = sys.platform == "win32"
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and WIN32 # disable assertions on win32 until we properly support that platform
 
 if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
@@ -115,7 +116,35 @@ def wants_debug_build(flags=os.environ.get("CFLAGS", "")):
 
 
 if wants_debug_build():
-    mx_native.DefaultNativeProject.cflags = property(lambda self: self._cflags + ["-fPIC", "-ggdb3"])
+    mx_native.DefaultNativeProject._original_cflags = mx_native.DefaultNativeProject.cflags
+    mx_native.DefaultNativeProject.cflags = property(
+        lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
+    )
+
+
+if WIN32:
+    # we need the .lib for pythonjni
+    original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
+    def getArchivableResultsWithLib(self, *args, **kwargs):
+        for result in original_DefaultNativeProject_getArchivableResults(self, *args, **kwargs):
+            if any(r.endswith("pythonjni.dll") for r in result):
+                yield tuple(r.replace(".dll", ".lib") for r in result)
+            yield result
+    mx_native.DefaultNativeProject.getArchivableResults = getArchivableResultsWithLib
+
+    # let's check if VS compilers are on the PATH
+    if not os.environ.get("LIB"):
+        mx.log("LIB not in environment, not a VS shell")
+    elif not os.environ.get("INCLUDE"):
+        mx.log("INCLUDE not in environment, not a VS shell")
+    else:
+        for p in os.environ.get("PATH", "").split(os.pathsep):
+            if os.path.isfile(os.path.join(os.path.abspath(p), "cl.exe")):
+                mx.log("LIB and INCLUDE set, cl.exe on PATH, assuming this is a VS shell")
+                os.environ["DISTUTILS_USE_SDK"] = "1"
+                break
+        else:
+            mx.log("cl.exe not on PATH, not a VS shell")
 
 
 def _sibling(filename):
@@ -273,7 +302,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         jdk = get_jdk()
 
     # default: assertion checking is enabled
-    if extra_vm_args is None or '-da' not in extra_vm_args:
+    if not WIN32 and (extra_vm_args is None or '-da' not in extra_vm_args):
         vm_args += ['-ea', '-esa']
 
     if extra_vm_args:
@@ -726,7 +755,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
-    elif sys.platform == "win32":
+    elif WIN32:
         return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
@@ -868,8 +897,13 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     paths = paths or [_graalpytest_root()]
     def is_included(path):
         if path.endswith(".py"):
+            path = path.replace("\\", "/")
             basename = os.path.basename(path)
-            return basename.startswith("test_") and basename not in exclude
+            return (
+                basename.startswith("test_")
+                and basename not in exclude
+                and not any(fnmatch.fnmatch(path, pat) for pat in exclude)
+            )
         return False
 
     testfiles = []
@@ -882,10 +916,10 @@ def _list_graalpython_unittests(paths=None, exclude=None):
         else:
             for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
             for testfile in glob.glob(os.path.join(path, "test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
     return testfiles
 
 
@@ -926,13 +960,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
-    if report:
-        reportfile = None
-        t0 = time.time()
-        if not use_pytest:
-            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-            args += ["--report", reportfile]
-
     result = 0
     if is_collecting_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
@@ -945,24 +972,43 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         for testfile in testfiles:
             mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     else:
-        if javaAsserts:
-            args += ['-ea']
+        if WIN32:
+            size = 5
+            # Windows has problems with long commandlines and with file locks
+            # when running multiple cpyext tests in the same process
+            pytests = [t for t in testfiles if "cpyext" not in t]
+            testfiles = [pytests[i:i + size] for i in range(0, len(pytests), size)] + [[t] for t in testfiles if "cpyext" in t]
+        else:
+            testfiles = [testfiles]
 
-        args += testfiles
-        mx.logv(" ".join([python_binary] + args))
+        for testset in testfiles:
+            next_args = args[:]
+            if report:
+                reportfile = None
+                t0 = time.time()
+                if not use_pytest:
+                    reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+                    next_args += ["--report", reportfile]
+
+            next_args += testset
+            mx.logv(" ".join([python_binary] + next_args))
+            if lock:
+                lock.release()
+            result = result or mx.run([python_binary] + next_args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+            if lock:
+                lock.acquire()
+
+            if report:
+                if reportfile:
+                    mx_gate.make_test_report(reportfile, report.title)
+                else:
+                    mx_gate.make_test_report([{
+                        "name": report.title,
+                        "status": "PASSED" if result == 0 else "FAILED",
+                        "duration": int((time.time() - t0) * 1000)
+                    }], report.title)
         if lock:
             lock.release()
-        result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
-
-    if report:
-        if reportfile:
-            mx_gate.make_test_report(reportfile, report.title)
-        else:
-            mx_gate.make_test_report([{
-                "name": report.title,
-                "status": "PASSED" if result == 0 else "FAILED",
-                "duration": int((time.time() - t0) * 1000)
-            }], report.title)
     return result
 
 
@@ -1133,17 +1179,95 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
+    if WIN32:
+        # Windows support is still experimental, so we exclude some unittests
+        # on Windows for now. If you add unittests and cannot get them to work
+        # on Windows, yet, add their files here.
+        excluded_tests = [
+            "test_code.py", # forward slash in path problem
+            "test_csv.py",
+            "test_ctypes_callbacks.py", # ctypes error
+            "test_imports.py", # import posix
+            "test_locale.py",
+            "test_math.py",
+            "test_memoryview.py",
+            "test_mmap.py", # sys.getwindowsversion
+            "test_multiprocessing.py", # import _winapi
+            "test_patched_pip.py",
+            "test_pathlib.py",
+            "test_posix.py", # import posix
+            "test_pyio.py",
+            "test_signal.py",
+            "test_ssl.py", # from_ssl import enum_certificates
+            "test_struct.py",
+            "test_structseq.py", # import posix
+            "test_subprocess.py",
+            "test_thread.py", # sys.getwindowsversion
+            "test_traceback.py",
+            "test_venv.py",
+            "test_zipimport.py", # sys.getwindowsversion
+            "test_zlib.py",
+            "test_ssl_java_integration.py",
+            "*/cpyext/test_abstract.py",
+            "*/cpyext/test_bytes.py",
+            "*/cpyext/test_cpython_sre.py",
+            "*/cpyext/test_datetime.py",
+            "*/cpyext/test_descr.py",
+            "*/cpyext/test_err.py",
+            "*/cpyext/test_exceptionobject.py",
+            "*/cpyext/test_float.py",
+            "*/cpyext/test_functions.py",
+            "*/cpyext/test_gc.py",
+            "*/cpyext/test_long.py",
+            "*/cpyext/test_member.py",
+            "*/cpyext/test_memoryview.py",
+            "*/cpyext/test_method.py",
+            "*/cpyext/test_misc.py",
+            "*/cpyext/test_mixed_inheritance.py",
+            "*/cpyext/test_mmap.py",
+            "*/cpyext/test_modsupport.py",
+            "*/cpyext/test_module.py",
+            "*/cpyext/test_object.py",
+            "*/cpyext/test_simple.py",
+            "*/cpyext/test_slice.py",
+            "*/cpyext/test_structseq.py",
+            "*/cpyext/test_thread.py",
+            "*/cpyext/test_traceback.py",
+            "*/cpyext/test_tuple.py",
+            "*/cpyext/test_unicode.py",
+            "*/cpyext/test_wiki.py",
+        ]
+    else:
+        excluded_tests = []
 
     # JUnit tests
-    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
+    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
         if task:
-            punittest(['--verbose'], report=report())
+            if WIN32:
+                punittest(
+                    [
+                        "--verbose",
+                        "--no-leak-tests",
+                        "--regex",
+                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'
+                    ],
+                    report=True
+                )
+            else:
+                punittest(['--verbose'], report=report())
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            if not WIN32:
+                mx.run(["env"])
+            run_python_unittests(
+                python_gvm(),
+                javaAsserts=True,
+                exclude=excluded_tests,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report()
+            )
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -1159,11 +1283,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm(), javaAsserts=True, report=report())
+            run_python_unittests(python_managed_gvm(), javaAsserts=True, exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1196,9 +1320,9 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
-    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
+    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
-            run_python_unittests(python_svm(), aot_compatible=True, report=report())
+            run_python_unittests(python_svm(), exclude=excluded_tests, aot_compatible=True, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
@@ -1209,7 +1333,7 @@ def graalpython_gate_runner(args, tasks):
             python_checkcopyrights([])
 
     with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
-        if task:
+        if task and not WIN32:
             run_shared_lib_test(python_so())
 
     with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
@@ -1227,10 +1351,11 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            assert "Using preinitialized context." in out.data
+            if not WIN32:
+                assert "Using preinitialized context." in out.data
 
     with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
-        if task:
+        if task and not WIN32:
             svm_image = python_svm()
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmpstandalone = os.path.join(tmpdir, "target")
@@ -1269,20 +1394,6 @@ def graalpython_gate_runner(args, tasks):
                 )
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
-        if task:
-            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'], report=True)
-            svm_image = python_svm()
-            out = mx.OutputCapture()
-            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "\n".join(["win32"])
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
-            mx.run([svm_image, "--experimental-options", "--python.NativeModules=", "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "b'abcd'"
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
