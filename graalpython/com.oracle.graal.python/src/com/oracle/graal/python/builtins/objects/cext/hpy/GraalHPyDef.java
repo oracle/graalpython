@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
@@ -106,6 +107,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
@@ -381,11 +383,13 @@ public abstract class GraalHPyDef {
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
         HPY_TP_CALL(50, HPySlotWrapper.NULL, T___CALL__),
+        HPY_TP_HASH(59, HPySlotWrapper.HASHFUNC, T___HASH__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
         HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, T___NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, T___REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),
+        HPY_TP_STR(70, HPySlotWrapper.UNARYFUNC, T___STR__),
         HPY_TP_TRAVERSE(71, HPySlotWrapper.TRAVERSE),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, T___MATMUL__, HPySlotWrapper.BINARYFUNC_R, T___RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, T___IMATMUL__),
