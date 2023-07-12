@@ -91,7 +91,7 @@ public final class Hamt {
         throw CompilerDirectives.shouldNotReachHere("TreePart type is not handled");
     }
 
-    private final TreePart root;
+    final TreePart root;
 
     public Hamt() {
         this(null);
@@ -396,11 +396,11 @@ public final class Hamt {
         return new Hamt(partWithoutKey(root, key, hash, 0));
     }
 
-    private interface TreePart {
+    interface TreePart {
         String dump(int indent);
     }
 
-    private static final class BitmapPart implements TreePart {
+    static final class BitmapPart implements TreePart {
         final int bitmap;
         final TreePart[] elems;
 
@@ -426,7 +426,7 @@ public final class Hamt {
         }
     }
 
-    private static final class ArrayPart implements TreePart {
+    static final class ArrayPart implements TreePart {
         final TreePart[] elems;
 
         public ArrayPart(TreePart[] elems) {
@@ -446,7 +446,7 @@ public final class Hamt {
         }
     }
 
-    private static final class CollisionPart implements TreePart {
+    static final class CollisionPart implements TreePart {
         final int hash;
         final Entry[] elems;
 
@@ -471,9 +471,9 @@ public final class Hamt {
 
     @CompilerDirectives.ValueType
     public static final class Entry implements TreePart {
-        final Object key;
+        public final Object key;
         final int hash;
-        final Object value;
+        public final Object value;
 
         public Entry(Object key, int hash, Object value) {
             this.key = key;
