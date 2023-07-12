@@ -118,8 +118,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ITIMER_REAL", ITIMER_REAL);
         addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
         addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
-        for (int i = 0; i < Signals.signalNames.length; i++) {
-            String name = Signals.signalNames[i];
+        for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+            String name = Signals.SIGNAL_NAMES[i];
             if (name != null) {
                 addBuiltinConstant("SIG" + name, i);
             }
@@ -171,6 +171,30 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @Override
         public int frameIndex() {
             return 1;
+        }
+    }
+
+    @Builtin(name = "valid_signals")
+    @GenerateNodeFactory
+    abstract static class ValidSignalsNode extends PythonBuiltinNode {
+        @Specialization
+        static Object validSignals(
+                        @Cached PythonObjectFactory factory) {
+            int signalCount = 0;
+            for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+                if (Signals.SIGNAL_NAMES[i] != null) {
+                    signalCount++;
+                }
+            }
+            int[] validSignals = new int[signalCount];
+            int j = 0;
+            for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+                if (Signals.SIGNAL_NAMES[i] != null) {
+                    validSignals[j++] = i;
+                }
+            }
+
+            return factory.createTuple(validSignals);
         }
     }
 
@@ -477,7 +501,7 @@ final class Signals {
     static final int SIG_DFL = 0;
     static final int SIG_IGN = 1;
     private static final int SIGMAX = 31;
-    static final String[] signalNames = new String[SIGMAX + 1];
+    static final String[] SIGNAL_NAMES = new String[SIGMAX + 1];
 
     static {
         for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
@@ -488,7 +512,7 @@ final class Signals {
                 if (number > SIGMAX) {
                     continue;
                 }
-                signalNames[number] = signal;
+                SIGNAL_NAMES[number] = signal;
             } catch (IllegalArgumentException e) {
             }
         }
@@ -548,7 +572,7 @@ final class Signals {
     }
 
     static String signalNumberToName(int signum) {
-        return signum > SIGMAX ? "INVALID SIGNAL" : signalNames[signum];
+        return signum > SIGMAX ? "INVALID SIGNAL" : SIGNAL_NAMES[signum];
     }
 
     @TruffleBoundary
