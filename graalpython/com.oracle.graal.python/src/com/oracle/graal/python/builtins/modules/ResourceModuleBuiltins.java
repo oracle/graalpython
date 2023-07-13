@@ -161,7 +161,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
                 if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
                     ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
-                    ru_stime = (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id)) / 1000000000.0;
+                    ru_stime = Math.max(0, (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id))) / 1000000000.0;
                 }
 
                 if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
@@ -219,7 +219,7 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
                         }
 
                         if (tu != -1 && tc != -1) {
-                            ru_stime += (tc - tu) / 1000000000.0;
+                            ru_stime += Math.max(0, tc - tu) / 1000000000.0;
                         }
                     }
                 }
