@@ -33,15 +33,6 @@ from pathlib import Path
 # But this file needs to be importable also in py27 (for pypy tests), and we
 # don't care about setuptools version in that case.
 import setuptools
-import distutils
-if (sys.version_info.major > 2 and
-    distutils is not getattr(setuptools, '_distutils', None)):
-    raise Exception(
-        "setuptools' monkey-patching of distutils did not work. "
-        "Most likely this is caused by:\n"
-        "  - a too old setuptools. Try installing setuptools>=60.2\n"
-        "  - the env variable SETUPTOOLS_USE_DISTUTILS=stdlib. Try to unset it."
-        )
 from distutils import log
 from distutils.errors import DistutilsError
 import setuptools.command as cmd
