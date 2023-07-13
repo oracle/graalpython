@@ -66,7 +66,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.WrapperDescriptor)
-public class WrapperDescriptorBuiltins extends PythonBuiltins {
+public final class WrapperDescriptorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return WrapperDescriptorBuiltinsFactory.getFactories();

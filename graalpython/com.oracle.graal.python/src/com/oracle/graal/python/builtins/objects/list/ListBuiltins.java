@@ -135,7 +135,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
-public class ListBuiltins extends PythonBuiltins {
+public final class ListBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {

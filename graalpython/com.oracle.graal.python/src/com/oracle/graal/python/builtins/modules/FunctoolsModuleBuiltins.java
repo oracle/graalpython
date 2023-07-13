@@ -86,7 +86,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
-public class FunctoolsModuleBuiltins extends PythonBuiltins {
+public final class FunctoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FunctoolsModuleBuiltinsFactory.getFactories();

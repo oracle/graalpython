@@ -80,7 +80,7 @@ import com.oracle.truffle.tools.profiler.ProfilerNode;
 import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 
 @CoreFunctions(defineModule = "_lsprof")
-public class LsprofModuleBuiltins extends PythonBuiltins {
+public final class LsprofModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor PROFILER_ENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PProfilerEntry,

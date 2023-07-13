@@ -77,7 +77,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "faulthandler")
-public class FaulthandlerModuleBuiltins extends PythonBuiltins {
+public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
 
     private boolean enabled = true;
 

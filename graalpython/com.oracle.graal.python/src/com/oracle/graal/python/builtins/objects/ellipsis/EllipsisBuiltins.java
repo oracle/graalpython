@@ -60,7 +60,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEllipsis)
 @SuppressWarnings("unused")
-public class EllipsisBuiltins extends PythonBuiltins {
+public final class EllipsisBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_ELLIPSIS = tsLiteral("Ellipsis");
 

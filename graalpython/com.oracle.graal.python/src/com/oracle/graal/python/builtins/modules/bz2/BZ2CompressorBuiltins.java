@@ -82,7 +82,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Compressor)
-public class BZ2CompressorBuiltins extends PythonBuiltins {
+public final class BZ2CompressorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BZ2CompressorBuiltinsFactory.getFactories();

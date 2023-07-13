@@ -55,7 +55,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "errno")
-public class ErrnoModuleBuiltins extends PythonBuiltins {
+public final class ErrnoModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();

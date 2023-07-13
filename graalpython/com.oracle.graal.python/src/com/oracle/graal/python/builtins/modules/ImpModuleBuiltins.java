@@ -136,7 +136,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ImpModuleBuiltins.J__IMP, isEager = true)
-public class ImpModuleBuiltins extends PythonBuiltins {
+public final class ImpModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_ORIGIN = tsLiteral("origin");
     static final String J__IMP = "_imp";

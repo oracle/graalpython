@@ -100,7 +100,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 @CoreFunctions(defineModule = HashlibModuleBuiltins.J_HASHLIB)
-public class HashlibModuleBuiltins extends PythonBuiltins {
+public final class HashlibModuleBuiltins extends PythonBuiltins {
 
     static final String J_HASHLIB = "_hashlib";
     private static final TruffleString T_HASHLIB = tsLiteral(J_HASHLIB);

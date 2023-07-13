@@ -59,7 +59,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNotImplemented)
 @SuppressWarnings("unused")
-public class NotImplementedBuiltins extends PythonBuiltins {
+public final class NotImplementedBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

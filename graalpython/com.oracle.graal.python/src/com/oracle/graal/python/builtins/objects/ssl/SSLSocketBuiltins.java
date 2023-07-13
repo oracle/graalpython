@@ -84,7 +84,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
-public class SSLSocketBuiltins extends PythonBuiltins {
+public final class SSLSocketBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLSocketBuiltinsFactory.getFactories();

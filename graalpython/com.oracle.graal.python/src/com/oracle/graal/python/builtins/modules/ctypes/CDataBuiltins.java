@@ -92,7 +92,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(extendClasses = PyCData)
-public class CDataBuiltins extends PythonBuiltins {
+public final class CDataBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

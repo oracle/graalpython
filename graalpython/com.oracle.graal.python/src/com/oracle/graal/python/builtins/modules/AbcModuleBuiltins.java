@@ -73,7 +73,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_abc")
-public class AbcModuleBuiltins extends PythonBuiltins {
+public final class AbcModuleBuiltins extends PythonBuiltins {
 
     private static TruffleString ABC_TPFLAGS = toTruffleStringUncached("__abc_tpflags__");
 

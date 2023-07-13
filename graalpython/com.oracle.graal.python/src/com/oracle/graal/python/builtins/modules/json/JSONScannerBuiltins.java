@@ -53,7 +53,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONScanner)
-public class JSONScannerBuiltins extends PythonBuiltins {
+public final class JSONScannerBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_JSON_DECODE_ERROR = tsLiteral("JSONDecodeError");
 

@@ -87,7 +87,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteStreamReader)
-public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
+public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

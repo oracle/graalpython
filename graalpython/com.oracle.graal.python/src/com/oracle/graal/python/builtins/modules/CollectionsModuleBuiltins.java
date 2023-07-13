@@ -77,7 +77,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_collections")
-public class CollectionsModuleBuiltins extends PythonBuiltins {
+public final class CollectionsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CollectionsModuleBuiltinsFactory.getFactories();

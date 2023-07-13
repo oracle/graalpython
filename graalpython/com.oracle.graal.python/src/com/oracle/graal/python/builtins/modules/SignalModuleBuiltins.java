@@ -94,7 +94,7 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 @CoreFunctions(defineModule = "_signal")
-public class SignalModuleBuiltins extends PythonBuiltins {
+public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
 

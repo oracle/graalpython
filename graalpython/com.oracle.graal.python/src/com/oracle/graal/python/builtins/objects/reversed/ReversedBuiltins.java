@@ -65,7 +65,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
-public class ReversedBuiltins extends PythonBuiltins {
+public final class ReversedBuiltins extends PythonBuiltins {
 
     /*
      * "extendClasses" only needs one of the set of Java classes that are mapped to the Python

@@ -96,7 +96,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
-public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
+public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixSubprocessModuleBuiltinsFactory.getFactories();

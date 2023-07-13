@@ -107,7 +107,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = LZMAModuleBuiltins.J__LZMA)
-public class LZMAModuleBuiltins extends PythonBuiltins {
+public final class LZMAModuleBuiltins extends PythonBuiltins {
 
     public static final String J__LZMA = "_lzma";
     public static final TruffleString T__LZMA = tsLiteral(J__LZMA);

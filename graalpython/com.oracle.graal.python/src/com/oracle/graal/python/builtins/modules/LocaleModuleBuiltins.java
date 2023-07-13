@@ -77,7 +77,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_locale")
-public class LocaleModuleBuiltins extends PythonBuiltins {
+public final class LocaleModuleBuiltins extends PythonBuiltins {
     static final int LC_ALL = 6;
     static final int LC_COLLATE = 3;
     static final int LC_CTYPE = 0;

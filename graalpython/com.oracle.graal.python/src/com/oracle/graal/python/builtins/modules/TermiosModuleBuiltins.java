@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "termios", isEager = true)
-public class TermiosModuleBuiltins extends PythonBuiltins {
+public final class TermiosModuleBuiltins extends PythonBuiltins {
 
     public TermiosModuleBuiltins() {
         addBuiltinConstant(SpecialAttributeNames.T___DOC__,

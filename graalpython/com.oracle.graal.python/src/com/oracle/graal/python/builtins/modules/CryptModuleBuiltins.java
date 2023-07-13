@@ -58,7 +58,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_crypt")
-public class CryptModuleBuiltins extends PythonBuiltins {
+public final class CryptModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CryptModuleBuiltinsFactory.getFactories();

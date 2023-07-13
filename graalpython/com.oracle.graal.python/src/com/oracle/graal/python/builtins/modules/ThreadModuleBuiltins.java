@@ -91,7 +91,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__THREAD)
-public class ThreadModuleBuiltins extends PythonBuiltins {
+public final class ThreadModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey THREAD_COUNT = new HiddenKey("thread_count");
 
     @Override

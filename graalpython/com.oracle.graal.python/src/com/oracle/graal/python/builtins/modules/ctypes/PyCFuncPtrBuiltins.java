@@ -141,7 +141,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtr)
-public class PyCFuncPtrBuiltins extends PythonBuiltins {
+public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

@@ -69,7 +69,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunctionOrMethod)
-public class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
+public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

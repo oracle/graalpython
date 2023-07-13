@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "resource")
-public class ResourceModuleBuiltins extends PythonBuiltins {
+public final class ResourceModuleBuiltins extends PythonBuiltins {
 
     static int RUSAGE_CHILDREN = -1;
     static int RUSAGE_SELF = 0;

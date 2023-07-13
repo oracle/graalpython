@@ -67,7 +67,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "nt", isEager = true)
-public class NtModuleBuiltins extends PythonBuiltins {
+public final class NtModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NtModuleBuiltinsFactory.getFactories();

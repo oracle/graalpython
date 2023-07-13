@@ -94,7 +94,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J_JAVA)
-public class JavaModuleBuiltins extends PythonBuiltins {
+public final class JavaModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_JAR = tsLiteral(".jar");
 
     @Override

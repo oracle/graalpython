@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDequeIter, PythonBuiltinClassType.PDequeRevIter})
-public class DequeIterBuiltins extends PythonBuiltins {
+public final class DequeIterBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

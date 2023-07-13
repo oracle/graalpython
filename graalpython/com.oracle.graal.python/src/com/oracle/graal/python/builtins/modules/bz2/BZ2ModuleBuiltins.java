@@ -57,7 +57,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = BuiltinNames.J_BZ2)
-public class BZ2ModuleBuiltins extends PythonBuiltins {
+public final class BZ2ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BZ2ModuleBuiltinsFactory.getFactories();

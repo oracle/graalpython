@@ -76,7 +76,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Built-in functions that are only used for {@link PythonBuiltinClassType#MemberDescriptor}.
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.MemberDescriptor)
-public class MemberDescriptorBuiltins extends PythonBuiltins {
+public final class MemberDescriptorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MemberDescriptorBuiltinsFactory.getFactories();

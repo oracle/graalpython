@@ -58,7 +58,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = J__TRACEMALLOC)
-public class TracemallocModuleBuiltins extends PythonBuiltins {
+public final class TracemallocModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

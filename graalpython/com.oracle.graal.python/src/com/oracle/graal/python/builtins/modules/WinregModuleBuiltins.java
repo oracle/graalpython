@@ -57,7 +57,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "winreg", isEager = true, os = PythonOS.PLATFORM_WIN32)
-public class WinregModuleBuiltins extends PythonBuiltins {
+public final class WinregModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return WinregModuleBuiltinsFactory.getFactories();

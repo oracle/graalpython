@@ -67,7 +67,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PAsyncGenerator)
-public class AsyncGeneratorBuiltins extends PythonBuiltins {
+public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     private static void callHooks(VirtualFrame frame, PAsyncGen self, PythonContext.PythonThreadState state, CallUnaryMethodNode invokeFirstIter) {
         Object firstIter = state.getAsyncgenFirstIter();
         if (firstIter == null) {

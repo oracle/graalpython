@@ -71,7 +71,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
-public class OperatorModuleBuiltins extends PythonBuiltins {
+public final class OperatorModuleBuiltins extends PythonBuiltins {
 
     protected static final String MODULE_NAME = "_operator";
 

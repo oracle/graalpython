@@ -70,7 +70,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
-public class ScandirIteratorBuiltins extends PythonBuiltins {
+public final class ScandirIteratorBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

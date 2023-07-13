@@ -91,7 +91,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PyCPointerType,
                 PyCSimpleType,
 })
-public class CDataTypeSequenceBuiltins extends PythonBuiltins {
+public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

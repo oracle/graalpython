@@ -148,7 +148,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
-public class PosixModuleBuiltins extends PythonBuiltins {
+public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,

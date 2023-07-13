@@ -92,7 +92,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
+public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

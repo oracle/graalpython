@@ -58,7 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 
 @CoreFunctions(defineModule = "_queue")
-public class QueueModuleBuiltins extends PythonBuiltins {
+public final class QueueModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return QueueModuleBuiltinsFactory.getFactories();

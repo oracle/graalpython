@@ -52,7 +52,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import java.util.List;
 
 @CoreFunctions(defineModule = "_posixshmem")
-public class PosixShMemModuleBuiltins extends PythonBuiltins {
+public final class PosixShMemModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

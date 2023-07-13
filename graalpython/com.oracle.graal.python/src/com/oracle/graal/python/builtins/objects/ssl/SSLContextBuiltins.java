@@ -145,7 +145,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
-public class SSLContextBuiltins extends PythonBuiltins {
+public final class SSLContextBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_ENVIRON = tsLiteral("environ");
 

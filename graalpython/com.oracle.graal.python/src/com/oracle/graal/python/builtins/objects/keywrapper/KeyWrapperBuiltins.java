@@ -70,7 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PKeyWrapper)
-public class KeyWrapperBuiltins extends PythonBuiltins {
+public final class KeyWrapperBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return KeyWrapperBuiltinsFactory.getFactories();

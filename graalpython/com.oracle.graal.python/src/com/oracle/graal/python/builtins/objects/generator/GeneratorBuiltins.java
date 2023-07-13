@@ -68,7 +68,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
-public class GeneratorBuiltins extends PythonBuiltins {
+public final class GeneratorBuiltins extends PythonBuiltins {
 
     private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
         if (self.isFinished()) {

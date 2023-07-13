@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Blake2bType})
-public class Blake2bObjectBuiltins extends PythonBuiltins {
+public final class Blake2bObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();

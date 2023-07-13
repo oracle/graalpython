@@ -44,7 +44,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "_random")
-public class RandomModuleBuiltins extends PythonBuiltins {
+public final class RandomModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

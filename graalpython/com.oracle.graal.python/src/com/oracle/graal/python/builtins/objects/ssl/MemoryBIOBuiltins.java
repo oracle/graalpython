@@ -67,7 +67,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryBIO)
-public class MemoryBIOBuiltins extends PythonBuiltins {
+public final class MemoryBIOBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MemoryBIOBuiltinsFactory.getFactories();

@@ -58,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_md5")
-public class Md5ModuleBuiltins extends PythonBuiltins {
+public final class Md5ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return Md5ModuleBuiltinsFactory.getFactories();

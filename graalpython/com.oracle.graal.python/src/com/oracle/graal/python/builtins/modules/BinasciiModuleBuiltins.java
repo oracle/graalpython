@@ -94,7 +94,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 @CoreFunctions(defineModule = "binascii")
-public class BinasciiModuleBuiltins extends PythonBuiltins {
+public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

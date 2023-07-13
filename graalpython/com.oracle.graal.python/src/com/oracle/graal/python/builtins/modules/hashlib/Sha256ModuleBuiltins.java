@@ -58,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_sha256")
-public class Sha256ModuleBuiltins extends PythonBuiltins {
+public final class Sha256ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return Sha256ModuleBuiltinsFactory.getFactories();

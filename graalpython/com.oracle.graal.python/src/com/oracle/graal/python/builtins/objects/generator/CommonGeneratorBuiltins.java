@@ -95,7 +95,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCoroutine, PythonBuiltinClassType.PGenerator})
-public class CommonGeneratorBuiltins extends PythonBuiltins {
+public final class CommonGeneratorBuiltins extends PythonBuiltins {
     /**
      * Creates a fresh copy of the generator arguments to be used for the next invocation of the
      * generator. This is necessary to avoid persisting caller state. For example: If the generator
