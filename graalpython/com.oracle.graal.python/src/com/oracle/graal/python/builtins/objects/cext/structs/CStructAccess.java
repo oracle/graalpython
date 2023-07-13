@@ -121,14 +121,14 @@ public class CStructAccess {
 
         @Specialization(guards = {"!allocatePyMem", "!nativeAccess()"})
         static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Cached PCallCapiFunction call) {
+                        @Shared @Cached PCallCapiFunction call) {
             assert size >= 0;
             return call.call(NativeCAPISymbol.FUN_CALLOC, size);
         }
 
         @Specialization(guards = "allocatePyMem")
         static Object allocLongPyMem(long size, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Cached PCallCapiFunction call) {
+                        @Shared @Cached PCallCapiFunction call) {
             assert size >= 0;
             return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, size, 1);
         }
