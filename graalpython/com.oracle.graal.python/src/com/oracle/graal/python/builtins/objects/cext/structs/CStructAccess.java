@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
@@ -111,18 +112,18 @@ public class CStructAccess {
         }
 
         @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
-        static long allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem) {
+        static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem) {
             assert size >= 0;
             long memory = UNSAFE.allocateMemory(size);
             UNSAFE.setMemory(memory, size, (byte) 0);
-            return memory;
+            return new NativePointer(memory);
         }
 
         @Specialization(guards = {"!allocatePyMem", "!nativeAccess()"})
         static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Cached PCallCapiFunction call) {
             assert size >= 0;
-            return call.call(NativeCAPISymbol.FUN_CALLOC, size, 1);
+            return call.call(NativeCAPISymbol.FUN_CALLOC, size);
         }
 
         @Specialization(guards = "allocatePyMem")

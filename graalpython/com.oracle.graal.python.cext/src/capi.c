@@ -715,6 +715,10 @@ PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src,
     memcpy(dest + dest_offset, src + src_offset, len);
 }
 
+PyAPI_FUNC(void*) truffle_calloc(size_t size) {
+	return calloc(1, size);
+}
+
 PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
     if (getsets || members) {
         GraalPyTruffle_Set_Native_Slots(managed_class, getsets, members);
