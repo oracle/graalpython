@@ -972,7 +972,7 @@ public abstract class BytesNodes {
                 return shortcutLengthResult();
             }
             for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
-                compareResult = Byte.compare(selfArray[i], otherArray[i]);
+                compareResult = Integer.compare(Byte.toUnsignedInt(selfArray[i]), Byte.toUnsignedInt(otherArray[i]));
                 if (compareResult != 0) {
                     break;
                 }
