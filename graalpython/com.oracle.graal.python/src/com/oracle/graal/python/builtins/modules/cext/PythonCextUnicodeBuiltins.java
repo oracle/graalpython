@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
@@ -103,12 +102,14 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -278,26 +280,38 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {ArgDescriptor.PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_InternInPlace extends CApiUnaryBuiltinNode {
-        @Specialization(guards = {"!isTruffleString(obj)", "isStringSubtype(obj, getClassNode, isSubtypeNode)"})
-        Object intern(Object obj,
-                        @Cached InternNode internNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return internNode.execute(null, obj);
+    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_LookupAndIntern extends CApiBinaryBuiltinNode {
+        @Specialization
+        Object withTS(PDict dict, TruffleString str,
+                        @Shared @Cached InternNode internNode,
+                        @Shared @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached HashingStorageSetItem setItem) {
+            Object interned = getItem.execute(dict.getDictStorage(), str);
+            if (interned == null) {
+                interned = internNode.execute(null, str);
+                dict.setDictStorage(setItem.execute(dict.getDictStorage(), str, interned));
+            }
+            return interned;
         }
 
-        @Specialization(guards = {"!isTruffleString(obj)", "!isStringSubtype(obj, getClassNode, isSubtypeNode)"})
-        Object intern(@SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            assert false;
+        @Specialization
+        Object withPString(PDict dict, PString str,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared @Cached InternNode internNode,
+                        @Shared @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached HashingStorageSetItem setItem) {
+            boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
+            if (isInterned) {
+                return str;
+            }
+            return withTS(dict, str.getValueUncached(), internNode, getItem, setItem);
+        }
+
+        @Fallback
+        Object nil(@SuppressWarnings("unused") Object dict,
+                        @SuppressWarnings("unused") Object obj) {
             return PNone.NONE;
-        }
-
-        protected boolean isStringSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PString);
         }
     }
 

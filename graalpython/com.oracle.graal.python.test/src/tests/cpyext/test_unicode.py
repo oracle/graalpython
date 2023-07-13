@@ -40,7 +40,7 @@
 import re
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -895,3 +895,28 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* string", "PyObject* sep", "Py_ssize_t maxsplit"],
         cmpfunc=unhandled_error_compare
     )
+
+class TestUnicodeObject(object):
+    def test_intern(self):
+        TestIntern = CPyExtType("TestIntern", 
+                             '''
+                            static PyObject* set_intern_str(PyObject* self, PyObject* str) {
+                                PyUnicode_InternInPlace(&str);
+                                ((TestInternObject*)self)->str = str;
+                                return str;
+                            }
+
+                            static PyObject* check_is_same_str_ptr(PyObject* self, PyObject* str) {
+                                PyUnicode_InternInPlace(&str);
+                                return str == ((TestInternObject*)self)->str ? Py_True : Py_False;
+                            }
+                             ''',
+                             cmembers="PyObject *str;",
+                             tp_methods='''{"set_intern_str", (PyCFunction)set_intern_str, METH_O, ""},
+                             {"check_is_same_str_ptr", (PyCFunction)check_is_same_str_ptr, METH_O, ""}
+                             '''
+                             )
+        tester = TestIntern()
+        s = 'some text'
+        assert tester.set_intern_str(s) == s
+        assert tester.check_is_same_str_ptr(s)

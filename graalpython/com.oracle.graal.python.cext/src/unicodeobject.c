@@ -222,12 +222,58 @@ void PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right) {
     Py_XDECREF(right);
 }
 
-void PyUnicode_InternInPlace(PyObject **s) {
-	PyObject *t = GraalPyTruffleUnicode_InternInPlace(*s);
-	if (t != *s) {
-		Py_INCREF(t);
-		Py_SETREF(*s, t);
-	}
+static PyObject *interned = NULL;
+
+void PyUnicode_InternInPlace(PyObject **p) {
+    PyObject *s = *p;
+    if (s == NULL || !PyUnicode_Check(s)) {
+        return;
+    }
+
+    /* If it's a subclass, we don't really know what putting
+       it in the interned dict might do. */
+    if (!PyUnicode_CheckExact(s)) {
+        return;
+    }
+
+    // will be checked by `GraalPyTruffleUnicode_LookupAndIntern` upcall
+    // if (PyUnicode_CHECK_INTERNED(s)) {
+    //     return;
+    // }
+
+    // if (PyUnicode_READY(s) == -1) {
+    //     PyErr_Clear();
+    //     return;
+    // }
+
+    if (interned == NULL) {
+        interned = PyDict_New();
+        if (interned == NULL) {
+            PyErr_Clear(); /* Don't leave an exception */
+            return;
+        }
+    }
+
+    // PyObject *t = PyDict_SetDefault(interned, s, s);
+	PyObject *t = GraalPyTruffleUnicode_LookupAndIntern(interned, s);
+    if (t == NULL) {
+        PyErr_Clear();
+        return;
+    }
+
+    if (t != s) {
+        Py_INCREF(t);
+        Py_SETREF(*p, t);
+        return;
+    }
+
+    /* The two references in interned dict (key and value) are not counted by
+       refcnt. unicode_dealloc() and _PyUnicode_ClearInterned() take care of
+       this. */
+    // has been set already by `GraalPyTruffleUnicode_LookupAndIntern` upcall
+    // Py_SET_REFCNT(s, Py_REFCNT(s) - 2);
+    // _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
+
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
