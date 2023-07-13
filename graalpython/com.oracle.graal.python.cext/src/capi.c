@@ -41,7 +41,6 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
-#include <dlfcn.h>
 #include <truffle.h>
 #include <trufflenfi.h>
 
