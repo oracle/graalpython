@@ -1904,24 +1904,6 @@ def update_import_cmd(args):
             finally:
                 mx._opts.very_verbose = prev_verbosity
 
-        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "n":
-            username = input('Username: ')
-            password = getpass.getpass('Password: ')
-            cmds = []
-            for repo in repos_updated:
-                reponame = os.path.basename(repo)
-                cmd = [
-                    "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
-                    "create-pr", "--project=G", "--repo=%s" % reponame,
-                    "--title=[GR-21590] Update Python imports",
-                    "--from-branch=%s" % current_branch, "--to-branch=master"
-                ]
-                cmds.append(cmd)
-                print(" ".join(cmd))
-            for cmd in cmds:
-                cmd[3].replace("${SSO_PASSWORD}", password)
-                mx.run(cmd, nonZeroIsFatal=False)
-
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
 
