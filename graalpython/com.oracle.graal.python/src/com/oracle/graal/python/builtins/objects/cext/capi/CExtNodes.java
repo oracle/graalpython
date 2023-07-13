@@ -1977,7 +1977,9 @@ public abstract class CExtNodes {
                      * similar. We ignore that for now since the size will usually be very small
                      * and/or we could also use a Truffle buffer object.
                      */
-                    module.setNativeModuleState(alloc.alloc(mSize));
+                    Object mdState = alloc.alloc(mSize == 0 ? 1 : mSize); // ensure non-null value
+                    assert mdState != null && !InteropLibrary.getUncached().isNull(mdState);
+                    module.setNativeModuleState(mdState);
                 }
 
                 // parse slot definitions
