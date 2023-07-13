@@ -1600,8 +1600,10 @@ def run_shared_lib_test(home, args=()):
         """ % (b"1" if "sandboxed" in args else b"0"))
         os.close(fd)
         progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
-        mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))
-        mx.run(["clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        cc = "clang" if shutil.which("clang") else "gcc"
+        cmdline = [cc, "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"]
+        mx.log(" ".join(["Running"] + cmdline))
+        mx.run(cmdline, nonZeroIsFatal=True)
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
