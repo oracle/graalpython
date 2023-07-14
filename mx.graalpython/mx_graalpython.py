@@ -1765,7 +1765,8 @@ def update_import(name, suite_py, args):
     else:
         vc.pull(dep_dir)
         rev = "origin/master"
-    vc.update(dep_dir, rev=rev, mayPull=True)
+    if rev != "HEAD":
+        vc.update(dep_dir, rev=rev, mayPull=True)
     tip = str(vc.tip(dep_dir)).strip()
     contents = None
     with open(suite_py, 'r') as f:
