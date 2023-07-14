@@ -114,7 +114,8 @@ public class CStructAccess {
         @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
         static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem) {
             assert size >= 0;
-            long memory = UNSAFE.allocateMemory(size);
+            // non-zero size to get unique pointers
+            long memory = UNSAFE.allocateMemory(size == 0 ? 1 : size);
             UNSAFE.setMemory(memory, size, (byte) 0);
             return new NativePointer(memory);
         }
@@ -123,7 +124,8 @@ public class CStructAccess {
         static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Shared @Cached PCallCapiFunction call) {
             assert size >= 0;
-            return call.call(NativeCAPISymbol.FUN_CALLOC, size);
+            // non-zero size to get unique pointers
+            return call.call(NativeCAPISymbol.FUN_CALLOC, size == 0 ? 1 : size);
         }
 
         @Specialization(guards = "allocatePyMem")
