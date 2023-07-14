@@ -2402,7 +2402,7 @@ public abstract class GraalHPyNodes {
                 }
 
                 // create the type object
-                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode, raiseNode);
                 PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(BuiltinNames.T___GRAALPYTHON__);
                 PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
@@ -2422,7 +2422,7 @@ public abstract class GraalHPyNodes {
                     Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
                     metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
                 }
-                if (metaBasicSize != 0) {
+                if (metaBasicSize > 0) {
                     Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
                     newType.setHPyNativeSpace(dataPtr);
                     if (destroyFunc != null) {
@@ -2630,7 +2630,8 @@ public abstract class GraalHPyNodes {
                         InteropLibrary ptrLib,
                         CastToJavaIntLossyNode castToJavaIntNode,
                         PCallHPyFunction callHelperFunctionNode,
-                        HPyAsPythonObjectNode asPythonObjectNode) throws InteropException {
+                        HPyAsPythonObjectNode asPythonObjectNode,
+                        PRaiseNode raiseNode) throws InteropException {
             if (!ptrLib.isNull(typeSpecParamArray)) {
                 long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
                 for (long i = 0; i < nSpecParam; i++) {
@@ -2641,7 +2642,11 @@ public abstract class GraalHPyNodes {
 
                     switch (specParamKind) {
                         case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
-                            return asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                            Object object = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                            if (!IsTypeNode.getUncached().execute(object)) {
+                                throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, object);
+                            }
+                            return object;
                         default:
                             // intentionally ignored
                             break;

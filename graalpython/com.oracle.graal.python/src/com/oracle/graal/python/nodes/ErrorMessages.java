@@ -1461,6 +1461,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
     public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
     public static final TruffleString HPY_MODE_VALUE_MUST_BE_STRING = tsLiteral("Value of HPy mode environment variable must be a string");
+    public static final TruffleString HPY_METACLASS_IS_NOT_A_TYPE = tsLiteral("Metaclass '%s' is not a subclass of 'type'.");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");
