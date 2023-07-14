@@ -234,7 +234,7 @@ _HPy_HIDDEN HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
             load_global_native_data_pointer(ctx, bits, new_handle);
             return toPtr(new_handle);
         }
-        return DO_UPCALL_HPY(hpyContext, ctx_Global_Load, bits);
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Global_Load, bits);
     } else {
         return toPtr(bits);
     }
