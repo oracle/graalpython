@@ -297,6 +297,8 @@ public abstract class HPyExternalFunctionNodes {
                 return new HPyGetBufferRootNode(language, name);
             case RELEASEBUFFER:
                 return new HPyReleaseBufferRootNode(language, name);
+            case HASHFUNC:
+                return new HPyMethHashRoot(language, name);
             default:
                 // TODO(fa): support remaining slot wrappers
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
@@ -1815,6 +1817,38 @@ public abstract class HPyExternalFunctionNodes {
                 callBufferFreeNode = insert(PCallHPyFunctionNodeGen.create());
             }
             return callBufferFreeNode;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
+     */
+    static final class HPyMethHashRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE);
+
+        public HPyMethHashRoot(PythonLanguage language, TruffleString name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
+            return new Object[]{getSelf(frame)};
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            if (result instanceof Integer) {
+                return result;
+            } else if (result instanceof Long lresult) {
+                return Long.hashCode(lresult);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Override

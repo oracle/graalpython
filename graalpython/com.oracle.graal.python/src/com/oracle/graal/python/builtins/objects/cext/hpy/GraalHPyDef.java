@@ -243,7 +243,7 @@ public abstract class GraalHPyDef {
         BINARYFUNC_L(LLVMType.HPyFunc_binaryfunc),
         BINARYFUNC_R(LLVMType.HPyFunc_binaryfunc),
         CALL,
-        HASHFUNC(LLVMType.HPyFunc_binaryfunc),
+        HASHFUNC(LLVMType.HPyFunc_hashfunc),
         TERNARYFUNC(LLVMType.HPyFunc_ternaryfunc),
         TERNARYFUNC_R(LLVMType.HPyFunc_ternaryfunc),
         INQUIRYPRED(LLVMType.HPyFunc_inquiry),
