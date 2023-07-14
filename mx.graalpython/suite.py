@@ -76,7 +76,7 @@ suite = {
             },
             {
                 "name": "graalpython-enterprise",
-                "version": "73d78df743dc55a222c562b49cb978c418e65597",
+                "version": "823e2f8801248c762418d1d36e73c60ed145ed29",
                 "dynamic": True,
                 "subdir": True,
             },
