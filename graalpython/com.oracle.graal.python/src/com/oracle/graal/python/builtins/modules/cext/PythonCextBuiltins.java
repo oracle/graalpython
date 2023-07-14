@@ -622,6 +622,9 @@ public final class PythonCextBuiltins {
 
                 try {
                     return call.execute(cachedSelf, arguments);
+                } catch (ThreadDeath t) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw t;
                 } catch (Throwable t) {
                     CompilerDirectives.transferToInterpreter();
                     t.printStackTrace();
