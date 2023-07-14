@@ -198,7 +198,7 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
                                     convertArgNode.execute(arguments, 2));
                     return 0;
                 case HPyFunc_destroyfunc:
-                    GraalHPyJNITrampolines.executeDestroyfunc(convertPointer(arguments[0], interopLibrary), receiver.pointer);
+                    GraalHPyJNITrampolines.executeDestroyfunc(receiver.pointer, convertPointer(arguments[0], interopLibrary));
                     return 0;
                 case HPyFunc_destructor:
                     GraalHPyJNITrampolines.executeDestructor(receiver.pointer, convertHPyContext(arguments), convertArgNode.execute(arguments, 1));
