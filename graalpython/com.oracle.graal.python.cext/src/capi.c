@@ -847,6 +847,9 @@ static void unimplemented(const char* name) {
 	printf("Function not implemented in GraalPy: %s\n", name);
 }
 
+struct timeval;
+struct stat;
+
 #define FUNC_NOT_IMPLEMENTED unimplemented(__func__); exit(-1);
 
 // {{start CAPI_BUILTINS}}
