@@ -1504,7 +1504,7 @@ public abstract class SequenceStorageNodes {
         static NativeSequenceStorage doObject(Object[] arr, int length,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Cached CStructAccess.WriteObjectNewRefNode write) {
-            Object mem = alloc.alloc((arr.length + 1) * (long) CStructAccess.POINTER_SIZE);
+            Object mem = alloc.alloc((arr.length + 1) * CStructAccess.POINTER_SIZE);
             write.writeArray(mem, arr);
             return NativeObjectSequenceStorage.create(mem, length, arr.length, true);
         }
