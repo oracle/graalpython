@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -2344,6 +2345,7 @@ public abstract class GraalHPyNodes {
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -2371,11 +2373,14 @@ public abstract class GraalHPyNodes {
 
             try {
                 // the name as given by the specification
-                Object tpName = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRDUP, ptrLib.readMember(typeSpec, "name"));
-                TruffleString specName = castToTruffleStringNode.execute(fromCharPointerNode.execute(tpName));
+                Object specNamePtr = ptrLib.readMember(typeSpec, "name");
+
+                // TODO(fa): function 'graal_hpy_type_name' returns a new string (created with 'strdup'). We need to free it.
+                Object tpName = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_NAME, specNamePtr);
+                TruffleString specName = fromCharPointerNode.execute(specNamePtr, false);
 
                 // extract module and type name
-                TruffleString[] names = splitName(specName, indexOfCodepointNode, substringNode, lengthNode);
+                TruffleString[] names = splitName(specName, switchEncodingNode, indexOfCodepointNode, substringNode, lengthNode);
                 assert names.length == 2;
 
                 PDict namespace;
@@ -2653,9 +2658,12 @@ public abstract class GraalHPyNodes {
          * is the module name. Everything after it (which may also contain more dots) is the type
          * name. See also: {@code typeobject.c: PyType_FromSpecWithBases}
          */
-        @TruffleBoundary
-        private static TruffleString[] splitName(TruffleString specName, TruffleString.IndexOfCodePointNode indexOfCodepointNode, TruffleString.SubstringNode substringNode,
+        private static TruffleString[] splitName(TruffleString specNameUtf8,
+                        TruffleString.SwitchEncodingNode switchEncodingNode,
+                        TruffleString.IndexOfCodePointNode indexOfCodepointNode,
+                        TruffleString.SubstringNode substringNode,
                         TruffleString.CodePointLengthNode lengthNode) {
+            TruffleString specName = switchEncodingNode.execute(specNameUtf8, TS_ENCODING);
             int length = lengthNode.execute(specName, TS_ENCODING);
             int firstDotIdx = indexOfCodepointNode.execute(specName, '.', 0, length, TS_ENCODING);
             if (firstDotIdx > -1) {

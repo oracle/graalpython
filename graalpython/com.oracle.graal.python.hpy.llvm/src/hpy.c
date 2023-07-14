@@ -123,6 +123,17 @@ char* graal_hpy_strdup(const char *ptr) {
     return strdup(ptr);
 }
 
+char* graal_hpy_type_name(const char *ptr) {
+    const char *s = strrchr(ptr, '.');
+    if (s == NULL) {
+        s = ptr;
+    }
+    else {
+        s++;
+    }
+    return strdup(s);
+}
+
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
 	return polyglot_from_HPy_array(arr, len);
 }
