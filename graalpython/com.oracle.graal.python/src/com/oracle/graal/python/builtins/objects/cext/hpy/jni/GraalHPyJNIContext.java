@@ -1056,7 +1056,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         } else {
             hpyDestructor = 0;
         }
-        PyCapsule result = slowPathFactory.createCapsule(pointer, name, hpyDestructor);
+        PyCapsule result = slowPathFactory.createCapsule(pointer, new NativePointer(name), hpyDestructor);
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
     }
 
