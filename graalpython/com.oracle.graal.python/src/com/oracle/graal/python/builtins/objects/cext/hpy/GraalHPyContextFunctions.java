@@ -3468,9 +3468,10 @@ public abstract class GraalHPyContextFunctions {
                     pyCapsule.setPointer(valuePtr);
                 }
                 case CapsuleKey.Context -> pyCapsule.setContext(valuePtr);
-                case CapsuleKey.Name ->
-                                // we may assume that the pointer is owned
-                                pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
+                case CapsuleKey.Name -> {
+                    // we may assume that the pointer is owned
+                    pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
+                }
                 case CapsuleKey.Destructor -> pyCapsule.setDestructor(valuePtr);
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
