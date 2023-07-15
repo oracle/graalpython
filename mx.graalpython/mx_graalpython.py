@@ -732,7 +732,11 @@ def _graalvm_home(*, envfile, extra_dy=""):
         envfile = _sibling(envfile)
     home = os.environ.get("GRAALVM_HOME", None)
     if not home:
-        dy = ",".join(["%s%s" % ("/" if dy[1] else "", dy[0]) for dy in mx.get_dynamic_imports()])
+        dy = ",".join([
+            "%s%s" % ("/" if dy[1] else "", dy[0])
+            for dy in mx.get_dynamic_imports()
+            if mx.primary_suite() != SUITE or dy[0] != "graalpython"
+        ])
         dy += extra_dy
         mx_args = ["--env", envfile]
         if dy:
