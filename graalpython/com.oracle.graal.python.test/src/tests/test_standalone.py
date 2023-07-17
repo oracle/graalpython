@@ -101,7 +101,7 @@ def test_polyglot_app():
     
     with tempfile.TemporaryDirectory() as tmpdir:
 
-        target_dir = os.path.join(tmpdir, "polyglot_jp_app")
+        target_dir = os.path.join(tmpdir, "polyglot_app_test")
 
         cmd = [graalpy, "-m", "standalone", "--verbose", "polyglot_app", "-o", target_dir]
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -117,7 +117,7 @@ def test_polyglot_app():
         print(p.stderr.decode())
         assert "BUILD SUCCESS" in out
 
-        cmd = [os.path.join(target_dir, "target", "java_python_app")]
+        cmd = [os.path.join(target_dir, "target", "polyglot_app")]
         p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = p.stdout.decode()
         print(out)
@@ -131,7 +131,7 @@ def test_polyglot_app():
         print(p.stderr.decode())
         assert "BUILD SUCCESS" in out
 
-        cmd = [java, "-jar", os.path.join(target_dir, "target", "java_python_app-1.0-SNAPSHOT.jar")]
+        cmd = [java, "-jar", os.path.join(target_dir, "target", "polyglot_app-1.0-SNAPSHOT.jar")]
         p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = p.stdout.decode()
         print(out)

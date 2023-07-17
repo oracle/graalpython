@@ -43,32 +43,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mycompany.app</groupId>
-    <artifactId>java_python_app</artifactId>
+    <artifactId>py2binlauncher</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.jar.plugin.version>3.1.0</maven.jar.plugin.version>
-        <graal.sdk.version>23.0.0</graal.sdk.version>
-        <native.image.maven.plugin.version>0.9.20</native.image.maven.plugin.version>
+        <maven.compiler.source>{mvn-compiler-source}</maven.compiler.source>
+        <maven.compiler.target>{mvn-compiler-target}</maven.compiler.target>
+        <maven.jar.plugin.version>{mvn-jar-plugin}</maven.jar.plugin.version>
+        <graal.sdk.version>{graal-sdk-version}</graal.sdk.version>
+        <native.image.maven.plugin.version>{native-image-mvn-plugin}</native.image.maven.plugin.version>
     </properties>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven.jar.plugin.version}</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>com.mycompany.javapython.Main</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
                 <groupId>org.codehaus.mojo</groupId>
@@ -83,31 +70,18 @@
                             <executable>${env.JAVA_HOME}/bin/graalpy</executable>
                             <arguments>
                                 <argument>-c</argument>
-                                <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/vfs', '${project.build.directory}/classes/vfs/fileslist.txt')</argument>
-                            </arguments>
+                                <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/{vfs-prefix}', '${project.build.directory}/classes/{vfs-prefix}/{files-list-name}')</argument>
+                            </arguments>                            
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
-
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>**/vfs/home/lib-graalpython/include/**</exclude>
-                    <exclude>**/vfs/home/lib-graalpython/patches/**</exclude>
-                    <exclude>**/vfs/venv/bin/**</exclude>
-                    <exclude>**/vfs/venv/include/**</exclude>
-                    <exclude>**/vfs/venv/**/site-packages/pip*/**</exclude>
-                </excludes>
-        </resource>
-        </resources>
     </build>
-
+    
     <profiles>
         <profile>
-            <id>jar</id>
+            <id>jar</id>      
             <dependencies>
                 <dependency>
                     <groupId>org.graalvm.sdk</groupId>
@@ -124,15 +98,10 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <addClasspath>true</addClasspath>
-                                    <mainClass>com.mycompany.javapython.Main</mainClass>
+                                    <addClasspath>true</addClasspath>                  
+                                    <mainClass>Py2BinLauncher</mainClass>
                                 </manifest>
                             </archive>
-                            <excludes>
-                                <!-- the created jar has to be executed with graalpy, 
-                                so it is safe to exclude the whole python home -->
-                                <exclude>**/vfs/home/**</exclude>
-                            </excludes>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -142,6 +111,19 @@
             <id>native</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>${maven.jar.plugin.version}</version>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>                  
+                                    <mainClass>Py2BinLauncher</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
@@ -164,20 +146,19 @@
                             </execution>
                         </executions>
                         <configuration>
-                             <!--Default arguments--> 
+                            <!-- Default arguments -->
                             <buildArgs>
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--language:python</buildArg>
                                 <buildArg>-H:-CopyLanguageResources</buildArg>
-                                <!-- native-image-resources.json specifies what resources will be added to the native executable
+                                <!-- native-image-resources.json specifies what reasources will be added to the native executable
                                  see also https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/-->
                                 <buildArg>-H:ResourceConfigurationFiles=native-image-resources.json</buildArg>
-                                <!-- Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement.  -->
-                                <buildArg>-H:DynamicProxyConfigurationFiles=native-image-proxy-configuration.json</buildArg>
                             </buildArgs>
                             <!-- Remove the properties below to include the Python JIT compiler -->
                             <jvmArgs>
                                 <arg>-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime</arg>
+                                <arg>-Dpolyglot.engine.WarnInterpreterOnly=false</arg>
                             </jvmArgs>
                             <!-- Flip the property below for verbose or quiet image build -->
                             <verbose>true</verbose>
@@ -187,60 +168,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-   	    <id>prepare-venv</id>
-            <!-- create a python venv in resources/vfs if it does not exist yet -->
-            <build>
-                <plugins>
-                    <plugin>
-                        <!-- create a python venv -->
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>prepare-python-venv</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${env.JAVA_HOME}/bin/graalpy</executable>
-                                    <arguments>
-                                        <argument>-m</argument>
-                                        <argument>venv</argument>
-                                        <argument>${project.basedir}/src/main/resources/vfs/venv</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <!-- install required python packages -->
-                                <id>install-python-packages</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${project.basedir}/src/main/resources/vfs/venv/bin/pip</executable>
-                                    <arguments>
-                                        <argument>install</argument>
-                                        <argument>termcolor</argument>
-                                    </arguments>
-                                    <environmentVariables>
-                                        <VIRTUAL_ENV>${project.basedir}/src/main/resources/vfs/venv</VIRTUAL_ENV>
-                                    </environmentVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-            <activation>
-                <file>
-                    <missing>src/main/resources/vfs/venv/bin/pip</missing>
-                </file>
-            </activation>
         </profile>
     </profiles>
 </project>

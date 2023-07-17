@@ -52,7 +52,6 @@ import abc
 import argparse
 import io
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -62,15 +61,42 @@ import _frozen_importlib_external
 
 assert sys.pycache_prefix is None
 
-JAVA_LAUNCHER = "Py2BinLauncher"
-JAVA_LAUNCHER_FILE = f"{JAVA_LAUNCHER}.java"
-JAVA_LAUNCHER_PATH = f"launcher/{JAVA_LAUNCHER_FILE}"
+MVN_COMPILER_SOURCE = "17"
+MVN_COMPILER_TARGET = "17"
+MVN_JAR_PLUGIN = "3.1.0"
+MVN_GRAAL_SDK_VERSION = "23.0.0"
+MVN_NATIVE_IMAGE_MVN_PLUGIN = "0.9.23"
 
-VIRTUAL_FILESYSTEM_TEMPLATE_FILE = "VirtualFileSystem.java"
-VIRTUAL_FILESYSTEM_TEMPLATE_PATH = f"shared/{VIRTUAL_FILESYSTEM_TEMPLATE_FILE}"
+MVN_POM_FILE = "pom.xml"
+
+VFS_PREFIX = "vfs"
+VFS_HOME = "home"
+VFS_HOME_PREFIX = f"{VFS_PREFIX}/{VFS_HOME}"
+VFS_VENV_PREFIX = VFS_PREFIX + "/venv"
+VFS_PROJ_PREFIX = VFS_PREFIX + "/proj"
+
+VFS_JAVA_PKG = "package com.mycompany.javapython;"
+
+VFS_JAVA_FILE = "VirtualFileSystem.java"
+VFS_JAVA_FILE_TEMPLATE = f"templates/{VFS_JAVA_FILE}"
+
+JAVA_BINDING_LAUNCHER = "Py2BinLauncher"
+JAVA_BINDING_LAUNCHER_FILE = f"{JAVA_BINDING_LAUNCHER}.java"
+JAVA_BINDING_LAUNCHER_TEMPLATE_PATH = f"templates/{JAVA_BINDING_LAUNCHER_FILE}"
+JAVA_BINDING_POM_TEMPLATE_PATH = "templates/java_bindings_pom.xml"
+
+NATIVE_EXEC_LAUNCHER = JAVA_BINDING_LAUNCHER
+
+POLYGLOT_APP_LAUNCHER_FILE = "Main.java"
+POLYGLOT_APP_LAUNCHER_TEMPLATE_PATH = f"templates/{POLYGLOT_APP_LAUNCHER_FILE}"
+POLYGLOT_APP_POM_TEMPLATE_PATH = "templates/polyglot_app_pom.xml"
+
 NATIVE_IMAGE_PROXY_CONF_PATH = f"shared/native-image-proxy-configuration.json"
 NATIVE_IMAGE_RESOURCES_FILE = "native-image-resources.json"
 NATIVE_IMAGE_RESOURCES_PATH = f"shared/{NATIVE_IMAGE_RESOURCES_FILE}"
+
+FILES_LIST_NAME = "fileslist.txt"
+FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
 
 CMD_NATIVE_EXECUTABLE = "native"
 CMD_JAVA_BINDINGS = "java_bindings"
@@ -80,46 +106,66 @@ ATTR_STANDALONE_CMD = "command"
 MVN_CODE_PREFIX = "src/main/java"
 MVN_RESOURCE_PREFIX = "src/main/resources"
 
+def get_file(*paths):
+    return os.path.join(os.path.dirname(__file__), *paths)
+
 class AbstractStandalone:
 
     def __init__(self, parsed_args):
         self.parsed_args = parsed_args
-        self.virtual_filesystem_template = self.get_file(VIRTUAL_FILESYSTEM_TEMPLATE_PATH)
-        vfs_prefix, vfs_fileslist_path = self.parse_vfs_prefix_constant()
-        self.vfs_prefix = vfs_prefix
-        self.vfs_fileslist_path = vfs_fileslist_path
 
     @abc.abstractmethod
     def create(self):
         pass    
 
-    @staticmethod
-    def get_file(*paths):
-        return os.path.join(os.path.dirname(__file__), *paths)
-
-    def create_virtual_filesystem_file(self, target_file, java_pkg=""):
-        lines = open(self.virtual_filesystem_template, 'r').readlines()
-        with open(target_file, 'w') as f:
+    def create_virtual_filesystem_file(self, vfs_file, java_pkg=""):
+        lines = open(get_file(VFS_JAVA_FILE_TEMPLATE), 'r').readlines()
+        with open(vfs_file, 'w') as f:
             for line in lines:
                 if "{java-pkg}" in line:
                     line = line.replace("{java-pkg}", java_pkg)
+                if "{vfs-prefix}" in line:
+                    line = line.replace("{vfs-prefix}", VFS_PREFIX)
+                if "{files-list-name}" in line:
+                    line = line.replace("{files-list-name}", FILES_LIST_NAME)
                 f.write(line)
-
-    def parse_vfs_prefix_constant(self):
-        """
-        Determine the vitual filesystem prefix.
-        """
-
-        with open(self.virtual_filesystem_template) as f:
-            content = f.read()
-        vfs_prefix = re.search(
-            'static final String VFS_PREFIX = "/([^"]+)"', content
-        ).group(1)
-        fileslist_path = re.search(
-            'static final String FILES_LIST_PATH = "/([^"]+)"', content
-        ).group(1)
-        return vfs_prefix, fileslist_path
-
+                
+    def create_pom_file(self, template, pom):
+        lines = open(template, 'r').readlines()
+        with open(pom, 'w') as f:
+            for line in lines:
+                if "{mvn-compiler-source}" in line:
+                    line = line.replace("{mvn-compiler-source}", MVN_COMPILER_SOURCE)
+                if "{mvn-compiler-target}" in line:
+                    line = line.replace("{mvn-compiler-target}", MVN_COMPILER_TARGET)
+                if "{mvn-jar-plugin}" in line:
+                    line = line.replace("{mvn-jar-plugin}", MVN_JAR_PLUGIN)
+                if "{graal-sdk-version}" in line:
+                    line = line.replace("{graal-sdk-version}", MVN_GRAAL_SDK_VERSION)
+                if "{native-image-mvn-plugin}" in line:
+                    line = line.replace("{native-image-mvn-plugin}", MVN_NATIVE_IMAGE_MVN_PLUGIN)
+                if "{vfs-prefix}" in line:
+                    line = line.replace("{vfs-prefix}", VFS_PREFIX)
+                if "{vfs-home-prefix}" in line:
+                    line = line.replace("{vfs-home-prefix}", VFS_HOME_PREFIX)
+                if "{vfs-venv-prefix}" in line:
+                    line = line.replace("{vfs-venv-prefix}", VFS_VENV_PREFIX)
+                if "{files-list-name}" in line:
+                    line = line.replace("{files-list-name}", FILES_LIST_NAME)                    
+                f.write(line)
+    
+    def create_launcher_file(self, template, launcher):
+        lines = open(template, 'r').readlines()
+        with open(launcher, 'w') as f:
+            for line in lines:
+                if "{vfs-home-prefix}" in line:
+                    line = line.replace("{vfs-home-prefix}", VFS_HOME_PREFIX)
+                if "{vfs-venv-prefix}" in line:
+                    line = line.replace("{vfs-venv-prefix}", VFS_VENV_PREFIX)
+                if "{vfs-proj-prefix}" in line:
+                    line = line.replace("{vfs-proj-prefix}", VFS_PROJ_PREFIX)
+                f.write(line)
+                
     def check_output_directory(self):
         if hasattr(self.parsed_args, "module") and os.path.abspath(self.parsed_args.output_directory).startswith(os.path.abspath(self.parsed_args.module)):
             print(
@@ -150,75 +196,46 @@ class PolyglotJavaPython(AbstractStandalone):
         # java sources
         shutil.copytree(os.path.join(os.path.dirname(__file__), "app/src"), os.path.join(target_dir, "src"))
 
-        virtual_filesystem_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", VIRTUAL_FILESYSTEM_TEMPLATE_FILE)
-        self.create_virtual_filesystem_file(virtual_filesystem_java_file, "package com.mycompany.javapython;")
+        virtual_filesystem_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", VFS_JAVA_FILE)
+        self.create_virtual_filesystem_file(virtual_filesystem_java_file, VFS_JAVA_PKG)
+
+        launcher_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", POLYGLOT_APP_LAUNCHER_FILE)
+        self.create_launcher_file(get_file(POLYGLOT_APP_LAUNCHER_TEMPLATE_PATH), launcher_java_file)
 
         # std lib        
-        vfs_home = os.path.join(target_dir, MVN_RESOURCE_PREFIX, self.vfs_prefix, "home")
+        vfs_home = os.path.join(target_dir, MVN_RESOURCE_PREFIX, VFS_PREFIX, VFS_HOME)
         os.makedirs(vfs_home, exist_ok=True)
         shutil.copytree(__graalpython__.capi_home, os.path.join(vfs_home, "lib-graalpython"))
         shutil.copytree(__graalpython__.stdlib_home, os.path.join(vfs_home, "lib-python", "3"))
 
         # misc
-        shutil.copy(os.path.join(os.path.dirname(__file__), NATIVE_IMAGE_RESOURCES_PATH), target_dir)
-        shutil.copy(os.path.join(os.path.dirname(__file__), NATIVE_IMAGE_PROXY_CONF_PATH), target_dir)
-        shutil.copy(os.path.join(os.path.dirname(__file__), "app/pom.xml"), target_dir)
-
+        shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), target_dir)
+        shutil.copy(get_file(NATIVE_IMAGE_PROXY_CONF_PATH), target_dir)
+        self.create_pom_file(get_file(POLYGLOT_APP_POM_TEMPLATE_PATH), os.path.join(target_dir, MVN_POM_FILE))
+        
 class Standalone(AbstractStandalone):
     def __init__(self, parsed_args):
         super().__init__(parsed_args)
-        self.parsed_args = parsed_args
-
-        self.java_launcher_template = self.get_file(JAVA_LAUNCHER_PATH)
-
-        (home_prefix, venv_prefix, proj_prefix,) = self.parse_standalone_path_constants(self.java_launcher_template)
-        self.home_prefix = home_prefix
-        self.venv_prefix = venv_prefix
-        self.proj_prefix = proj_prefix
-
-    def parse_standalone_path_constants(self, javafile):
-        """
-        Determine the constants used by the Java launcher pertaining to the layout
-        of the resources file.
-        """
-
-        with open(javafile) as f:
-            content = f.read()
-
-        home_prefix = re.search(
-            r'static final String HOME_PREFIX = VirtualFileSystem\.VFS_PREFIX \+ "/([^"]+)"', content
-        ).group(1)
-        venv_prefix = re.search(
-            r'static final String VENV_PREFIX = VirtualFileSystem\.VFS_PREFIX \+ "/([^"]+)"', content
-        ).group(1)
-        proj_prefix = re.search(
-            r'static final String PROJ_PREFIX = VirtualFileSystem\.VFS_PREFIX \+ "/([^"]+)"', content
-        ).group(1)
-        return home_prefix, venv_prefix, proj_prefix
 
     def create_target_directory(self):
         if self.parsed_args.verbose:
             print(f"Bundling Python resources into {self.target_dir}")
 
         self.bundle_python_resources(
-            os.path.join(self.target_dir, self.resource_prefix),
-            self.vfs_prefix,
-            self.home_prefix,
-            self.venv_prefix,
-            self.proj_prefix,
+            os.path.join(self.target_dir, self.mvn_resource_prefix),
             self.parsed_args.module,
             self.parsed_args.venv,
         )
 
         os.makedirs(os.path.dirname(self.launcher_file), exist_ok=True)
-        shutil.copy(self.java_launcher_template, self.launcher_file)
+        self.create_launcher_file(get_file(JAVA_BINDING_LAUNCHER_TEMPLATE_PATH), self.launcher_file)
         
-        virtual_filesystem_java_file = os.path.join(self.target_dir, self.code_prefix, VIRTUAL_FILESYSTEM_TEMPLATE_FILE)
+        virtual_filesystem_java_file = os.path.join(self.target_dir, self.mvn_code_prefix, VFS_JAVA_FILE)
         self.create_virtual_filesystem_file(virtual_filesystem_java_file)
         
-        shutil.copy(self.get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(self.target_dir, NATIVE_IMAGE_RESOURCES_FILE))
+        shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(self.target_dir, NATIVE_IMAGE_RESOURCES_FILE))
 
-    def bundle_python_resources(self, target_dir, vfs_prefix, home_prefix, venv_prefix, proj_prefix, project, venv=None):
+    def bundle_python_resources(self, target_dir, project, venv=None):
         """
         Copy the Python core, stdlib, venv, and module into one folder.
         """
@@ -228,28 +245,28 @@ class Standalone(AbstractStandalone):
         self.copy_folder_to_target(
             target_dir,
             __graalpython__.capi_home,
-            f"{vfs_prefix}/{home_prefix}/lib-graalpython",
+            f"{VFS_HOME_PREFIX}/lib-graalpython",
             path_filter=lambda file=None, dir=None: file and file.endswith(".py"),
         )
 
         self.copy_folder_to_target(
             target_dir,
             __graalpython__.stdlib_home,
-            f"{vfs_prefix}/{home_prefix}/lib-python/3",
+            f"{VFS_HOME_PREFIX}/lib-python/3",
             path_filter=lambda file=None, dir=None: dir
             and dir in ["idlelib", "ensurepip", "tkinter", "turtledemo"],
         )
 
-        if venv:
-            self.copy_folder_to_target(target_dir, venv, f"{vfs_prefix}/{venv_prefix}")
+        if venv:            
+            self.copy_folder_to_target(target_dir, venv, VFS_VENV_PREFIX)
 
         if project and os.path.isdir(project):
-            self.copy_folder_to_target(target_dir, project, f"{vfs_prefix}/{proj_prefix}")
+            self.copy_folder_to_target(target_dir, project, VFS_PROJ_PREFIX)
         else:
             with tempfile.TemporaryDirectory() as tmpdir:
                 name = os.path.join(tmpdir, "__main__.py")
                 shutil.copy(project, name)
-                self.copy_folder_to_target(target_dir, tmpdir, f"{vfs_prefix}/{proj_prefix}")
+                self.copy_folder_to_target(target_dir, tmpdir, VFS_PROJ_PREFIX)
                 os.unlink(name)
 
     def copy_folder_to_target(self, resource_root, folder, prefix, path_filter=lambda file=None, dir=None: False):
@@ -294,16 +311,16 @@ class JavaBinding(Standalone):
         super().__init__(parsed_args)
 
         self.target_dir = parsed_args.output_directory
-        self.code_prefix = MVN_CODE_PREFIX
-        self.resource_prefix = MVN_RESOURCE_PREFIX
-        self.launcher_file = os.path.join(self.target_dir, self.code_prefix, JAVA_LAUNCHER_FILE)
+        self.mvn_code_prefix = MVN_CODE_PREFIX
+        self.mvn_resource_prefix = MVN_RESOURCE_PREFIX
+        self.launcher_file = os.path.join(self.target_dir, self.mvn_code_prefix, JAVA_BINDING_LAUNCHER_FILE)
         
     def create(self):
         self.check_output_directory()
 
         os.makedirs(self.target_dir, exist_ok=True)    
         self.create_target_directory()
-        shutil.copy(os.path.join(os.path.dirname(__file__), "launcher", "pom.xml"), self.target_dir)
+        self.create_pom_file(get_file(JAVA_BINDING_POM_TEMPLATE_PATH), os.path.join(self.target_dir, MVN_POM_FILE))
 
 class NativeExecutable(Standalone):
     
@@ -311,15 +328,15 @@ class NativeExecutable(Standalone):
         super().__init__(parsed_args)
         
         self.target_dir = tempfile.mkdtemp()
-        self.code_prefix = ""
-        self.resource_prefix = ""
-        self.launcher_file = os.path.join(self.target_dir, self.code_prefix, JAVA_LAUNCHER_FILE)
+        self.mvn_code_prefix = ""
+        self.mvn_resource_prefix = ""
+        self.launcher_file = os.path.join(self.target_dir, JAVA_BINDING_LAUNCHER_FILE)
                 
     def create(self):
         try:
             self.create_target_directory()
-            files_list_path = os.path.join(self.target_dir, self.vfs_fileslist_path)
-            dir_to_list = os.path.join(self.target_dir, self.vfs_prefix)
+            files_list_path = os.path.join(self.target_dir, FILES_LIST_PATH)
+            dir_to_list = os.path.join(self.target_dir, VFS_PREFIX)
             __graalpython__.list_files(dir_to_list, files_list_path)
             self.build_binary()
         finally:
@@ -390,12 +407,13 @@ class NativeExecutable(Standalone):
                     "-Dpolyglot.engine.WarnInterpreterOnly=false",
                 ]
             cmd += [
+                "--no-fallback",
                 "--language:python",
                 "-H:-CopyLanguageResources",
                 "-H:ResourceConfigurationFiles=native-image-resources.json",
                 "-o",
                 output,
-                JAVA_LAUNCHER,
+                NATIVE_EXEC_LAUNCHER,
             ]
             if self.parsed_args.verbose:
                 print(f"Building Python standalone binary: {' '.join(cmd)}")
