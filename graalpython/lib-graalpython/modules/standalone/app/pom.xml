@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+ The Universal Permissive License (UPL), Version 1.0
+
+ Subject to the condition set forth below, permission is hereby granted to any
+ person obtaining a copy of this software, associated documentation and/or
+ data (collectively the "Software"), free of charge and under any and all
+ copyright rights in the Software, and any and all patent rights owned or
+ freely licensable by each licensor hereunder covering either (i) the
+ unmodified Software as contributed to or provided by such licensor, or (ii)
+ the Larger Works (as defined below), to deal in both
+
+ (a) the Software, and
+
+ (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ one is included with the Software each a "Larger Work" to which the Software
+ is contributed by such licensors),
+
+ without restriction, including without limitation the rights to copy, create
+ derivative works of, display, perform, and distribute the Software and make,
+ use, sell, offer for sale, import, export, have made, and have sold the
+ Software and the Larger Work(s), and to sublicense the foregoing rights on
+ either these or other terms.
+
+ This license is subject to the following condition:
+
+ The above copyright notice and either this complete permission notice or at a
+ minimum a reference to the UPL must be included in all copies or substantial
+ portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>java_python_app</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.jar.plugin.version>3.1.0</maven.jar.plugin.version>
+        <graal.sdk.version>23.0.0</graal.sdk.version>
+        <native.image.maven.plugin.version>0.9.20</native.image.maven.plugin.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven.jar.plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.mycompany.javapython.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <executions>
+                    <execution>
+                        <id>vfs-index</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${env.JAVA_HOME}/bin/graalpy</executable>
+                            <arguments>
+                                <argument>-c</argument>
+                                <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/vfs', '${project.build.directory}/classes/vfs/fileslist.txt')</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/vfs/home/lib-graalpython/include/**</exclude>
+                    <exclude>**/vfs/home/lib-graalpython/patches/**</exclude>
+                    <exclude>**/vfs/venv/bin/**</exclude>
+                    <exclude>**/vfs/venv/include/**</exclude>
+                    <exclude>**/vfs/venv/**/site-packages/pip*/**</exclude>
+                </excludes>
+        </resource>
+        </resources>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jar</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.graalvm.sdk</groupId>
+                    <artifactId>graal-sdk</artifactId>
+                    <version>${graal.sdk.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>${maven.jar.plugin.version}</version>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <mainClass>com.mycompany.javapython.Main</mainClass>
+                                </manifest>
+                            </archive>
+                            <excludes>
+                                <!-- the created jar has to be executed with graalpy, 
+                                so it is safe to exclude the whole python home -->
+                                <exclude>**/vfs/home/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native.image.maven.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                            <execution>
+                                <id>test-native</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                             <!--Default arguments--> 
+                            <buildArgs>
+                                <buildArg>--no-fallback</buildArg>
+                                <buildArg>--language:python</buildArg>
+                                <buildArg>-H:-CopyLanguageResources</buildArg>
+                                <!-- native-image-resources.json specifies what resources will be added to the native executable
+                                 see also https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/-->
+                                <buildArg>-H:ResourceConfigurationFiles=native-image-resources.json</buildArg>
+                                <!-- Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement.  -->
+                                <buildArg>-H:DynamicProxyConfigurationFiles=native-image-proxy-configuration.json</buildArg>
+                            </buildArgs>
+                            <!-- Remove the properties below to include the Python JIT compiler -->
+                            <jvmArgs>
+                                <arg>-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime</arg>
+                            </jvmArgs>
+                            <!-- Flip the property below for verbose or quiet image build -->
+                            <verbose>true</verbose>
+                            <!-- Flip the property below to include debug symbols in the native executable -->
+                            <debug>false</debug>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+   	    <id>prepare-venv</id>
+            <!-- create a python venv in resources/vfs if it does not exist yet -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- create a python venv -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>prepare-python-venv</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${env.JAVA_HOME}/bin/graalpy</executable>
+                                    <arguments>
+                                        <argument>-m</argument>
+                                        <argument>venv</argument>
+                                        <argument>${project.basedir}/src/main/resources/vfs/venv</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <!-- install required python packages -->
+                                <id>install-python-packages</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.basedir}/src/main/resources/vfs/venv/bin/pip</executable>
+                                    <arguments>
+                                        <argument>install</argument>
+                                        <argument>termcolor</argument>
+                                    </arguments>
+                                    <environmentVariables>
+                                        <VIRTUAL_ENV>${project.basedir}/src/main/resources/vfs/venv</VIRTUAL_ENV>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <activation>
+                <file>
+                    <missing>src/main/resources/vfs/venv/bin/pip</missing>
+                </file>
+            </activation>
+        </profile>
+    </profiles>
+</project>

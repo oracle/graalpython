@@ -60,15 +60,21 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -249,6 +255,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
+        }
+        if (!context.getOption(PythonOptions.RunViaLauncher)) {
+            mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
         }
     }
 
@@ -941,6 +950,63 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
                         @Cached CreateTypeNode createType) {
             return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
+    @Builtin(name = "list_files", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ListFiles extends PythonBinaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        Object list(TruffleString dirPath, TruffleString filesListPath) {
+            print(getContext().getStandardOut(), String.format("listing files from '%s' to '%s'\n", dirPath, filesListPath));
+
+            TruffleFile dir = getContext().getPublicTruffleFileRelaxed(dirPath);
+            if (!dir.exists() || !dir.isDirectory()) {
+                print(getContext().getStandardErr(), String.format("'%s' has to exist and be a directory.\n", dirPath));
+            }
+
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
+                getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
+                List<String> ret = list(dir);
+                String parentPathString = dir.getParent().getAbsoluteFile().getPath();
+                for (String f : ret) {
+                    bw.write(f.substring(parentPathString.length()));
+                    bw.write("\n");
+                }
+            } catch (IOException e) {
+                String msg = String.format("error while creating '%s': %s \n", filesListPath, e);
+                print(getContext().getStandardErr(), msg);
+            }
+            return PNone.NONE;
+        }
+
+        private static List<String> list(TruffleFile dir) throws IOException {
+            List<String> ret = new ArrayList<>();
+            Collection<TruffleFile> files = dir.list();
+            String dirPath = dir.getAbsoluteFile().getPath();
+            if (!dirPath.endsWith("/")) {
+                dirPath = dirPath + "/";
+            }
+            ret.add(dirPath);
+            if (files != null) {
+                for (TruffleFile f : files) {
+                    if (f.isRegularFile()) {
+                        ret.add(f.getAbsoluteFile().getPath());
+                    } else {
+                        ret.addAll(list(f));
+                    }
+                }
+            }
+            return ret;
+        }
+
+        private void print(OutputStream out, String msg) {
+            try {
+                out.write(String.format("%s: %s", getContext().getOption(PythonOptions.Executable), msg).getBytes(StandardCharsets.UTF_8));
+            } catch (IOException ioException) {
+                // Ignore
+            }
         }
     }
 }
