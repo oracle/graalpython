@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.javapython;
+package com.mycompany.javapython;
 
 import java.io.IOException;
 import org.graalvm.nativeimage.ImageInfo;
@@ -56,15 +56,6 @@ public class Main {
 
     private static String PYTHON = "python";
     
-    // XXX - ping proxy generation
-    // Proxy class defined by interfaces [interface Hello] not found. Generating proxy classes at runtime is not supported. 
-    // Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. 
-    // To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and 
-    // -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
-    static {
-        java.lang.reflect.Proxy.getProxyClass(Main.class.getClassLoader(), new Class<?>[] {Hello.class});
-    }
-    
     public static void main(String[] args) throws IOException {
         Builder builder = Context.newBuilder()
             .allowExperimentalOptions(true)
@@ -72,14 +63,13 @@ public class Main {
             .allowIO(true)
             .fileSystem(new VirtualFileSystem())
             .option("python.PosixModuleBackend", "java")
-            .option("python.NativeModules", "")
             .option("python.DontWriteBytecodeFlag", "true")
             .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
             .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
             .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-            .option("python.AlwaysRunExcepthook", "true")
+            .option("python.AlwaysRunExcepthook", "false")
             .option("python.ForceImportSite", "true")
-            .option("python.RunViaLauncher", "true")
+            .option("python.RunViaLauncher", "false")
             .option("python.Executable", VENV_PREFIX + "/bin/python")
             .option("python.InputFilePath", PROJ_PREFIX)            
             .option("python.CheckHashPycsMode", "never");

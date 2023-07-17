@@ -43,14 +43,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mycompany.app</groupId>
-    <artifactId>java_python_example</artifactId>
+    <artifactId>java_python_app</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.jar.plugin.version>3.1.0</maven.jar.plugin.version>
-        <graal.sdk.version>22.3.1</graal.sdk.version>
+        <graal.sdk.version>23.0.0</graal.sdk.version>
         <native.image.maven.plugin.version>0.9.20</native.image.maven.plugin.version>
     </properties>
 
@@ -63,8 +63,8 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>                  
-                            <mainClass>com.oracle.javapython.Main</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.mycompany.javapython.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -84,13 +84,13 @@
                             <arguments>
                                 <argument>-c</argument>
                                 <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/vfs', '${project.build.directory}/classes/vfs/fileslist.txt')</argument>
-                            </arguments>                            
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
-        
+
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -99,12 +99,12 @@
                     <exclude>**/vfs/home/lib-graalpython/patches/**</exclude>
                     <exclude>**/vfs/venv/bin/**</exclude>
                     <exclude>**/vfs/venv/include/**</exclude>
-                    <exclude>**/vfs/venv/**/site-packages/pip*/**</exclude>                  
+                    <exclude>**/vfs/venv/**/site-packages/pip*/**</exclude>
                 </excludes>
         </resource>
         </resources>
     </build>
-            
+
     <profiles>
         <profile>
             <id>jar</id>
@@ -124,14 +124,13 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <addClasspath>true</addClasspath>                  
-                                    <mainClass>com.oracle.javapython.Main</mainClass>
+                                    <addClasspath>true</addClasspath>
+                                    <mainClass>com.mycompany.javapython.Main</mainClass>
                                 </manifest>
                             </archive>
                             <excludes>
                                 <!-- the created jar has to be executed with graalpy, 
-                                it is safe to exlude the whole python home 
-                                as it is already part of graalvm/graalpy -->
+                                so it is safe to exclude the whole python home -->
                                 <exclude>**/vfs/home/**</exclude>
                             </excludes>
                         </configuration>
@@ -140,9 +139,9 @@
             </build>
         </profile>
         <profile>
-            <id>native</id>                    
+            <id>native</id>
             <build>
-                <plugins>                    
+                <plugins>
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
@@ -170,20 +169,11 @@
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--language:python</buildArg>
                                 <buildArg>-H:-CopyLanguageResources</buildArg>
-                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
-                                
-                                <!-- XXX do we need this? NO! -->
-                                <!--<buildArg>- -initialize-at-build-time=com.oracle.javapython.VirtualFileSystem</buildArg>-->
-                                
-                                <!-- native-image-resources.json specifies what reasources will be added to the native executable
+                                <!-- native-image-resources.json specifies what resources will be added to the native executable
                                  see also https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/-->
-                                <buildArg>-H:ResourceConfigurationFiles=native-image-resources.json</buildArg>                               
-                                <!-- uncomment to see what resources are added to the native executable -->
-                                <!--<buildArg>-H:Log=registerResource:3</buildArg>-->
-                                
-                                <!--XXX-->
-                                <!--<buildArg>-H:DynamicProxyConfigurationFiles=interfaces.json</buildArg>-->
-                                
+                                <buildArg>-H:ResourceConfigurationFiles=native-image-resources.json</buildArg>
+                                <!-- Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement.  -->
+                                <buildArg>-H:DynamicProxyConfigurationFiles=native-image-proxy-configuration.json</buildArg>
                             </buildArgs>
                             <!-- Remove the properties below to include the Python JIT compiler -->
                             <jvmArgs>
@@ -198,7 +188,7 @@
                 </plugins>
             </build>
         </profile>
-        
+
         <profile>
    	    <id>prepare-venv</id>
             <!-- create a python venv in resources/vfs if it does not exist yet -->
@@ -209,7 +199,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
-                            <execution>                                
+                            <execution>
                                 <id>prepare-python-venv</id>
                                 <phase>generate-resources</phase>
                                 <goals>

@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.javapython;
+package com.mycompany.javapython;
 
 public interface Hello {
     void hello(String txt);

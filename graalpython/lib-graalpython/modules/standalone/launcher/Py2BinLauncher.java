@@ -38,35 +38,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.javapython;
-
 import java.io.IOException;
-import org.graalvm.nativeimage.ImageInfo;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessMode;
+import java.nio.file.DirectoryStream;
+import java.nio.file.LinkOption;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileTime;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.FileSystem;
 
-public class Main {
+/**
+ * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
+ * standard library, a Python virtual environment, and the module to launch from an embedded
+ * resource. Any other file system accesses are passed through to the underlying filesystem. The
+ * options are set such that most access is allowed and the interpreter works mostly as if run via
+ * the launcher. To support the virtual filesystem, however, the POSIX and C API backends are set
+ * up to use Java instead of native execution.
+ *
+ * This class can serve as a skeleton for more elaborate embeddings, an example of a virtual
+ * filesystem, as well as showing how to embed Python code into a single native image binary.
+ */
+public class Py2BinLauncher {
     private static final String HOME_PREFIX = VirtualFileSystem.VFS_PREFIX + "/home";
-    private static final String PROJ_PREFIX = VirtualFileSystem.VFS_PREFIX + "/proj";
     private static final String VENV_PREFIX = VirtualFileSystem.VFS_PREFIX + "/venv";
+    private static final String PROJ_PREFIX = VirtualFileSystem.VFS_PREFIX + "/proj";
 
-    private static String PYTHON = "python";
-    
-    // XXX - ping proxy generation
-    // Proxy class defined by interfaces [interface Hello] not found. Generating proxy classes at runtime is not supported. 
-    // Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. 
-    // To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and 
-    // -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
-    static {
-        java.lang.reflect.Proxy.getProxyClass(Main.class.getClassLoader(), new Class<?>[] {Hello.class});
-    }
-    
     public static void main(String[] args) throws IOException {
-        Builder builder = Context.newBuilder()
+        var builder = Context.newBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
             .allowIO(true)
@@ -81,34 +99,23 @@ public class Main {
             .option("python.ForceImportSite", "true")
             .option("python.RunViaLauncher", "true")
             .option("python.Executable", VENV_PREFIX + "/bin/python")
-            .option("python.InputFilePath", PROJ_PREFIX)            
+            .option("python.InputFilePath", PROJ_PREFIX)
+            .option("python.PythonHome", HOME_PREFIX)
             .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
-            builder.option("engine.WarnInterpreterOnly", "false")
-                   .option("python.PythonHome", HOME_PREFIX);
+            builder.option("engine.WarnInterpreterOnly", "false");
         }
-        Context context = builder.build();
-                
-        try {
-            Source source;
+        try (var context = builder.build()) {
             try {
-                source = Source.newBuilder(PYTHON, "__graalpython__.run_path()", "<internal>").internal(true).build();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            context.eval(source);
-            Value pyHelloClass = context.getPolyglotBindings().getMember("PyHello");
-            Value pyHello = pyHelloClass.newInstance();
-            Hello hello = pyHello.as(Hello.class);
-            hello.hello("java");
-        } catch (PolyglotException e) {
-            if (e.isExit()) {
-                System.exit(e.getExitStatus());
-            } else {
-                throw e;
+                var src = Source.newBuilder("python", "__graalpython__.run_path()", "<internal>").internal(true).build();
+                context.eval(src);
+            } catch (PolyglotException e) {
+                if (e.isExit()) {
+                    System.exit(e.getExitStatus());
+                } else {
+                    throw e;
+                }
             }
         }
     }
-   
-    
 }

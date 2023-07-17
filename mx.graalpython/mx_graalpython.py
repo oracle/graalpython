@@ -658,6 +658,7 @@ class GraalPythonTags(object):
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
+    unittest_standalone = 'python-unittest-standalone'
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
@@ -1310,6 +1311,14 @@ def graalpython_gate_runner(args, tasks):
             run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
             run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
 
+    with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
+        if task:
+            os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            try:
+                run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
+            finally:
+                del os.environ['ENABLE_STANDALONE_UNITTESTS']
+
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
@@ -1353,47 +1362,6 @@ def graalpython_gate_runner(args, tasks):
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             if not WIN32:
                 assert "Using preinitialized context." in out.data
-
-    with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
-        if task and not WIN32:
-            svm_image = python_svm()
-            with tempfile.TemporaryDirectory() as tmpdir:
-                tmpstandalone = os.path.join(tmpdir, "target")
-                tmpmain = os.path.join(tmpdir, "main.py")
-                with open(tmpmain, "w") as f:
-                    f.write("print('hello standalone')")
-                mx.run([svm_image, "-m", "standalone", "java", "-o", tmpstandalone, "-m", tmpmain])
-                mx.run_maven(["-Pjar", "package"], cwd=tmpstandalone) # should compile without GraalVM
-                mx.run_maven(
-                    ["-Pnative", "package"],
-                    cwd=tmpstandalone,
-                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
-                )
-                out = mx.OutputCapture()
-                mx.run(
-                    [os.path.join(tmpstandalone, "target", "py2binlauncher")],
-                    nonZeroIsFatal=True,
-                    env={"PYTHONVERBOSE": "1"},
-                    out=mx.TeeOutputCapture(out),
-                    err=mx.TeeOutputCapture(out),
-                )
-                if "hello standalone" not in out.data:
-                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-                mx.run(
-                    [svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain],
-                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
-                )
-                out = mx.OutputCapture()
-                mx.run(
-                    [os.path.join(tmpdir, "directlauncher")],
-                    nonZeroIsFatal=True,
-                    env={"PYTHONVERBOSE": "1"},
-                    out=mx.TeeOutputCapture(out),
-                    err=mx.TeeOutputCapture(out),
-                )
-                if "hello standalone" not in out.data:
-                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:

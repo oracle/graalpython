@@ -74,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -254,6 +255,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
+        }
+        if (!context.getOption(PythonOptions.RunViaLauncher)) {
+            mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
         }
     }
 
@@ -957,15 +961,15 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object list(TruffleString dirPath, TruffleString filesListPath) {
             print(getContext().getStandardOut(), String.format("listing files from '%s' to '%s'\n", dirPath, filesListPath));
 
-            File dir = new File(dirPath.toJavaStringUncached());
+            TruffleFile dir = getContext().getPublicTruffleFileRelaxed(dirPath);
             if (!dir.exists() || !dir.isDirectory()) {
                 print(getContext().getStandardErr(), String.format("'%s' has to exist and be a directory.\n", dirPath));
             }
-            new File(filesListPath.toJavaStringUncached()).getParentFile().mkdirs();
 
             try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
+                getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
                 List<String> ret = list(dir);
-                String parentPathString = dir.getParentFile().getAbsolutePath();
+                String parentPathString = dir.getParent().getAbsoluteFile().getPath();
                 for (String f : ret) {
                     bw.write(f.substring(parentPathString.length()));
                     bw.write("\n");
@@ -977,18 +981,18 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static List<String> list(File dir) {
+        private static List<String> list(TruffleFile dir) throws IOException {
             List<String> ret = new ArrayList<>();
-            File[] files = dir.listFiles();
-            String dirPath = dir.getAbsolutePath();
+            Collection<TruffleFile> files = dir.list();
+            String dirPath = dir.getAbsoluteFile().getPath();
             if (!dirPath.endsWith("/")) {
                 dirPath = dirPath + "/";
             }
             ret.add(dirPath);
             if (files != null) {
-                for (File f : files) {
-                    if (f.isFile()) {
-                        ret.add(f.getAbsolutePath());
+                for (TruffleFile f : files) {
+                    if (f.isRegularFile()) {
+                        ret.add(f.getAbsoluteFile().getPath());
                     } else {
                         ret.addAll(list(f));
                     }
