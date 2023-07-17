@@ -258,7 +258,8 @@ public abstract class ErrorMessages {
     public static final TruffleString DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE = tsLiteral("decoding error handler must return (str, int) tuple");
     public static final TruffleString DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P = tsLiteral("descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object");
     public static final TruffleString DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P = tsLiteral("descriptor for index '%d' for %s doesn't apply to '%p' object");
-    public static final TruffleString DESC_S_FOR_S_DOESNT_APPLY_TO_S = tsLiteral("descriptor '%s' for '%s' objects doesn't apply to '%s' object");
+    public static final TruffleString DESC_S_FOR_N_DOESNT_APPLY_TO_N = tsLiteral("descriptor '%s' for '%N' objects doesn't apply to '%N' object");
+    public static final TruffleString GET_NONE_NONE_IS_INVALID = tsLiteral("__get__(None, None) is invalid");
     public static final TruffleString DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_NEED_OBJ = tsLiteral("descriptor '%s' of '%s' object needs an argument");
