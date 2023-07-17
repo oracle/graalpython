@@ -3670,18 +3670,18 @@ PyAPI_FUNC(PyObject*) PySlice_New(PyObject* a, PyObject* b, PyObject* c) {
     PyObject* result = (PyObject*) GraalPySlice_New(a, b, c);
     return result;
 }
-PyObject* (*__target__PySlice_Start)(PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) PySlice_Start(PyObject* a) {
+PyObject* (*__target__PySlice_Start)(PySliceObject*) = NULL;
+PyAPI_FUNC(PyObject*) PySlice_Start(PySliceObject* a) {
     PyObject* result = (PyObject*) __target__PySlice_Start(a);
     return result;
 }
-PyObject* (*__target__PySlice_Step)(PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) PySlice_Step(PyObject* a) {
+PyObject* (*__target__PySlice_Step)(PySliceObject*) = NULL;
+PyAPI_FUNC(PyObject*) PySlice_Step(PySliceObject* a) {
     PyObject* result = (PyObject*) __target__PySlice_Step(a);
     return result;
 }
-PyObject* (*__target__PySlice_Stop)(PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) PySlice_Stop(PyObject* a) {
+PyObject* (*__target__PySlice_Stop)(PySliceObject*) = NULL;
+PyAPI_FUNC(PyObject*) PySlice_Stop(PySliceObject* a) {
     PyObject* result = (PyObject*) __target__PySlice_Stop(a);
     return result;
 }
