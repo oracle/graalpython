@@ -320,9 +320,7 @@ public enum CFields {
     PyBaseExceptionObject__traceback(PyObject),
     PyBaseExceptionObject__context(PyObject),
     PyBaseExceptionObject__cause(PyObject),
-    PyBaseExceptionObject__suppress_context(CHAR),
-
-    ;
+    PyBaseExceptionObject__suppress_context(CHAR);
 
     public static final int PyASCIIObject__state_interned_shift = 0;
     public static final int PyASCIIObject__state_kind_shift = 2;

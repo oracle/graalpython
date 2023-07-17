@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 import java.io.IOException;
@@ -77,11 +76,9 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -193,15 +190,6 @@ public final class CApiContext extends CExtContext {
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
-    }
-
-    /**
-     * Private dummy constructor just for {@link #LAZY_CONTEXT}.
-     */
-    private CApiContext() {
-        super(null, null, false);
-        primitiveNativeWrapperCache = null;
-        promotedTruffleStringCache = null;
     }
 
     public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {

@@ -61,8 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
  */
 public enum CConstants {
     PYLONG_BITS_IN_DIGIT,
-    READONLY,
-    ;
+    READONLY;
 
     @CompilationFinal(dimensions = 1) public static final CConstants[] VALUES = values();
 
