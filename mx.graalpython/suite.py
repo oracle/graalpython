@@ -74,12 +74,6 @@ suite = {
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
                 ]
             },
-            {
-                "name": "graalpython-enterprise",
-                "version": "8201efb2057e4f336c0a68efd7ab3943130aef16",
-                "dynamic": True,
-                "subdir": True,
-            },
         ],
     },
 

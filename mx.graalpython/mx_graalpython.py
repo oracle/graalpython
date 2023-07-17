@@ -732,11 +732,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
         envfile = _sibling(envfile)
     home = os.environ.get("GRAALVM_HOME", None)
     if not home:
-        dy = ",".join([
-            "%s%s" % ("/" if dy[1] else "", dy[0])
-            for dy in mx.get_dynamic_imports()
-            if mx.primary_suite() != SUITE or dy[0] != "graalpython"
-        ])
+        dy = ",".join(["%s%s" % ("/" if dy[1] else "", dy[0]) for dy in mx.get_dynamic_imports()])
         dy += extra_dy
         mx_args = ["--env", envfile]
         if dy:
@@ -1868,6 +1864,11 @@ def update_import_cmd(args):
         join(mx.suite("truffle").dir, "..", "ci"),
         join(overlaydir, "python", "graal", "ci"),
         dirs_exist_ok=True)
+
+    # update the graal-enterprise revision in the overlay (used by benchmarks)
+    with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
+        d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
+        json.dump(d, fp, indent=2)
 
     repos_updated = []
 
