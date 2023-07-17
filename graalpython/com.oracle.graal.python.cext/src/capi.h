@@ -617,6 +617,7 @@ typedef struct {
     BUILTIN(_PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \
     BUILTIN(_PyDict_SetItem_KnownHash, int, PyObject*, PyObject*, PyObject*, Py_hash_t) \
     BUILTIN(_PyErr_BadInternalCall, void, const char*, int) \
+    BUILTIN(_PyErr_Occurred, PyObject*, PyThreadState*) \
     BUILTIN(_PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
     BUILTIN(_PyList_Extend, PyObject*, PyListObject*, PyObject*) \
     BUILTIN(_PyList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \

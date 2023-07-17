@@ -1305,6 +1305,7 @@ void unimplemented(const char* name) {
 #undef _PyErr_FormatFromCause
 #undef _PyErr_GetExcInfo
 #undef _PyErr_GetTopmostException
+#undef _PyErr_Occurred
 #undef _PyErr_ProgramDecodedTextObject
 #undef _PyErr_SetKeyError
 #undef _PyErr_TrySetFromCause
@@ -5008,6 +5009,10 @@ PyAPI_FUNC(void) _PyErr_GetExcInfo(PyThreadState* a, PyObject** b, PyObject** c,
 }
 PyAPI_FUNC(_PyErr_StackItem*) _PyErr_GetTopmostException(PyThreadState* a) {
     unimplemented("_PyErr_GetTopmostException"); exit(-1);
+}
+PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState* a) {
+    PyObject* result = (PyObject*) Graal_PyErr_Occurred(a);
+    return result;
 }
 PyAPI_FUNC(PyObject*) _PyErr_ProgramDecodedTextObject(PyObject* a, int b, const char* c) {
     unimplemented("_PyErr_ProgramDecodedTextObject"); exit(-1);

@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.exception.PBaseException.T_CODE;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
@@ -84,6 +85,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
@@ -203,6 +205,19 @@ public final class PythonCextErrBuiltins {
             PException currentException = getThreadStateNode.getCurrentException();
             if (currentException != null) {
                 // getClassNode acts as a branch profile
+                return getClassNode.execute(currentException.getUnreifiedException());
+            }
+            return getNativeNull();
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyThreadState}, call = Direct)
+    abstract static class _PyErr_Occurred extends CApiUnaryBuiltinNode {
+        @Specialization
+        Object run(PThreadState state,
+                        @Cached GetClassNode getClassNode) {
+            PException currentException = state.getThreadState().getCurrentException();
+            if (currentException != null) {
                 return getClassNode.execute(currentException.getUnreifiedException());
             }
             return getNativeNull();

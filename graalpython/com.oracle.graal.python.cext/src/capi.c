@@ -2440,6 +2440,10 @@ PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c,
 PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
     Graal_PyErr_BadInternalCall(truffleString(a), b);
 }
+#undef _PyErr_Occurred
+PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState* a) {
+    return Graal_PyErr_Occurred(a);
+}
 #undef _PyErr_WriteUnraisableMsg
 PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
     Graal_PyErr_WriteUnraisableMsg(truffleString(a), b);
