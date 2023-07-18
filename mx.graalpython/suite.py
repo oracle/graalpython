@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "1dbc87d83b994df3ba2cd05783b07ae7e5bd721a",
+                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "1dbc87d83b994df3ba2cd05783b07ae7e5bd721a",
+                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "1dbc87d83b994df3ba2cd05783b07ae7e5bd721a",
+                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -68,7 +68,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "1dbc87d83b994df3ba2cd05783b07ae7e5bd721a",
+                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
