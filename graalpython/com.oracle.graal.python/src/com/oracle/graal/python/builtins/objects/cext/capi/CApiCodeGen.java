@@ -52,6 +52,7 @@ import static java.util.stream.Collectors.joining;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +63,7 @@ import java.util.TreeSet;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -480,12 +482,59 @@ public final class CApiCodeGen {
         return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);
     }
 
+    private static void checkUnimplementedAPI(Path path, List<CApiBuiltinDesc> additionalBuiltins) {
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(path);
+        } catch (IOException e) {
+            System.out.println("    Error while reading " + path + ": " + e.getMessage());
+            return;
+        }
+        boolean msg = false;
+        for (CApiBuiltinDesc builtin : additionalBuiltins) {
+            if (builtin.call == NotImplemented) {
+                for (int i = 0; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    int offset = line.indexOf(builtin.name);
+                    // avoid recognizing, e.g. "_PyObject_CallMethodId" in
+                    // "_PyObject_CallMethodIdNoArgs"
+                    if (offset > 0 && Character.isUnicodeIdentifierPart(line.charAt(offset - 1))) {
+                        continue;
+                    }
+                    if (offset + builtin.name.length() < line.length() && Character.isUnicodeIdentifierPart(line.charAt(offset + builtin.name.length()))) {
+                        continue;
+                    }
+                    if (line.contains(builtin.name)) {
+                        if (!msg) {
+                            msg = true;
+                            System.out.println("Checking " + path);
+                        }
+                        System.out.println("    " + builtin.name + " used in " + path + " line " + (i + 1) + ": " + line);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Entry point for the "mx python-capi-forwards" command.
      */
     public static void main(String[] args) throws IOException {
         List<CApiBuiltinDesc> javaBuiltins = CApiFunction.getJavaBuiltinDefinitions();
         List<CApiBuiltinDesc> additionalBuiltins = CApiFunction.getOtherBuiltinDefinitions();
+
+        /*
+         * Calling with arguments "check <path>" will recursively check all files in the path for
+         * unimplemented C API functions.
+         */
+        if (args.length == 2 && "check".equals(args[0])) {
+            System.out.println("Checking usages of unimplemented API:");
+            String path = args[1];
+            try (Stream<Path> stream = Files.walk(Paths.get(path))) {
+                stream.filter(Files::isRegularFile).forEach(p -> checkUnimplementedAPI(p, additionalBuiltins));
+            }
+            return;
+        }
 
         List<CApiBuiltinDesc> allBuiltins = new ArrayList<>();
         allBuiltins.addAll(additionalBuiltins);
