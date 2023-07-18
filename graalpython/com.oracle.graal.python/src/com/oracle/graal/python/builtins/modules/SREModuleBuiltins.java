@@ -118,7 +118,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
-public class SREModuleBuiltins extends PythonBuiltins {
+public final class SREModuleBuiltins extends PythonBuiltins {
 
     private static HiddenKey TREGEX_CACHE = new HiddenKey("tregex_cache");
 

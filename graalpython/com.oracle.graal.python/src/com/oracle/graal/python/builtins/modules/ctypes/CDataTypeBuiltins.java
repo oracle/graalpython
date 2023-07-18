@@ -123,7 +123,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
                 PythonBuiltinClassType.PyCPointerType,
                 PythonBuiltinClassType.PyCSimpleType,
 })
-public class CDataTypeBuiltins extends PythonBuiltins {
+public final class CDataTypeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

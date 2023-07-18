@@ -425,6 +425,7 @@ public class AsyncHandler {
             private final Object reference;
             private boolean released;
 
+            @SuppressWarnings("this-escape")
             public FinalizableReference(Object referent, Object reference, SharedFinalizer sharedFinalizer) {
                 super(referent, sharedFinalizer.queue);
                 assert reference != null;

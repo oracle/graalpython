@@ -91,7 +91,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link PythonBuiltinClassType#MemberDescriptor}.
  */
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.MemberDescriptor})
-public class DescriptorBuiltins extends PythonBuiltins {
+public final class DescriptorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DescriptorBuiltinsFactory.getFactories();

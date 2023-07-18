@@ -173,7 +173,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS)
-public class CodecsModuleBuiltins extends PythonBuiltins {
+public final class CodecsModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_UTF_7 = tsLiteral("utf-7");
     public static final TruffleString T_UTF_16 = tsLiteral("utf-16");

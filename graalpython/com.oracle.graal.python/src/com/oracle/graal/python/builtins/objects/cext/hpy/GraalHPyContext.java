@@ -314,7 +314,7 @@ public final class GraalHPyContext extends CExtContext {
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
-        HPyBackendMode backendMode = context.getOption(PythonOptions.HPyBackend);
+        HPyBackendMode backendMode = language.getEngineOption(PythonOptions.HPyBackend);
 
         nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
         hpyHandleTable = new Object[IMMUTABLE_HANDLE_COUNT * 2];

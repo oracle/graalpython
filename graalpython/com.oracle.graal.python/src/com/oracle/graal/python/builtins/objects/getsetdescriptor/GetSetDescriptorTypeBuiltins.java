@@ -74,7 +74,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Built-in functions that are only used for {@link PythonBuiltinClassType#GetSetDescriptor}.
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.GetSetDescriptor)
-public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
+public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GetSetDescriptorTypeBuiltinsFactory.getFactories();

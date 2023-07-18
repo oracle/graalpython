@@ -91,7 +91,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator,
                 PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator,
                 PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictReverseValueIterator})
-public class IteratorBuiltins extends PythonBuiltins {
+public final class IteratorBuiltins extends PythonBuiltins {
 
     /*
      * "extendClasses" only needs one of the set of Java classes that are mapped to the Python

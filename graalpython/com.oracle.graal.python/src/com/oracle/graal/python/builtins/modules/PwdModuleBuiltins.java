@@ -86,7 +86,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "pwd")
-public class PwdModuleBuiltins extends PythonBuiltins {
+public final class PwdModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_NOT_AVAILABLE = tsLiteral("NOT_AVAILABLE");
     static final StructSequence.BuiltinTypeDescriptor STRUCT_PASSWD_DESC = new StructSequence.BuiltinTypeDescriptor(

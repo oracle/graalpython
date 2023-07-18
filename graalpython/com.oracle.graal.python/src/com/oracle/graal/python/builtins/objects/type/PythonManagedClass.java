@@ -91,6 +91,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
+    @SuppressWarnings("this-escape")
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
                     PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);

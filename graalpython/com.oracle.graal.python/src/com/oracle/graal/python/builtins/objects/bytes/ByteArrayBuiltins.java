@@ -126,7 +126,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PByteArray)
-public class ByteArrayBuiltins extends PythonBuiltins {
+public final class ByteArrayBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_LATIN_1 = tsLiteral("latin-1");
 

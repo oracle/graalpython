@@ -117,7 +117,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS_TRUFFLE)
-public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
+public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_CODEC_INFO_NAME = tsLiteral("CodecInfo");
     private static final TruffleString T_CODEC = tsLiteral("Codec");

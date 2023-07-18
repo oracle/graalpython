@@ -106,7 +106,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SSL)
-public class SSLModuleBuiltins extends PythonBuiltins {
+public final class SSLModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleLogger LOGGER = PythonLanguage.getLogger(SSLModuleBuiltins.class);
 

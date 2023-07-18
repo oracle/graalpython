@@ -82,7 +82,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "mmap")
-public class MMapModuleBuiltins extends PythonBuiltins {
+public final class MMapModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_INIT_BUFFERPROTOCOL = tsLiteral("init_bufferprotocol");
 

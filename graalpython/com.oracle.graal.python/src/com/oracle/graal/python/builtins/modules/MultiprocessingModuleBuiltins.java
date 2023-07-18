@@ -101,7 +101,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multiprocessing")
-public class MultiprocessingModuleBuiltins extends PythonBuiltins {
+public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(MultiprocessingModuleBuiltins.class);
 

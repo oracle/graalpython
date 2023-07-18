@@ -27,7 +27,6 @@ from __future__ import print_function
 import contextlib
 import datetime
 import fnmatch
-import getpass
 import glob
 import itertools
 import json
@@ -1600,8 +1599,10 @@ def run_shared_lib_test(home, args=()):
         """ % (b"1" if "sandboxed" in args else b"0"))
         os.close(fd)
         progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
-        mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))
-        mx.run(["clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        cc = "clang" if shutil.which("clang") else "gcc"
+        cmdline = [cc, "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"]
+        mx.log(" ".join(["Running"] + cmdline))
+        mx.run(cmdline, nonZeroIsFatal=True)
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
@@ -1764,7 +1765,8 @@ def update_import(name, suite_py, args):
     else:
         vc.pull(dep_dir)
         rev = "origin/master"
-    vc.update(dep_dir, rev=rev, mayPull=True)
+    if rev != "HEAD":
+        vc.update(dep_dir, rev=rev, mayPull=True)
     tip = str(vc.tip(dep_dir)).strip()
     contents = None
     with open(suite_py, 'r') as f:
@@ -1906,24 +1908,6 @@ def update_import_cmd(args):
                 vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
             finally:
                 mx._opts.very_verbose = prev_verbosity
-
-        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "n":
-            username = input('Username: ')
-            password = getpass.getpass('Password: ')
-            cmds = []
-            for repo in repos_updated:
-                reponame = os.path.basename(repo)
-                cmd = [
-                    "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
-                    "create-pr", "--project=G", "--repo=%s" % reponame,
-                    "--title=[GR-21590] Update Python imports",
-                    "--from-branch=%s" % current_branch, "--to-branch=master"
-                ]
-                cmds.append(cmd)
-                print(" ".join(cmd))
-            for cmd in cmds:
-                cmd[3].replace("${SSO_PASSWORD}", password)
-                mx.run(cmd, nonZeroIsFatal=False)
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))

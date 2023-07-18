@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -39,7 +39,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "cmath")
-public class CmathModuleBuiltins extends PythonBuiltins {
+public final class CmathModuleBuiltins extends PythonBuiltins {
 
     // Constants used for the definition of special values tables in node classes
     static final double INF = Double.POSITIVE_INFINITY;

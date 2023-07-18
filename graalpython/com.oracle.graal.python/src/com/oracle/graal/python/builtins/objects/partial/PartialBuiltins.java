@@ -115,7 +115,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
-public class PartialBuiltins extends PythonBuiltins {
+public final class PartialBuiltins extends PythonBuiltins {
     public static Object[] getNewPartialArgs(PPartial partial, Object[] args, Node inliningTarget, InlinedConditionProfile hasArgsProfile) {
         return getNewPartialArgs(partial, args, inliningTarget, hasArgsProfile, 0);
     }

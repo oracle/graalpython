@@ -72,7 +72,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 MultibyteStreamReader,
                 MultibyteStreamWriter
 })
-public class CodecCtxBuiltins extends PythonBuiltins {
+public final class CodecCtxBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

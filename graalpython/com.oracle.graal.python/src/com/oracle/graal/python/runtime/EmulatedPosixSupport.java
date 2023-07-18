@@ -200,7 +200,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -212,6 +211,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
@@ -1940,9 +1940,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long getuid() {
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                return new UnixSystem().getUid();
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX:
+                case PLATFORM_DARWIN:
+                    return new UnixSystem().getUid();
+                default:
+                    break;
             }
         }
         return 1000;
@@ -1960,9 +1963,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long getgid() {
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                return new UnixSystem().getGid();
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX:
+                case PLATFORM_DARWIN:
+                    return new UnixSystem().getGid();
+                default:
+                    break;
             }
         }
         return 1000;
@@ -2260,8 +2266,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         LOGGER.fine(() -> "os.system: " + cmd);
 
         String[] command;
-        String osProperty = System.getProperty("os.name");
-        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows")) {
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             command = new String[]{"cmd.exe", "/c", cmd};
         } else {
             command = new String[]{(environ.getOrDefault("SHELL", "sh")), "-c", cmd};
@@ -2639,30 +2644,42 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
-        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            throw new UnsupportedPosixFeatureException("getpwuid was excluded");
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX:
+                case PLATFORM_DARWIN:
+                    UnixSystem unix = new UnixSystem();
+                    if (unix.getUid() != uid) {
+                        throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
+                    }
+                    compatibilityInfo("gtpwuid: default shell cannot be retrieved for %d, using '/bin/sh' instead.", uid);
+                    return createPwdResult(unix);
+                default:
+                    throw new UnsupportedPosixFeatureException("emulated getpwuid is not available on this platform");
+            }
         }
-        UnixSystem unix = new UnixSystem();
-        if (unix.getUid() != uid) {
-            throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
-        }
-        compatibilityInfo("gtpwuid: default shell cannot be retrieved for %d, using '/bin/sh' instead.", uid);
-        return createPwdResult(unix);
+        throw new UnsupportedPosixFeatureException("getpwuid was excluded");
     }
 
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
-        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            throw new UnsupportedPosixFeatureException("getpwnam was excluded");
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX:
+                case PLATFORM_DARWIN:
+                    UnixSystem unix = new UnixSystem();
+                    if (!unix.getUsername().equals(name)) {
+                        throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");
+                    }
+                    compatibilityInfo("gtpwuid: default shell cannot be retrieved for %s, using '/bin/sh' instead.", name);
+                    return createPwdResult(unix);
+                default:
+                    throw new UnsupportedPosixFeatureException("emulated getpwnam is not available on this platform");
+            }
         }
-        UnixSystem unix = new UnixSystem();
-        if (!unix.getUsername().equals(name)) {
-            throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");
-        }
-        compatibilityInfo("gtpwuid: default shell cannot be retrieved for %s, using '/bin/sh' instead.", name);
-        return createPwdResult(unix);
+        throw new UnsupportedPosixFeatureException("getpwnam was excluded");
     }
 
     @ExportMessage

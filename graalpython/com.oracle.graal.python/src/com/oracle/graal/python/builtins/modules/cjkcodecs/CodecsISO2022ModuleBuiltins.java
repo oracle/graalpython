@@ -73,7 +73,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS_ISO2022)
-public class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
+public final class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

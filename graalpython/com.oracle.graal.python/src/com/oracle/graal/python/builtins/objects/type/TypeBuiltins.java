@@ -194,7 +194,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
-public class TypeBuiltins extends PythonBuiltins {
+public final class TypeBuiltins extends PythonBuiltins {
 
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(J___DICTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(J___ITEMSIZE__);

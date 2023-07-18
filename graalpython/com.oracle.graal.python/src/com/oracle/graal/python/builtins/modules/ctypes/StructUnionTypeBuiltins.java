@@ -119,7 +119,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
                 PythonBuiltinClassType.PyCStructType,
                 PythonBuiltinClassType.UnionType
 })
-public class StructUnionTypeBuiltins extends PythonBuiltins {
+public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -315,7 +315,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 for (int idx = 0; idx < len + 1; idx++) {
                     stgdict.ffi_type_pointer.elements[idx] = new FFIType();
                 }
-                
+
                  */
                 ffi_ofs = 0;
             }
@@ -509,7 +509,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         fieldsError();
                     }
                     Object desc = tuple[1];
-                
+
                     StgDictObject dict = pyTypeStgDictNode.execute(desc);
                     if (dict == null) {
                         throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);

@@ -90,7 +90,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProperty)
-public class PropertyBuiltins extends PythonBuiltins {
+public final class PropertyBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PropertyBuiltinsFactory.getFactories();

@@ -173,7 +173,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
-public class GraalPythonModuleBuiltins extends PythonBuiltins {
+public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 
     private static final TruffleString T_PATH_HOOKS = tsLiteral("path_hooks");

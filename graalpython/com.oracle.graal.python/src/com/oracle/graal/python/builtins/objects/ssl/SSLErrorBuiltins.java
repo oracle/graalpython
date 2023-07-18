@@ -76,7 +76,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SSLError)
-public class SSLErrorBuiltins extends PythonBuiltins {
+public final class SSLErrorBuiltins extends PythonBuiltins {
 
     static final int IDX_REASON = IDX_WRITTEN + 1;
     static final int IDX_LIB = IDX_WRITTEN + 2;

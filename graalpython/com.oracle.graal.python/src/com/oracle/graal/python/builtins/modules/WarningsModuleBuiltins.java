@@ -147,7 +147,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WARNINGS)
-public class WarningsModuleBuiltins extends PythonBuiltins {
+public final class WarningsModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
     private static final HiddenKey FILTERS = new HiddenKey("filters");
     private static final HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");

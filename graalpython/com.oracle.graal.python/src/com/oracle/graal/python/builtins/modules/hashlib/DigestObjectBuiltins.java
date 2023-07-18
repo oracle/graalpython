@@ -72,7 +72,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PythonBuiltinClassType.Sha3SHA224Type, PythonBuiltinClassType.Sha3SHA256Type, PythonBuiltinClassType.Sha3SHA384Type,
                 PythonBuiltinClassType.Sha3SHA512Type, PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type,
                 PythonBuiltinClassType.Blake2bType, PythonBuiltinClassType.Blake2sType})
-public class DigestObjectBuiltins extends PythonBuiltins {
+public final class DigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DigestObjectBuiltinsFactory.getFactories();

@@ -110,7 +110,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleNamespace)
-public class SimpleNamespaceBuiltins extends PythonBuiltins {
+public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SimpleNamespaceBuiltinsFactory.getFactories();

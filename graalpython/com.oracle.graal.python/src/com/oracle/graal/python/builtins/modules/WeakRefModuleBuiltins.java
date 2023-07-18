@@ -92,7 +92,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
-public class WeakRefModuleBuiltins extends PythonBuiltins {
+public final class WeakRefModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
 

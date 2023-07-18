@@ -96,7 +96,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PUnionType)
-public class UnionTypeBuiltins extends PythonBuiltins {
+public final class UnionTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnionTypeBuiltinsFactory.getFactories();

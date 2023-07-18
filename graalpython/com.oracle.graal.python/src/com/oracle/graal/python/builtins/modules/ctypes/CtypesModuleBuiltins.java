@@ -207,7 +207,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @CoreFunctions(defineModule = J__CTYPES)
-public class CtypesModuleBuiltins extends PythonBuiltins {
+public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_DL_ERROR = tsLiteral("dlerror");
     private static final TruffleString T_DL_OPEN_ERROR = tsLiteral("dlopen() error");
@@ -1246,13 +1246,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-        
+
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-        
+
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
