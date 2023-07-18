@@ -373,6 +373,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyByteArray_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyGILState_Ensure", ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = CImpl)
     @CApiBuiltin(name = "PyGILState_Release", ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = CImpl)
+    @CApiBuiltin(name = "_PyErr_ChainExceptions", ret = Void, args = {PyObject, PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
@@ -782,9 +784,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_SizeOf", ret = Py_ssize_t, args = {PYDICTOBJECT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDictView_Intersect", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDictView_New", ret = PyObject, args = {PyObject, PyTypeObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyErr_ChainExceptions", ret = Void, args = {PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_CheckSignals", ret = Int, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_GetExcInfo", ret = Void, args = {PyThreadState, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_GetTopmostException", ret = _PYERR_STACKITEM_PTR, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_ProgramDecodedTextObject", ret = PyObject, args = {PyObject, Int, ConstCharPtr}, call = NotImplemented)

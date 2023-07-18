@@ -4995,14 +4995,8 @@ void (*__target___PyErr_BadInternalCall)(const char*, int) = NULL;
 PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
     __target___PyErr_BadInternalCall(a, b);
 }
-PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject* a, PyObject* b, PyObject* c) {
-    unimplemented("_PyErr_ChainExceptions"); exit(-1);
-}
 PyAPI_FUNC(int) _PyErr_CheckSignals() {
     unimplemented("_PyErr_CheckSignals"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyErr_FormatFromCause(PyObject* a, const char* b, ...) {
-    unimplemented("_PyErr_FormatFromCause"); exit(-1);
 }
 PyAPI_FUNC(void) _PyErr_GetExcInfo(PyThreadState* a, PyObject** b, PyObject** c, PyObject** d) {
     unimplemented("_PyErr_GetExcInfo"); exit(-1);
