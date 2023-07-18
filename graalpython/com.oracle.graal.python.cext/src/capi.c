@@ -1350,6 +1350,12 @@ PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
     type->tp_flags = flags;
 }
 
+PyAPI_FUNC(void) truffle_check_type_ready(PyTypeObject* type) {
+    if (!(type->tp_flags & Py_TPFLAGS_READY)) {
+        PyType_Ready(type);
+    }
+}
+
 PyAPI_FUNC(int) truffle_BASETYPE_check(PyObject* type) {
     return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
 }

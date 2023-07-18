@@ -305,6 +305,34 @@ class TestObject(object):
         assert X.B_has_add_slot()
         assert Y.E_has_add_slot()
 
+    def test_managed_class_with_native_base(self):
+        NativeModule = CPyExtType("NativeModule_", 
+                            '''
+                            PyTypeObject NativeBase_Type = {
+                                PyVarObject_HEAD_INIT(&PyType_Type, 0)
+                                .tp_name = "NativeModule_.NativeBase",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_base = &PyModule_Type,
+                            };
+
+                            static PyObject* get_NativeBase_type(PyObject* cls) {
+                                return (PyObject*) &NativeBase_Type;
+                            }
+
+                            ''',
+                            tp_methods='''{"get_NativeBase_type", (PyCFunction)get_NativeBase_type, METH_NOARGS | METH_CLASS, ""}''',
+                            ready_code='''
+                               /* testing lazy type initialization */
+                               // if (PyType_Ready(&NativeBase_Type) < 0)
+                               //     return NULL;
+                               ''',
+                            )
+        NativeBase = NativeModule.get_NativeBase_type()
+        assert NativeBase
+        class ManagedType(NativeBase):
+            def __init__(self):
+                super(ManagedType, self).__init__("DummyModuleName")
+        assert ManagedType()
 
     def test_index(self):
         TestIndex = CPyExtType("TestIndex",
