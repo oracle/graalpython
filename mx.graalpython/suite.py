@@ -108,11 +108,11 @@ suite = {
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
         "XZ-1.8": {
-            "sha1": "c4f7d054303948eb6a4066194253886c8af07128",
+            "digest" : "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
             "maven": {
                 "groupId": "org.tukaani",
                 "artifactId": "xz",
-                "version": "1.8",
+                "version": "1.9",
             },
             "moduleName": "org.tukaani.xz",
         },
@@ -121,10 +121,10 @@ suite = {
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.6.tar.gz",
             ],
             "packedResource": True,
-            "sha1": "1b1acd2e62203a7abceee6f573f1a96cdf5fbc8f",
+            "digest": "sha512:090958dd6c202c989746686094c86707ad4ae835026640080fc0a9d0fad699821b7d5cb3a67e6700661a0938818ba153662366f89ab8ec47e0bae4a3fe9b1961",
         },
         "BOUNCYCASTLE-PROVIDER": {
-            "sha1": "46a080368d38b428d237a59458f9bc915222894d",
+            "digest": "sha512:b2d267e5d198a4c51318a53fa3cac5a769521f217ea69dd40c3d2372ea3a00d1245585f8916cad77c9a11d561aed04840c73c6095d785b598a385561f99af8ac",
             "sourceSha1": "c092c4f5af620ea5fd40a48d844c556826bebb63",
             "maven": {
               "groupId": "org.bouncycastle",
@@ -134,7 +134,7 @@ suite = {
             "moduleName": "org.bouncycastle.provider",
         },
         "BOUNCYCASTLE-PKIX": {
-            "sha1": "81da950604ff0b2652348cbd2b48fde46ced9867",
+            "digest": "sha512:1d18b43537370e0c7eb29332c9f9a4f0162f9bf68a79d6df3fb76080a8b96e1e378537e5a7aff481f2e1390cf45558b18679a1557ffd3c3b670b7ba1d625e8dd",
             "sourceSha1": "a5407438fed5d271f129d85e3f92cc027fa246a9",
             "maven": {
                 "groupId": "org.bouncycastle",
@@ -148,7 +148,7 @@ suite = {
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
             ],
             "packedResource": True,
-            "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
+            "digest": "sha512:083f5e675d73f3233c7930ebe20425a533feedeaaa9d8cc86831312a6581cefbe6ed0d08d2fa89be81082f2a5abdabca8b3c080bf97218a1bd59dc118a30b9f3",
         },
         "NETBEANS-LIB-PROFILER": {
             "moduleName": "org.netbeans.modules.org-netbeans-lib-profiler",
