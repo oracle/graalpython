@@ -11,9 +11,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_malformed_cert
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_malformed_key
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_openssl_version
-*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_all_sans
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert
-*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2013_4238
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_private_init
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_purpose_enum
