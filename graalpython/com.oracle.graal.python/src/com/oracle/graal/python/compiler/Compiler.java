@@ -2022,17 +2022,21 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(STORE_SUBSCR);
             }
         } else if (node.target instanceof ExprTy.Attribute) {
-            ExprTy.Attribute attr = (ExprTy.Attribute) node.target;
-            checkForbiddenName(attr.attr, ExprContextTy.Store);
-            if (attr.value != null) {
-                checkAnnExpr(attr.value);
+            if (node.value == null) {
+                ExprTy.Attribute attr = (ExprTy.Attribute) node.target;
+                checkForbiddenName(attr.attr, ExprContextTy.Store);
+                if (attr.value != null) {
+                    checkAnnExpr(attr.value);
+                }
             }
         } else if (node.target instanceof ExprTy.Subscript) {
-            ExprTy.Subscript subscript = (ExprTy.Subscript) node.target;
-            if (subscript.value != null) {
-                checkAnnExpr(subscript.value);
+            if (node.value == null) {
+                ExprTy.Subscript subscript = (ExprTy.Subscript) node.target;
+                if (subscript.value != null) {
+                    checkAnnExpr(subscript.value);
+                }
+                checkAnnSubscr(subscript.slice);
             }
-            checkAnnSubscr(subscript.slice);
         } else {
             errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
         }

@@ -98,3 +98,11 @@ def test_addAnnotation():
     m.addAnnotation('myKey', 10)
     assert len(m.addAnnotation.__annotations__) == 2
     assert 10 == m.addAnnotation.__annotations__['myKey']
+
+def test_annotatedAssignments():
+    import annotations.annotatedAssignments as m
+
+    assert m.slice_no_assign_count == 4
+    assert m.slice_assign_count == 4
+    assert m.attr_no_assign_count == 1
+    assert m.attr_assign_count == 1
