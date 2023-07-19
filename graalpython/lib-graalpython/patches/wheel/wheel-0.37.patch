@@ -1,0 +1,67 @@
+diff --git a/wheel/bdist_wheel.py b/wheel/bdist_wheel.py
+index 80e43d0..87a8370 100644
+--- a/wheel/bdist_wheel.py
++++ b/wheel/bdist_wheel.py
+@@ -101,6 +101,9 @@ def get_abi_tag():
+         # we want something like pypy36-pp73
+         abi = '-'.join(soabi.split('-')[:2])
+         abi = abi.replace('.', '_').replace('-', '_')
++    elif soabi and impl == "graalpy":
++        abi = "-".join(soabi.split("-")[:3])
++        abi = abi.replace(".", "_").replace("-", "_")
+     elif soabi:
+         abi = soabi.replace('.', '_').replace('-', '_')
+     else:
+diff --git a/wheel/vendored/packaging/tags.py b/wheel/vendored/packaging/tags.py
+index c2a140c..ac7b5b6 100644
+--- a/wheel/vendored/packaging/tags.py
++++ b/wheel/vendored/packaging/tags.py
+@@ -293,10 +293,44 @@ def cpython_tags(
+ 
+ 
+ def _generic_abi():
+-    # type: () -> Iterator[str]
+-    abi = sysconfig.get_config_var("SOABI")
+-    if abi:
+-        yield _normalize_string(abi)
++    """
++    Return the ABI tag based on EXT_SUFFIX.
++    """
++    # The following are examples of `EXT_SUFFIX`.
++    # We want to keep the parts which are related to the ABI and remove the
++    # parts which are related to the platform:
++    # - linux:   '.cpython-310-x86_64-linux-gnu.so' => cp310
++    # - mac:     '.cpython-310-darwin.so'           => cp310
++    # - win:     '.cp310-win_amd64.pyd'             => cp310
++    # - win:     '.pyd'                             => cp37 (uses _cpython_abis())
++    # - pypy:    '.pypy38-pp73-x86_64-linux-gnu.so' => pypy38_pp73
++    # - graalpy: '.graalpy-38-native-x86_64-darwin.dylib'
++    #                                               => graalpy_38_native
++
++    ext_suffix = _get_config_var("EXT_SUFFIX", warn=True)
++    if not isinstance(ext_suffix, str) or ext_suffix[0] != ".":
++        raise SystemError("invalid sysconfig.get_config_var('EXT_SUFFIX')")
++    parts = ext_suffix.split(".")
++    if len(parts) < 3:
++        # CPython3.7 and earlier uses ".pyd" on Windows.
++        return _cpython_abis(sys.version_info[:2])
++    soabi = parts[1]
++    if soabi.startswith("cpython"):
++        # non-windows
++        abi = "cp" + soabi.split("-")[1]
++    elif soabi.startswith("cp"):
++        # windows
++        abi = soabi.split("-")[0]
++    elif soabi.startswith("pypy"):
++        abi = "-".join(soabi.split("-")[:2])
++    elif soabi.startswith("graalpy"):
++        abi = "-".join(soabi.split("-")[:3])
++    elif soabi:
++        # pyston, ironpython, others?
++        abi = soabi
++    else:
++        return []
++    return [_normalize_string(abi)]
+ 
+ 
+ def generic_tags(

@@ -1,10 +1,30 @@
 [[rules]]
-# This version doesn't need a patch, but we want to pin it. Our virtualenv seeder pins setuptools and pip to the bundled
+# Always pin a specific version. Our virtualenv seeder pins setuptools and pip to the bundled
 # ones, so it makes sense to always pin wheel too to avoid it getting out of sync with setuptools.
-# TODO we should make 0.40 work
+version = '== 0.40.*'
+patch = 'wheel-0.40.patch'
+subdir = 'src'
+
+[[rules]]
 version = '== 0.38.*'
+patch = 'wheel-0.38.patch'
+subdir = 'src'
+install-priority = 0
+
+[[rules]]
+version = '>= 0.36, < 0.38'
+patch = 'wheel-0.37.patch'
+subdir = 'src'
+install-priority = 0
+
+[[rules]]
+version = '== 0.35.*'
+patch = 'wheel-0.35.patch'
+subdir = 'src'
+install-priority = 0
 
 [[rules]]
 version = '< 0.35'
 patch = 'wheel-pre-0.35.patch'
 subdir = 'src'
+install-priority = 0
