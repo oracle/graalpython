@@ -92,10 +92,10 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..0271d8a
+index 0000000..b8a506c
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,194 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -139,33 +139,6 @@ index 0000000..0271d8a
 +                    for rule in metadata['rules']:
 +                        if 'patch' in rule:
 +                            rule['patch'] = package_dir / rule['patch']
-+                else:
-+                    # TODO legacy structure, simplify when we get rid of ginstall
-+                    metadata['rules'] = []
-+                    for dist_type_dir in ('whl', 'sdist'):
-+                        typedir = package_dir / dist_type_dir
-+                        dist_type = 'sdist' if dist_type_dir == 'sdist' else 'wheel'
-+                        if typedir.is_dir():
-+                            files = sorted(typedir.iterdir(), key=lambda f: len(f.name), reverse=True)
-+                            for file in files:
-+                                if file.suffix == '.patch':
-+                                    if file.stem == denormalized_name:
-+                                        metadata['rules'].append({
-+                                            'patch': str(file),
-+                                            'dist-type': dist_type,
-+                                        })
-+                                    elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
-+                                        metadata['rules'].append({
-+                                            'version': f'== {version}.*',
-+                                            'patch': file,
-+                                            'dist-type': dist_type,
-+                                        })
-+                            for file in files:
-+                                if file.suffix == '.dir':
-+                                    with open(file) as f:
-+                                        subdir = f.read().strip()
-+                                    for rule in metadata['rules']:
-+                                        rule['subdir'] = subdir
 +                self._repository[normalized_name] = metadata
 +
 +    def get_rules(self, name):
