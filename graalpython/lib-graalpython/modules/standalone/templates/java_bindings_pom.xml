@@ -52,6 +52,7 @@
         <maven.jar.plugin.version>{mvn-jar-plugin}</maven.jar.plugin.version>
         <graal.sdk.version>{graal-sdk-version}</graal.sdk.version>
         <native.image.maven.plugin.version>{native-image-mvn-plugin}</native.image.maven.plugin.version>
+        <graalpy.executable>${env.JAVA_HOME}/bin/graalpy</graalpy.executable>
     </properties>
 
     <build>
@@ -67,21 +68,31 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>${env.JAVA_HOME}/bin/graalpy</executable>
+                            <executable>${graalpy.executable}</executable>
                             <arguments>
                                 <argument>-c</argument>
                                 <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/{vfs-prefix}', '${project.build.directory}/classes/{vfs-prefix}/{files-list-name}')</argument>
-                            </arguments>                            
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
-    
+
     <profiles>
         <profile>
-            <id>jar</id>      
+            <properties>
+                <graalpy.executable>${env.JAVA_HOME}/bin/graalpy.cmd</graalpy.executable>
+            </properties>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+        </profile>
+        <profile>
+            <id>jar</id>
             <dependencies>
                 <dependency>
                     <groupId>org.graalvm.sdk</groupId>
@@ -98,7 +109,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <addClasspath>true</addClasspath>                  
+                                    <addClasspath>true</addClasspath>
                                     <mainClass>Py2BinLauncher</mainClass>
                                 </manifest>
                             </archive>
@@ -118,7 +129,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <addClasspath>true</addClasspath>                  
+                                    <addClasspath>true</addClasspath>
                                     <mainClass>Py2BinLauncher</mainClass>
                                 </manifest>
                             </archive>

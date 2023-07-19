@@ -52,6 +52,7 @@
         <maven.jar.plugin.version>{mvn-jar-plugin}</maven.jar.plugin.version>
         <graal.sdk.version>{graal-sdk-version}</graal.sdk.version>
         <native.image.maven.plugin.version>{native-image-mvn-plugin}</native.image.maven.plugin.version>
+        <graalpy.executable>${env.JAVA_HOME}/bin/graalpy</graalpy.executable>
     </properties>
 
     <build>
@@ -80,7 +81,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>${env.JAVA_HOME}/bin/graalpy</executable>
+                            <executable>${graalpy.executable}</executable>
                             <arguments>
                                 <argument>-c</argument>
                                 <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/{vfs-prefix}', '${project.build.directory}/classes/{vfs-prefix}/{files-list-name}')</argument>
@@ -188,7 +189,16 @@
                 </plugins>
             </build>
         </profile>
-
+        <profile>
+            <properties>
+                <graalpy.executable>${env.JAVA_HOME}/bin/graalpy.cmd</graalpy.executable>
+            </properties>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+        </profile>
         <profile>
    	    <id>prepare-venv</id>
             <!-- create a python venv in resources/vfs if it does not exist yet -->
@@ -206,7 +216,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${env.JAVA_HOME}/bin/graalpy</executable>
+                                    <executable>${graalpy.executable}</executable>
                                     <arguments>
                                         <argument>-m</argument>
                                         <argument>venv</argument>
