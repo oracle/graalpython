@@ -45,46 +45,46 @@
 #include <graalvm/llvm/polyglot.h>
 #include "hpy.h"
 
-//#define DECLARE_TYPE_PUBLIC(typename) POLYGLOT_DECLARE_TYPE(typename) \
-//    polyglot_typeid graal_hpy_get_##typename##_typeid() {      \
-//        return polyglot_##typename##_typeid();                        \
-//    }
-//
-//typedef HPy (*HPyModule_init)(HPyContext ctx);
-//
-//DECLARE_TYPE_PUBLIC(HPyModule_init);
-//DECLARE_TYPE_PUBLIC(HPyFunc_noargs);
-//DECLARE_TYPE_PUBLIC(HPyFunc_o);
-//DECLARE_TYPE_PUBLIC(HPyFunc_varargs);
-//DECLARE_TYPE_PUBLIC(HPyFunc_keywords);
-//DECLARE_TYPE_PUBLIC(HPyFunc_unaryfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_binaryfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_ternaryfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_inquiry);
-//DECLARE_TYPE_PUBLIC(HPyFunc_lenfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_ssizeargfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_ssizessizeargfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_ssizeobjargproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_ssizessizeobjargproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_objobjargproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_freefunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_getattrfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_getattrofunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_setattrfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_setattrofunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_reprfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_hashfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_richcmpfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_getiterfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_iternextfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_descrgetfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_descrsetfunc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_initproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_getter);
-//DECLARE_TYPE_PUBLIC(HPyFunc_setter);
-//DECLARE_TYPE_PUBLIC(HPyFunc_objobjproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_getbufferproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_releasebufferproc);
-//DECLARE_TYPE_PUBLIC(HPyFunc_destroyfunc);
+#define DECLARE_TYPE_PUBLIC(typename) POLYGLOT_DECLARE_TYPE(typename) \
+    polyglot_typeid graal_hpy_get_##typename##_typeid() {      \
+        return polyglot_##typename##_typeid();                        \
+    }
+
+typedef HPy (*HPyModule_init)(HPyContext ctx);
+
+DECLARE_TYPE_PUBLIC(HPyModule_init);
+DECLARE_TYPE_PUBLIC(HPyFunc_noargs);
+DECLARE_TYPE_PUBLIC(HPyFunc_o);
+DECLARE_TYPE_PUBLIC(HPyFunc_varargs);
+DECLARE_TYPE_PUBLIC(HPyFunc_keywords);
+DECLARE_TYPE_PUBLIC(HPyFunc_unaryfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_binaryfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_ternaryfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_inquiry);
+DECLARE_TYPE_PUBLIC(HPyFunc_lenfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_ssizeargfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_ssizessizeargfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_ssizeobjargproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_ssizessizeobjargproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_objobjargproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_freefunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_getattrfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_getattrofunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_setattrfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_setattrofunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_reprfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_hashfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_richcmpfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_getiterfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_iternextfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_descrgetfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_descrsetfunc);
+DECLARE_TYPE_PUBLIC(HPyFunc_initproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_getter);
+DECLARE_TYPE_PUBLIC(HPyFunc_setter);
+DECLARE_TYPE_PUBLIC(HPyFunc_objobjproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_getbufferproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_releasebufferproc);
+DECLARE_TYPE_PUBLIC(HPyFunc_destroyfunc);
 
 #endif /* HPY_HPYTYPES_H_ */
