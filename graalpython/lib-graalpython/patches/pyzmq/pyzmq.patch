@@ -6,7 +6,7 @@ index 1908e16..89ec895 100644
      "setuptools",
      "wheel",
      "packaging",
-+    "cython",
++    "cython < 3",
      "cffi; implementation_name == 'pypy'",
  ]
  build-backend = "setuptools.build_meta"
