@@ -37,8 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-
 try:
     import __graalpython__
     managed_launcher = __graalpython__.is_managed_launcher()
@@ -51,7 +49,7 @@ def test_basic_functionality():
     The main sqlite3 test suite will be silently skipped if the 
     "_sqlite3" module is not available.
     """
-    if not managed_launcher and os.name != 'nt':
+    if not managed_launcher:
         import sqlite3
         import _sqlite3
         conn = sqlite3.connect(':memory:')
