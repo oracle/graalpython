@@ -381,7 +381,6 @@ public abstract class Python3Core {
         List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
-                        toTruffleStringUncached("bytearray"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("function"),
