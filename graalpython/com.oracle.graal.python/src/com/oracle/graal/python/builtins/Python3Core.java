@@ -55,6 +55,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -629,6 +630,8 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_DIGEST ? null : new Blake2bObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Blake2sObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
+
+                        new PyExpatModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
