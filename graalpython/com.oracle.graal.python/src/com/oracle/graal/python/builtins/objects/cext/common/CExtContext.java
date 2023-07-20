@@ -391,8 +391,9 @@ public abstract class CExtContext {
 
     private static boolean isForcedLLVM(String name) {
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 &&
-                ("_cpython_unicodedata".equals(name) || "_cpython_sre".equals(name) || "_sqlite3".equals(name))) {
-            // We build these internal extensions with the LLVM toolchain and link against the bitcode python-native,
+                        ("_cpython_unicodedata".equals(name) || "_cpython_sre".equals(name) || "_sqlite3".equals(name))) {
+            // We build these internal extensions with the LLVM toolchain and link against the
+            // bitcode python-native,
             // not the fully native pythonjni. We cannot load them natively on Windows like that.
             return true;
         }
