@@ -438,7 +438,7 @@ public class CApiMemberAccessNodes {
         static void write(Object pointer, Object newValue,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteIntNode write) {
-            write.write(pointer, (int) asLong.toUInt64(newValue, false));
+            write.write(pointer, (int) asLong.toUInt64(newValue, true));
         }
     }
 
@@ -536,9 +536,9 @@ public class CApiMemberAccessNodes {
             case T_USHORT:
                 return WriteShortNodeGen.create();
             case T_INT:
-                return WriteUIntNodeGen.create();
-            case T_UINT:
                 return WriteIntNodeGen.create();
+            case T_UINT:
+                return WriteUIntNodeGen.create();
             case T_LONG:
                 return WriteLongNodeGen.create();
             case T_FLOAT:
