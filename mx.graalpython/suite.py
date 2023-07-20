@@ -778,6 +778,7 @@ suite = {
                 "name" : "org.graalvm.py.launcher",
                 "exports" : [
                     "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell",
+                    "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
             "dependencies": [
@@ -786,8 +787,8 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-                "sdk:JLINE3",
             ],
+            "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
         },
 
