@@ -718,6 +718,12 @@ PyAPI_FUNC(void*) truffle_calloc(size_t size) {
 	return calloc(1, size);
 }
 
+// avoid problems with calling "void" intrinsics via interop
+PyAPI_FUNC(int) truffle_free(void* ptr) {
+	free(ptr);
+	return 1;
+}
+
 PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
     if (getsets || members) {
         GraalPyTruffle_Set_Native_Slots(managed_class, getsets, members);

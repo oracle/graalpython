@@ -169,7 +169,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     // ctypes
     FUN_STRLEN("strlen", SIZE_T, Pointer),
     FUN_MEMCPY("memcpy", Pointer, Pointer, Pointer, SIZE_T),
-    FUN_FREE("free", ArgDescriptor.Void, Pointer),
+    FUN_FREE("truffle_free", Int, Pointer),
     FUN_MEMMOVE("memmove", Pointer, Pointer, Pointer, SIZE_T),
     FUN_MEMSET("memset", Pointer, Pointer, Int, SIZE_T),
     FUN_CALLOC("truffle_calloc", Pointer, SIZE_T),
