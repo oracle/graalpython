@@ -502,7 +502,7 @@ class TestBasic(HPyTest):
         hpy_abi = self.compiler.hpy_abi
         if hpy_abi == 'cpython':
             assert ctx_name == 'HPy CPython ABI'
-        elif hpy_abi == 'universal' or hpy_abi == 'nfi':
+        elif hpy_abi == 'universal':
             # this can be "HPy Universal ABI (CPython backend)" or
             # "... (PyPy backend)", etc.
             assert ctx_name.startswith('HPy Universal ABI')

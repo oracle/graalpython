@@ -23,7 +23,6 @@
 
 from .support import HPyTest, make_hpy_abi_fixture
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestCPythonCompatibility(HPyTest):
 
     hpy_abi = make_hpy_abi_fixture('with hybrid', class_fixture=True)

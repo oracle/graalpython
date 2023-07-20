@@ -1079,7 +1079,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         abi_list = ['cpython', 'universal']
         if include_native:
             # modes 'debug' and 'nfi' can only be used if native access is allowed
-            abi_list.extend(['debug', 'nfi'])
+            abi_list.append('debug')
         for abi in abi_list:
             tenv = env.copy()
             tenv["TEST_HPY_ABI"] = abi
@@ -2116,20 +2116,20 @@ def _register_vms(namespace):
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        '--experimental-options', '--python.HPyBackend=NFI'
+        '--experimental-options', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=NFI']), SUITE, 10)
+        '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=JNI']), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context'] + SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--python.HPyBackend=NFI'
+        '--experimental-options', '-multi-context', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false', '--python.HPyBackend=NFI'
+        '--experimental-options', '-multi-context', '--engine.Compilation=false', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=NFI'
+        '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
 
     # java embedding driver

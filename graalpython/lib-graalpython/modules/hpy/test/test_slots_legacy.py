@@ -30,17 +30,14 @@ from .test_slots import TestSlots as _TestSlots, TestSqSlots as _TestSqSlots
 
 hpy_abi = make_hpy_abi_fixture('with hybrid')
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestLegacySlots(_TestSlots):
     ExtensionTemplate = LegacyPointTemplate
 
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestLegacySqSlots(_TestSqSlots):
     ExtensionTemplate = LegacyPointTemplate
 
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestCustomLegacySlotsFeatures(HPyTest):
 
     def test_legacy_slots(self):

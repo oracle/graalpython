@@ -29,9 +29,6 @@ from .support import ExtensionCompiler, DefaultExtensionTemplate,\
 from hpy.debug.leakdetector import LeakDetector
 from pathlib import Path
 
-SELECTED_ABI_MODE = os.environ.get("TEST_HPY_ABI", None)
-if SELECTED_ABI_MODE:
-    SELECTED_ABI_MODE = [SELECTED_ABI_MODE]
 IS_VALGRIND_RUN = False
 def pytest_addoption(parser):
     parser.addoption(
@@ -75,7 +72,11 @@ def pytest_runtest_setup(item):
 
 # this is the default set of hpy_abi for all the tests. Individual files and
 # classes can override it.
-hpy_abi = make_hpy_abi_fixture('default')
+SELECTED_ABI_MODE = os.environ.get("TEST_HPY_ABI", None)
+if SELECTED_ABI_MODE:
+    hpy_abi = make_hpy_abi_fixture([SELECTED_ABI_MODE])
+else:
+    hpy_abi = make_hpy_abi_fixture('default')
 
 
 @pytest.fixture(scope='session')
@@ -117,12 +118,6 @@ def compiler(request, tmpdir, hpy_devel, hpy_abi, ExtensionTemplate):
                              compiler_verbose=compiler_verbose,
                              dump_dir=dump_dir,
                              ExtensionTemplate=ExtensionTemplate)
-
-@pytest.fixture()
-def skip_nfi(hpy_abi):
-    # skip all tests in this class for NFI mode
-    if hpy_abi == 'nfi':
-        pytest.skip()
 
 
 @pytest.fixture()

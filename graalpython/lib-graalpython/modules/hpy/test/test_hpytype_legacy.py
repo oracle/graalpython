@@ -58,7 +58,6 @@ class LegacyPointTemplate(PointTemplate):
         return ".builtin_shape = HPyType_BuiltinShape_Legacy,"
 
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestLegacyType(_TestType):
 
     ExtensionTemplate = LegacyPointTemplate
@@ -283,7 +282,6 @@ class TestLegacyType(_TestType):
                 @INIT
             """)
 
-@pytest.mark.usefixtures('skip_nfi')
 class TestCustomLegacyFeatures(HPyTest):
 
     def test_legacy_methods(self):

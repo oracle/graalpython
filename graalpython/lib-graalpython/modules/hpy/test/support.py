@@ -339,6 +339,7 @@ class ExtensionCompiler:
         else:
             compile_args = [
                 '-g',                # TRUFFLE CHANGE: we removed '-O0' for mem2reg opt
+                '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Wfatal-errors',    # stop after one error (unrelated to warnings)
                 '-Werror',           # turn warnings into errors (all, for now)
             ]
@@ -441,7 +442,7 @@ class PythonSubprocessRunner:
         if 'PYTHONPATH' in env:
             pythonpath.append(env['PYTHONPATH'])
         env["PYTHONPATH"] = os.pathsep.join(pythonpath)
-        if self.hpy_abi in ['universal', 'debug', 'nfi']:
+        if self.hpy_abi in ['universal', 'debug']:
             # HPy module
             load_module = "import sys;" + \
                           "import hpy.universal;" + \

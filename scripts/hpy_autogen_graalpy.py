@@ -991,6 +991,7 @@ LLVM_HPY_BACKEND_CLASS = 'GraalHPyLLVMContext'
 # The name of the native HPy context (will be used for HPyContext.name)
 LLVM_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, LLVM)'
 
+AUTOGEN_CTX_INIT_H_FILE = 'autogen_ctx_init.h'
 
 def get_signature_type(type):
     """
@@ -1166,6 +1167,40 @@ class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
         return '\n'.join(parts)
 
 
+class autogen_llvm_upcall_wrappers(GraalPyAutoGenFile):
+    """
+    Generates the
+    """
+    PATH = 'graalpython/com.oracle.graal.python.cext/hpy/autogen_llvm_wrappers.c'
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w('#include "hpynative.h"')
+        w('')
+        w('#define COPY(MEMBER) native_ctx->MEMBER = managed_ctx->MEMBER')
+        w('')
+
+        # start of 'init_autogen_jni_ctx'
+        w(f'_HPy_HIDDEN int init_autogen_llvm_ctx(HPyContext *managed_ctx, HPyContext *native_ctx)')
+        w('{')
+
+        # initialize context handles
+        for var in self.api.variables:
+            w(f'    COPY({var.ctx_name()});')
+        w('')
+
+        # initialize context function pointers
+        for func in self.api.functions:
+            if func.name not in NO_WRAPPER:
+                w(f'    COPY({func.ctx_name()});')
+        w(f'    return 0;')
+
+        w('}')
+        w('')
+        return '\n'.join(lines)
+
+
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
               autogen_ctx_jni,
@@ -1177,4 +1212,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_member_enum,
               autogen_ctx_llvm_init,
               autogen_ctx_function_factory,
-              autogen_llvm_trampolines_h)
+              autogen_llvm_trampolines_h,
+              autogen_llvm_upcall_wrappers)
