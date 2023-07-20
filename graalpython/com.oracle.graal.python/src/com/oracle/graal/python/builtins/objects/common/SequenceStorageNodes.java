@@ -2866,7 +2866,8 @@ public abstract class SequenceStorageNodes {
                         @Cached CStructAccess.WriteByteNode write,
                         @Cached CStructAccess.FreeNode free,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (cap > s.getCapacity()) {
+            int capacity = s.getCapacity();
+            if (cap > capacity) {
                 int newCapacity;
                 try {
                     newCapacity = Math.max(16, PythonUtils.multiplyExact(cap, 2));
@@ -2881,7 +2882,7 @@ public abstract class SequenceStorageNodes {
                     throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
                 // TODO: turn this into a memcpy
-                for (long i = 0; i < bytes; i++) {
+                for (long i = 0; i < capacity; i++) {
                     write.writeArrayElement(newMem, i, read.readArrayElement(mem, i));
                 }
                 free.free(mem);
