@@ -207,7 +207,7 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization
         static long doInt(int value) {
-            return value;
+            return value & 0xFFFFFFFFL;
         }
 
         @Specialization

@@ -392,9 +392,6 @@ class EnvBuilder:
         # intended for the global Python environment
         cmd = [context.env_exec_cmd, '-Im', 'ensurepip', '--upgrade',
                                                          '--default-pip']
-        # Truffle change for windows bug on graalpy.
-        if sys.platform == 'win32':
-            os.environ['_PIP_STANDALONE_CERT'] = "."
         try:
             subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
