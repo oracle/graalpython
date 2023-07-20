@@ -146,6 +146,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //
+                internalResources = PythonResource.class, //
                 website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,

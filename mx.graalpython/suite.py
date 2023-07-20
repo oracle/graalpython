@@ -348,14 +348,12 @@ suite = {
                 # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
-                "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
-                "GRAALPYTHON_PYTHON_LIB",
             ],
         },
 
@@ -737,6 +735,7 @@ suite = {
         "python-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3",
+            "type": "dir",
             "prefix": "",
             "ignorePatterns": [
                 ".pyc",
@@ -796,16 +795,11 @@ suite = {
         "GRAALPYTHON_NATIVE_LIBS" : {
             "native": True,
             "platformDependent": True,
-            "platforms": [
-                "linux-amd64",
-                "linux-aarch64",
-                "darwin-amd64",
-                "windows-amd64",
-            ],
+            "type": "dir",
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "dependencies": [
+                        "buildDependencies": [
                             "com.oracle.graal.python.cext",
                             "com.oracle.graal.python.jni",
                             "com.oracle.graal.python.hpy.llvm"
@@ -821,7 +815,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "dependencies": [
+                        "buildDependencies": [
                             "com.oracle.graal.python.cext",
                             "com.oracle.graal.python.jni",
                             "python-libzsupport",
@@ -869,9 +863,12 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python",
                 "com.oracle.graal.python.frozen",
+                "GRAALPYTHON_LIBPYTHON_RESOURCES",
+                "GRAALPYTHON_LIBGRAALPY_RESOURCES",
+                "GRAALPYTHON_INCLUDE_RESOURCES",
+                "GRAALPYTHON_NATIVE_RESOURCES",
             ],
             "distDependencies": [
-                "GRAALPYTHON_NATIVE_LIBS",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
@@ -905,14 +902,6 @@ suite = {
             ],
             "description": "GraalPython Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
-        },
-
-        "GRAALPYTHON_PYTHON_LIB": {
-            "native": True, # makes this a tar archive
-            "relpath": True, # relpath for tar archives is False but probably should be True
-            "dependencies": ["python-lib", "python-test-support-lib"],
-            "description": "Python 3 lib files",
-            "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {
@@ -955,12 +944,84 @@ suite = {
             "testDistribution": True,
         },
 
-        "GRAALPYTHON_GRAALVM_SUPPORT": {
+        # Now come the different resource projects. These all end up bundled
+        # together in a Jar, but they each have different extraction targets
+        # depending on the platform.
+
+        # The Python standard library. On Windows the Java code will extract
+        # this to "/Lib", on Unix to "/lib/python<py_ver:major_minor>/"
+        "GRAALPYTHON_LIBPYTHON_RESOURCES": {
+            "native": False,
+            "platformDependent": False,
+            "hashEntry" :  "META-INF/resources/libpython.sha256",
+            "fileListEntry" : "META-INF/resources/libpython.files",
+            "type": "dir",
+            "description": "GraalVM Python lib-python resources",
+            "layout": {
+                "./META-INF/resources/libpython/": [
+                    "dependency:graalpython:python-lib/*",
+                    "dependency:graalpython:python-test-support-lib/*",
+                ],
+            },
+        },
+
+        # The GraalPy core library. On Windows the Java code will extract this
+        # to "/lib-graalpython", on Unix to "/lib/graalpy<graal_ver:major_minor>/"
+        "GRAALPYTHON_LIBGRAALPY_RESOURCES": {
+            "native": False,
+            "platformDependent": False,
+            "hashEntry" :  "META-INF/resources/libgraalpy.sha256",
+            "fileListEntry" : "META-INF/resources/libgraalpy.files",
+            "type": "dir",
+            "description": "GraalVM Python lib-graalpython resources",
+            "buildDependencies": [
+                "graalpy_virtualenv",
+            ],
+            "layout": {
+                "./META-INF/resources/libgraalpy/": [
+                    "file:graalpython/lib-graalpython/*",
+                ],
+                "./META-INF/resources/libgraalpy/modules/graalpy_virtualenv": [
+                    "file:graalpy_virtualenv/graalpy_virtualenv",
+                ],
+            },
+        },
+
+        # The Python and HPy headers. These go to "/include" on all platforms.
+        "GRAALPYTHON_INCLUDE_RESOURCES": {
+            "native": False,
+            "platformDependent": False,
+            "hashEntry" :  "META-INF/resources/include.sha256",
+            "fileListEntry" : "META-INF/resources/include.files",
+            "type": "dir",
+            "description": "GraalVM Python header resources",
+            "buildDependencies": [
+                "GRAALPYTHON_NATIVE_LIBS",
+                "com.oracle.graal.python.cext",
+                "com.oracle.graal.python.hpy.llvm",
+            ],
+            "layout": {
+                "./META-INF/resources/": [
+                    "file:mx.graalpython/native-image.properties",
+                ],
+                "./META-INF/resources/include/": [
+                    "file:graalpython/com.oracle.graal.python.cext/include/*",
+                    "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
+                ],
+            },
+        },
+
+        # The native libraries we ship. These are platform specific, and even
+        # the names of libraries are platform specific. So we already put them
+        # in the right folder structure here
+        "GRAALPYTHON_NATIVE_RESOURCES": {
             "native": True,
             "platformDependent": True,
-            "fileListPurpose": 'native-image-resources',
-            "description": "GraalVM Python support distribution for the GraalVM",
-            "dependencies": [
+            "hashEntry" :  "META-INF/resources/<os>/<arch>/native.sha256",
+            "fileListEntry" : "META-INF/resources/<os>/<arch>/native.files",
+            "type": "dir",
+            "description": "GraalVM Python platform dependent resources",
+            "buildDependencies": [
                 "GRAALPYTHON_NATIVE_LIBS",
                 "com.oracle.graal.python.cext",
                 "com.oracle.graal.python.hpy.llvm"
@@ -969,31 +1030,17 @@ suite = {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "./": [
-                                "file:mx.graalpython/native-image.properties",
+                            "./META-INF/resources/<os>/<arch>/libs/": [
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
                             ],
-                            "./Lib/": [
-                                "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
-                            ],
-                            "./libs/": [
-                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
-                            ],
-                            "./lib-graalpython/": [
+                            "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
                                 {
-                                    "source_type": "extracted-dependency",
+                                    "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
                                     "path": "*",
-                                    "exclude": ["pythonjni.lib"],
+                                    "exclude": ["python-native.lib"],
                                 },
-                                "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
-                            ],
-                            "./lib-graalpython/modules/graalpy_virtualenv": [
-                                "file:graalpy_virtualenv/graalpy_virtualenv",
-                            ],
-                            "./Include/": [
-                                "file:graalpython/com.oracle.graal.python.cext/include/*",
-                                "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
                             ],
                         },
                     },
@@ -1001,22 +1048,67 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "layout": {
-                            "./": [
-                                "file:mx.graalpython/native-image.properties",
+                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/*",
                             ],
+                        },
+                    },
+                },
+            },
+            "maven": False,
+        },
+
+        # This puts the resources above into their platform specific folders at
+        # build time. This is for the usage by mx and the SDK when building
+        # standalones. The layouts should be exactly equivalent to what
+        # PythonResource.java produces.
+        "GRAALPYTHON_GRAALVM_SUPPORT": {
+            "native": True,
+            "platformDependent": True,
+            "fileListPurpose": 'native-image-resources',
+            "description": "GraalVM Python support distribution for the GraalVM",
+            "platforms" : [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
+            "buildDependencies": [
+                "GRAALPYTHON_LIBPYTHON_RESOURCES",
+                "GRAALPYTHON_LIBGRAALPY_RESOURCES",
+                "GRAALPYTHON_INCLUDE_RESOURCES",
+                "GRAALPYTHON_NATIVE_RESOURCES",
+            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "layout": {
+                            "./Lib/": [
+                                "dependency:GRAALPYTHON_LIBPYTHON_RESOURCES/META-INF/resources/libpython/*",
+                            ],
+                            "./lib-graalpython/": [
+                                "dependency:GRAALPYTHON_LIBGRAALPY_RESOURCES/META-INF/resources/libgraalpy/*",
+                            ],
+                            "./": [
+                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/*",
+                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
+                            ],
+                        },
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "layout": {
                             "./lib/python<py_ver:major_minor>/": [
-                                "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
+                                "dependency:GRAALPYTHON_LIBPYTHON_RESOURCES/META-INF/resources/libpython/*",
                             ],
                             "./lib/graalpy<graal_ver:major_minor>/": [
-                                "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/*",
+                                "dependency:GRAALPYTHON_LIBGRAALPY_RESOURCES/META-INF/resources/libgraalpy/*",
                             ],
-                            "./lib/graalpy<graal_ver:major_minor>/modules/graalpy_virtualenv": [
-                                "file:graalpy_virtualenv/graalpy_virtualenv",
-                            ],
-                            "./include/python<py_ver:major_minor>/": [
-                                "file:graalpython/com.oracle.graal.python.cext/include/*",
-                                "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
+                            "./": [
+                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/*",
+                                "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
                             ],
                         },
                     },
@@ -1026,7 +1118,8 @@ suite = {
         },
 
         "GRAALPY_VIRTUALENV": {
-            "native": True,
+            "native": True, # so it produces a tar, not a jar file
+            "platformDependent": False,
             "maven": False,
             "description": "graalpy-virtualenv plugin sources usable to be installed into other interpreters",
             "layout": {

@@ -98,6 +98,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.PythonResource;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
@@ -1678,7 +1679,7 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    private TruffleString sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
+    private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
@@ -1721,25 +1722,44 @@ public final class PythonContext extends Python3Core {
             home = null;
         }
 
-        if (home != null) {
+        Supplier<?>[] homeCandidates = new Supplier<?>[] {
+            () -> { return home; },
+            () -> {
+                try {
+                    return newEnv.getInternalResource(PythonResource.class).getAbsoluteFile();
+                } catch (IOException e) {
+                    return null;
+                }
+            }
+        };
+        for (Supplier<?> homeCandidateSupplier : homeCandidates) {
+            final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
+            if (homeCandidate == null) {
+                continue;
+            }
+            boolean homeSeemsValid = !coreHome.isEmpty() && !stdLibHome.isEmpty();
+
+            langHome = toTruffleStringUncached(homeCandidate.toString());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
+                sysPrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
+                basePrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             }
 
             if (coreHome.isEmpty()) {
                 try {
-                    outer: for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : homeCandidate.list()) {
                         if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
                             coreHome = toTruffleStringUncached(f.getPath());
+                            homeSeemsValid = true;
                             break;
                         } else if (f.getName().equals("lib") && f.isDirectory()) {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR) && f.isDirectory()) {
                                     coreHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1752,7 +1772,7 @@ public final class PythonContext extends Python3Core {
             if (stdLibHome.isEmpty()) {
                 // try stdlib layouts per sysconfig or our sources
                 try {
-                    outer: for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : homeCandidate.list()) {
                         if (getPythonOS() == PLATFORM_WIN32 && (f.getName().equals("Lib") || f.getName().equals("lib")) && f.isDirectory()) {
                             // nt stdlib layout
                             stdLibHome = toTruffleStringUncached(f.getPath());
@@ -1761,6 +1781,7 @@ public final class PythonContext extends Python3Core {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR) && f.isDirectory()) {
                                     stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1769,6 +1790,7 @@ public final class PythonContext extends Python3Core {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("3") && f.isDirectory()) {
                                     stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1784,6 +1806,18 @@ public final class PythonContext extends Python3Core {
 
             if (jniHome.isEmpty()) {
                 jniHome = coreHome;
+            }
+
+            if (homeSeemsValid) {
+                break;
+            } else {
+                // reset values
+                sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
+                basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
+                coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
+                stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+                capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+                jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
             }
         }
 
@@ -1810,8 +1844,16 @@ public final class PythonContext extends Python3Core {
                         "\n\tStdLibHome: {4}" +
                         "\n\tExecutable: {5}" +
                         "\n\tCAPI: {6}" +
-                        "\n\tJNI library: {7}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
+                        "\n\tJNI library: {7}", langHome, sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
                         jniHome));
+    }
+
+    @TruffleBoundary
+    public TruffleString getLanguageHome() {
+        if (langHome == null || langHome.isEmpty()) {
+            langHome = T_PREFIX;
+        }
+        return langHome;
     }
 
     @TruffleBoundary
@@ -1826,13 +1868,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public TruffleString getSysBasePrefix() {
         if (basePrefix.isEmpty()) {
-            String homePrefix = getLanguage().getHome();
-            if (homePrefix == null || homePrefix.isEmpty()) {
-                basePrefix = T_PREFIX;
-            } else {
-                basePrefix = toTruffleStringUncached(homePrefix);
-            }
-
+            basePrefix = getLanguageHome();
         }
         return basePrefix;
     }
@@ -2294,15 +2330,13 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public boolean isPyFileInLanguageHome(TruffleFile path) {
         assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
-        String languageHome = getLanguage().getHome();
-
         // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
         // allowed.
-        if (languageHome != null) {
+        if (langHome != null) {
             // This deliberately uses 'getAbsoluteFile' and not 'getCanonicalFile' because if, e.g.,
             // 'path' is a symlink outside of the language home, the user should not be able to read
             // the symlink if 'allowIO' is false.
-            TruffleFile coreHomePath = env.getInternalTruffleFile(languageHome).getAbsoluteFile();
+            TruffleFile coreHomePath = getEnv().getInternalTruffleFile(langHome.toJavaStringUncached()).getAbsoluteFile();
             TruffleFile absolutePath = path.getAbsoluteFile();
             return absolutePath.startsWith(coreHomePath);
         }
