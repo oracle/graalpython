@@ -399,7 +399,7 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyBytes_AsString extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doBytes(PBytes bytes) {
-            return new PySequenceArrayWrapper(bytes, 1);
+            return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }
 
         @Specialization

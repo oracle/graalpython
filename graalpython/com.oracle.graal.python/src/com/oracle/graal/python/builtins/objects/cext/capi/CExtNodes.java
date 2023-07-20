@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -526,31 +525,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, boolean copy,
-                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             CompilerAsserts.partialEvaluationConstant(copy);
             byte[] byteArray = cByteArrayWrapper.getByteArray();
             return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.UTF_8, copy), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, boolean copy,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            CompilerAsserts.partialEvaluationConstant(copy);
-            Object delegate = obj.getDelegate();
-            boolean needs_copy;
-            if (delegate instanceof PBytes) {
-                // 'bytes' objects are immutable, so we can safely avoid a copy of the content
-                needs_copy = false;
-            } else if (delegate instanceof PByteArray) {
-                needs_copy = copy;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.UTF_8, needs_copy), TS_ENCODING);
         }
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")

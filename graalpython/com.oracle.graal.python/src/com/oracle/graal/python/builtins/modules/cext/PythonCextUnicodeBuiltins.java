@@ -967,7 +967,7 @@ public final class PythonCextUnicodeBuiltins {
                 PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 s.setUtf8Bytes(bytes);
             }
-            return new PySequenceArrayWrapper(s.getUtf8Bytes(), 1);
+            return PySequenceArrayWrapper.ensureNativeSequence(s.getUtf8Bytes());
         }
 
         @Fallback
@@ -998,7 +998,7 @@ public final class PythonCextUnicodeBuiltins {
                 PBytes bytes = asWideCharNode.executeNativeOrder(s, CStructs.wchar_t.size());
                 s.setWCharBytes(bytes);
             }
-            return new PySequenceArrayWrapper(s.getWCharBytes(), 1);
+            return PySequenceArrayWrapper.ensureNativeSequence(s.getWCharBytes());
         }
 
         @Fallback

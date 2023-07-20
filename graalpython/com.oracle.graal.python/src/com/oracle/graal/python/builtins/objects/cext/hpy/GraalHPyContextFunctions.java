@@ -2047,8 +2047,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Cached PRaiseNode raiseNode) {
-            if (object instanceof PBytes) {
-                return new PySequenceArrayWrapper(object, 1);
+            if (object instanceof PBytes bytes) {
+                return PySequenceArrayWrapper.ensureNativeSequence(bytes);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, object);
         }

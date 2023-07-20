@@ -57,16 +57,13 @@ import java.nio.charset.StandardCharsets;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -486,17 +483,6 @@ public abstract class CExtCommonNodes {
         @Specialization
         static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
             return subRangeIfNeeded(obj.getByteArray(), n);
-        }
-
-        @Specialization
-        static byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            Object delegate = obj.getDelegate();
-            if (delegate instanceof PBytesLike) {
-                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                return subRangeIfNeeded(bytes, n);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Specialization

@@ -163,7 +163,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -178,7 +177,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
@@ -188,14 +186,9 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PSequence_ob_item extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PSequence object,
-                        @Cached("createClassProfile()") ValueProfile classProfile) {
-            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
-            assert !(sequenceStorage instanceof NativeByteSequenceStorage);
-            if (sequenceStorage instanceof NativeObjectSequenceStorage) {
-                return ((NativeObjectSequenceStorage) sequenceStorage).getPtr();
-            }
-            return new PySequenceArrayWrapper(object, 4);
+        static Object get(PSequence object) {
+            assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
+            return PySequenceArrayWrapper.ensureNativeSequence(object);
         }
     }
 
@@ -276,7 +269,12 @@ public final class PythonCextSlotBuiltins {
         static Object get(Object object,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
             int elementSize = CStructs.wchar_t.size();
-            return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize), elementSize);
+            /*
+             * TODO: the string might get GC'd, since the object isn't referenced from anywhere. The
+             * proper solution needs to differentiate here, and maybe use the "toNative" of
+             * TruffleString.
+             */
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, elementSize));
         }
     }
 
@@ -344,14 +342,9 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyByteArrayObject_ob_start extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object doObStart(PByteArray object,
-                        @Cached("createClassProfile()") ValueProfile classProfile) {
-            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
-            assert !(sequenceStorage instanceof NativeObjectSequenceStorage);
-            if (sequenceStorage instanceof NativeByteSequenceStorage) {
-                return ((NativeByteSequenceStorage) sequenceStorage).getPtr();
-            }
-            return new PySequenceArrayWrapper(object, 1);
+        static Object doObStart(PByteArray object) {
+            assert !(object.getSequenceStorage() instanceof NativeObjectSequenceStorage);
+            return PySequenceArrayWrapper.ensureNativeSequence(object);
         }
     }
 
@@ -733,13 +726,11 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static Object get(PString object,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
-            int elementSize = CStructs.wchar_t.size();
-
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
                 return object.getNativeCharSequence().getPtr();
             }
-            return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize), elementSize);
+            return PySequenceArrayWrapper.ensureNativeSequence(asWideCharNode.executeNativeOrder(object, CStructs.wchar_t.size()));
         }
     }
 
