@@ -50,6 +50,7 @@ import java.io.PrintStream;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -95,6 +97,8 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract Object loadExtensionLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException;
 
+    protected abstract HPyABIVersion getHPyABIVersion(Object extLib, String getMajorVersionFuncName, String getMinorVersionFuncName) throws Exception;
+
     /**
      * Execute an HPy extension's init function and return the raw result value.
      *
@@ -107,7 +111,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
      * @return The bare (unconverted) result of the HPy extension's init function. This will be a
      *         handle that was created with the given {@code hpyContext}.
      */
-    protected abstract Object initHPyModule(Object extLib, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected abstract Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, boolean debug)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException;
 
     protected abstract HPyUpcall[] getUpcalls();

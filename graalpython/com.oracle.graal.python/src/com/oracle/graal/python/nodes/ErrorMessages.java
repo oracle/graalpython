@@ -191,7 +191,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_IMPORT_NAME = tsLiteral("cannot import name '%s' from '%s' (%s)");
     public static final TruffleString CANNOT_IMPORT_NAME_CIRCULAR = tsLiteral("cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)");
     public static final TruffleString CANNOT_INITIALIZE_WITH = tsLiteral("cannot initialize %s with %s%s");
-    public static final TruffleString CANNOT_INITIALIZE_EXT_NO_ENTRY = tsLiteral("cannot initialize extension '%s' at path '%s', entry point '%s' not found");
     public static final TruffleString CANNOT_LOAD = tsLiteral("cannot load %s: %s");
     public static final TruffleString CANNOT_LOAD_M = tsLiteral("cannot load %s: %m");
     public static final TruffleString CANNOT_RELEASE_UNAQUIRED_LOCK = tsLiteral("cannot release un-acquired lock");
@@ -359,7 +358,6 @@ public abstract class ErrorMessages {
     public static final TruffleString GOT_UNEXPECTED_KEYWORD_ARG = tsLiteral("%s() got an unexpected keyword argument '%s'");
     public static final TruffleString HANDLER_MUST_BE_CALLABLE = tsLiteral("handler must be callable");
     public static final TruffleString HAS_NO_ATTR = tsLiteral("%s has no attribute %s");
-    public static final TruffleString HPY_NEW_ARG_1_MUST_BE_A_TYPE = tsLiteral("HPy_New arg 1 must be a type");
     public static final TruffleString P_HAS_NO_ATTRS_S_TO_ASSIGN = tsLiteral("'%p' object has no attributes (assign to .%s)");
     public static final TruffleString P_HAS_NO_ATTRS_S_TO_DELETE = tsLiteral("'%p' object has no attributes (del .%s)");
     public static final TruffleString P_HAS_RO_ATTRS_S_TO_ASSIGN = tsLiteral("'%p' object has only read-only attributes (assign to .%s)");
@@ -830,7 +828,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = tsLiteral("Alternate form (#) not allowed in string format specifier");
     public static final TruffleString CAPI_LOAD_ERROR = tsLiteral("Could not load C API from %s.");
     public static final TruffleString NATIVE_ACCESS_NOT_ALLOWED = tsLiteral("Cannot run any C extensions because native access is not allowed.");
-    public static final TruffleString HPY_LOAD_ERROR = tsLiteral("Could not load HPy C API.");
     public static final TruffleString CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = tsLiteral("can't convert negative value to unsigned int");
     public static final TruffleString SEND_NON_NONE_TO_UNSTARTED_GENERATOR = tsLiteral("can't send non-None value to a just-started generator");
     public static final TruffleString UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = tsLiteral("unsupported format string passed to %p.__format__");
@@ -1002,7 +999,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
-    public static final TruffleString ERROR_LOADING_HPY_EXT_S_S = tsLiteral("Error during loading of the HPy extension module at path '%s'. Function HPyInit_'%s' returned NULL.");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1385,7 +1381,6 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_STRUCT_MEMBER = tsLiteral("Invalid struct member '%s'");
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
     public static final TruffleString FIELD_DID_NOT_RETURN_ARRAY = tsLiteral("field '%s' did not return an array");
-    public static final TruffleString HPY_CAPI_SYM_NOT_CALLABLE = tsLiteral("HPy C API symbol %s is not callable");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
     public static final TruffleString UNSUPPORTED_HYPMETH_SIG = tsLiteral("Unsupported HPyMeth signature");
     public static final TruffleString CANNOT_READ_FIELD_NAME_FROM_MEMBER_DEF = tsLiteral("Cannot read field 'name' from member definition");
@@ -1400,8 +1395,6 @@ public abstract class ErrorMessages {
     public static final TruffleString LEG_TYPE_SHOULDNT_INHERIT_MEM_LAYOUT_FROM_PURE_TYPE = tsLiteral("A legacy type should not inherit its memory layout from a pure type");
     public static final TruffleString CANNOT_ACCESS_IDX = tsLiteral("Cannot access index %d although array should have size %d ");
     public static final TruffleString CANNOT_READ_HANDLE_VAL = tsLiteral("Cannot read handle value");
-    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL = tsLiteral("HPy_CallTupleDict requires args to be a tuple or null handle");
-    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL = tsLiteral("HPy_CallTupleDict requires kw to be a dict or null handle");
     public static final TruffleString NAME_MUST_BE_MOD_CLS = tsLiteral("name must be module.class");
     public static final TruffleString FUNC_S_DIDNT_RETURN_INT = tsLiteral("function '%s' did not return an integer.");
     public static final TruffleString CANNOT_READ_C_ARRAY = tsLiteral("Cannot read C array");
@@ -1449,19 +1442,32 @@ public abstract class ErrorMessages {
     public static final TruffleString CAPSULE_GETDESTRUCTOR_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetDestructor called with invalid PyCapsule object");
     public static final TruffleString MSG_NOT_SET = tsLiteral("<message not set>");
 
-    public static final TruffleString HPY_DEBUG_MODE_NOT_AVAILABLE = tsLiteral("HPy debug mode is not available");
 
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
-    public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
     public static final TruffleString TOKEN_ALREADY_USED = tsLiteral("%s has already been used once");
 
     public static final TruffleString NULL_ARG_INTERNAL = tsLiteral("null argument to internal routine");
 
+    // HPy
+
+    public static final TruffleString HPY_NEW_ARG_1_MUST_BE_A_TYPE = tsLiteral("HPy_New arg 1 must be a type");
+    public static final TruffleString HPY_LOAD_ERROR = tsLiteral("Could not load HPy C API.");
+    public static final TruffleString ERROR_LOADING_HPY_EXT_S_S = tsLiteral("Error during loading of the HPy extension module at path '%s'. Function HPyInit_'%s' returned NULL.");
+    public static final TruffleString HPY_CAPI_SYM_NOT_CALLABLE = tsLiteral("HPy C API symbol %s is not callable");
+    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL = tsLiteral("HPy_CallTupleDict requires args to be a tuple or null handle");
+    public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL = tsLiteral("HPy_CallTupleDict requires kw to be a dict or null handle");
+    public static final TruffleString CANNOT_INITIALIZE_EXT_NO_ENTRY = tsLiteral("cannot initialize extension '%s' at path '%s', entry point '%s' not found");
+    public static final TruffleString HPY_DEBUG_MODE_NOT_AVAILABLE = tsLiteral("HPy debug mode is not available");
+    public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
     public static final TruffleString HPY_MOD_CREATE_RETURNED_BUILTIN_MOD = tsLiteral("HPy_mod_create slot returned a builtin module object. This is currently not supported.");
     public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
     public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
     public static final TruffleString HPY_MODE_VALUE_MUST_BE_STRING = tsLiteral("Value of HPy mode environment variable must be a string");
     public static final TruffleString HPY_METACLASS_IS_NOT_A_TYPE = tsLiteral("Metaclass '%s' is not a subclass of 'type'.");
+    public static final TruffleString HPY_ERROR_LOADING_EXT_MODULE = tsLiteral("Error during loading of the HPy extension module at path '%s'. Cannot locate the required minimal HPy versions as symbols '%s' and `%s`. Error message from dlopen/WinAPI: %s");
+    public static final TruffleString HPY_ABI_VERSION_ERROR = tsLiteral("HPy extension module '%s' requires unsupported version of the HPy runtime. Requested version: %d.%d. Current HPy version: %d.%d.");
+    public static final TruffleString HPY_ABI_TAG_MISMATCH = tsLiteral("HPy extension module '%s' at path '%s': mismatch between the HPy ABI tag encoded in the filename and the major version requested by the HPy extension itself. Major version tag parsed from filename: %d. Requested version: %d.%d.");
+    public static final TruffleString HPY_NO_ABI_TAG = tsLiteral("HPy extension module '%s' at path '%s': could not find HPy ABI tag encoded in the filename. The extension claims to be compiled with HPy ABI version: %d.%d.");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
@@ -81,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNITrampolines;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -181,7 +183,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
                 int id = handle.getIdUncached(context);
                 assert id > 0 && id < GraalHPyContext.IMMUTABLE_HANDLE_COUNT;
                 assert id > GraalHPyBoxing.SINGLETON_HANDLE_MAX ||
-                        context.getHPyHandleForObject(handle.getDelegate()) == id;
+                                context.getHPyHandleForObject(handle.getDelegate()) == id;
             }
         }
         this.hpyContextMembers = ctxMembers;
@@ -264,14 +266,27 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected Object initHPyModule(Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected HPyABIVersion getHPyABIVersion(Object extLib, String getMajorVersionFuncName, String getMinorVersionFuncName) throws InteropException {
+        CompilerAsserts.neverPartOfCompilation();
+        InteropLibrary lib = InteropLibrary.getUncached(extLib);
+        Object majorVersionFun = lib.readMember(extLib, getMajorVersionFuncName);
+        Object minorVersionFun = lib.readMember(extLib, getMinorVersionFuncName);
+        InteropLibrary funLib = InteropLibrary.getUncached(majorVersionFun);
+        assert (funLib.accepts(minorVersionFun));
+        int requiredMajorVersion = expectInt(funLib.execute(majorVersionFun));
+        int requiredMinorVersion = expectInt(funLib.execute(minorVersionFun));
+        return new HPyABIVersion(requiredMajorVersion, requiredMinorVersion);
+    }
+
+    @Override
+    protected Object initHPyModule(Object llvmLibrary, String initFuncName, TruffleString name, TruffleString path, boolean debug)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         CompilerAsserts.neverPartOfCompilation();
         Object initFunction;
         InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
-        if (lib.isMemberReadable(llvmLibrary, initFuncName.toJavaStringUncached())) {
+        if (lib.isMemberReadable(llvmLibrary, initFuncName)) {
             try {
-                initFunction = lib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
+                initFunction = lib.readMember(llvmLibrary, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -396,6 +411,21 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         if (argsArray instanceof HPyArrayWrapper hpyArrayWrapper) {
             hpyArrayWrapper.close();
         }
+    }
+
+    private static int expectInt(Object value) {
+        if (value instanceof Integer i) {
+            return i;
+        }
+        InteropLibrary lib = InteropLibrary.getUncached(value);
+        if (lib.fitsInInt(value)) {
+            try {
+                return lib.asInt(value);
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     private static Object createConstant(Object value) {

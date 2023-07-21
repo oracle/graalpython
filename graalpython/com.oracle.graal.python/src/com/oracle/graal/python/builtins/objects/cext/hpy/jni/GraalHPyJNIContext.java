@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
@@ -165,11 +166,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -243,8 +242,23 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected Object initHPyModule(Object extLib, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
-                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
+    protected HPyABIVersion getHPyABIVersion(Object extLib, String getMajorVersionFuncName, String getMinorVersionFuncName) throws UnknownIdentifierException {
+        CompilerAsserts.neverPartOfCompilation();
+        try {
+            InteropLibrary lib = InteropLibrary.getUncached(extLib);
+            Object majorVersionFun = lib.readMember(extLib, getMajorVersionFuncName);
+            Object minorVersionFun = lib.readMember(extLib, getMinorVersionFuncName);
+            int requiredMajorVersion = (int) GraalHPyJNITrampolines.executeModuleInit(coerceToPointer(majorVersionFun));
+            int requiredMinorVersion = (int) GraalHPyJNITrampolines.executeModuleInit(coerceToPointer(minorVersionFun));
+            return new HPyABIVersion(requiredMajorVersion, requiredMinorVersion);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    @Override
+    protected Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, boolean debug)
+                    throws ImportException, ApiInitException {
         CompilerAsserts.neverPartOfCompilation();
         /*
          * We eagerly initialize the debug mode here to be able to produce an error message now if
@@ -257,7 +271,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         Object initFunction;
         try {
             InteropLibrary lib = InteropLibrary.getUncached(extLib);
-            initFunction = lib.readMember(extLib, initFuncName.toJavaStringUncached());
+            initFunction = lib.readMember(extLib, initFuncName);
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, name, path, initFuncName);
         }

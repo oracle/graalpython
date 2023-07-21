@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -99,6 +98,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -118,6 +118,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GraalHPyContext extends CExtContext {
 
+    // {{start autogen}}
+    public static final int HPY_ABI_VERSION = 0;
+    public static final int HPY_ABI_VERSION_MINOR = 0;
+    public static final String HPY_ABI_TAG = "hpy0";
+    // {{end autogen}}
+
+    private static final String HPY_EXT = ".hpy";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
@@ -176,8 +183,35 @@ public final class GraalHPyContext extends CExtContext {
         GraalHPyContext hpyUniversalContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
         GraalHPyNativeContext backend = hpyUniversalContext.backend;
         Object llvmLibrary = backend.loadExtensionLibrary(location, context, name, path);
-        TruffleString basename = getBaseName(name);
-        TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
+        String basename = getBaseName(name).toJavaStringUncached();
+        String hpyInitFuncName = J_HPY_INIT + basename;
+
+        // get_required_hpy_major_version_<ext_name>
+        String hpyMajorVersionFuncName = J_HPY_MAJOR_VER_FUN + basename;
+
+        // get_required_hpy_minor_version_<ext_name>
+        String hpyMinorVersionFuncName = J_HPY_MINOR_VER_FUN + basename;
+
+        HPyABIVersion abiVersion;
+        try {
+            abiVersion = backend.getHPyABIVersion(llvmLibrary, hpyMajorVersionFuncName, hpyMinorVersionFuncName);
+        } catch (Exception e) {
+            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ERROR_LOADING_EXT_MODULE,
+                            path, hpyMajorVersionFuncName, hpyMinorVersionFuncName, e.getMessage());
+        }
+
+        /*
+         * For now, we have only one major version but in the future at this point we would decide
+         * which HPyContext to create.
+         */
+        if (abiVersion.major != HPY_ABI_VERSION || abiVersion.minor > HPY_ABI_VERSION_MINOR) {
+            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_VERSION_ERROR,
+                            name, abiVersion.major, abiVersion.minor, HPY_ABI_VERSION, HPY_ABI_VERSION_MINOR);
+        }
+
+        // Sanity check of the tag in the shared object filename
+        validateABITag(location, basename, path.toJavaStringUncached(), abiVersion);
+
         boolean debug = mode == HPyMode.MODE_DEBUG;
         boolean saved = hpyUniversalContext.debugMode;
         hpyUniversalContext.debugMode = debug;
@@ -199,6 +233,29 @@ public final class GraalHPyContext extends CExtContext {
         } finally {
             hpyUniversalContext.debugMode = saved;
         }
+    }
+
+    private static void validateABITag(Node location, String shortname, String soname, HPyABIVersion abiVersion) {
+        // assumes format: "blah.hpy123.so"
+        int hpyExtIdx = soname.lastIndexOf(HPY_EXT);
+        int start = hpyExtIdx + HPY_EXT.length();
+        int lastDotIdx = soname.indexOf('.', start);
+        if (hpyExtIdx != -1 && lastDotIdx != -1) {
+            try {
+                String abiTagVersion = soname.substring(start, lastDotIdx);
+                int abiTag = Integer.parseInt(abiTagVersion);
+                if (abiTag != abiVersion.major) {
+                    throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
+                                    shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
+                }
+                // major version fits -> validation successful
+                return;
+            } catch (NumberFormatException e) {
+                // fall through
+            }
+        }
+        throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_NO_ABI_TAG,
+                        shortname, soname, abiVersion.major, abiVersion.minor);
     }
 
     public Object createArgumentsArray(Object[] args) {
@@ -246,6 +303,10 @@ public final class GraalHPyContext extends CExtContext {
             }
         }
         nativeArgumentsStack = basePtr;
+    }
+
+    @ValueType
+    public record HPyABIVersion(int major, int minor) {
     }
 
     public interface HPyUpcall {

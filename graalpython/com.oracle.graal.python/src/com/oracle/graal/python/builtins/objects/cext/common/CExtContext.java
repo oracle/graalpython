@@ -105,7 +105,9 @@ public abstract class CExtContext {
         return LOGGER;
     }
 
-    protected static final TruffleString T_HPY_INIT = tsLiteral("HPyInit_");
+    protected static final String J_HPY_INIT = "HPyInit_";
+    protected static final String J_HPY_MAJOR_VER_FUN = "get_required_hpy_major_version_";
+    protected static final String J_HPY_MINOR_VER_FUN = "get_required_hpy_minor_version_";
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
     private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
 
@@ -250,15 +252,12 @@ public abstract class CExtContext {
         }
 
         @TruffleBoundary
-        public TruffleString getInitFunctionName(boolean hpy) {
+        public TruffleString getInitFunctionName() {
             /*
              * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
              * is queried
              */
             TruffleString s = getEncodedName();
-            if (hpy) {
-                return StringUtils.cat(T_HPY_INIT, s);
-            }
             return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
         }
     }
@@ -381,7 +380,7 @@ public abstract class CExtContext {
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
         try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
