@@ -420,6 +420,9 @@ public final class PythonCextLongBuiltins {
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
+            if (isSigned == 0 && value < 0) {
+                throw raise.raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+            }
 
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
             write.writeByteArray(bytes, array);
@@ -432,6 +435,9 @@ public final class PythonCextLongBuiltins {
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
+            if (isSigned == 0 && value < 0) {
+                throw raise.raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+            }
 
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
             write.writeByteArray(bytes, array);
@@ -444,6 +450,9 @@ public final class PythonCextLongBuiltins {
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
+            if (isSigned == 0 && value.isNegative()) {
+                throw raise.raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+            }
 
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
             write.writeByteArray(bytes, array);
