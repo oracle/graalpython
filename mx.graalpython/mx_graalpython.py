@@ -1186,7 +1186,6 @@ def graalpython_gate_runner(args, tasks):
         excluded_tests = [
             "test_code.py", # forward slash in path problem
             "test_csv.py",
-            "test_ctypes_callbacks.py", # ctypes error
             "test_imports.py", # import posix
             "test_locale.py",
             "test_math.py",
@@ -1198,15 +1197,12 @@ def graalpython_gate_runner(args, tasks):
             "test_posix.py", # import posix
             "test_pyio.py",
             "test_signal.py",
-            "test_ssl.py", # from_ssl import enum_certificates
             "test_struct.py",
             "test_structseq.py", # import posix
             "test_subprocess.py",
             "test_thread.py", # sys.getwindowsversion
             "test_traceback.py",
-            "test_venv.py",
             "test_zipimport.py", # sys.getwindowsversion
-            "test_zlib.py",
             "test_ssl_java_integration.py",
             "*/cpyext/test_abstract.py",
             "*/cpyext/test_bytes.py",
