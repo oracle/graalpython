@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -124,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -280,37 +280,45 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_LookupAndIntern extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_LookupAndIntern extends CApiUnaryBuiltinNode {
         @Specialization
-        Object withTS(PDict dict, TruffleString str,
-                        @Shared @Cached InternNode internNode,
+        Object withTS(TruffleString str,
+                        @Shared @Cached StringNodes.InternStringNode internNode,
                         @Shared @Cached HashingStorageGetItem getItem,
                         @Shared @Cached HashingStorageSetItem setItem) {
+            PDict dict = getCApiContext().getInternedUnicode();
+            if (dict == null) {
+                dict = factory().createDict();
+                getCApiContext().setInternedUnicode(dict);
+            }
             Object interned = getItem.execute(dict.getDictStorage(), str);
             if (interned == null) {
-                interned = internNode.execute(null, str);
+                interned = internNode.execute(str);
                 dict.setDictStorage(setItem.execute(dict.getDictStorage(), str, interned));
             }
             return interned;
         }
 
         @Specialization
-        Object withPString(PDict dict, PString str,
+        Object withPString(PString str,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Shared @Cached InternNode internNode,
+                        @Shared @Cached StringNodes.InternStringNode internNode,
                         @Shared @Cached HashingStorageGetItem getItem,
                         @Shared @Cached HashingStorageSetItem setItem) {
             boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
             if (isInterned) {
                 return str;
             }
-            return withTS(dict, str.getValueUncached(), internNode, getItem, setItem);
+            return withTS(str.getValueUncached(), internNode, getItem, setItem);
         }
 
         @Fallback
-        Object nil(@SuppressWarnings("unused") Object dict,
-                        @SuppressWarnings("unused") Object obj) {
+        Object nil(@SuppressWarnings("unused") Object obj) {
+            /*
+             * If it's a subclass, we don't really know what putting it in the interned dict might
+             * do.
+             */
             return PNone.NONE;
         }
     }
