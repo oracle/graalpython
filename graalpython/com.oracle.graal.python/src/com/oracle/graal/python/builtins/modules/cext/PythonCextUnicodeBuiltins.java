@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
@@ -85,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.InternNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -103,12 +101,14 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -130,8 +131,10 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -278,26 +281,51 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {ArgDescriptor.PyObject}, call = Ignored)
-    abstract static class PyTruffleUnicode_InternInPlace extends CApiUnaryBuiltinNode {
-        @Specialization(guards = {"!isTruffleString(obj)", "isStringSubtype(obj, getClassNode, isSubtypeNode)"})
-        Object intern(Object obj,
-                        @Cached InternNode internNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return internNode.execute(null, obj);
+    @CApiBuiltin(ret = PyObject, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_LookupAndIntern extends CApiUnaryBuiltinNode {
+        @Specialization
+        Object withTS(TruffleString str,
+                        @Shared @Cached StringNodes.InternStringNode internNode,
+                        @Shared @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached HashingStorageSetItem setItem) {
+            PDict dict = getCApiContext().getInternedUnicode();
+            if (dict == null) {
+                dict = factory().createDict();
+                getCApiContext().setInternedUnicode(dict);
+            }
+            Object interned = getItem.execute(dict.getDictStorage(), str);
+            if (interned == null) {
+                interned = internNode.execute(str);
+                dict.setDictStorage(setItem.execute(dict.getDictStorage(), str, interned));
+            }
+            return interned;
         }
 
-        @Specialization(guards = {"!isTruffleString(obj)", "!isStringSubtype(obj, getClassNode, isSubtypeNode)"})
-        Object intern(@SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            assert false;
-            return PNone.NONE;
+        @Specialization
+        Object withPString(PString str,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared @Cached StringNodes.InternStringNode internNode,
+                        @Shared @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached HashingStorageSetItem setItem) {
+            if (!isBuiltinClassProfile.profileObject(inliningTarget, str, PythonBuiltinClassType.PString)) {
+                return getNativeNull();
+            }
+            boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
+            if (isInterned) {
+                return str;
+            }
+            return withTS(str.getValueUncached(), internNode, getItem, setItem);
         }
 
-        protected boolean isStringSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        @Fallback
+        Object nil(@SuppressWarnings("unused") Object obj) {
+            /*
+             * If it's a subclass, we don't really know what putting it in the interned dict might
+             * do.
+             */
+            return getNativeNull();
         }
     }
 

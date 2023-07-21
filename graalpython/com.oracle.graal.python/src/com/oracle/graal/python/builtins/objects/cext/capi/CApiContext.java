@@ -189,6 +189,8 @@ public final class CApiContext extends CExtContext {
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, Object> extensions = new HashMap<>(4);
 
+    /** corresponds to {@code unicodeobject.c: interned} */
+    private PDict internedUnicode;
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
     public final HashMap<Long, PLock> locks = new HashMap<>();
@@ -274,6 +276,14 @@ public final class CApiContext extends CExtContext {
             return "0x" + Long.toHexString(((Number) ptr).longValue());
         }
         return Objects.toString(ptr);
+    }
+
+    public PDict getInternedUnicode() {
+        return internedUnicode;
+    }
+
+    public void setInternedUnicode(PDict internedUnicode) {
+        this.internedUnicode = internedUnicode;
     }
 
     /**

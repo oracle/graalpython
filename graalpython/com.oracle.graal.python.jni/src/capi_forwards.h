@@ -764,7 +764,7 @@ void unimplemented(const char* name) {
 #undef PyTruffleUnicode_Decode
 #undef PyTruffleUnicode_DecodeUTF8Stateful
 #undef PyTruffleUnicode_FromUCS
-#undef PyTruffleUnicode_InternInPlace
+#undef PyTruffleUnicode_LookupAndIntern
 #undef PyTruffleUnicode_New
 #undef PyTruffle_Arg_ParseTupleAndKeywords
 #undef PyTruffle_ByteArray_EmptyWithCapacity

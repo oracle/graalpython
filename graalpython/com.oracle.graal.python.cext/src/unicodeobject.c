@@ -222,12 +222,24 @@ void PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right) {
     Py_XDECREF(right);
 }
 
-void PyUnicode_InternInPlace(PyObject **s) {
-	PyObject *t = GraalPyTruffleUnicode_InternInPlace(*s);
-	if (t != *s) {
-		Py_INCREF(t);
-		Py_SETREF(*s, t);
-	}
+void PyUnicode_InternInPlace(PyObject **p) {
+    PyObject *s = *p;
+    if (s == NULL) {
+        return;
+    }
+
+    // PyObject *t = PyDict_SetDefault(interned, s, s);
+	PyObject *t = GraalPyTruffleUnicode_LookupAndIntern(s);
+    if (t == NULL) {
+        PyErr_Clear();
+        return;
+    }
+
+    if (t != s) {
+        Py_INCREF(t);
+        Py_SETREF(*p, t);
+        return;
+    }
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
