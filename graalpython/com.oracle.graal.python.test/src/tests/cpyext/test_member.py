@@ -228,6 +228,8 @@ class TestMethod(object):
             val = getattr(obj, m)
             assert val != min_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
+            assert_raises(OverflowError, setattr, obj, m, int(-1e40))
+            assert_raises(OverflowError, setattr, obj, m, int(1e40))
 
         # T_LONG, T_ULONG, T_PYSSIZET
         max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF)

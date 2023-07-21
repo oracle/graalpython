@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -437,8 +438,23 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(Object pointer, Object newValue,
                         @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteIntNode write) {
-            write.write(pointer, (int) asLong.toUInt64(newValue, true));
+                        @Cached CStructAccess.WriteIntNode write,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached IsBuiltinClassProfile exceptionProfile) {
+            /*
+             * This emulates the arguably buggy behavior from CPython where it accepts MIN_LONG to
+             * MAX_ULONG values.
+             */
+            try {
+                write.write(pointer, (int) asLong.toUInt64(newValue, true));
+            } catch (PException e) {
+                /*
+                 * Special case: accept signed long as well.
+                 */
+                e.expectOverflowError(exceptionProfile);
+                write.write(pointer, (int) asLong.toInt64(newValue, true));
+                // swallowing the exception
+            }
         }
     }
 
