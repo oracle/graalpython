@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
@@ -122,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -151,6 +153,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -212,6 +216,10 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_DL_ERROR = tsLiteral("dlerror");
     private static final TruffleString T_DL_OPEN_ERROR = tsLiteral("dlopen() error");
 
+    private static final TruffleString T_WINDOWS_ERROR = tsLiteral("Windows Error");
+
+    private static final String J_DEFAULT_LIBRARY = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? "msvcrt.dll" : J_EMPTY_STRING;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CtypesModuleBuiltinsFactory.getFactories();
@@ -238,6 +246,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("_pointer_type_cache", core.factory().createDict());
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            addBuiltinConstant("FUNCFLAG_STDCALL", FUNCFLAG_STDCALL);
+        }
         addBuiltinConstant("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
         addBuiltinConstant("FUNCFLAG_USE_ERRNO", FUNCFLAG_USE_ERRNO);
         addBuiltinConstant("FUNCFLAG_USE_LASTERROR", FUNCFLAG_USE_LASTERROR);
@@ -263,8 +274,15 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         DLHandler handle;
         if (context.getEnv().isNativeAccessAllowed()) {
-            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_EMPTY_STRING, rtldLocal);
+            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_DEFAULT_LIBRARY, rtldLocal);
             setCtypeNFIHelpers(this, context, handle);
+
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                PythonModule sysModule = context.getSysModule();
+                Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
+                Object pythonLib = CallNode.getUncached().execute(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
+                WriteAttributeToDynamicObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
+            }
         } else {
             try {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
@@ -456,6 +474,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_last_error", maxNumOfPositionalArgs = 1, declaresExplicitSelf = true, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "get_errno", maxNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class GetErrnoNode extends PythonUnaryBuiltinNode {
@@ -473,6 +492,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_last_error", minNumOfPositionalArgs = 1, parameterNames = {"errno"}, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "set_errno", minNumOfPositionalArgs = 1, parameterNames = {"errno"})
     @ArgumentClinic(name = "errno", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
@@ -629,6 +649,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "LoadLibrary", minNumOfPositionalArgs = 1, parameterNames = {"$self", "name", "mode"}, declaresExplicitSelf = true, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "dlopen", minNumOfPositionalArgs = 1, parameterNames = {"$self", "name", "mode"}, declaresExplicitSelf = true)
     // TODO: 'name' might need to be processed using FSConverter.
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
@@ -1051,6 +1072,35 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                             PythonUtils.EMPTY_OBJECT_ARRAY, /* self.converters */
                             null, /* self.restype */
                             null);
+        }
+    }
+
+    @Builtin(name = "FormatError", minNumOfPositionalArgs = 1, os = PythonOS.PLATFORM_WIN32)
+    @GenerateNodeFactory
+    protected abstract static class FormatErrorNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(Object errorCode) {
+            throw raise(NotImplementedError);
+        }
+    }
+
+    @Builtin(name = "_check_HRESULT", minNumOfPositionalArgs = 1, parameterNames = {"hresult"}, os = PythonOS.PLATFORM_WIN32)
+    @ArgumentClinic(name = "hresult", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    protected abstract static class CheckHresultNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CtypesModuleBuiltinsClinicProviders.CheckHresultNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object check(VirtualFrame frame, int hresult) {
+            if (hresult >= 0) {
+                return hresult;
+            } else {
+                throw raiseOSError(frame, hresult, T_WINDOWS_ERROR);
+            }
         }
     }
 

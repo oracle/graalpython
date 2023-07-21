@@ -420,7 +420,10 @@ PyMODINIT_FUNC PyInit__sqlite3(void)
         goto error;
     }
 
-    if (PyModule_AddStringConstant(module, "sqlite_version", sqlite3_libversion())) {
+    /**
+     * GraalPy change: use SQLITE_VERSION from builtin sqlite3
+     */
+    if (PyModule_AddStringConstant(module, "sqlite_version", SQLITE_VERSION)) {
         goto error;
     }
 

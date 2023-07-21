@@ -39,6 +39,9 @@
  * SOFTWARE.
  */
 
+// prevent unresolved symbols
+#define SQLITE_EXTERN
+
 #include "_sqlite/cache.c"
 #include "_sqlite/connection.c"
 #include "_sqlite/cursor.c"

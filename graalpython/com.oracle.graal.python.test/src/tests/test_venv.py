@@ -44,6 +44,10 @@ import sys
 import tempfile
 
 
+BINDIR = 'bin' if sys.platform != 'win32' else 'Scripts'
+EXESUF = '' if sys.platform != 'win32' else '.cmd'
+
+
 class VenvTest():
     def setUpClass(self):
         self.env_dir = os.path.realpath(tempfile.mkdtemp())
@@ -58,20 +62,21 @@ class VenvTest():
         run_output = ''
         try:
             subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
-            run = subprocess.getoutput(". %s/bin/activate; python -m site" % self.env_dir)
+            run = subprocess.getoutput(f"{self.env_dir}/{BINDIR}/python{EXESUF} -m site")
         except subprocess.CalledProcessError as err:
             if err.output:
                 run_output = err.output.decode(errors="replace")
         assert run, run_output
         assert "ENABLE_USER_SITE: False" in run, run
-        assert self.env_dir in run, run
+        if sys.platform != 'win32':
+            assert self.env_dir in run, run
 
     def test_create_and_use_venv_with_pip(self):
         run = None
         msg = ''
         try:
             subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
-            run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
+            run = subprocess.getoutput(f"{self.env_dir2}/{BINDIR}/python{EXESUF} -m pip list")
         except subprocess.CalledProcessError as err:
             if err.output:
                 run_output = err.output.decode(errors="replace")

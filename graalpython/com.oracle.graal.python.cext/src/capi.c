@@ -1032,7 +1032,7 @@ PyAPI_FUNC(PyMemoryViewObject*) PyTruffle_AllocateMemoryView(PyMemoryViewObject*
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
-    void* PyTruffle_##__jtype__##ArrayToNative(const void* jarray, int64_t len) { \
+    PyAPI_FUNC(void*) PyTruffle_##__jtype__##ArrayToNative(const void* jarray, int64_t len) { \
         int64_t i; \
         int64_t size = len + 1; \
         __ctype__* carr = (__ctype__*) malloc(size * sizeof(__ctype__)); \
@@ -1042,7 +1042,7 @@ PyAPI_FUNC(PyMemoryViewObject*) PyTruffle_AllocateMemoryView(PyMemoryViewObject*
         } \
         return polyglot_from_##__polyglot_type__##_array(carr, len); \
     } \
-    void* PyTruffle_##__jtype__##ArrayRealloc(const void* array, int64_t len) { \
+    PyAPI_FUNC(void*) PyTruffle_##__jtype__##ArrayRealloc(const void* array, int64_t len) { \
         int64_t size = len + 1; \
         __ctype__* carr = (__ctype__*) realloc(array, size * sizeof(__ctype__)); \
         carr[len] = (__ctype__)0; \
@@ -1055,22 +1055,22 @@ PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
 PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
 PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
 
-void PyTruffle_PrimitiveArrayFree(void* array) {
+PyAPI_FUNC(void) PyTruffle_PrimitiveArrayFree(void* array) {
     free(array);
 }
 
-void PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
+PyAPI_FUNC(void) PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         Py_DECREF(array[i]);
     }
     free(array);
 }
 
-void PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
+PyAPI_FUNC(void) PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
     Py_XSETREF(ptr[index], newitem);
 }
 
-void PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
+PyAPI_FUNC(void) PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
     ptr[index] = newitem;
 }
 
