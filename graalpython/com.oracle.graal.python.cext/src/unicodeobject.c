@@ -222,8 +222,6 @@ void PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right) {
     Py_XDECREF(right);
 }
 
-static PyObject *interned = NULL;
-
 void PyUnicode_InternInPlace(PyObject **p) {
     PyObject *s = *p;
     if (s == NULL) {

@@ -134,6 +134,7 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -302,10 +303,15 @@ public final class PythonCextUnicodeBuiltins {
 
         @Specialization
         Object withPString(PString str,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Shared @Cached StringNodes.InternStringNode internNode,
                         @Shared @Cached HashingStorageGetItem getItem,
                         @Shared @Cached HashingStorageSetItem setItem) {
+            if (!isBuiltinClassProfile.profileObject(inliningTarget, str, PythonBuiltinClassType.PString)) {
+                return getNativeNull();
+            }
             boolean isInterned = readNode.execute(str, PString.INTERNED) != PNone.NO_VALUE;
             if (isInterned) {
                 return str;
@@ -319,7 +325,7 @@ public final class PythonCextUnicodeBuiltins {
              * If it's a subclass, we don't really know what putting it in the interned dict might
              * do.
              */
-            return PNone.NONE;
+            return getNativeNull();
         }
     }
 
