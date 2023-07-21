@@ -60,7 +60,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "pyexpat", os = PythonOS.PLATFORM_WIN32)
-public class PyExpatModuleBuiltins extends PythonBuiltins {
+public final class PyExpatModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PyExpatModuleBuiltinsFactory.getFactories();
