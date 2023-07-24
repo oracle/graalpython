@@ -555,6 +555,7 @@ suite = {
                             "bin/<lib:python-native>",
                             "bin/python-native.lib",
                             "bin/modules/_mmap<graalpy_ext:native>",
+                            "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_cpython_struct<graalpy_ext:native>",
