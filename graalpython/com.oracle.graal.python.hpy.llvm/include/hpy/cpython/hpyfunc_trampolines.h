@@ -25,6 +25,10 @@
 #ifndef HPY_CPYTHON_HPYFUNC_TRAMPOLINES_H
 #define HPY_CPYTHON_HPYFUNC_TRAMPOLINES_H
 
+/* This is a GraalPy-specific accessor function for a tuple object's items
+   array. There is no public header for that symbol, so we define it ad-hoc. */
+extern PyObject** (*GraalPy_get_PyTupleObject_ob_item)(PyTupleObject*);
+
 typedef HPy (*_HPyCFunction_VARARGS)(HPyContext*, HPy, const HPy *, size_t);
 #define _HPyFunc_TRAMPOLINE_HPyFunc_VARARGS(SYM, IMPL)                  \
     static PyObject*                                                    \
@@ -55,7 +59,7 @@ typedef int (*_HPyCFunction_INITPROC)(HPyContext*, HPy, const HPy *, HPy_ssize_t
     {                                                                   \
         /* get the tuple elements as an array of "PyObject *", which */ \
         /* is equivalent to an array of "HPy" with enough casting... */ \
-        PyObject *const *items = &PyTuple_GET_ITEM(args, 0);            \
+        PyObject *const *items = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)args); \
         Py_ssize_t nargs = PyTuple_GET_SIZE(args);                      \
         _HPyCFunction_INITPROC func = (_HPyCFunction_INITPROC)IMPL; \
         return func(_HPyGetContext(), _py2h(self),                      \
@@ -69,7 +73,7 @@ typedef HPy (*_HPyCFunction_NEWFUNC)(HPyContext*, HPy, const HPy *, HPy_ssize_t,
     {                                                                   \
         /* get the tuple elements as an array of "PyObject *", which */ \
         /* is equivalent to an array of "HPy" with enough casting... */ \
-        PyObject *const *items = &PyTuple_GET_ITEM(args, 0);            \
+        PyObject *const *items = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)args); \
         Py_ssize_t nargs = PyTuple_GET_SIZE(args);                      \
         _HPyCFunction_NEWFUNC func = (_HPyCFunction_NEWFUNC)IMPL;       \
         return _h2py(func(_HPyGetContext(), _py2h(self),                \
