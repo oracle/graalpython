@@ -980,7 +980,7 @@ suite = {
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
                             "./libs/": [
-                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/pythonjni.lib",
+                                "extracted-dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
