@@ -2000,6 +2000,7 @@ def _python_checkpatchfiles():
             "BSD-3-Clause",
             "3-Clause BSD License",
             "Apache License, Version 2.0",
+            "http://www.apache.org/licenses/LICENSE-2.0",
             "PSF",
             "Apache",
             "new BSD",

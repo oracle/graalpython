@@ -54,11 +54,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltinsFactory.DescriptorCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -68,15 +66,15 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -136,74 +134,30 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class DescriptorCheckNode extends Node {
 
-        @Child private IsSubtypeNode isSubtypeNode;
-        @Child private GetNameNode getNameNode;
-        @Child private PRaiseNode raiseNode;
-
-        public boolean execute(Object descrType, TruffleString name, Object obj) {
-            return executeInternal(descrType, name, obj);
+        public void execute(Node inliningTarget, Object descrType, TruffleString name, Object obj) {
+            executeInternal(inliningTarget, descrType, name, obj);
         }
 
-        public boolean execute(Object descrType, HiddenKey name, Object obj) {
-            return executeInternal(descrType, name, obj);
+        public void execute(Node inliningTarget, Object descrType, HiddenKey name, Object obj) {
+            executeInternal(inliningTarget, descrType, name, obj);
         }
 
-        abstract boolean executeInternal(Object descrType, Object nameObj, Object obj);
+        abstract void executeInternal(Node inliningTarget, Object descrType, Object nameObj, Object obj);
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         @Specialization
-        boolean doIt(Object descrType, Object nameObj, Object obj,
-                        @Bind("this") Node inliningTarget,
+        static void check(Node inliningTarget, Object descrType, Object name, Object obj,
                         @Cached InlinedGetClassNode getClassNode,
-                        @Cached InlineIsBuiltinClassProfile isBuiltinPythonClassObject) {
-            if (PGuards.isNone(obj)) {
-                // object's descriptors (__class__,...) need to work on every object including None
-                if (!isBuiltinPythonClassObject.profileClass(inliningTarget, descrType, PythonBuiltinClassType.PythonObject)) {
-                    return true;
-                }
-            }
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
-            if (isSubtype(type, descrType)) {
-                return false;
+            if (!isSubtypeNode.execute(type, descrType)) {
+                throw raiseNode.raise(TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);
             }
-            String name;
-            if (nameObj instanceof HiddenKey) {
-                name = ((HiddenKey) nameObj).getName();
-            } else {
-                name = nameObj.toString();
-            }
-            throw getRaiseNode().raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
-        }
-
-        private boolean isSubtype(Object derived, Object base) {
-            if (isSubtypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubtypeNode = insert(IsSubtypeNode.create());
-            }
-            return isSubtypeNode.execute(derived, base);
-        }
-
-        private Object getTypeName(Object descrType) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            return getNameNode.execute(descrType);
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
-        @NeverDefault
-        public static DescriptorCheckNode create() {
-            return DescriptorCheckNodeGen.create();
         }
     }
 

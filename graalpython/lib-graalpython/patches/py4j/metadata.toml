@@ -1,0 +1,3 @@
+[[rules]]
+patch = 'py4j.patch'
+subdir = 'src'

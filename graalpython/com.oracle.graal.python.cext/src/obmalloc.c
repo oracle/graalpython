@@ -109,7 +109,11 @@ int PyTruffle_AllocMemory(size_t size) {
 }
 
 void PyTruffle_FreeMemory(size_t size) {
-	PyTruffle_AllocatedMemory -= size;
+    if (PyTruffle_AllocatedMemory < size) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_FreeMemory: assertion failure: underflow of memory allocation tracking\n");
+        PyTruffle_AllocatedMemory = size;
+    }
+    PyTruffle_AllocatedMemory -= size;
 }
 
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
@@ -189,21 +193,24 @@ void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
 
 void* PyMem_RawRealloc(void *ptr, size_t new_size) {
 	mem_head_t* old;
+	size_t old_size;
 
 	if (ptr != NULL) {
 		old = AS_MEM_HEAD(ptr);
-
-		// account for the difference in size
-		if (old->size >= new_size) {
-			PyTruffle_FreeMemory(old->size - new_size);
-		} else {
-			if (PyTruffle_AllocMemory(new_size - old->size)) {
-				return NULL;
-			}
-		}
+		old_size = old->size;
 	} else {
 		old = NULL;
+		old_size = 0;
 	}
+
+    // account for the difference in size
+    if (old_size >= new_size) {
+        PyTruffle_FreeMemory(old_size - new_size);
+    } else {
+        if (PyTruffle_AllocMemory(new_size - old_size)) {
+            return NULL;
+        }
+    }
 
     mem_head_t* ptr_with_head = (mem_head_t*) realloc(old, new_size + sizeof(mem_head_t));
     ptr_with_head->size = new_size;

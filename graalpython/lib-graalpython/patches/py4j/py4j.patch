@@ -1,0 +1,36 @@
+diff --git a/py4j/clientserver.py b/py4j/clientserver.py
+index ec3078e..dd4cf8c 100644
+--- a/py4j/clientserver.py
++++ b/py4j/clientserver.py
+@@ -196,6 +196,19 @@ class PythonParameters(CallbackServerParameters):
+         self.auto_gc = auto_gc
+ 
+ 
++class CleanerDummy:
++    pass
++
++
++def cleaner_callback(conn_ref, deque):
++    conn = conn_ref()
++    if conn is not None:
++        try:
++            deque.remove(conn)
++        except ValueError:
++            pass
++
++
+ class JavaClient(GatewayClient):
+     """Responsible for managing requests from Python to Java.
+ 
+@@ -245,8 +258,9 @@ class JavaClient(GatewayClient):
+             current thread.
+         """
+         conn = weakref.ref(connection)
+-        self.thread_connection._cleaner = (
+-            ThreadLocalConnectionFinalizer(conn, self.deque))
++        cleaner = CleanerDummy()
++        weakref.finalize(cleaner, cleaner_callback, conn, self.deque)
++        self.thread_connection._cleaner = cleaner
+         self.thread_connection.connection = conn
+ 
+     def shutdown_gateway(self):

@@ -923,7 +923,6 @@ static void PyTruffle_Log(int level, const char* format, ... ) {
 		va_list args;
 		va_start(args, format);
 		vsprintf(buffer,format, args);
-		printf("logg\n");
 #ifndef EXCLUDE_POLYGLOT_API
 		GraalPyTruffle_LogString(level, polyglot_from_string(buffer, SRC_CS));
 #else

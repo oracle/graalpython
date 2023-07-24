@@ -103,6 +103,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_OPENCODEHOOKFUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_OS_SIGHANDLER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_STAT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_STRUCT_SEQUENCE_DESC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK_PTR;
@@ -142,7 +143,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.STAT_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_STAT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIMESPEC_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIMEVAL_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.TIME_T;
@@ -615,9 +615,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyOS_vsnprintf", ret = Int, args = {CHAR_PTR, SIZE_T, ConstCharPtrAsTruffleString, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "PySequence_Fast", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = PolyglotImpl)
     @CApiBuiltin(name = "PySlice_AdjustIndices", ret = Py_ssize_t, args = {Py_ssize_t, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, Py_ssize_t}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PySlice_Start", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PySlice_Step", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PySlice_Stop", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "PySlice_Start", ret = PyObject, args = {PySliceObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "PySlice_Step", ret = PyObject, args = {PySliceObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "PySlice_Stop", ret = PyObject, args = {PySliceObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PySlice_Unpack", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyState_AddModule", ret = Int, args = {PyObject, PYMODULEDEF_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyState_FindModule", ret = PyObjectBorrowed, args = {PYMODULEDEF_PTR}, call = PolyglotImpl)

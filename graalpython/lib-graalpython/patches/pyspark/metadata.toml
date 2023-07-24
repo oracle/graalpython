@@ -1,0 +1,4 @@
+[[rules]]
+version = '== 3.4.1'
+dist-type = 'sdist'
+patch = 'pyspark-3.4.1.patch'
