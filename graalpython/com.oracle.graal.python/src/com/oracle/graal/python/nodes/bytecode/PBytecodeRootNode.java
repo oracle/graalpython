@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
@@ -1295,7 +1296,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             final int beginBci = bci;
             tracingOrProfilingEnabled = checkTracingAndProfilingEnabled(noTraceOrProfile, mutableData);
             if (isTracingEnabled(tracingOrProfilingEnabled)) {
-                traceLine(virtualFrame, mutableData, localBC, bci);
+                int newBci = traceLine(virtualFrame, mutableData, localBC, bci);
+                if (newBci != bci) {
+                    setCurrentBci(virtualFrame, bciSlot, newBci);
+                    bci = newBci;
+                    continue; // todo make sure this doesn't break inlining
+                }
             }
 
             CompilerAsserts.partialEvaluationConstant(bc);
@@ -2880,8 +2886,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    // returns new bci
     @InliningCutoff
-    private void traceLine(VirtualFrame virtualFrame, MutableLoopData mutableData, byte[] localBC, int bci) {
+    private int traceLine(VirtualFrame virtualFrame, MutableLoopData mutableData, byte[] localBC, int bci) {
         int thisLine = bciToLine(bci);
         boolean onANewLine = thisLine != mutableData.getPastLine();
         mutableData.setPastLine(thisLine);
@@ -2911,14 +2918,34 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                             bciToLine(bci - 1) != thisLine);
         }
         if (shouldTrace) {
+            // do not emit a line event on the line we just jumped to
             mutableData.setReturnLine(mutableData.getPastLine());
             mutableData.setPyFrame(ensurePyFrame(virtualFrame));
-            if (mutableData.getPyFrame().getTraceLine()) {
+            PFrame pyFrame = mutableData.getPyFrame();
+            if (pyFrame != null && pyFrame.didJump()) {
+                pyFrame.setJumpDestLine(-3);
+                mutableData.setPastBci(bci);
+                return bci;
+            }
+            if (pyFrame.getTraceLine()) {
+                pyFrame.setJumpDestLine(-2);
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
+                if (pyFrame.didJump()) {
+                    mutableData.setPastBci(bci);
+                    int newBci = lineToBci(pyFrame.getJumpDestLine());
+                    if (newBci == -1) {
+                        throw PRaiseNode.getUncached().raise(ValueError); // todo
+                    } else if (newBci == -2) {
+                        throw PRaiseNode.getUncached().raise(ValueError); // todo
+                    } else {
+                        bci = newBci;
+                    }
+                }
             }
         }
         mutableData.setPastBci(bci);
+        return bci;
     }
 
     private int bytecodeBinarySubscrAdaptive(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int bciSlot) {
@@ -3075,7 +3102,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             GetFrameLocalsNode.executeUncached(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
-            Object realResult = result == PNone.NONE ? null : result;
+            // https://github.com/python/cpython/issues/104232
+            Object realResult = result == PNone.NONE ? traceFn : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
             threadState.setTraceFun(null, PythonLanguage.get(this));
@@ -5751,6 +5779,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public int bciToLine(int bci) {
         return co.bciToLine(bci);
+    }
+
+    public int lineToBci(int line) {
+        return co.lineToBci(line);
     }
 
     public int getFirstLineno() {

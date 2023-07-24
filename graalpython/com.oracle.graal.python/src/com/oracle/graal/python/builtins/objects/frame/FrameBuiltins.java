@@ -140,7 +140,6 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
         public abstract int executeInt(VirtualFrame frame, PFrame self);
@@ -164,6 +163,49 @@ public final class FrameBuiltins extends PythonBuiltins {
         @NeverDefault
         public static GetLinenoNode create() {
             return FrameBuiltinsFactory.GetLinenoNodeFactory.create(null);
+        }
+    }
+
+    @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class SetLinenoNode extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PFrame self, Object newLineno);
+
+        @Specialization(guards = "isNoValue(newLineno)")
+        int get(VirtualFrame frame, PFrame self, Object newLineno,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached MaterializeFrameNode materializeNode) {
+            // Special case because this builtin can be called without going through an invoke node:
+            // we need to sync the location of the frame if and only if 'self' represents the
+            // current frame. If 'self' represents another frame on the stack, the location is
+            // already set
+            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
+                assert pyFrame == self;
+            }
+            return self.getLine();
+        }
+
+        @Specialization(guards = "!isNoValue(newLineno)")
+        PNone set(VirtualFrame frame, PFrame self, Object newLineno,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached MaterializeFrameNode materializeNode) {
+            // Special case because this builtin can be called without going through an invoke node:
+            // we need to sync the location of the frame if and only if 'self' represents the
+            // current frame. If 'self' represents another frame on the stack, the location is
+            // already set
+            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
+                assert pyFrame == self;
+            }
+            if (self.isTraceArgument()) {
+                self.setJumpDestLine((int) newLineno); // todo
+            } else {
+                throw raise(PythonBuiltinClassType.ValueError); // todo
+            }
+            return PNone.NONE;
         }
     }
 

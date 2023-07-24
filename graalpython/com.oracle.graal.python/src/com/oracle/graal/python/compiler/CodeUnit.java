@@ -528,6 +528,34 @@ public final class CodeUnit {
         throw new IllegalStateException("Unknown type");
     }
 
+    // -1 for line after the code block, -2 for line before the code block, line number otherwise
+    public int lineToBci(int line) {
+        if (startLine == line) {
+            return 0;
+        }
+        // todo look into instrumentation support
+        int[] map = getSourceMap().startLineMap;
+        int bestBci = -1;
+        int lineDiff = Integer.MAX_VALUE;
+        boolean afterFirst = false;
+        for (int bci = 0; bci < map.length; ++bci) {
+            if (map[bci] >= line) {
+                int lineDiff2 = map[bci] - line;
+                // the first bci found is the start of the line
+                if (lineDiff2 < lineDiff) {
+                    bestBci = bci;
+                    lineDiff = lineDiff2;
+                }
+            }
+            if (map[bci] > 0 && map[bci] <= line) {
+                // the line is actually within the codeblock.
+                afterFirst = true;
+            }
+        }
+        // bestBci being -1 means the line is outside the code block
+        return afterFirst ? bestBci : -2;
+    }
+
     @FunctionalInterface
     public interface BytecodeAction {
         void run(int bci, OpCodes op, int oparg, byte[] followingArgs);
