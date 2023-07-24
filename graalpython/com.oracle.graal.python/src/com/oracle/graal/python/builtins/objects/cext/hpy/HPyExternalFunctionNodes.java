@@ -1819,17 +1819,6 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object processResult(VirtualFrame frame, Object result) {
-            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
-            if (result instanceof Integer) {
-                return result;
-            } else if (result instanceof Long lresult) {
-                return Long.hashCode(lresult);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
