@@ -253,7 +253,6 @@
 *ctypes.test.test_prototypes.WCharPointersTestCase.test_c_wchar_p_arg
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyBytes_FromStringAndSize
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyLong_Long
-*ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyObj_FromPtr
 *ctypes.test.test_python_api.PythonAPITestCase.test_PyString_FromString
 *ctypes.test.test_random_things.call_function_TestCase.test

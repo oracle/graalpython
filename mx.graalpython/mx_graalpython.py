@@ -615,7 +615,24 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
         # Transient, GR-41056
-        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed')
+        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed'),
+        # Transient, at least on M1
+        ('test_ctypes.txt', '*ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf'),
+        # Transient hash mismatch
+        ('test_lib2to3.txt', '*lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess'),
+        # Connects to internet, sometimes can't reach
+        ('test_ssl.txt', '*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex'),
+        # Transiently fails because it's dependent on timings
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        # The whole suite sometimes transiently crashes because of hanging thread at the end, not sure which test causes this
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
