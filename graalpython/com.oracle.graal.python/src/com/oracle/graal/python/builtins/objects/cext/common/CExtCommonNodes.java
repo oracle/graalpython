@@ -57,6 +57,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -75,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntA
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -93,6 +95,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -124,6 +128,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+
 import sun.misc.Unsafe;
 
 public abstract class CExtCommonNodes {
@@ -703,6 +708,67 @@ public abstract class CExtCommonNodes {
     }
 
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
+        public static void checkFunctionResult(Node node, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
+                        ConditionProfile errOccurredProfile,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+            PythonThreadState threadState = context.getThreadState(language);
+            checkFunctionResult(node, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
+        }
+
+        /**
+         * Check the result of a C extension function.
+         *
+         * @param node The processing node (needed for the source location if a {@code SystemError}
+         *            is raised).
+         * @param threadState The Python thread state.
+         * @param name The name of the function (used for the error message).
+         * @param indicatesError {@code true} if the function results indicates an error (e.g.
+         *            {@code NULL} if the return type is a pointer or {@code -1} if the return type
+         *            is an int).
+         * @param strict If {@code true}, a {@code SystemError} will be raised if the result value
+         *            indicates an error but no exception was set. Setting this to {@code false}
+         *            mostly makes sense for primitive return values with semantics
+         *            {@code if (res != -1 && PyErr_Occurred()}.
+         * @param errOccurredProfile Profiles if a Python exception occurred and is set in the
+         *            context.
+         * @param nullButNoErrorMessage Error message used if the value indicates an error and is
+         *            not primitive but no error was set.
+         * @param resultWithErrorMessage Error message used if an error was set but the value does
+         *            not indicate and error.
+         */
+        public static void checkFunctionResult(Node node, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+            PException currentException = threadState.getCurrentException();
+            boolean errOccurred = errOccurredProfile.profile(currentException != null);
+            if (indicatesError) {
+                // consume exception
+                threadState.setCurrentException(null);
+                if (errOccurred) {
+                    assert currentException != null;
+                    throw currentException.getExceptionForReraise(false);
+                } else if (strict) {
+                    throw raiseNullButNoError(node, name, nullButNoErrorMessage);
+                }
+            } else if (errOccurred) {
+                assert currentException != null;
+                // consume exception
+                threadState.setCurrentException(null);
+                throw raiseResultWithError(node, name, currentException, resultWithErrorMessage);
+            }
+        }
+
+        @TruffleBoundary
+        private static PException raiseNullButNoError(Node node, TruffleString name, TruffleString nullButNoErrorMessage) {
+            throw PRaiseNode.raiseUncached(node, SystemError, nullButNoErrorMessage, name);
+        }
+
+        @TruffleBoundary
+        private static PException raiseResultWithError(Node node, TruffleString name, PException currentException, TruffleString resultWithErrorMessage) {
+            PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(SystemError, resultWithErrorMessage, new Object[]{name});
+            sysExc.setCause(currentException.getEscapedException());
+            throw PRaiseNode.raise(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+        }
+
         public abstract Object execute(PythonContext context, TruffleString name, Object result);
     }
 

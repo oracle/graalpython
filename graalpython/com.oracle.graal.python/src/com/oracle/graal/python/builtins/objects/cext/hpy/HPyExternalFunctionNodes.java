@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
@@ -86,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -105,8 +105,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1122,25 +1120,9 @@ public abstract class HPyExternalFunctionNodes {
 
         public abstract Object execute(PythonThreadState pythonThreadState, TruffleString name, Object value);
 
-        protected static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory) {
-            PException currentException = pythonThreadState.getCurrentException();
-            boolean errOccurred = currentException != null;
-            if (indicatesError) {
-                // consume exception
-                pythonThreadState.setCurrentException(null);
-                if (!errOccurred) {
-                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION, name);
-                } else {
-                    throw currentException.getExceptionForReraise(false);
-                }
-            } else if (errOccurred) {
-                // consume exception
-                pythonThreadState.setCurrentException(null);
-                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET, new Object[]{name});
-                sysExc.setCause(currentException.getEscapedException());
-                PythonLanguage language = PythonLanguage.get(inliningTarget);
-                throw PException.fromObject(sysExc, inliningTarget, PythonOptions.isPExceptionWithJavaStacktrace(language));
-            }
+        protected static void checkFunctionResult(Node node, PythonThreadState pythonThreadState, TruffleString name, boolean indicatesError, boolean strict, ConditionProfile errOccurredProfile) {
+            CheckFunctionResultNode.checkFunctionResult(node, pythonThreadState, name, indicatesError, strict, errOccurredProfile, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION,
+                            ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET);
         }
     }
 
@@ -1154,10 +1136,9 @@ public abstract class HPyExternalFunctionNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached ConditionProfile isNullProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached ConditionProfile errOccurredProfile) {
             Object delegate = closeAndGetHandleNode.execute(value);
-            checkFunctionResult(inliningTarget, name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), pythonThreadState, raiseNode, factory);
+            checkFunctionResult(inliningTarget, pythonThreadState, name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), true, errOccurredProfile);
             return delegate;
         }
     }
@@ -1176,31 +1157,29 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization
         static int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(inliningTarget, name, value == -1, pythonThreadState, raiseNode, factory);
+                        @Shared @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
 
         @Specialization(replaces = "doInteger")
         static long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(inliningTarget, name, value == -1, pythonThreadState, raiseNode, factory);
+                        @Shared @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(inliningTarget, pythonThreadState, name, value == -1, false, errOccurredProfile);
             return value;
         }
 
         @Specialization(limit = "1")
         static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Shared @Cached ConditionProfile errOccurredProfile) {
             if (lib.fitsInLong(value)) {
                 try {
                     long lvalue = lib.asLong(value);
-                    checkFunctionResult(inliningTarget, name, lvalue == -1, pythonThreadState, raiseNode, factory);
+                    checkFunctionResult(inliningTarget, pythonThreadState, name, lvalue == -1, false, errOccurredProfile);
                     return lvalue;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1221,14 +1200,13 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization
         static Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached ConditionProfile errOccurredProfile) {
             /*
              * A 'void' function never indicates an error but an error could still happen. So this
              * must also be checked. The actual result value (which will be something like NULL or
              * 0) is not used.
              */
-            checkFunctionResult(inliningTarget, name, false, threadState, raiseNode, factory);
+            checkFunctionResult(inliningTarget, threadState, name, false, true, errOccurredProfile);
             return value;
         }
     }

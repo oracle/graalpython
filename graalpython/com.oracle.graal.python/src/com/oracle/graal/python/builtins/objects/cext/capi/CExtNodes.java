@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
@@ -2687,7 +2688,7 @@ public abstract class CExtNodes {
                     } else {
                         result = interopLib.execute(createFunction, cArguments);
                     }
-                    DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                    CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
                                     errOccurredProfile, ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -2821,7 +2822,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                            CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
                                             ConditionProfile.getUncached(),
                                             ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
