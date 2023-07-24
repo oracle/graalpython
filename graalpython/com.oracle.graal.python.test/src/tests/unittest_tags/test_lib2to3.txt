@@ -106,6 +106,7 @@
 *lib2to3.tests.test_fixers.Test_filter.test_filter_trailers
 *lib2to3.tests.test_fixers.Test_filter.test_future_builtins
 *lib2to3.tests.test_fixers.Test_filter.test_prefix_preservation
+*lib2to3.tests.test_fixers.Test_funcattrs.test
 *lib2to3.tests.test_fixers.Test_funcattrs.test_unchanged
 *lib2to3.tests.test_fixers.Test_future.test_future
 *lib2to3.tests.test_fixers.Test_future.test_run_order
@@ -187,6 +188,7 @@
 *lib2to3.tests.test_fixers.Test_input.test_idempotency
 *lib2to3.tests.test_fixers.Test_input.test_prefix_preservation
 *lib2to3.tests.test_fixers.Test_input.test_trailing_comment
+*lib2to3.tests.test_fixers.Test_intern.test
 *lib2to3.tests.test_fixers.Test_intern.test_prefix_preservation
 *lib2to3.tests.test_fixers.Test_intern.test_unchanged
 *lib2to3.tests.test_fixers.Test_isinstance.test_prefix_preservation
@@ -221,6 +223,7 @@
 *lib2to3.tests.test_fixers.Test_metaclass.test_comments
 *lib2to3.tests.test_fixers.Test_metaclass.test_meta
 *lib2to3.tests.test_fixers.Test_metaclass.test_unchanged
+*lib2to3.tests.test_fixers.Test_methodattrs.test
 *lib2to3.tests.test_fixers.Test_methodattrs.test_unchanged
 *lib2to3.tests.test_fixers.Test_ne.test_basic
 *lib2to3.tests.test_fixers.Test_ne.test_chained
@@ -360,6 +363,7 @@
 *lib2to3.tests.test_fixers.Test_reduce.test_call_with_lambda
 *lib2to3.tests.test_fixers.Test_reduce.test_simple_call
 *lib2to3.tests.test_fixers.Test_reduce.test_unchanged
+*lib2to3.tests.test_fixers.Test_reload.test
 *lib2to3.tests.test_fixers.Test_reload.test_comment
 *lib2to3.tests.test_fixers.Test_reload.test_space
 *lib2to3.tests.test_fixers.Test_reload.test_unchanged
@@ -378,6 +382,7 @@
 *lib2to3.tests.test_fixers.Test_set_literal.test_listcomps
 *lib2to3.tests.test_fixers.Test_set_literal.test_unchanged
 *lib2to3.tests.test_fixers.Test_set_literal.test_whitespace
+*lib2to3.tests.test_fixers.Test_standarderror.test
 *lib2to3.tests.test_fixers.Test_sys_exc.test_0
 *lib2to3.tests.test_fixers.Test_sys_exc.test_1
 *lib2to3.tests.test_fixers.Test_sys_exc.test_2

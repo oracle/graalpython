@@ -19,6 +19,7 @@
 *graalpython.lib-python.3.test.test_pyexpat.ForeignDTDTests.test_ignore_use_foreign_dtd
 *graalpython.lib-python.3.test.test_pyexpat.ForeignDTDTests.test_use_foreign_dtd
 *graalpython.lib-python.3.test.test_pyexpat.HandlerExceptionTest.test_exception
+*graalpython.lib-python.3.test.test_pyexpat.InterningTest.test
 *graalpython.lib-python.3.test.test_pyexpat.InterningTest.test_issue9402
 *graalpython.lib-python.3.test.test_pyexpat.MalformedInputTest.test1
 *graalpython.lib-python.3.test.test_pyexpat.MalformedInputTest.test2
@@ -29,6 +30,7 @@
 *graalpython.lib-python.3.test.test_pyexpat.ParseTest.test_parse_bytes
 *graalpython.lib-python.3.test.test_pyexpat.ParseTest.test_parse_file
 *graalpython.lib-python.3.test.test_pyexpat.ParseTest.test_parse_str
+*graalpython.lib-python.3.test.test_pyexpat.PositionTest.test
 *graalpython.lib-python.3.test.test_pyexpat.SetAttributeTest.test_buffer_text
 *graalpython.lib-python.3.test.test_pyexpat.SetAttributeTest.test_invalid_attributes
 *graalpython.lib-python.3.test.test_pyexpat.SetAttributeTest.test_namespace_prefixes
