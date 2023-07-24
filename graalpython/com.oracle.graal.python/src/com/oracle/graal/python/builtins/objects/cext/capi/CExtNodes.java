@@ -845,6 +845,7 @@ public abstract class CExtNodes {
         static TruffleString doPointer(Object charPtr, Encoding encoding, boolean copy,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PCallCapiFunction callNode) {
             if (lib.isPointer(charPtr)) {
                 long pointer;
@@ -857,7 +858,7 @@ public abstract class CExtNodes {
                 while (UNSAFE.getByte(pointer + length) != 0) {
                     length++;
                 }
-                return fromNative.execute(charPtr, 0, length, encoding, copy);
+                return switchEncodingNode.execute(fromNative.execute(charPtr, 0, length, encoding, copy), TS_ENCODING);
             }
             return StringMaterializeNode.materializeNativeCharSequence(new NativeCharSequence(charPtr, 1, false), callNode, UnicodeFromWcharNodeGen.getUncached());
         }
