@@ -79,9 +79,9 @@ import org.graalvm.polyglot.io.FileSystem;
  * filesystem, as well as showing how to embed Python code into a single native image binary.
  */
 public class Py2BinLauncher {
-    private static final String HOME_PREFIX = VirtualFileSystem.VFS_PREFIX + "/home";
-    private static final String VENV_PREFIX = VirtualFileSystem.VFS_PREFIX + "/venv";
-    private static final String PROJ_PREFIX = VirtualFileSystem.VFS_PREFIX + "/proj";
+    private static final String HOME_PREFIX = "/{vfs-home-prefix}";
+    private static final String VENV_PREFIX = "/{vfs-venv-prefix}";
+    private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     public static void main(String[] args) throws IOException {
         var builder = Context.newBuilder()

@@ -75,7 +75,7 @@ public final class VirtualFileSystem implements FileSystem {
     /*
      * Virtual filesystem root
      */
-    static final String VFS_PREFIX = "/vfs";
+    static final String VFS_PREFIX = "/{vfs-prefix}";
     
     /* 
      * Index of all files and directories available in the filessytem at runtime.
@@ -83,7 +83,7 @@ public final class VirtualFileSystem implements FileSystem {
      * - directory paths end with a '/' 
      * Used to determine directy entries, if an entry is a file or a directory, etc. 
      */       
-    private static final String FILES_LIST_PATH = "/vfs/fileslist.txt";
+    private static final String FILES_LIST_PATH = VFS_PREFIX + "/{files-list-name}";
     
     private static final TreeMap<Path, Entry> VFS_ENTRIES = new TreeMap<>();
 
@@ -92,10 +92,10 @@ public final class VirtualFileSystem implements FileSystem {
 
     private final FileSystem delegate = FileSystem.newDefaultFileSystem();
 
-    static final record Entry(Path path, boolean isFile, Object data) {};
+    static final record Entry(boolean isFile, Object data) {};
     
-    private static void putVFSEntry(Entry e) throws IOException {
-        VFS_ENTRIES.put(toRealPathStatic(toAbsolutePathStatic(e.path)), e);
+    private static void putVFSEntry(Path p, Entry e) throws IOException {
+        VFS_ENTRIES.put(toRealPathStatic(toAbsolutePathStatic(p)), e);
     }
 
     private static Set<String> getFilesList() throws IOException {
@@ -153,7 +153,7 @@ public final class VirtualFileSystem implements FileSystem {
         for (int i = 0; i < paths.length; i++) {
             paths[i] = Paths.get(l.get(i));
         }
-        return new Entry(Paths.get(parentDir), false, paths);
+        return new Entry(false, paths);
     }
 
     private static boolean isParent(String parentDir, String file) {
@@ -162,7 +162,7 @@ public final class VirtualFileSystem implements FileSystem {
     }
 
     private static Entry readFileEntry(String file) throws IOException {
-        return new Entry(Paths.get(file), true, readResource(file));
+        return new Entry(true, readResource(file));
     }
 
     static byte[] readResource(String path) throws IOException {
@@ -198,7 +198,7 @@ public final class VirtualFileSystem implements FileSystem {
                     e = readFileEntry(pathString);
                     getFilesList().remove(pathString);
                 }
-                putVFSEntry(e);
+                putVFSEntry(path, e);
             }
         }
         return e;

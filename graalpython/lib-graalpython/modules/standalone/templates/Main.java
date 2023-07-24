@@ -50,9 +50,9 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
 public class Main {
-    private static final String HOME_PREFIX = VirtualFileSystem.VFS_PREFIX + "/home";
-    private static final String PROJ_PREFIX = VirtualFileSystem.VFS_PREFIX + "/proj";
-    private static final String VENV_PREFIX = VirtualFileSystem.VFS_PREFIX + "/venv";
+    private static final String HOME_PREFIX = "/{vfs-home-prefix}";
+    private static final String VENV_PREFIX = "/{vfs-venv-prefix}";
+    private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     private static String PYTHON = "python";
     

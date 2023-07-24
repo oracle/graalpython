@@ -505,7 +505,6 @@
 *lib2to3.tests.test_parser.TestParserIdempotency.test_all_project_files
 *lib2to3.tests.test_parser.TestParserIdempotency.test_extended_unpacking
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_pickle
-*lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_txt_file
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_packaged_grammar
 *lib2to3.tests.test_parser.TestPickleableException.test_ParseError
