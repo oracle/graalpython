@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -364,6 +365,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -3524,12 +3526,30 @@ public abstract class GraalHPyContextFunctions {
     @HPyContextFunction("ctx_Unicode_FromEncodedObject")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromEncodedObject extends HPyQuaternaryContextFunction {
-        @Specialization
+        @Specialization(limit = "1")
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object obj, Object encodingPtr, Object errorsPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile,
+                        @CachedLibrary("encodingPtr") InteropLibrary encodingLib,
+                        @CachedLibrary("errorsPtr") InteropLibrary errorsLib,
                         @Cached FromCharPointerNode fromNativeCharPointerNode,
                         @Cached PyUnicodeFromEncodedObject libNode) {
-            TruffleString encoding = fromNativeCharPointerNode.execute(encodingPtr);
-            TruffleString errors = fromNativeCharPointerNode.execute(errorsPtr);
+            if (nullProfile.profile(inliningTarget, obj == PNone.NO_VALUE)) {
+                throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            TruffleString encoding;
+            if (!encodingLib.isNull(encodingPtr)) {
+                encoding = fromNativeCharPointerNode.execute(encodingPtr);
+            } else {
+                encoding = T_UTF8;
+            }
+
+            TruffleString errors;
+            if (!errorsLib.isNull(errorsPtr)) {
+                errors = fromNativeCharPointerNode.execute(errorsPtr);
+            } else {
+                errors = T_STRICT;
+            }
             return libNode.execute(null, obj, encoding, errors);
         }
     }
