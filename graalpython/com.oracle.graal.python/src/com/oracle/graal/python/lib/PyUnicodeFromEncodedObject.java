@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
@@ -105,11 +106,14 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @Shared @Cached PyUnicodeDecode decode,
-                    @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
+                    @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+
+        Object buffer = bufferAcquireLib.acquireReadonly(object, frame, getContext(), getLanguage(), this);
         try {
-            int len = bufferLib.getBufferLength(object);
+            int len = bufferLib.getBufferLength(buffer);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }
