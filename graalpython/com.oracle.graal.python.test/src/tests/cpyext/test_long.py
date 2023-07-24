@@ -360,21 +360,27 @@ class TestPyLong(CPyExtTestCase):
             (-9223372036854775808, 8, False, True, b'\x80\x00\x00\x00\x00\x00\x00\x00'),
             (9223372036854775807, 9, False, True, b'\x00\x7f\xff\xff\xff\xff\xff\xff\xff'),
             (-9223372036854775808, 9, False, True, b'\xff\x80\x00\x00\x00\x00\x00\x00\x00'),
+            (12, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x0c'),
             (1234, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x04\xd2'),
             (0xdeadbeefdead, 8, False, True, b'\x00\x00\xde\xad\xbe\xef\xde\xad'),
             (0xdeadbeefdead, 8, True, True, b'\xad\xde\xef\xbe\xad\xde\x00\x00'),
+            (0xdeadbeefdead, 7, True, True, b'\xad\xde\xef\xbe\xad\xde\x00'),
             (0xdeadbeefdeadbeefbeefdeadcafebabe, 17, False, True, b'\x00\xde\xad\xbe\xef\xde\xad\xbe\xef\xbe\xef\xde\xad\xca\xfe\xba\xbe'),
         ),
         code='''PyObject* wrap_PyLong_AsByteArray(PyObject* object, Py_ssize_t n, int little_endian, int is_signed, PyObject* unused) {
-            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char));
+            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char) + 1);
+            memset(buf, 0x33, n + 1);
             PyObject* result;
-            
             Py_INCREF(object);
             if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
                 Py_DECREF(object);
                 return NULL;
             }
             Py_DECREF(object);
+            if (buf[n] != 0x33) {
+                PyErr_SetString(PyExc_SystemError, "Sentinel value corrupted.");
+                return NULL;
+            }
             result = PyBytes_FromStringAndSize((const char *) buf, n);
             free(buf);
             return result;
