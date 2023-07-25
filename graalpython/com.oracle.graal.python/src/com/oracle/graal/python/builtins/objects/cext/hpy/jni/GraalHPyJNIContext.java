@@ -2274,9 +2274,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return executeLongBinaryContextFunction(HPyContextMember.CTX_DICT_COPY, h);
     }
 
-    public long ctxCompiles(long utf8_source, long utf8_filename, long kind) {
+    public long ctxCompiles(long utf8_source, long utf8_filename, int kind) {
         increment(HPyJNIUpcall.HPyCompiles);
-        return executeLongContextFunction(HPyContextMember.CTX_COMPILE_S, new long[]{utf8_source, utf8_filename, kind});
+        return executeLongContextFunction(HPyContextMember.CTX_COMPILE_S, new Object[]{utf8_source, utf8_filename, kind});
     }
 
     public long ctxEvalCode(long code, long globals, long locals) {
@@ -2565,7 +2565,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private Object convertArg(HPyContextSignatureType type, Object arg) {
         return switch (type) {
-            case Int, Int32_t, Uint32_t, HPy_UCS4 -> (Integer) arg;
+            case Int, Int32_t, Uint32_t, HPy_UCS4, _HPyCapsule_key, HPy_SourceKind -> (Integer) arg;
             default -> convertLongArg(type, (Long) arg);
         };
     }

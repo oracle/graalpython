@@ -1470,6 +1470,7 @@ public abstract class ErrorMessages {
                     "and the major version requested by the HPy extension itself. Major version tag parsed from filename: %d. Requested version: %d.%d.");
     public static final TruffleString HPY_NO_ABI_TAG = tsLiteral("HPy extension module '%s' at path '%s': could not find HPy ABI tag encoded in the filename. " +
                     "The extension claims to be compiled with HPy ABI version: %d.%d.");
+    public static final TruffleString HPY_INVALID_SOURCE_KIND = tsLiteral("invalid source kind");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

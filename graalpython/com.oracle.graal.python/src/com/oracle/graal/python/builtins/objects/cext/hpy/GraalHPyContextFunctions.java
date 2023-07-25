@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleSetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCastNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCompileNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContainsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarGetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarNewNodeGen;
@@ -562,6 +563,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.create();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.create();
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.create();
+                case CTX_COMPILE_S -> GraalHPyCompileNodeGen.create();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -723,6 +725,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_UNICODE_SUBSTRING -> GraalHPyUnicodeSubstringNodeGen.getUncached();
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.getUncached();
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.getUncached();
+                case CTX_COMPILE_S -> GraalHPyCompileNodeGen.getUncached();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -3635,6 +3638,26 @@ public abstract class GraalHPyContextFunctions {
                 throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S, "arg", "type");
             }
             return result;
+        }
+    }
+
+    @HPyContextFunction("ctx_Compile_s")
+    @GenerateUncached
+    public abstract static class GraalHPyCompile extends HPyQuaternaryContextFunction {
+        @Specialization
+        static Object doGeneric(GraalHPyContext hpyContext, Object srcPtr, Object filenamePtr, int kind,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString src = fromCharPointerNode.execute(srcPtr);
+            TruffleString filename = fromCharPointerNode.execute(filenamePtr);
+            Object builtinFunction = readAttributeFromObjectNode.execute(hpyContext.getContext().getBuiltins(), BuiltinNames.T_COMPILE);
+            GraalHPySourceKind sourceKind = GraalHPySourceKind.fromValue(kind);
+            if (sourceKind == null) {
+                throw raiseNode.raise(SystemError, ErrorMessages.HPY_INVALID_SOURCE_KIND);
+            }
+            return callNode.execute(builtinFunction, src, filename, sourceKind.getMode());
         }
     }
 }

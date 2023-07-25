@@ -1457,7 +1457,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
         return 1;
     }
     ctx->ctx_Dump = &ctx_Dump_jni;
-    jniMethod_ctx_Compile_s = (*env)->GetMethodID(env, clazz, "ctxCompiles", "(JJJ)J");
+    jniMethod_ctx_Compile_s = (*env)->GetMethodID(env, clazz, "ctxCompiles", "(JJI)J");
     if (jniMethod_ctx_Compile_s == NULL) {
         LOGS("ERROR: Java method ctxCompiles not found found !\n");
         return 1;
@@ -2257,7 +2257,7 @@ static void ctx_Dump_jni(HPyContext *ctx, HPy h)
 
 static HPy ctx_Compile_s_jni(HPyContext *ctx, const char *utf8_source, const char *utf8_filename, HPy_SourceKind kind)
 {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Compile_s, PTR_UP(utf8_source), PTR_UP(utf8_filename), LONG_UP(kind));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Compile_s, PTR_UP(utf8_source), PTR_UP(utf8_filename), INT_UP(kind));
 }
 
 static HPy ctx_EvalCode_jni(HPyContext *ctx, HPy code, HPy globals, HPy locals)

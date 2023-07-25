@@ -288,7 +288,8 @@ JNI_UPCALL_TYPE_CASTS = {
     'double': 'DOUBLE_UP',
     'size_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
-    '_HPyCapsule_key': 'INT_UP'
+    '_HPyCapsule_key': 'INT_UP',
+    'HPy_SourceKind': 'INT_UP'
 }
 
 JNI_UPCALLS = {
@@ -317,7 +318,8 @@ JNI_UPCALL_ARG_CASTS = {
     'double': 'DOUBLE_UP',
     'HPy_ssize_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
-    '_HPyCapsule_key': 'INT_UP'
+    '_HPyCapsule_key': 'INT_UP',
+    'HPy_SourceKind': 'INT_UP'
 }
 
 # The following table maps HPy context handles to Java objects (and a construct with additional arguments).
@@ -421,7 +423,7 @@ def get_cast_fun(type_name):
         return 'HPY_FIELD_UP'
     elif type_is_pointer(type_name):
         return 'PTR_UP'
-    elif type_name in ('int', '_HPyCapsule_key', 'HPyType_BuiltinShape'):
+    elif type_name in ('int', '_HPyCapsule_key', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'INT_UP'
     elif type_name == 'int32_t':
         return 'INT32_UP'
@@ -442,7 +444,7 @@ def get_cast_fun(type_name):
     return 'LONG_UP'
 
 def get_jni_signature_type(type_name):
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'I'
     elif type_name == 'long':
         return 'J'
@@ -455,7 +457,7 @@ def get_jni_signature_type(type_name):
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
@@ -468,7 +470,7 @@ def get_jni_c_type(type_name):
 
 def get_java_signature_type(type):
     type_name = toC(type)
-    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'int'
     if type_name == 'bool':
         return 'boolean'

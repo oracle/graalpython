@@ -165,7 +165,7 @@
     {"name":"ctxLeavePythonExecution","parameterTypes":[]},
     {"name":"ctxGlobalLoad","parameterTypes":["long"]},
     {"name":"ctxDump","parameterTypes":["long"]},
-    {"name":"ctxCompiles","parameterTypes":["long","long","long"]},
+    {"name":"ctxCompiles","parameterTypes":["long","long","int"]},
     {"name":"ctxEvalCode","parameterTypes":["long","long","long"]},
     {"name":"ctxContextVarNew","parameterTypes":["long","long"]},
     {"name":"ctxContextVarSet","parameterTypes":["long","long"]},
