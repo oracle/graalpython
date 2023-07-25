@@ -305,8 +305,8 @@ public abstract class CExtContext {
     }
 
     /**
-     * This method loads a C extension module (C API) and will initialize the
-     * corresponding native contexts if necessary.
+     * This method loads a C extension module (C API) and will initialize the corresponding native
+     * contexts if necessary.
      *
      * @param location The node that's requesting this operation. This is required for reporting
      *            correct source code location in case exceptions occur.
