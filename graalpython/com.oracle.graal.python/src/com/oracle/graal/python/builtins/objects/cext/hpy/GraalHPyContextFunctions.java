@@ -3326,9 +3326,13 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyDictKeys extends HPyBinaryContextFunction {
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object dict,
-                        @Cached PyDictKeys keysNode) {
-            return keysNode.execute((PDict) dict);
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object dictObj,
+                        @Cached PyDictKeys keysNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (dictObj instanceof PDict dict) {
+                return keysNode.execute(dict);
+            }
+            throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
