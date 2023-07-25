@@ -814,8 +814,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         static Object doCached(Node inliningTarget, @SuppressWarnings("unused") HPyContextMember member, Object[] arguments,
                         @Cached("member") HPyContextMember cachedMember,
                         @Cached(parameters = "member") GraalHPyContextFunction contextFunctionNode,
-                        @Cached(value = "createRetNode(member)", neverDefault = false) CExtToNativeNode retNode,
-                        @Cached(value = "createArgNodes(member)", neverDefault = false) CExtAsPythonObjectNode[] argNodes,
+                        @Cached("createRetNode(member)") CExtToNativeNode retNode,
+                        @Cached("createArgNodes(member)") CExtAsPythonObjectNode[] argNodes,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, cachedMember.getSignature().parameterTypes().length);
             try {
