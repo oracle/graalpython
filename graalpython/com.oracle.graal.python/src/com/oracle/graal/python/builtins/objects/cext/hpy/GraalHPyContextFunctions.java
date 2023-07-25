@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarSetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictCheckNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDivmodNodeGen;
@@ -267,6 +268,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyF
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -548,6 +550,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_ISSUBTYPE -> GraalHPyTypeIsSubtypeNodeGen.create();
                 case CTX_TYPE_GETNAME -> GraalHPyTypeGetNameNodeGen.create();
                 case CTX_DICT_KEYS -> GraalHPyDictKeysNodeGen.create();
+                case CTX_DICT_COPY -> GraalHPyDictCopyNodeGen.create();
                 case CTX_CAPSULE_NEW -> GraalHPyCapsuleNewNodeGen.create();
                 case CTX_CAPSULE_GET -> GraalHPyCapsuleGetNodeGen.create();
                 case CTX_CAPSULE_SET -> GraalHPyCapsuleSetNodeGen.create();
@@ -708,6 +711,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_ISSUBTYPE -> GraalHPyTypeIsSubtypeNodeGen.getUncached();
                 case CTX_TYPE_GETNAME -> GraalHPyTypeGetNameNodeGen.getUncached();
                 case CTX_DICT_KEYS -> GraalHPyDictKeysNodeGen.getUncached();
+                case CTX_DICT_COPY -> GraalHPyDictCopyNodeGen.getUncached();
                 case CTX_CAPSULE_NEW -> GraalHPyCapsuleNewNodeGen.getUncached();
                 case CTX_CAPSULE_GET -> GraalHPyCapsuleGetNodeGen.getUncached();
                 case CTX_CAPSULE_SET -> GraalHPyCapsuleSetNodeGen.getUncached();
@@ -3331,6 +3335,21 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PRaiseNode raiseNode) {
             if (dictObj instanceof PDict dict) {
                 return keysNode.execute(dict);
+            }
+            throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @HPyContextFunction("ctx_Dict_Copy")
+    @GenerateUncached
+    public abstract static class GraalHPyDictCopy extends HPyBinaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object dictObj,
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
+            if (dictObj instanceof PDict dict) {
+                return factory.createDict(copyNode.execute(dict.getDictStorage()));
             }
             throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
