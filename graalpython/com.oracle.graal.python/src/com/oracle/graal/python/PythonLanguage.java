@@ -326,7 +326,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape hpySymbolCache;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
-    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+    private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
@@ -548,7 +548,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
                     RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = errorCallback;
         if (errorCb == null) {
@@ -557,8 +557,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
+            final ModTy mod;
             if (hasArguments) {
-                mod = transformASTForExecutionWithArguments(argumentNames, mod);
+                mod = transformASTForExecutionWithArguments(argumentNames, modIn);
+            } else {
+                mod = modIn;
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
             CodeUnit co = cu.assemble();
@@ -657,8 +660,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
-                Object locals = getFrameLocalsNode.execute(pFrame);
-                PArguments.setSpecialArgument(arguments, locals);
+                Object pLocals = getFrameLocalsNode.execute(pFrame);
+                PArguments.setSpecialArgument(arguments, pLocals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {
