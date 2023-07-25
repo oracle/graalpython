@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -98,3 +98,11 @@ def test_addAnnotation():
     m.addAnnotation('myKey', 10)
     assert len(m.addAnnotation.__annotations__) == 2
     assert 10 == m.addAnnotation.__annotations__['myKey']
+
+def test_annotatedAssignments():
+    import annotations.annotatedAssignments as m
+
+    assert m.slice_no_assign_count == 4
+    assert m.slice_assign_count == 4
+    assert m.attr_no_assign_count == 1
+    assert m.attr_assign_count == 1
