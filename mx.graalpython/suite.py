@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
+                "version": "55300f5b6190f54229e3a63177935750e23fcdfb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
+                "version": "55300f5b6190f54229e3a63177935750e23fcdfb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
+                "version": "55300f5b6190f54229e3a63177935750e23fcdfb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -68,7 +68,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "d33417d4ab0771ab36cf7a4dd9c8161fb83cd8c1",
+                "version": "55300f5b6190f54229e3a63177935750e23fcdfb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -779,6 +779,7 @@ suite = {
                 "name" : "org.graalvm.py.launcher",
                 "exports" : [
                     "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell",
+                    "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
             "dependencies": [
@@ -787,8 +788,8 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-                "sdk:JLINE3",
             ],
+            "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
         },
 
