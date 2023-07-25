@@ -1,6 +1,0 @@
---- a/patched_package/__init__.py	2023-01-04 12:36:48.112003339 +0100
-+++ b/patched_package/__init__.py	2023-01-04 12:36:19.708004285 +0100
-@@ -1,2 +1,2 @@
- def test_fun():
--    return 'Unpatched'
-+    return 'Patched'
