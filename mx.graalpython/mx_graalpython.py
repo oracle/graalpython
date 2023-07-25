@@ -1992,6 +1992,10 @@ def _python_checkpatchfiles():
             # Empty license field. It's MIT
             'urllib3-2.patch',
             # Empty license field. It's MIT
+            'wheel-0.40.patch',
+            'wheel-0.38.patch',
+            'wheel-0.37.patch',
+            'wheel-0.35.patch',
             'wheel-pre-0.35.patch',
         }
         allowed_licenses = [

@@ -77,5 +77,5 @@ patch_wheel() {
     rm -rf "$tmpdir"
 }
 
-patch_wheel setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch
-patch_wheel pip graalpython/lib-graalpython/patches/pip/whl/pip-22.2.2.patch
+patch_wheel setuptools graalpython/lib-graalpython/patches/setuptools/setuptools-63.patch
+patch_wheel pip graalpython/lib-graalpython/patches/pip/pip-22.2.2.patch

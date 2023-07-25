@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 3.21.9'
+patch = 'protobuf-3.21.9.patch'
