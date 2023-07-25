@@ -372,26 +372,32 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
     abstract static class PyUnicode_Substring extends CApiTernaryBuiltinNode {
-        @Specialization(guards = {"isString(s) || isStringSubtype(s, getClassNode, isSubtypeNode)"})
-        Object find(Object s, long start, long end,
+        @Specialization(guards = {"isString(s) || isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        static Object doString(Object s, long start, long end,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            if (profile.profile(inliningTarget, start < 0 || end < 0)) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+            }
             Object getItemCallable = lookupAttrNode.execute(null, s, T___GETITEM__);
             return callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
         }
 
-        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, getClassNode, isSubtypeNode)"})
-        Object find(Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        Object doError(Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
         }
 
-        protected boolean isStringSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        protected static boolean isStringSubtype(Object obj, Node n, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(n, obj), PythonBuiltinClassType.PString);
         }
     }
 
