@@ -279,7 +279,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute((PSequence) other) instanceof PythonBuiltinClassType;
         }
 
-        @Specialization(guards = "isBuiltinSequence(other, getClassNode)", limit = "1")
+        @Specialization(guards = "isBuiltinSequence(other, getClassNode)")
         static void doBuiltin(VirtualFrame frame, PHashingCollection collection, @SuppressWarnings("unused") PSequence other,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -295,7 +295,7 @@ public final class SetBuiltins extends PythonBuiltins {
             collection.setDictStorage(curStorage);
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"})
         static void doIterable(VirtualFrame frame, PHashingCollection collection, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,

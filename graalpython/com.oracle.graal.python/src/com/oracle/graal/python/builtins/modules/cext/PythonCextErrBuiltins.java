@@ -397,7 +397,7 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
         public abstract int executeInt(Object err, Object exc);
 
-        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(exc, getClassNode, isSubtypeNode)"}, limit = "1")
+        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
         static int matches(Object err, Object exc,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -416,7 +416,7 @@ public final class PythonCextErrBuiltins {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"}, limit = "1")
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
         static int matches(Object errArg, Object exc,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,

@@ -121,28 +121,28 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AccumulateNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, @SuppressWarnings("unused") PNone initial,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return create(frame, cls, iterable, null, null, getIter);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(initial)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(initial)"})
         protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, Object initial,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return create(frame, cls, iterable, null, initial, getIter);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)"})
         protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, @SuppressWarnings("unused") PNone initial,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return create(frame, cls, iterable, func, null, getIter);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)", "!isNone(initial)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)", "!isNone(initial)"})
         protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -158,7 +158,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object iterable, Object func, Object initial,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -179,7 +179,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.CombinationsNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"})
         Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
                         @Cached ToArrayNode toArrayNode,
@@ -201,14 +201,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "r < 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "r < 0"})
         Object construct(Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object notype(Object cls, Object iterable, Object r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -229,7 +229,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.CombinationsWithReplacementNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"})
         Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
                         @Cached ToArrayNode toArrayNode) {
@@ -245,14 +245,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "r < 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "r < 0"})
         Object construct(Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object notype(Object cls, Object iterable, Object r,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -271,7 +271,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PCompress construct(VirtualFrame frame, Object cls, Object data, Object selectors,
                         @Cached PyObjectGetIter getIter,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -281,7 +281,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -305,7 +305,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class CycleNode extends PythonBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PCycle construct(VirtualFrame frame, Object cls, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -317,7 +317,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object iterable,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -331,7 +331,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DropwhileNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PDropwhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -342,7 +342,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object predicate, Object iterable,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -355,14 +355,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     "If function is None, return the items that are false.")
     @GenerateNodeFactory
     public abstract static class FilterFalseNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PFilterfalse constructNoFunc(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone func, Object sequence,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return construct(frame, cls, null, sequence, getIter, isTypeNode);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)", "!isNoValue(func)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(func)", "!isNoValue(func)"})
         protected PFilterfalse construct(VirtualFrame frame, Object cls, Object func, Object sequence,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -372,7 +372,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -405,14 +405,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.GroupByNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(key)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(key)"})
         protected PGroupBy constructNoType(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone key,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return construct(frame, cls, iterable, null, getIter, isTypeNode);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(key)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(key)"})
         protected PGroupBy construct(VirtualFrame frame, Object cls, Object iterable, Object key,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -422,7 +422,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object iterable, @SuppressWarnings("unused") PNone key,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -434,14 +434,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GrouperNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PGrouper construct(Object cls, PGroupBy parent, Object tgtKey,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return factory().createGrouper(parent, tgtKey);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isGroupBy(parent)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isGroupBy(parent)"})
         Object construct(Object cls, Object parent, Object tgtky,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.INCORRECT_USAGE_OF_INTERNAL_GROUPER);
@@ -452,7 +452,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object notype(Object cls, PGroupBy parent, Object tgtKey,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -465,7 +465,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TakewhileNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PTakewhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -475,7 +475,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object predicate, Object iterable,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -539,7 +539,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TeeDataObjectNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             return factory().createTeeDataObject();
@@ -564,7 +564,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.PermutationsNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(r)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(r)"})
         Object constructNoR(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone r,
                         @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,
@@ -576,7 +576,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return construct(cls, pool, pool.length, inliningTarget, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(rArg)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(rArg)"})
         @SuppressWarnings("truffle-static-method")
         Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
                         @Bind("this") Node inliningTarget,
@@ -636,7 +636,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -657,7 +657,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProductNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
                         @Cached ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -666,7 +666,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat == 1"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat == 1"})
         Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @Cached ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -675,7 +675,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat > 1"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat > 1"})
         Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
                         @Cached ToArrayNode toArrayNode,
                         @Cached LoopConditionProfile loopProfile,
@@ -691,7 +691,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat == 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat == 0"})
         Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             PProduct self = factory().createProduct(cls);
@@ -703,7 +703,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat < 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "repeat < 0"})
         Object constructNeg(Object cls, Object[] iterables, int repeat,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
@@ -737,7 +737,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return lists;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object construct(Object cls, Object iterables, Object repeat,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -757,7 +757,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.RepeatNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         Object constructNone(Object cls, Object object, @SuppressWarnings("unused") PNone times,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             PRepeat self = factory().createRepeat(cls);
@@ -766,7 +766,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "times < 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "times < 0"})
         Object constructNeg(Object cls, Object object, @SuppressWarnings("unused") int times,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             PRepeat self = factory().createRepeat(cls);
@@ -775,7 +775,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "times >= 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "times >= 0"})
         Object construct(Object cls, Object object, int times,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             PRepeat self = factory().createRepeat(cls);
@@ -784,7 +784,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "times >= 0"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "times >= 0"})
         Object construct(VirtualFrame frame, Object cls, Object object, long times,
                         @Cached PyLongAsIntNode asIntNode,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -795,13 +795,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(times)", "!isInt(times)", "!isLong(times)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(times)", "!isInt(times)", "!isLong(times)"})
         Object construct(Object cls, Object object, Object times,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, S_EXPECTED_GOT_P, "integer", times);
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object object, Object times,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -815,7 +815,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ChainNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
                         @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -826,7 +826,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object notype(Object cls, Object[] iterables,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -844,7 +844,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return ItertoolsModuleBuiltinsClinicProviders.CountNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         Object construct(VirtualFrame frame, Object cls, Object start, Object step,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectTypeCheck typeCheckNode,
@@ -872,7 +872,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object construct(Object cls, Object start, Object step,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -885,7 +885,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StarmapNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PStarmap construct(VirtualFrame frame, Object cls, Object fun, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -896,7 +896,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object construct(Object cls, Object fun, Object iterable,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -912,7 +912,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             int stop = -1;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 1"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 1"})
         Object constructOne(VirtualFrame frame, Object cls, Object iterable, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -940,7 +940,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 2"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 2"})
         Object constructTwo(VirtualFrame frame, Object cls, Object iterable, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -957,7 +957,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 3"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 3"})
         Object constructThree(VirtualFrame frame, Object cls, Object iterable, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -993,7 +993,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length < 1 || args.length > 3"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "args.length < 1 || args.length > 3"})
         Object notype(Object cls, Object iterable, Object[] args,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ISLICE_WRONG_ARGS);
@@ -1037,7 +1037,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object construct(Object cls, Object iterable, Object[] args,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -1054,7 +1054,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                                     "defaults to None or can be specified by a keyword argument.")
     @GenerateNodeFactory
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         Object constructNoFillValue(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PNone fillValue,
                         @Shared("getIter") @Cached PyObjectGetIter getIterNode,
                         @Cached LoopConditionProfile loopProfile,
@@ -1062,7 +1062,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return construct(frame, cls, args, null, getIterNode, loopProfile, isTypeNode);
         }
 
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNoValue(fillValue)"}, limit = "1")
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNoValue(fillValue)"})
         Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValue,
                         @Shared("getIter") @Cached PyObjectGetIter getIterNode,
                         @Cached LoopConditionProfile loopProfile,
@@ -1080,7 +1080,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object construct(Object cls, Object iterables, Object repeat,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -1093,7 +1093,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "isTypeNode.execute(cls)")
         protected PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -1102,7 +1102,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object iterable,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {

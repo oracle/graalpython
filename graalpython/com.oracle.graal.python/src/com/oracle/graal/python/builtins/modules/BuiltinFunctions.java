@@ -115,10 +115,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -461,7 +461,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doList(VirtualFrame frame, PList object,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -469,7 +469,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -477,7 +477,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -519,7 +519,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doList(VirtualFrame frame, PList object,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -527,7 +527,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -535,7 +535,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
@@ -1313,7 +1313,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
 
         @SuppressWarnings({"unused", "truffle-static-method"})
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
+        @Specialization(guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile stringProfile,
@@ -1324,7 +1324,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @SuppressWarnings({"unused", "truffle-static-method"})
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
+        @Specialization(guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile stringProfile,

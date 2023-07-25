@@ -351,13 +351,13 @@ public final class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TranslateNode extends BaseTranslateNode {
 
-        @Specialization(guards = {"isNoValue(delete)", "checkExactNode.execute(self)"}, limit = "1")
+        @Specialization(guards = {"isNoValue(delete)", "checkExactNode.execute(self)"})
         public static PBytes translate(PBytes self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
                         @SuppressWarnings("unused") @Shared @Cached PyBytesCheckExactNode checkExactNode) {
             return self;
         }
 
-        @Specialization(guards = {"isNoValue(delete)", "!checkExactNode.execute(self)"}, limit = "1")
+        @Specialization(guards = {"isNoValue(delete)", "!checkExactNode.execute(self)"})
         public PBytes translate(Object self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
                         @SuppressWarnings("unused") @Shared @Cached PyBytesCheckExactNode checkExactNode,
                         @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
@@ -418,7 +418,7 @@ public final class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)")
         PBytes doBytes(Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
@@ -426,7 +426,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return factory().createBytes(cls, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)")
         Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
@@ -562,7 +562,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "check.execute(inliningTarget, other)"}, limit = "1")
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "check.execute(inliningTarget, other)"})
         @SuppressWarnings("truffle-static-method")
         boolean cmp(Object self, Object other,
                         @Bind("this") Node inliningTarget,
@@ -574,7 +574,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "!check.execute(inliningTarget, other)"}, limit = "1")
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "!check.execute(inliningTarget, other)"})
         @SuppressWarnings("unused")
         static Object cmp(Object self, Object other,
                         @Bind("this") Node inliningTarget,
@@ -582,7 +582,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(guards = "!check.execute(inliningTarget, self)", limit = "1")
+        @Specialization(guards = "!check.execute(inliningTarget, self)")
         @SuppressWarnings({"unused", "truffle-static-method"})
         Object error(Object self, Object other,
                         @Bind("this") Node inliningTarget,
@@ -1160,7 +1160,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return BytesBuiltinsClinicProviders.HexNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, self)", limit = "1")
+        @Specialization(guards = "check.execute(inliningTarget, self)")
         TruffleString none(Object self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,
@@ -1171,7 +1171,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             return hex(self, (byte) 0, 0, inliningTarget, check, getBytesStorage, earlyExit, getBytes, toHexNode);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, self)", limit = "1")
+        @Specialization(guards = "check.execute(inliningTarget, self)")
         TruffleString hex(Object self, byte sep, int bytesPerSepGroup,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,

@@ -79,14 +79,14 @@ public abstract class PrepareExceptionNode extends Node {
         return exc;
     }
 
-    @Specialization(guards = "check.execute(inliningTarget, exc)", limit = "1")
+    @Specialization(guards = "check.execute(inliningTarget, exc)")
     static Object doException(PythonAbstractNativeObject exc, @SuppressWarnings("unused") PNone value,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check) {
         return exc;
     }
 
-    @Specialization(guards = {"check.execute(inliningTarget, exc)", "!isPNone(value)"}, limit = "1")
+    @Specialization(guards = {"check.execute(inliningTarget, exc)", "!isPNone(value)"})
     static Object doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -94,7 +94,7 @@ public abstract class PrepareExceptionNode extends Node {
         throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)"})
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
@@ -117,7 +117,7 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
+    @Specialization(guards = "isTypeNode.execute(type)")
     static Object doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
@@ -134,7 +134,7 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
+    @Specialization(guards = "isTypeNode.execute(type)")
     static Object doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,

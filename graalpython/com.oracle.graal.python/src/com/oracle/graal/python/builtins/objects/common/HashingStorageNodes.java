@@ -289,7 +289,7 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"})
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
@@ -300,7 +300,7 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"})
         static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
@@ -387,7 +387,7 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"})
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
@@ -398,7 +398,7 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
+        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"})
         static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
@@ -489,7 +489,7 @@ public class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)")
         static Object domPStringKey(DynamicObjectStorage self, Object key, boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
@@ -499,7 +499,7 @@ public class HashingStorageNodes {
             return domStringKey(self, castStr.execute(key), isPop, toUpdate, inliningTarget, invalidateMroProfile, dylib);
         }
 
-        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)")
         static Object domOther(Frame frame, @SuppressWarnings("unused") DynamicObjectStorage self, Object key, @SuppressWarnings("unused") boolean isPop,
                         @SuppressWarnings("unused") PHashingCollection toUpdate,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,

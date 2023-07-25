@@ -77,7 +77,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         }
 
         // raise * from <exception>
-        @Specialization(guards = "check.execute(inliningTarget, cause)", limit = "1")
+        @Specialization(guards = "check.execute(inliningTarget, cause)")
         static void setCause(@SuppressWarnings("unused") VirtualFrame frame, Object exception, Object cause,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -141,7 +141,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     }
 
     // raise <native-exception>
-    @Specialization(guards = {"check.execute(inliningTarget, exception)", "isNoValue(cause)"}, limit = "1")
+    @Specialization(guards = {"check.execute(inliningTarget, exception)", "isNoValue(cause)"})
     void doRaiseNative(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractNativeObject exception, @SuppressWarnings("unused") PNone cause,
                     @SuppressWarnings("unused") boolean rootNodeVisible,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -158,7 +158,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     }
 
     // raise <native-exception> from *
-    @Specialization(guards = {"check.execute(inliningTarget, exception)", "!isNoValue(cause)"}, limit = "1")
+    @Specialization(guards = {"check.execute(inliningTarget, exception)", "!isNoValue(cause)"})
     void doRaiseNative(@SuppressWarnings("unused") VirtualFrame frame, PythonAbstractNativeObject exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,

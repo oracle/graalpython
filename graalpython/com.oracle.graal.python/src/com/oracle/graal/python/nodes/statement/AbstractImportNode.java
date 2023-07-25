@@ -212,7 +212,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             return indexOfCodePointNode.execute(name, '.', 0, codePointLengthNode.execute(name, TS_ENCODING), TS_ENCODING) >= 0;
         }
 
-        @Specialization(guards = {"level == 0", "fromList.length == 0", "!containsDot(name, codePointLengthNode, indexOfCodePointNode)"}, limit = "1")
+        @Specialization(guards = {"level == 0", "fromList.length == 0", "!containsDot(name, codePointLengthNode, indexOfCodePointNode)"})
         public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, TruffleString name, @SuppressWarnings("unused") Object globals,
                         @SuppressWarnings("unused") TruffleString[] fromList,
                         @SuppressWarnings("unused") int level,

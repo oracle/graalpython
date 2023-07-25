@@ -937,7 +937,7 @@ public abstract class CExtNodes {
             return !aLib.isIdentical(a, b, bLib);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
@@ -947,7 +947,7 @@ public abstract class CExtNodes {
             return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
@@ -957,7 +957,7 @@ public abstract class CExtNodes {
             return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,

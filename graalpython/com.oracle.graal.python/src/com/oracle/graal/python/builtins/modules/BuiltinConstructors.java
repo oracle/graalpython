@@ -336,14 +336,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         abstract static class CreateBytes extends PNodeWithContext {
             abstract Object execute(Node inliningTarget, Object cls, byte[] bytes);
 
-            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
             static PBytes doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached PythonObjectFactory factory) {
                 return factory.createBytes(cls, bytes);
             }
 
-            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")
             static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached PythonToNativeNode toNative,
@@ -966,35 +966,35 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // Used for the recursive call
         protected abstract double executeDouble(VirtualFrame frame, PythonBuiltinClassType cls, Object arg) throws UnexpectedResultException;
 
-        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)")
         static double floatFromDouble(@SuppressWarnings("unused") Object cls, double arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)")
         static double floatFromInt(@SuppressWarnings("unused") Object cls, int arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)")
         static double floatFromLong(@SuppressWarnings("unused") Object cls, long arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)")
         static double floatFromBoolean(@SuppressWarnings("unused") Object cls, boolean arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg ? 1d : 0d;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)")
         static double floatFromString(VirtualFrame frame, @SuppressWarnings("unused") Object cls, TruffleString obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
@@ -1002,7 +1002,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return fromString.execute(frame, obj);
         }
 
-        @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"}, limit = "1")
+        @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"})
         static double floatFromNoValue(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
@@ -1010,7 +1010,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "!isNoValue(obj)"}, //
-                        replaces = "floatFromString", limit = "1")
+                        replaces = "floatFromString")
         static double floatFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
@@ -1026,8 +1026,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {
                         "!needsNativeAllocationNode.execute(inliningTarget, cls)", //
                         "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", //
-                        "isNoValue(obj)"}, //
-                        limit = "1")
+                        "isNoValue(obj)"})
         Object floatFromNoneManagedSubclass(Object cls, PNone obj,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -1037,8 +1036,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {
                         "!needsNativeAllocationNode.execute(inliningTarget, cls)", //
-                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
-                        limit = "1")
+                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"})
         Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -1089,14 +1087,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFrozenSet(cls);
         }
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)", limit = "1")
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
         public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
                         @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)", limit = "1")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
         public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @Bind("this") Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached IsAnyBuiltinClassProfile isBuiltinClass) {
@@ -2111,7 +2109,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object encoding, Object errors);
 
-        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"}, limit = "1")
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "isNoValue(arg)"})
         @SuppressWarnings("unused")
         Object strNoArgs(Object cls, PNone arg, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
@@ -2120,7 +2118,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asPString(cls, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile);
         }
 
-        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
         Object strOneArg(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -2259,7 +2257,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
         static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -2908,7 +2906,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
-        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
         static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -2921,7 +2919,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+        @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")
         static Object doNativeSubtype(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
