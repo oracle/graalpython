@@ -84,11 +84,12 @@ public class Py2BinLauncher {
     private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     public static void main(String[] args) throws IOException {
+        VirtualFileSystem vfs = new VirtualFileSystem();
         var builder = Context.newBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
             .allowIO(true)
-            .fileSystem(new VirtualFileSystem())
+            .fileSystem(vfs)
             .option("python.PosixModuleBackend", "java")
             .option("python.NativeModules", "")
             .option("python.DontWriteBytecodeFlag", "true")
@@ -98,9 +99,9 @@ public class Py2BinLauncher {
             .option("python.AlwaysRunExcepthook", "true")
             .option("python.ForceImportSite", "true")
             .option("python.RunViaLauncher", "true")
-            .option("python.Executable", VENV_PREFIX + "/bin/python")
-            .option("python.InputFilePath", PROJ_PREFIX)
-            .option("python.PythonHome", HOME_PREFIX)
+            .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
+            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))            
+            .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
             .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
             builder.option("engine.WarnInterpreterOnly", "false");
