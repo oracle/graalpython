@@ -3559,14 +3559,21 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeSubstring extends HPyQuaternaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object obj, long lstart, long lend,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached CastToJavaIntExactNode castStart,
                         @Cached CastToJavaIntExactNode castEnd,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached StrGetItemNodeWithSlice getSlice) {
             TruffleString value = castStr.execute(obj);
             int start = castStart.execute(lstart);
             int end = castEnd.execute(lend);
-            return getSlice.execute(value, new SliceInfo(start, end, 1));
+            if (profile.profile(inliningTarget, start < 0 || end < 0)) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+            }
+            SliceInfo sliceInfo = PSlice.computeIndices(start, end, 1, codePointLengthNode.execute(value, TS_ENCODING));
+            return getSlice.execute(value, sliceInfo);
         }
     }
 
