@@ -53,6 +53,7 @@
         <graal.sdk.version>{graal-sdk-version}</graal.sdk.version>
         <native.image.maven.plugin.version>{native-image-mvn-plugin}</native.image.maven.plugin.version>
         <graalpy.executable>${env.JAVA_HOME}/bin/graalpy</graalpy.executable>
+        <graalpy.venv.executable>/bin/python</graalpy.venv.executable>
     </properties>
 
     <build>
@@ -84,7 +85,7 @@
                             <executable>${graalpy.executable}</executable>
                             <arguments>
                                 <argument>-c</argument>
-                                <argument>__graalpython__.list_files('${project.basedir}/src/main/resources/{vfs-prefix}', '${project.build.directory}/classes/{vfs-prefix}/{files-list-name}')</argument>
+                                <argument>__graalpython__.list_files(r'${project.basedir}/src/main/resources/{vfs-prefix}', r'${project.build.directory}/classes/{vfs-prefix}/{files-list-name}')</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -192,6 +193,7 @@
         <profile>
             <properties>
                 <graalpy.executable>${env.JAVA_HOME}/bin/graalpy.cmd</graalpy.executable>
+                <graalpy.venv.executable>/Scripts/python.cmd</graalpy.venv.executable>
             </properties>
             <activation>
                 <os>
@@ -232,8 +234,11 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${project.basedir}/src/main/resources/{vfs-venv-prefix}/bin/pip</executable>
+                                    <executable>${project.basedir}/src/main/resources/{vfs-venv-prefix}${graalpy.venv.executable}</executable>
                                     <arguments>
+                                        <argument>-m</argument>
+                                        <argument>pip</argument>
+                                        <argument>--no-cache-dir</argument>
                                         <argument>install</argument>
                                         <argument>termcolor</argument>
                                     </arguments>
@@ -248,7 +253,7 @@
             </build>
             <activation>
                 <file>
-                    <missing>src/main/resources/{vfs-venv-prefix}/bin/pip</missing>
+                    <missing>src/main/resources/vfs/venv/pyvenv.cfg</missing>
                 </file>
             </activation>
         </profile>

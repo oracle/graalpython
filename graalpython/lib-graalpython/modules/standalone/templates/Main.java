@@ -57,11 +57,12 @@ public class Main {
     private static String PYTHON = "python";
     
     public static void main(String[] args) throws IOException {
+        VirtualFileSystem vfs = new VirtualFileSystem();
         Builder builder = Context.newBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
             .allowIO(true)
-            .fileSystem(new VirtualFileSystem())
+            .fileSystem(vfs)
             .option("python.PosixModuleBackend", "java")
             .option("python.DontWriteBytecodeFlag", "true")
             .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
@@ -70,12 +71,12 @@ public class Main {
             .option("python.AlwaysRunExcepthook", "false")
             .option("python.ForceImportSite", "true")
             .option("python.RunViaLauncher", "false")
-            .option("python.Executable", VENV_PREFIX + "/bin/python")
-            .option("python.InputFilePath", PROJ_PREFIX)            
-            .option("python.CheckHashPycsMode", "never");
+            .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
+            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))            
+            .option("python.CheckHashPycsMode", "never")
+            .option("engine.WarnInterpreterOnly", "false");
         if(ImageInfo.inImageRuntimeCode()) {
-            builder.option("engine.WarnInterpreterOnly", "false")
-                   .option("python.PythonHome", HOME_PREFIX);
+            builder.option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX));
         }
         Context context = builder.build();
                 
@@ -99,6 +100,5 @@ public class Main {
             }
         }
     }
-   
-    
+
 }

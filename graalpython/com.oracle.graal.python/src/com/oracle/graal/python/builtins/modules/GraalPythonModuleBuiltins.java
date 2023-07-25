@@ -971,7 +971,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 List<String> ret = list(dir);
                 String parentPathString = dir.getParent().getAbsoluteFile().getPath();
                 for (String f : ret) {
-                    bw.write(f.substring(parentPathString.length()));
+                    String tt = f.substring(parentPathString.length());
+                    if (tt.charAt(0) == '\\') {
+                        tt = tt.replace("\\", "/");
+                    }
+                    bw.write(tt);
                     bw.write("\n");
                 }
             } catch (IOException e) {

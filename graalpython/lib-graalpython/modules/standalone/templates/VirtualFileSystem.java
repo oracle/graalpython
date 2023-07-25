@@ -65,6 +65,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -73,48 +74,122 @@ import org.graalvm.polyglot.io.FileSystem;
 public final class VirtualFileSystem implements FileSystem {
     
     /*
-     * Virtual filesystem root
+     * Root of the virtual filesystem in the resources.
      */
-    static final String VFS_PREFIX = "/{vfs-prefix}";
+    private static final String VFS_PREFIX = "/vfs";
     
     /* 
-     * Index of all files and directories available in the filessytem at runtime.
-     * - paths are relative to the filesystem root
+     * Index of all files and directories available in the resources at runtime.
+     * - paths are absolute
      * - directory paths end with a '/' 
-     * Used to determine directy entries, if an entry is a file or a directory, etc. 
+     * - uses '/' separator regardless of platform.
+     * Used to determine directory entries, if an entry is a file or a directory, etc. 
      */       
     private static final String FILES_LIST_PATH = VFS_PREFIX + "/{files-list-name}";
     
-    private static final TreeMap<Path, Entry> VFS_ENTRIES = new TreeMap<>();
+    /*
+     * Maps platform-specific paths to entries.
+     */
+    private static final TreeMap<String, Entry> VFS_ENTRIES = new TreeMap<>();
 
+    /*
+     * These use '/' as the separator and start with VFS_PREFIX, no trailing slashes.
+     */
     private static Set<String> filesList;
     private static Set<String> dirsList;
+    private static Map<String, String> lowercaseToResourceMap;
 
     private final FileSystem delegate = FileSystem.newDefaultFileSystem();
 
-    static final record Entry(boolean isFile, Object data) {};
+    private static final String PLATFORM_SEPARATOR = Paths.get("").getFileSystem().getSeparator();
+    private static final char RESOURCE_SEPARATOR_CHAR = '/';
+    private static final String RESOURCE_SEPARATOR = String.valueOf(RESOURCE_SEPARATOR_CHAR);
     
-    private static void putVFSEntry(Path p, Entry e) throws IOException {
-        VFS_ENTRIES.put(toRealPathStatic(toAbsolutePathStatic(p)), e);
+    /*
+     * For files, `data` is a byte[], for directories it is a Path[] which 
+     * contains platform-specific paths.
+     */
+    private static final record Entry(boolean isFile, Object data) {};
+    
+    /*
+     * Determines where the virtual filesystem lives in the real filesystem,
+     * e.g. if set to "X:\graalpy_vfs", then a resource with path /vfx/xyz/abc
+     * is visible as "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path
+     * with platform-specific separators without any trailing separator.
+     * If that file or directory actually exists, it will not be accessible.
+     */
+    private final String mountPoint;
+    private static final boolean caseInsensitive = isWindows();
+    
+    public VirtualFileSystem() {
+        String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
+        if (mp == null) {
+            mp = isWindows() ? "X:\\graalpy_vfs" : "/graalpy_vfs";
+        }
+        if (mp.endsWith(PLATFORM_SEPARATOR) || !Path.of(mp).isAbsolute()) {
+            throw new IllegalArgumentException("GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator");
+        }
+        this.mountPoint = mp;
     }
 
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+    }
+    
+    public String resourcePathToPlatformPath(String path) {
+        assert path.startsWith(VFS_PREFIX);
+        path = path.substring(VFS_PREFIX.length());
+        if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
+            path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
+        }
+        return mountPoint + path;
+    }
+
+    private String platformPathToResourcePath(String path) throws IOException {
+        assert path.startsWith(mountPoint);
+        
+        path = path.substring(mountPoint.length());
+        if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
+            path = path.replace(PLATFORM_SEPARATOR, RESOURCE_SEPARATOR);
+        }
+        if (path.endsWith(RESOURCE_SEPARATOR)) {
+            path = path.substring(0, path.length() - RESOURCE_SEPARATOR.length());
+        }
+        path = VFS_PREFIX + path;
+        if (caseInsensitive) {
+            path = getLowercaseToResourceMap().get(path);
+        }
+        return path;
+    }
+    
     private static Set<String> getFilesList() throws IOException {
-        if(filesList == null) {
+        if (filesList == null) {
             initFilesAndDirsList();
         }
         return filesList;
     }        
 
     private static Set<String> getDirsList() throws IOException {
-        if(dirsList == null) {
+        if (dirsList == null) {
             initFilesAndDirsList();
         }
         return dirsList;
-    }        
+    }
+
+    private static Map<String, String> getLowercaseToResourceMap() throws IOException {
+        assert caseInsensitive;
+        if (lowercaseToResourceMap == null) {
+            initFilesAndDirsList();
+        }
+        return lowercaseToResourceMap;
+    }
 
     private static void initFilesAndDirsList() throws IOException {
         filesList = new HashSet<>();
         dirsList = new HashSet<>();
+        if (caseInsensitive) {
+            lowercaseToResourceMap = new HashMap<>();
+        }
         try(InputStream stream = VirtualFileSystem.class.getResourceAsStream(FILES_LIST_PATH)) {
             if (stream == null) {
                 return;
@@ -122,17 +197,20 @@ public final class VirtualFileSystem implements FileSystem {
             BufferedReader br = new BufferedReader(new InputStreamReader(stream));
             String line;
             while((line = br.readLine()) != null) {
-                if(line.endsWith("/")) {                        
+                if(line.endsWith(RESOURCE_SEPARATOR)) {                        
                     line = line.substring(0, line.length() - 1);
                     dirsList.add(line);
                 } else {
                     filesList.add(line);                            
-                }                         
+                }
+                if (caseInsensitive) {
+                    lowercaseToResourceMap.put(line.toLowerCase(Locale.ROOT), line);
+                }
             }                    
         }    
     }
 
-    private static Entry readDirEntry(String parentDir) throws IOException {
+    private Entry readDirEntry(String parentDir) throws IOException {
         List<String> l = new ArrayList<>();
 
         // find all files in parent dir
@@ -151,14 +229,14 @@ public final class VirtualFileSystem implements FileSystem {
 
         Path[] paths = new Path[l.size()];
         for (int i = 0; i < paths.length; i++) {
-            paths[i] = Paths.get(l.get(i));
+            paths[i] = Paths.get(resourcePathToPlatformPath(l.get(i)));
         }
         return new Entry(false, paths);
     }
 
     private static boolean isParent(String parentDir, String file) {
         return file.length() > parentDir.length() && file.startsWith(parentDir) && 
-               file.indexOf("/", parentDir.length() + 1) < 0;
+               file.indexOf(RESOURCE_SEPARATOR_CHAR, parentDir.length() + 1) < 0;
     }
 
     private static Entry readFileEntry(String file) throws IOException {
@@ -183,22 +261,20 @@ public final class VirtualFileSystem implements FileSystem {
     }
 
     private Entry file(Path path) throws IOException {
-        Entry e = VFS_ENTRIES.get(toRealPath(toAbsolutePath(path)));
+        path = toRealPath(toAbsolutePath(path));
+        String pathString = path.toString();
+        String entryKey = caseInsensitive ? pathString.toLowerCase(Locale.ROOT) : pathString;
+        Entry e = VFS_ENTRIES.get(entryKey);
         if(e == null) {
-            String pathString = path.toString();
-            if(pathString.endsWith("/")) {
-                pathString = pathString.substring(0, pathString.length() - 1);
-            }
-
-            URL uri = VirtualFileSystem.class.getResource(pathString);
+            pathString = platformPathToResourcePath(pathString);
+            URL uri = pathString == null ? null : VirtualFileSystem.class.getResource(pathString);
             if(uri != null) {
                 if(getDirsList().contains(pathString)) {
                     e = readDirEntry(pathString);
                 } else {
                     e = readFileEntry(pathString);
-                    getFilesList().remove(pathString);
                 }
-                putVFSEntry(path, e);
+                VFS_ENTRIES.put(entryKey, e);
             }
         }
         return e;
@@ -220,7 +296,7 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
-        if (path.normalize().startsWith(VFS_PREFIX)) {
+        if (path.normalize().startsWith(mountPoint)) {
             if (modes.contains(AccessMode.WRITE)) {
                 throw new IOException("read-only filesystem");
             }
@@ -234,7 +310,7 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        if (dir.normalize().startsWith(VFS_PREFIX)) {
+        if (dir.normalize().startsWith(mountPoint)) {
             throw new SecurityException("read-only filesystem");
         } else {
             delegate.createDirectory(dir, attrs);
@@ -243,7 +319,7 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public void delete(Path path) throws IOException {
-        if (path.normalize().startsWith(VFS_PREFIX)) {
+        if (path.normalize().startsWith(mountPoint)) {
             throw new SecurityException("read-only filesystem");
         } else {
             delegate.delete(path);
@@ -252,7 +328,7 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        if (!path.normalize().startsWith(VFS_PREFIX)) {
+        if (!path.normalize().startsWith(mountPoint)) {
             return delegate.newByteChannel(path, options, attrs);                
         } 
 
@@ -328,7 +404,7 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        if (!dir.normalize().startsWith(VFS_PREFIX)) {
+        if (!dir.normalize().startsWith(mountPoint)) {
             return delegate.newDirectoryStream(dir, filter);
         } 
         Entry e = file(dir);
@@ -354,29 +430,21 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public Path toAbsolutePath(Path path) {
-        return toAbsolutePathStatic(path);
-    }
-
-    private static Path toAbsolutePathStatic(Path path) {
-        if (path.startsWith("/")) {
+        if (path.startsWith(mountPoint)) {
             return path;
         } else {
-            return Paths.get("/", path.toString());
+            return Paths.get(mountPoint, path.toString());
         }
     }
 
     @Override
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
-        return toRealPathStatic(path, linkOptions);
-    }
-
-    private static Path toRealPathStatic(Path path, LinkOption... linkOptions) throws IOException {
         return path.normalize();
     }
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
-        if (!path.normalize().startsWith(VFS_PREFIX)) {
+        if (!path.normalize().startsWith(mountPoint)) {
             return delegate.readAttributes(path, attributes, options);
         }
         Entry e = file(path);
