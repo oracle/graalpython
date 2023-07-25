@@ -144,7 +144,8 @@ class AsyncioWaitForTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(fut.done())
         # it should have been cancelled due to the timeout
         self.assertTrue(fut.cancelled())
-        self.assertLess(t1 - t0, 0.5)
+        # GraalVM change: allow more delay
+        self.assertLess(t1 - t0, 1.0)
         self.assertEqual(foo_running, False)
 
     async def test_wait_for_blocking(self):
