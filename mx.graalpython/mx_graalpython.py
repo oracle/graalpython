@@ -624,6 +624,7 @@ def update_unittest_tags(args):
         ('test_ssl.txt', '*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex'),
         # Transiently fails because it's dependent on timings
         ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
         # The whole suite sometimes transiently crashes because of hanging thread at the end, not sure which test causes this
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
