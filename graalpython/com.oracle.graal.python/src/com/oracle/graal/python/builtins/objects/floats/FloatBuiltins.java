@@ -113,6 +113,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -662,7 +663,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object round(VirtualFrame frame, Object x, Object n,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToJavaDoubleNode cast,
+                        @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             return round(castToDoubleChecked(inliningTarget, x, cast), asSizeNode.executeLossy(frame, inliningTarget, n));
         }
@@ -671,7 +672,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToJavaDoubleNode cast,
+                        @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile isLongProfile) {
@@ -712,10 +713,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
+        @SuppressWarnings("truffle-static-method")
         boolean doOO(Object aObj, Object bObj,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
-                        @Shared @Cached CastToJavaDoubleNode cast) {
+                        @Exclusive @Cached CastToJavaDoubleNode cast) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
             double b = castToDoubleChecked(inliningTarget, bObj, cast);
             return op(a, b);
@@ -730,9 +732,10 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doOL(Object aObj, long b,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToJavaDoubleNode cast,
+                        @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
             double a = castToDoubleChecked(inliningTarget, aObj, cast);
             return op(compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile), 0.0);

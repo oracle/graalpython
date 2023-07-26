@@ -134,7 +134,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "isSameType(inliningTarget, isSameTypeNode, derived, cls)", limit = "3")
+    @Specialization(guards = "isSameType(inliningTarget, isSameTypeNode, derived, cls)")
     @SuppressWarnings("unused")
     static boolean isIdentical(Object derived, Object cls,
                     @Bind("this") Node inliningTarget,
@@ -309,11 +309,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @Megamorphic
     static boolean issubTypeGeneric(Object derived, Object cls,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared @Cached TypeNodes.IsTypeNode isTypeDerived,
-                    @SuppressWarnings("unused") @Shared @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeCls,
                     @Exclusive @Cached InlinedConditionProfile builtinClassIsSubtypeProfile,
-                    @Shared @Cached IsSameTypeNode isSameTypeNode,
-                    @Shared @Cached GetMroStorageNode getMro) {
+                    @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                    @Exclusive @Cached GetMroStorageNode getMro) {
         // a builtin class will never be a subclass of a non-builtin class
         if (builtinClassIsSubtypeProfile.profile(inliningTarget, isBuiltinClass(derived) && !isBuiltinClass(cls))) {
             return false;
@@ -331,8 +331,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @InliningCutoff
     static boolean fallback(VirtualFrame frame, Object derived, Object cls,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared @Cached TypeNodes.IsTypeNode isTypeDerived,
-                    @SuppressWarnings("unused") @Shared @Cached TypeNodes.IsTypeNode isTypeCls,
+                    @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeDerived,
+                    @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeCls,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
                     @Exclusive @Cached InlinedConditionProfile exceptionDerivedProfile,

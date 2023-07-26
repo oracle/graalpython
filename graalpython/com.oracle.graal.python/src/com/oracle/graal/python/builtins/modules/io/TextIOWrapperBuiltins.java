@@ -820,9 +820,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         })
         static Object getPos(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
-                        @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell) {
+                        @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell) {
             writeFlushNode.execute(frame, self);
             callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
             return callMethodTell.execute(frame, inliningTarget, self.getBuffer(), T_TELL);
@@ -855,12 +855,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         "hasDecoderAndSnapshot(self)", //
                         "!hasUsedDecodedChar(self)" //
         })
+        @SuppressWarnings("truffle-static-method")
         Object didntMove(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
-                        @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Shared @Cached PyLongAsLongNode asLongNode) {
+                        @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell,
+                        @Exclusive @Cached PyLongAsLongNode asLongNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             /* We haven't moved from the snapshot point. */
             return PTextIO.CookieType.build(cookie, factory());
@@ -877,18 +878,18 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object tell(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached IONodes.ToTruffleStringNode toString,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
-                        @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodDecode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodGetState,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);

@@ -792,6 +792,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.a
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
@@ -830,6 +831,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,

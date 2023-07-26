@@ -84,7 +84,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -317,11 +317,12 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!self.hasDecoder()")
+        @SuppressWarnings("truffle-static-method")
         Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Bind("this") Node inliningTarget,
-                        @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                        @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached PyIndexCheckNode indexCheckNode,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
@@ -335,9 +336,9 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Bind("this") Node inliningTarget,
-                        @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                        @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached PyIndexCheckNode indexCheckNode,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {

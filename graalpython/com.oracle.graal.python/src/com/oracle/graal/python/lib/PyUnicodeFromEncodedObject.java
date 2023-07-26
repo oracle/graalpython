@@ -78,7 +78,7 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization
     static Object doBytes(VirtualFrame frame, Node inliningTarget, PBytes object, Object encoding, Object errors,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
-                    @Shared @Cached PyUnicodeDecode decode) {
+                    @Exclusive @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
         if (emptyStringProfile.profile(inliningTarget, object.getSequenceStorage().length() == 0)) {
             return T_EMPTY_STRING;
@@ -105,7 +105,7 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Cached(inline = false) IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
-                    @Shared @Cached PyUnicodeDecode decode,
+                    @Exclusive @Cached PyUnicodeDecode decode,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
                     @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {

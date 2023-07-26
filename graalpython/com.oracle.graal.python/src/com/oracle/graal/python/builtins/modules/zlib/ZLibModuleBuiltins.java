@@ -94,6 +94,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -503,10 +504,11 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"useNative()"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeBytes(PBytesLike data, int level,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toByte.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             byte[] resultArray = nativeCompress.execute(inliningTarget, bytes, len, level, getContext());
@@ -514,10 +516,11 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeObject(VirtualFrame frame, Object data, int level,
                         @Bind("this") Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
             return factory().createBytes(nativeCompress.execute(inliningTarget, bytes, bytes.length, level, getContext()));
         }
@@ -575,20 +578,22 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"bufsize >= 0", "useNative()"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeBytes(PBytesLike data, int wbits, int bufsize,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toByte.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return factory().createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(this)));
         }
 
         @Specialization(guards = {"bufsize >= 0", "useNative()", "!isBytes(data)"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeObject(VirtualFrame frame, Object data, int wbits, int bufsize,
                         @Bind("this") Node inliningTarget,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
+                        @Shared @Cached ToBytesNode toBytesNode,
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(this)));
@@ -596,7 +601,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"bufsize >= 0", "!useNative()"})
         PBytes doJava(VirtualFrame frame, Object data, int wbits, int bufsize,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode) {
+                        @Shared @Cached ToBytesNode toBytesNode) {
             byte[] array = toBytesNode.execute(frame, data);
             try {
                 return factory().createBytes(javaDecompress(array, wbits, bufsize == 0 ? 1 : bufsize));

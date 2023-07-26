@@ -182,10 +182,10 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(iterable)")
         static PNone doIterable(VirtualFrame frame, PDeque self, Object iterable, @SuppressWarnings("unused") PNone maxlen,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile sizeZeroProfile,
-                        @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached GetNextNode getNextNode,
-                        @Shared @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached GetNextNode getNextNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile) {
             if (sizeZeroProfile.profile(inliningTarget, self.getSize() != 0)) {
                 self.clear();
             }
@@ -205,12 +205,12 @@ public final class DequeBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile sizeZeroProfile,
+                        @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Cached CastToJavaIntExactNode castToIntNode,
-                        @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached GetNextNode getNextNode,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached GetNextNode getNextNode,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile,
-                        @Shared @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
                     int maxlen = castToIntNode.execute(inliningTarget, maxlenObj);
@@ -448,7 +448,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         int doGeneric(VirtualFrame frame, PDeque self, Object value, Object start, Object stop,
                         @Bind("this") Node inliningTarget,
-                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Exclusive @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached PyNumberAsSizeNode startIndexNode,
                         @Cached PyNumberAsSizeNode stopIndexNode) {

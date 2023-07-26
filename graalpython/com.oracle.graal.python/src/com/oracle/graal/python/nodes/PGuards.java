@@ -59,6 +59,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -292,6 +295,10 @@ public abstract class PGuards {
 
     public static boolean isList(Object o) {
         return o instanceof PList;
+    }
+
+    public static boolean isEconomicMapOrEmpty(HashingStorage self) {
+        return self instanceof EconomicMapStorage || self instanceof EmptyStorage;
     }
 
     public static boolean isObjectStorageIterator(PSequenceIterator iterator) {

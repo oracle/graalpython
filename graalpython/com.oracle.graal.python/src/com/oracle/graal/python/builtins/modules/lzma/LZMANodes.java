@@ -1072,7 +1072,7 @@ public class LZMANodes {
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction getLzsCheck,
                         @Cached(inline = false) GetOutputNativeBufferNode getBuffer,
-                        @Shared @Cached PRaiseNode.Lazy lazyRaiseNode,
+                        @Exclusive @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached InlinedConditionProfile errProfile) {
             PythonContext context = PythonContext.get(inliningTarget);
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
@@ -1101,7 +1101,7 @@ public class LZMANodes {
         @TruffleBoundary
         @Specialization
         static byte[] javaInternalDecompress(Node inliningTarget, LZMADecompressor.Java self, int maxLength,
-                        @Shared @Cached PRaiseNode.Lazy lazyRaiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy lazyRaiseNode) {
             if (maxLength == 0) {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             }

@@ -42,14 +42,13 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -104,25 +103,14 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization
-    static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
-                    @Shared @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Int", inline = false) LookupCallableSlotInMRONode lookupInt,
-                    @Shared @Cached PyComplexCheckNode checkComplex) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(inliningTarget, object);
-    }
-
-    @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
-    static boolean doObject(Node inliningTarget, Object object,
+    @Fallback
+    static boolean doOthers(Node inliningTarget, Object object,
                     @Cached LazyInteropLibrary interopLibrary,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
-                    @Shared @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Int", inline = false) LookupCallableSlotInMRONode lookupInt,
-                    @Shared @Cached PyComplexCheckNode checkComplex) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
+                    @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
+                    @Cached(parameters = "Int", inline = false) LookupCallableSlotInMRONode lookupInt,
+                    @Cached PyComplexCheckNode checkComplex) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.get(inliningTarget).isNumber(object);

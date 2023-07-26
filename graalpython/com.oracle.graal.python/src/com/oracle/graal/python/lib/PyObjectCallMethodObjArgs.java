@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -123,9 +124,9 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
 
     @Specialization(replaces = {"callUnary", "callBinary", "callTernary", "callQuad"})
     static Object call(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments,
-                    @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
+                    @Exclusive @Cached PyObjectGetMethod getMethod,
                     @Cached(inline = false) CallNode callNode,
-                    @Cached InlinedConditionProfile isBoundProfile) {
+                    @Exclusive @Cached InlinedConditionProfile isBoundProfile) {
         Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         if (isBoundProfile.profile(inliningTarget, callable instanceof BoundDescriptor)) { // not a
                                                                                            // method

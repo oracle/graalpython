@@ -104,11 +104,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     static int doCallIndexInt(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached GetClassNode getClassNode,
                     @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
                     @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
                     @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
         Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
             throw new UnexpectedResultException(object);
@@ -136,11 +136,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
 
     @Specialization(replaces = "doCallIndexInt")
     static Object doCallIndex(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached GetClassNode getClassNode,
                     @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
                     @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
                     @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Exclusive @Cached GetClassNode resultClassNode,
                     @Exclusive @Cached(inline = false) IsSubtypeNode resultSubtype,
                     @Cached PyLongCheckExactNode isInt,

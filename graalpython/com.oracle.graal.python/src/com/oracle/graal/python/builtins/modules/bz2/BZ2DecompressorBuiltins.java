@@ -67,7 +67,7 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -117,7 +117,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
+                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
                 int len = data.getSequenceStorage().length();
@@ -129,7 +129,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
+                        @Exclusive @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;

@@ -84,7 +84,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -280,11 +280,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(this, idNum)")
+        @Specialization(guards = "!callableCheck.execute(this, idNum)", limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToJavaIntExactNode cast) {
             // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
             // are instances of Handlers enum
@@ -315,11 +316,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "callableCheck.execute(this, handler)")
+        @Specialization(guards = "callableCheck.execute(this, handler)", limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyCallableCheckNode callableCheck,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode) {
             return signal(self, asSizeNode.executeExact(frame, inliningTarget, signal), handler, readModuleDataNode);
         }

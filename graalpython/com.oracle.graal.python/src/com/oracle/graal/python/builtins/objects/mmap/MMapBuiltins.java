@@ -125,7 +125,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -440,7 +439,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization
         PBytes readUnlimited(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") PNone n,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile emptyProfile,
+                        @Exclusive @Cached InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
             return readBytes(frame, inliningTarget, self, posixLib, self.getRemaining(), emptyProfile);
@@ -450,7 +449,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile emptyProfile,
+                        @Exclusive @Cached InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,

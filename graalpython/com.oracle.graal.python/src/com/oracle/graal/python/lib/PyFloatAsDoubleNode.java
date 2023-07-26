@@ -116,17 +116,17 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
         return object ? 1.0 : 0.0;
     }
 
-    @Specialization(guards = "isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)")
+    @Specialization(guards = "isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)", limit = "1")
     @InliningCutoff
     static double doNative(Node inliningTarget, PythonAbstractNativeObject object,
                     @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtype,
-                    @Cached CStructAccess.ReadDoubleNode read) {
+                    @SuppressWarnings("unused") @Exclusive @Cached(inline = false) IsSubtypeNode isSubtype,
+                    @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
         return read.readFromObj(object, PyFloatObject__ob_fval);
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)",
-                    "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"})
+                    "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"}, limit = "1")
     @InliningCutoff
     static double doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Exclusive @Cached GetClassNode getClassNode,

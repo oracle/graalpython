@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -280,8 +281,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
-                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
-                        @Shared("castJStr") @Cached CastToJavaStringNode castJStr,
+                        @Exclusive @Cached CastToTruffleStringNode castStr,
+                        @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
@@ -297,10 +298,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isString(digestmodObj)")
+        @SuppressWarnings("truffle-static-method")
         Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
-                        @Shared("castJStr") @Cached CastToJavaStringNode castJStr,
+                        @Exclusive @Cached CastToTruffleStringNode castStr,
+                        @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {

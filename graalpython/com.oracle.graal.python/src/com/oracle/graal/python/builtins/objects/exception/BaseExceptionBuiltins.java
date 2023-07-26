@@ -212,7 +212,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return getCauseNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"}, limit = "1")
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
         public static Object setCause(Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -229,7 +229,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"}, limit = "1")
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object cause(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -248,7 +248,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return getContextNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"}, limit = "1")
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
         public static Object setContext(Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -265,7 +265,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"}, limit = "1")
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object context(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -284,19 +284,11 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return getSuppressContextNode.execute(inliningTarget, self);
         }
 
-        @Specialization
-        public static Object setSuppressContext(Object self, boolean value,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode) {
-            setSuppressContextNode.execute(inliningTarget, self, value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isBoolean(valueObj)")
+        @Specialization(guards = "!isNoValue(valueObj)")
         @SuppressWarnings("truffle-static-method")
         public Object setSuppressContext(Object self, Object valueObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
+                        @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
             boolean value;
             try {

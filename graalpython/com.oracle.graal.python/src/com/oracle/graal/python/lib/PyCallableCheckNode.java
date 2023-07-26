@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -55,7 +54,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -120,18 +119,11 @@ public abstract class PyCallableCheckNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass"})
-    static boolean doObject(Node inliningTarget, PythonAbstractObject o,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall) {
-        return lookupCall.execute(getClassNode.execute(inliningTarget, o)) != PNone.NO_VALUE;
-    }
-
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType", "doObject"})
-    static boolean doGeneric(Node inliningTarget, Object o,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall,
-                    @Cached LazyInteropLibrary lazyInteropLib) {
+    @Fallback
+    static boolean doObject(Node inliningTarget, Object o,
+                    @Cached GetClassNode getClassNode,
+                    @Cached LazyInteropLibrary lazyInteropLib,
+                    @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall) {
         Object type = getClassNode.execute(inliningTarget, o);
         if (type == PythonBuiltinClassType.ForeignObject) {
             InteropLibrary lib = lazyInteropLib.get(inliningTarget);

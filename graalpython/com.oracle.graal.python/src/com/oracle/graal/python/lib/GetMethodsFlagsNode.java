@@ -111,7 +111,7 @@ public abstract class GetMethodsFlagsNode extends Node {
 
     @Specialization(replaces = "doNativeCached")
     static long doNative(Node inliningTarget, PythonAbstractNativeObject cls,
-                    @Cached CStructAccess.ReadObjectNode getTpDictNode,
+                    @Cached(inline = false) CStructAccess.ReadObjectNode getTpDictNode,
                     @Cached HashingStorageGetItem getItem) {
         // classes must have tp_dict since they are set during PyType_Ready
         PDict dict = (PDict) getTpDictNode.readFromObj(cls, PyTypeObject__tp_dict);

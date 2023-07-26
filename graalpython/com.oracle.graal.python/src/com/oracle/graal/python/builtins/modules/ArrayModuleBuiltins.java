@@ -179,7 +179,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             @InliningCutoff
             PArray arrayWithRangeInitializer(Object cls, TruffleString typeCode, PIntRange range,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
@@ -232,7 +232,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             @InliningCutoff
             PArray arrayArrayInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PArray initializer,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached ArrayNodes.GetValueNode getValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
@@ -254,7 +254,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             @InliningCutoff
             PArray arraySequenceInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PSequence initializer,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -280,7 +280,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
                             @Bind("this") Node inliningTarget,
                             @Cached PyObjectGetIter getIter,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached GetNextNode nextNode,
                             @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,

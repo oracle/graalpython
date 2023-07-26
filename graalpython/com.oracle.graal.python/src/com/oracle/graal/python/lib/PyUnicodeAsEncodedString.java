@@ -127,7 +127,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
                     @Cached InlinedConditionProfile isByteArrayProfile,
                     @Cached SequenceStorageNodes.CopyNode copyNode,
                     @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
@@ -152,7 +152,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
     @Specialization(guards = "!isString(unicode)")
     @SuppressWarnings({"unused", "truffle-static-method"})
     static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object unicode, Object encoding, Object errors,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         throw raiseNode.get(inliningTarget).raiseBadInternalCall();
     }
 }

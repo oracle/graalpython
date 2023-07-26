@@ -71,7 +71,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -356,10 +356,6 @@ public class IONodes {
         @Override
         public abstract IOMode execute(VirtualFrame frame, Object mode);
 
-        public static boolean isFast(Object obj) {
-            return obj instanceof PNone || obj instanceof IOMode;
-        }
-
         @Specialization
         static IOMode none(@SuppressWarnings("unused") PNone none) {
             return IOMode.R;
@@ -370,15 +366,23 @@ public class IONodes {
             return mode;
         }
 
-        @Specialization
-        IOMode string(VirtualFrame frame, TruffleString mode,
+        @Fallback
+        @SuppressWarnings("truffle-static-method")
+        IOMode generic(VirtualFrame frame, Object modeObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared @Cached InlinedBranchProfile errProfile1,
-                        @Shared @Cached InlinedBranchProfile errProfile2,
-                        @Shared @Cached InlinedBranchProfile errProfile3,
-                        @Shared @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached InlinedBranchProfile errProfile1,
+                        @Cached InlinedBranchProfile errProfile2,
+                        @Cached InlinedBranchProfile errProfile3,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            TruffleString mode;
+            try {
+                mode = toString.execute(inliningTarget, modeObj);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
             IOMode m = new IOMode(mode, createCodePointIteratorNode, nextNode);
             if (m.hasNil) {
                 errProfile1.enter(inliningTarget);
@@ -393,24 +397,6 @@ public class IONodes {
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.U_MODE_DEPRACATED, 1);
             }
             return m;
-        }
-
-        @Specialization(guards = "!isFast(mode)", replaces = "string")
-        @SuppressWarnings("truffle-static-method")
-        IOMode generic(VirtualFrame frame, Object mode,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode toString,
-                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared @Cached InlinedBranchProfile errProfile1,
-                        @Shared @Cached InlinedBranchProfile errProfile2,
-                        @Shared @Cached InlinedBranchProfile errProfile3,
-                        @Shared @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            try {
-                return string(frame, toString.execute(inliningTarget, mode), inliningTarget, createCodePointIteratorNode, nextNode, errProfile1, errProfile2, errProfile3, warnNode);
-            } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
-            }
         }
 
         @ClinicConverterFactory

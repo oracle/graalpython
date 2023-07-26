@@ -77,8 +77,8 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     @InliningCutoff
     static int sizeNative(Node inliningTarget, PythonAbstractNativeObject tuple,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CStructAccess.ReadI64Node getSize) {
+                    @SuppressWarnings("unused") @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) CStructAccess.ReadI64Node getSize) {
         return PythonUtils.toIntError(getSize.readFromObj(tuple, PyVarObject__ob_size));
     }
 

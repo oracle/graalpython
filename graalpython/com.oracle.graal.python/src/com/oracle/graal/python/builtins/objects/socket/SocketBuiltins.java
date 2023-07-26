@@ -102,6 +102,7 @@ import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -142,7 +143,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, @SuppressWarnings("unused") PNone fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached GilNode gil) {
             // sic! CPython really has __new__ there, even though it's in __init__
@@ -193,7 +194,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind("this") Node inliningTarget,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyLongAsIntNode asIntNode) {
             // sic! CPython really has __new__ there, even though it's in __init__

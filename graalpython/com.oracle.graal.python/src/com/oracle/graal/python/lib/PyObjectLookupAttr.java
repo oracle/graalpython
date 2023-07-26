@@ -195,7 +195,7 @@ public abstract class PyObjectLookupAttr extends Node {
     // attributes via metaclass inheritance. For all non-type-slot attributes it therefore
     // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"})
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"}, limit = "1")
     static Object doBuiltinTypeType(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,

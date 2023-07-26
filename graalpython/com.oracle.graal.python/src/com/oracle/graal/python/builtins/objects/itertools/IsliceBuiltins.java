@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -152,7 +152,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNone(self.getIterable())")
         Object reduceNoIterable(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode,
+                        @Cached @Exclusive GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter) {
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
@@ -163,7 +163,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNone(self.getIterable())")
         Object reduce(PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Cached @Exclusive GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
             PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});

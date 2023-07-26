@@ -65,7 +65,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -80,29 +79,29 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)")
+    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                     @Cached HashingStorageNodes.HashingStorageCopy copyNode) {
         return copyNode.execute(inliningTarget, other.getDictStorage());
     }
 
-    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)")
+    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                    @Shared @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
+                    @Exclusive @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached HashingStorageNodes.HashingStorageGetIterator getIterator,
                     @Cached HashingStorageNodes.HashingStorageIteratorNext iterNext,
                     @Cached HashingStorageNodes.HashingStorageIteratorKey iterKey,
                     @Cached HashingStorageNodes.HashingStorageIteratorValue iterValue,
                     @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
-                    @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
-                    @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile) throws SameDictKeyException {
+                    @Exclusive @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
+                    @Exclusive @Cached InlinedBranchProfile sameKeyProfile) throws SameDictKeyException {
         HashingStorage result = dest;
         HashingStorage otherStorage = other.getDictStorage();
         HashingStorageNodes.HashingStorageIterator it = getIterator.execute(inliningTarget, otherStorage);
@@ -127,14 +126,14 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     @Specialization(guards = "isFallback(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                    @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile,
-                    @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
+                    @Exclusive @Cached InlinedBranchProfile sameKeyProfile,
+                    @Exclusive @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached PyObjectCallMethodObjArgs callKeys,
                     @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached ListNodes.FastConstructListNode asList,
-                    @Shared @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
+                    @Exclusive @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                     @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,

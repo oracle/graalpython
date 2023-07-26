@@ -79,7 +79,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -101,10 +101,11 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "self.isInitialized()")
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
@@ -114,10 +115,11 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isInitialized()", "!isBytes(data)"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data,
                         @Bind("this") Node inliningTarget,
-                        @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
+                        @Exclusive @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(frame, data);
@@ -128,7 +130,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isInitialized()")
         PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data,
-                        @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes) {
             byte[] bytes = toBytes.execute(frame, data);
             self.setDeflaterInput(bytes);
             return JavaCompressNode.execute(self, Z_NO_FLUSH, factory());

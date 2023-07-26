@@ -260,7 +260,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object ceilDouble(double value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(value));
         }
 
@@ -271,7 +271,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___CEIL__)") LookupSpecialMethodNode lookupCeil,
                         @Cached CallUnaryMethodNode callCeil,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             Object method = lookupCeil.execute(frame, getClassNode.execute(inliningTarget, value), value);
             if (method != PNone.NO_VALUE) {
                 return callCeil.executeObject(frame, method, value);
@@ -519,7 +519,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object floorDouble(double value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(value));
         }
 
@@ -530,7 +530,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___FLOOR__)") LookupSpecialMethodNode lookupFloor,
                         @Cached CallUnaryMethodNode callFloor,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             Object method = lookupFloor.execute(frame, getClassNode.execute(inliningTarget, value), value);
             if (method != PNone.NO_VALUE) {
                 return callFloor.executeObject(frame, method, value);
@@ -1613,9 +1613,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
         public double logOO(VirtualFrame frame, Object value, Object base,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Exclusive @Cached PyFloatAsDoubleNode baseAsDoubleNode) {
-            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), baseAsDoubleNode.execute(frame, inliningTarget, base));
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})

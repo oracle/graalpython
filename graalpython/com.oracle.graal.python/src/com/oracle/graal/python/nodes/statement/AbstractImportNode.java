@@ -85,7 +85,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -216,20 +216,20 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             return indexOfCodePointNode.execute(name, '.', 0, codePointLengthNode.execute(name, TS_ENCODING), TS_ENCODING) >= 0;
         }
 
-        @Specialization(guards = {"level == 0", "fromList.length == 0", "!containsDot(name, codePointLengthNode, indexOfCodePointNode)"})
+        @Specialization(guards = {"level == 0", "fromList.length == 0", "!containsDot(name, codePointLengthNode, indexOfCodePointNode)"}, limit = "1")
         public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, TruffleString name, @SuppressWarnings("unused") Object globals,
                         @SuppressWarnings("unused") TruffleString[] fromList,
                         @SuppressWarnings("unused") int level,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
-                        @Shared @Cached PyDictGetItem getModuleNode,
-                        @Shared @Cached EnsureInitializedNode ensureInitialized,
-                        @Shared @Cached FindAndLoad findAndLoad,
-                        @Shared("cpLen") @Cached @SuppressWarnings("unused") TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("indexOf") @Cached @SuppressWarnings("unused") TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PyDictGetItem getModuleNode,
+                        @Exclusive @Cached EnsureInitializedNode ensureInitialized,
+                        @Exclusive @Cached FindAndLoad findAndLoad,
+                        @Exclusive @Cached @SuppressWarnings("unused") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Exclusive @Cached @SuppressWarnings("unused") TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             final TruffleString absName = name;
             if (name.isEmpty()) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
             }
             PDict sysModules = context.getSysModules();
             Object mod = getModuleNode.execute(frame, inliningTarget, sysModules, absName); // import_get_module
@@ -257,16 +257,16 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         static Object genericImport(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @Bind("this") Node inliningTarget,
                         @Cached ResolveName resolveName,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared @Cached PyDictGetItem getModuleNode,
-                        @Shared @Cached EnsureInitializedNode ensureInitialized,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PyDictGetItem getModuleNode,
+                        @Exclusive @Cached EnsureInitializedNode ensureInitialized,
                         @Cached PyObjectLookupAttr getPathNode,
                         @Cached PyObjectCallMethodObjArgs callHandleFromlist,
                         @Cached PythonObjectFactory factory,
-                        @Shared @Cached FindAndLoad findAndLoad,
+                        @Exclusive @Cached FindAndLoad findAndLoad,
                         @Cached InlinedConditionProfile recursiveCase,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Exclusive @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Exclusive @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             TruffleString absName;
             if (level > 0) {

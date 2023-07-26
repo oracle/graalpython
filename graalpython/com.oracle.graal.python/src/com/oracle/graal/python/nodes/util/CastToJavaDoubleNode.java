@@ -118,8 +118,8 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     @Specialization
     static double doNativeObject(Node inliningTarget, PythonAbstractNativeObject x,
                     @Cached GetPythonObjectClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CStructAccess.ReadDoubleNode read) {
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PFloat)) {
             return read.readFromObj(x, PyFloatObject__ob_fval);
         }

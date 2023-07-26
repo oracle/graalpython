@@ -108,7 +108,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -342,11 +342,11 @@ public class StructSequence {
         @Specialization(guards = "isNoValue(dict)")
         PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached FastConstructListNode fastConstructListNode,
-                        @Shared @Cached ToArrayNode toArrayNode,
-                        @Shared @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Shared @Cached InlinedBranchProfile wrongLenProfile,
-                        @Shared @Cached InlinedBranchProfile needsReallocProfile) {
+                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
+                        @Exclusive @Cached ToArrayNode toArrayNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
@@ -359,11 +359,11 @@ public class StructSequence {
         @SuppressWarnings("truffle-static-method")
         PTuple withDict(VirtualFrame frame, Object cls, Object sequence, PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached FastConstructListNode fastConstructListNode,
-                        @Shared @Cached ToArrayNode toArrayNode,
-                        @Shared @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Shared @Cached InlinedBranchProfile wrongLenProfile,
-                        @Shared @Cached InlinedBranchProfile needsReallocProfile,
+                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
+                        @Exclusive @Cached ToArrayNode toArrayNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
                         @Cached HashingStorageGetItem getItem) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);

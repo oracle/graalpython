@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -293,11 +294,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
-                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             Object result = fileIO;
             try {
@@ -376,9 +377,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
-                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
             return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose);
         }
@@ -392,9 +393,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
-                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             try {
                 /* buffering */

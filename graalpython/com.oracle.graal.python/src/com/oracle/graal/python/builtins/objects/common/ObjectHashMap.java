@@ -45,9 +45,11 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import java.util.Arrays;
 
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool.EqNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -383,6 +385,15 @@ public final class ObjectHashMap {
                 }
             }
 
+            return getCollision(frame, map, key, keyHash, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static Object getCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Node inliningTarget,
+                        InlinedCountingConditionProfile collisionFoundNoValue,
+                        InlinedCountingConditionProfile collisionFoundEqKey,
+                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+            int index;
             // collision: intentionally counted loop
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
@@ -421,8 +432,8 @@ public final class ObjectHashMap {
     }
 
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PutNode extends Node {
         public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
             execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
@@ -487,7 +498,14 @@ public final class ObjectHashMap {
                 return;
             }
 
-            // collision
+            putCollision(frame, map, key, keyHash, value, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, rehash2Profile, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static void putCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value, Node inliningTarget,
+                        InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
+                        InlinedBranchProfile rehash2Profile, EqNode eqNode,
+                        int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
             markCollision(indices, compactIndex);
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
@@ -500,7 +518,7 @@ public final class ObjectHashMap {
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    index = indices[compactIndex];
+                    int index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         map.putInNewSlot(indices, inliningTarget, rehash2Profile, key, keyHash, value, compactIndex);
                         return;
@@ -644,6 +662,14 @@ public final class ObjectHashMap {
             }
 
             // collision: intentionally counted loop
+            return removeCollision(frame, inliningTarget, map, key, keyHash, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static Object removeCollision(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
+                        InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
+                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+            int unwrappedIndex;
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
             int i = 0;
@@ -655,9 +681,9 @@ public final class ObjectHashMap {
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    index = indices[compactIndex];
+                    int index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
-                        return null; // not found
+                        return null;
                     }
                     unwrappedIndex = unwrapIndex(index);
                     if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {

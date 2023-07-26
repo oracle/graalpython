@@ -105,6 +105,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -155,7 +156,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization
         Object getitemSlice(PMemoryView self, PSlice slice,
                         @Bind("this") Node inliningTarget,
-                        @Shared("zeroDim") @Cached InlinedConditionProfile zeroDimProfile,
+                        @Exclusive @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
@@ -183,7 +184,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization
         Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
                         @Bind("this") Node inliningTarget,
-                        @Shared("zeroDim") @Cached InlinedConditionProfile zeroDimProfile) {
+                        @Exclusive @Cached InlinedConditionProfile zeroDimProfile) {
             self.checkReleased(this);
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 return self;

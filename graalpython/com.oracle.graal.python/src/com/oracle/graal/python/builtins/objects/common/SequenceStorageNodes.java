@@ -756,9 +756,9 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doSlice(VirtualFrame frame, GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PSlice slice, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
+                        @Exclusive @Cached InlinedBranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Exclusive @Cached DoGeneralizationNode doGenNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute) {
@@ -1286,15 +1286,15 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(inliningTarget, self, values)", "sinfo.step == 1"})
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(inliningTarget, self, values)", "sinfo.step == 1"}, limit = "1")
         static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
-                        @Shared @Cached SetLenNode setLenNode,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached MemMoveNode memove,
-                        @Cached MemCopyNode memcpy,
-                        @Shared @Cached CopyNode copyNode,
+                        @Exclusive @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
+                        @Exclusive @Cached SetLenNode setLenNode,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached MemMoveNode memove,
+                        @Exclusive @Cached MemCopyNode memcpy,
+                        @Exclusive @Cached CopyNode copyNode,
                         @Exclusive @Cached InlinedConditionProfile memoryError,
                         @Exclusive @Cached InlinedConditionProfile negGrowth,
                         @Exclusive @Cached InlinedConditionProfile posGrowth,
@@ -1312,19 +1312,19 @@ public abstract class SequenceStorageNodes {
             singleStep(self, start, stop, data, needed, inliningTarget, setLenNode, ensureCapacityNode, memove, memcpy, memoryError, negGrowth, posGrowth, raiseNode);
         }
 
-        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(inliningTarget, self, values)", "sinfo.step != 1"})
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(inliningTarget, self, values)", "sinfo.step != 1"}, limit = "1")
         static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
+                        @Exclusive @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
                         @Exclusive @Cached InlinedConditionProfile wrongLength,
                         @Exclusive @Cached InlinedConditionProfile deleteSlice,
-                        @Shared @Cached SetLenNode setLenNode,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached MemMoveNode memove,
+                        @Exclusive @Cached SetLenNode setLenNode,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached MemMoveNode memove,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached CopyNode copyNode) {
+                        @Exclusive @Cached CopyNode copyNode) {
             int start = sinfo.start;
             int step = sinfo.step;
             int slicelen = sinfo.sliceLength;
@@ -1854,9 +1854,9 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "dest == left")
         static SequenceStorage doGenericInplace(@SuppressWarnings("unused") SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetItemScalarNode getItemRightNode,
-                        @Shared @Cached InitializeItemScalarNode initalizeItemNode,
-                        @Shared @Cached SetLenNode setLenNode) {
+                        @Exclusive @Cached GetItemScalarNode getItemRightNode,
+                        @Exclusive @Cached InitializeItemScalarNode initalizeItemNode,
+                        @Exclusive @Cached SetLenNode setLenNode) {
             int len1 = left.length();
             int len2 = right.length();
             for (int i = 0; i < len2; i++) {
@@ -1870,9 +1870,9 @@ public abstract class SequenceStorageNodes {
         static SequenceStorage doGeneric(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetItemScalarNode getItemLeftNode,
-                        @Shared @Cached GetItemScalarNode getItemRightNode,
-                        @Shared @Cached InitializeItemScalarNode initalizeItemNode,
-                        @Shared @Cached SetLenNode setLenNode) {
+                        @Exclusive @Cached GetItemScalarNode getItemRightNode,
+                        @Exclusive @Cached InitializeItemScalarNode initalizeItemNode,
+                        @Exclusive @Cached SetLenNode setLenNode) {
             int len1 = left.length();
             int len2 = right.length();
             for (int i = 0; i < len1; i++) {
@@ -2014,12 +2014,13 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, inliningTarget, getClassNode)"})
+        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, inliningTarget, getClassNode)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Cached GetSequenceStorageNode getStorageNode,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached ConcatBaseNode concatStoragesNode) {
             SequenceStorage right = getStorageNode.execute(inliningTarget, seq);
             int lenLeft = left.length();
@@ -2045,14 +2046,14 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, inliningTarget, getClassNode)")
+        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, inliningTarget, getClassNode)", limit = "1")
         @SuppressWarnings("truffle-static-method")
         @InliningCutoff
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached AppendNode appendNode) {
@@ -2119,7 +2120,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "times <= 0")
         static SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CreateEmptyNode createEmptyNode) {
+                        @Exclusive @Cached CreateEmptyNode createEmptyNode) {
             return createEmptyNode.execute(inliningTarget, s, 0, -1);
         }
 
@@ -2239,7 +2240,7 @@ public abstract class SequenceStorageNodes {
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Shared @Cached CreateEmptyNode createEmptyNode,
+                        @Exclusive @Cached CreateEmptyNode createEmptyNode,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
                         @Cached GetItemScalarNode getDestItemNode) {
@@ -2580,13 +2581,15 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isAssignCompatibleNode.execute(inliningTarget, s, indicationStorage)")
         static TypedSequenceStorage doTyped(@SuppressWarnings("unused") Node inliningTarget, TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
+                        // dummy profile, so that we can @Share it to generate better code
+                        @Shared @Cached InlinedExactClassProfile selfProfile,
                         @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             return s;
         }
 
         @Specialization(guards = "isFallbackCase(inliningTarget, s, value, isAssignCompatibleNode)")
         static ObjectSequenceStorage doTyped(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") Object value,
-                        @Exclusive @Cached InlinedExactClassProfile selfProfile,
+                        @Shared @Cached InlinedExactClassProfile selfProfile,
                         @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             SequenceStorage profiled = selfProfile.profile(inliningTarget, s);
             if (profiled instanceof BasicSequenceStorage) {
@@ -2632,7 +2635,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doEmpty(Node inliningTarget, EmptySequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Cached(inline = false) AppendNode recursive,
-                        @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
+                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
             SequenceStorage newStorage = doGenNode.execute(inliningTarget, genNodeSupplier, s, val);
             return recursive.execute(inliningTarget, newStorage, val, genNodeSupplier);
         }
@@ -2642,7 +2645,7 @@ public abstract class SequenceStorageNodes {
                         @Cached EnsureCapacityNode ensureCapacity,
                         @Cached SetLenNode setLenNode,
                         @Cached InitializeItemScalarNode initializeItemNode,
-                        @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
+                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
             int len = s.length();
             int newLen = len + 1;
             int capacity = s.getCapacity();
@@ -2767,10 +2770,10 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CStructAccess.AllocateNode alloc,
-                        @Cached CStructAccess.ReadByteNode read,
-                        @Cached CStructAccess.WriteByteNode write,
-                        @Cached CStructAccess.FreeNode free,
+                        @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Cached(inline = false) CStructAccess.ReadByteNode read,
+                        @Cached(inline = false) CStructAccess.WriteByteNode write,
+                        @Cached(inline = false) CStructAccess.FreeNode free,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             int capacity = s.getCapacity();
             if (cap > capacity) {
@@ -3047,8 +3050,8 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "sinfo.step == 1")
         static void singleStep(Node inliningTarget, SequenceStorage store, SliceInfo sinfo,
                         @Cached InlinedConditionProfile shortCircuitProfile,
-                        @Shared @Cached SetLenNode setLenNode,
-                        @Shared @Cached MemMoveNode memove) {
+                        @Exclusive @Cached SetLenNode setLenNode,
+                        @Exclusive @Cached MemMoveNode memove) {
             int length = store.length();
             int sliceLength = sinfo.sliceLength;
 
@@ -3086,8 +3089,8 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "sinfo.step != 1")
         static void multipleSteps(Node inliningTarget, SequenceStorage store, SliceInfo sinfo,
                         @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Shared @Cached SetLenNode setLenNode,
-                        @Shared @Cached MemMoveNode memove) {
+                        @Exclusive @Cached SetLenNode setLenNode,
+                        @Exclusive @Cached MemMoveNode memove) {
             multipleSteps(store, sinfo, inliningTarget, setLenNode, ensureCapacityNode, memove);
         }
 
@@ -3743,7 +3746,7 @@ public abstract class SequenceStorageNodes {
             @Specialization(guards = {"isBuiltinIterator(getClassNode, inliningTarget, it)", "storage != null"}, limit = "3")
             public static SequenceStorage createBuiltinFastPath(PBuiltinIterator it, @SuppressWarnings("unused") int len,
                             @Bind("this") Node inliningTarget,
-                            @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                            @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                             @SuppressWarnings("unused") @Cached GetInternalIteratorSequenceStorage getIterSeqStorageNode,
                             @Bind("getSequenceStorage(inliningTarget, getIterSeqStorageNode, it)") SequenceStorage storage,
                             @Cached CopyNode copyNode) {
@@ -3754,13 +3757,13 @@ public abstract class SequenceStorageNodes {
             @Specialization(replaces = "createBuiltinFastPath", guards = {"isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len < 0"}, limit = "3")
             public SequenceStorage createBuiltinUnknownLen(VirtualFrame frame, PBuiltinIterator iterator, @SuppressWarnings("unused") int len,
                             @Bind("this") Node inliningTarget,
-                            @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                            @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                             @Cached BuiltinIteratorLengthHint lengthHint,
-                            @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile,
-                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
-                            @Shared @Cached GetElementType getElementType,
-                            @Shared @Cached NextNode nextNode) {
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
+                            @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                            @Exclusive @Cached InlinedCountingConditionProfile arrayGrowProfile,
+                            @Exclusive @Cached GetElementType getElementType,
+                            @Exclusive @Cached NextNode nextNode) {
                 int expectedLen = lengthHint.execute(inliningTarget, iterator);
                 if (expectedLen < 0) {
                     expectedLen = startSizeProfiled;
@@ -3772,17 +3775,17 @@ public abstract class SequenceStorageNodes {
             @Specialization(replaces = "createBuiltinFastPath", guards = {"isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len >= 0"}, limit = "3")
             public SequenceStorage createBuiltinKnownLen(VirtualFrame frame, PBuiltinIterator iterator, int len,
                             @Bind("this") Node inliningTarget,
-                            @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                            @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile,
-                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
-                            @Shared @Cached GetElementType getElementType,
-                            @Shared @Cached NextNode nextNode) {
+                            @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
+                            @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                            @Exclusive @Cached InlinedCountingConditionProfile arrayGrowProfile,
+                            @Exclusive @Cached GetElementType getElementType,
+                            @Exclusive @Cached NextNode nextNode) {
                 SequenceStorage s = createStorageFromBuiltin(frame, iterator, len, expectedElementType, nextNode, errorProfile, inliningTarget, arrayGrowProfile, loopProfile);
                 return profileResult(getElementType, inliningTarget, s, false);
             }
 
-            @Specialization(guards = {"!isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len < 0"}, limit = "3")
+            @Specialization(guards = {"!isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len < 0"})
             public SequenceStorage createGenericUnknownLen(VirtualFrame frame, Object iterator, @SuppressWarnings("unused") int len,
                             @Bind("this") Node inliningTarget,
                             @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
@@ -3794,7 +3797,7 @@ public abstract class SequenceStorageNodes {
                 return profileResult(getElementType, inliningTarget, s, true);
             }
 
-            @Specialization(guards = {"!isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len >= 0"}, limit = "3")
+            @Specialization(guards = {"!isBuiltinIterator(getClassNode, inliningTarget, iterator)", "len >= 0"})
             public SequenceStorage createGenericKnownLen(VirtualFrame frame, Object iterator, int len,
                             @Bind("this") Node inliningTarget,
                             @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,

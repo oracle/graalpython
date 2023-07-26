@@ -87,6 +87,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -126,8 +127,8 @@ public abstract class StringNodes {
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
         @InliningCutoff
         static TruffleString doNative(PString x,
-                        @Cached ReadUnicodeArrayNode readArray,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
+                        @Cached(inline = false) ReadUnicodeArrayNode readArray,
+                        @Cached(inline = false) TruffleString.FromIntArrayUTF32Node fromArray) {
             NativeCharSequence sequence = x.getNativeCharSequence();
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
             TruffleString materialized = fromArray.execute(readArray.execute(sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
@@ -300,8 +301,8 @@ public abstract class StringNodes {
                         @Cached InlinedConditionProfile isEmptyProfile,
                         @Cached InlinedConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
 
@@ -341,13 +342,13 @@ public abstract class StringNodes {
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile0,
                         @Cached IsBuiltinObjectProfile errorProfile1,
                         @Cached IsBuiltinObjectProfile errorProfile2,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object iterator;

@@ -341,7 +341,7 @@ public abstract class SliceNodes {
         protected static Object doGeneric(Node inliningTarget, Object i,
                         @Cached InlinedBranchProfile exceptionProfile,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached(inline = false) CastToJavaBigIntegerNode cast) {
+                        @Cached CastToJavaBigIntegerNode cast) {
             try {
                 return cast.execute(inliningTarget, i);
             } catch (PException e) {

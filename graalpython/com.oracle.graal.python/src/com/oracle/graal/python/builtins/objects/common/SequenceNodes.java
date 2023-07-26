@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -151,6 +152,22 @@ public abstract class SequenceNodes {
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             return toArrayNode.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, seq));
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class CachedGetObjectArrayNode extends Node {
+        public abstract Object[] execute(Object seq);
+
+        @Specialization
+        Object[] doIt(Object seq,
+                        @Cached GetObjectArrayNode node) {
+            return node.execute(this, seq);
+        }
+
+        public static CachedGetObjectArrayNode create() {
+            return CachedGetObjectArrayNodeGen.create();
         }
     }
 

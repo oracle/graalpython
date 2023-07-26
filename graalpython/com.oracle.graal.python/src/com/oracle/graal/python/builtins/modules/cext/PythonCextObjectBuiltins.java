@@ -127,7 +127,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -472,8 +472,8 @@ public class PythonCextObjectBuiltins {
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         Object bytes(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BytesNode bytesNode) {
             return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
@@ -482,8 +482,8 @@ public class PythonCextObjectBuiltins {
         @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "!hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         static Object bytes(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PyBytes_FromObject fromObjectNode) {
             return fromObjectNode.execute(obj);

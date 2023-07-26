@@ -205,13 +205,13 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached CStructAccess.ReadByteNode readNode) {
+                        @Shared @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
             readNode.readByteArray(ptr, dest, cachedLen, offset, destOffset);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Cached CStructAccess.ReadByteNode readNode) {
+                        @Shared @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
             readNode.readByteArray(ptr, dest, len, offset, destOffset);
         }
 
@@ -242,13 +242,13 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached CStructAccess.WriteByteNode writeNode) {
+                        @Shared @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
             writeNode.writeByteArray(ptr, src, cachedLen, srcOffset, offset);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Cached CStructAccess.WriteByteNode writeNode) {
+                        @Shared @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
             writeNode.writeByteArray(ptr, src, len, srcOffset, offset);
         }
 
@@ -277,8 +277,8 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static Object doNativeCached(PMemoryView self, Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached CStructAccess.ReadByteNode readNode,
-                        @Cached UnpackValueNode unpackValueNode) {
+                        @Shared @Cached CStructAccess.ReadByteNode readNode,
+                        @Shared @Cached UnpackValueNode unpackValueNode) {
 
             byte[] bytes = readNode.readByteArray(ptr, cachedItemSize, offset);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
@@ -286,8 +286,8 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static Object doNativeGeneric(PMemoryView self, Object ptr, int offset,
-                        @Cached CStructAccess.ReadByteNode readNode,
-                        @Cached UnpackValueNode unpackValueNode) {
+                        @Shared @Cached CStructAccess.ReadByteNode readNode,
+                        @Shared @Cached UnpackValueNode unpackValueNode) {
 
             byte[] bytes = readNode.readByteArray(ptr, self.getItemSize(), offset);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
@@ -348,8 +348,8 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached CStructAccess.WriteByteNode writeNode,
-                        @Cached PackValueNode packValueNode) {
+                        @Shared @Cached CStructAccess.WriteByteNode writeNode,
+                        @Shared @Cached PackValueNode packValueNode) {
             byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);
@@ -357,8 +357,8 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
-                        @Cached CStructAccess.WriteByteNode writeNode,
-                        @Cached PackValueNode packValueNode) {
+                        @Shared @Cached CStructAccess.WriteByteNode writeNode,
+                        @Shared @Cached PackValueNode packValueNode) {
             byte[] bytes = new byte[self.getItemSize()];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);

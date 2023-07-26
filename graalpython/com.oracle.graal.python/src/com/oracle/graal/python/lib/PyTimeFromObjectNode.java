@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -119,7 +120,7 @@ public abstract class PyTimeFromObjectNode extends PNodeWithContext {
     @Specialization
     static long doOther(VirtualFrame frame, Node inliningTarget, Object value, RoundType round, long unitToNs,
                     @Cached CastToJavaDoubleNode castToDouble,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Cached PyLongAsLongAndOverflowNode asLongNode) {
         try {
             return doDouble(inliningTarget, castToDouble.execute(inliningTarget, value), round, unitToNs, raiseNode);

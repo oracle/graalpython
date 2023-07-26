@@ -318,11 +318,11 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         return new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
     }
 
-    public static JavaZlibCompObject createJava(Object cls, Shape instanceShape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
+    public static ZLibCompObject createJava(Object cls, Shape instanceShape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
         return new JavaZlibCompObject(cls, instanceShape, stream, level, wbits, strategy, zdict);
     }
 
-    public static JavaZlibCompObject createJava(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
+    public static ZLibCompObject createJava(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
         return new JavaZlibCompObject(cls, instanceShape, stream, wbits, zdict);
     }
 }

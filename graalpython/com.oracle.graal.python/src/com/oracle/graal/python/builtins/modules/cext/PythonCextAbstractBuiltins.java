@@ -141,6 +141,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -502,7 +503,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)")
         Object setItem(Object obj, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached ConditionProfile hasSetItem,
                         @Cached CallNode callNode) {
@@ -518,7 +519,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)")
         Object setItem(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
     }
@@ -530,7 +531,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)")
         Object getSlice(Object obj, long iLow, long iHigh,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode) {
@@ -541,7 +542,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)")
         Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
     }
@@ -587,7 +588,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createMul()") MulNode mulNode,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
             if (imulCallable != PNone.NO_VALUE) {
                 Object ret = callNode.execute(imulCallable, n);
@@ -599,7 +600,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)")
         protected Object repeat(Object obj, @SuppressWarnings("unused") Object n,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
 
@@ -639,7 +640,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             Object iaddCallable = lookupNode.execute(null, inliningTarget, s1, T___IADD__);
             if (iaddCallable != PNone.NO_VALUE) {
                 return callNode.execute(iaddCallable, s2);
@@ -650,7 +651,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization(guards = "!checkNode.execute(inliningTarget, s1)")
         protected Object concat(Object s1, @SuppressWarnings("unused") Object s2,
                         @Bind("this") Node inliningTarget,
-                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 

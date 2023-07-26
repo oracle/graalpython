@@ -73,6 +73,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -263,7 +264,7 @@ abstract class AccessForeignItemNodes {
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNext,
-                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
+                        @Exclusive @Cached InlinedBranchProfile wrongIndex,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Shared("gil") @Cached GilNode gil) {
@@ -285,7 +286,7 @@ abstract class AccessForeignItemNodes {
         Object doArrayIndex(Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached NormalizeIndexNode normalize,
-                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
+                        @Exclusive @Cached InlinedBranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
@@ -316,7 +317,7 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
+                        @Exclusive @Cached InlinedBranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {

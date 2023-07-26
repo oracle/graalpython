@@ -221,7 +221,7 @@ public abstract class HPyArrayWrappers {
                         @Cached("wrapper.delegate.length") int cachedLen,
                         @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
-                        @Shared @Cached InlinedConditionProfile isPointerProfile) {
+                        @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
                 if (profiles[i].profile(element instanceof GraalHPyHandle)) {
@@ -238,7 +238,7 @@ public abstract class HPyArrayWrappers {
         static void doLoop(Node inliningTarget, HPyArrayWrapper wrapper,
                         @Shared @Cached(inline = false) HPyCloseHandleNode closeHandleNode,
                         @Exclusive @Cached InlinedConditionProfile profile,
-                        @Shared @Cached InlinedConditionProfile isPointerProfile) {
+                        @Exclusive @Cached InlinedConditionProfile isPointerProfile) {
             int n = wrapper.delegate.length;
             for (int i = 0; i < n; i++) {
                 Object element = wrapper.delegate[i];

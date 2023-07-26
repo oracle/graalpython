@@ -73,6 +73,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * binary operations are implemented in {@link BaseSetBuiltins}
@@ -89,14 +90,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)", limit = "1")
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
         public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)", limit = "1")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
         public PFrozenSet subFrozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
@@ -110,21 +111,19 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class AndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+        @Specialization(guards = "canDoSetBinOp(right)")
+        @SuppressWarnings("truffle-static-method")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage storage = intersectNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
-            return factory().createFrozenSet(storage);
-        }
-
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile rightIsSetProfile,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+                        @Cached HashingStorageIntersect intersectNode) {
             HashingStorage storage = intersectNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory().createSet(storage);
+            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
+                return factory().createFrozenSet(storage);
+            } else {
+                return factory().createSet(storage);
+            }
         }
 
         @Fallback
@@ -190,23 +189,19 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class OrNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage storage = left.getDictStorage().union(inliningTarget, right.getDictStorage(), copyNode, addAllToOther);
-            return factory().createFrozenSet(storage);
-        }
-
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
+        @Specialization(guards = "canDoSetBinOp(right)")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile rightIsSetProfile,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage storage = left.getDictStorage().union(inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, right), copyNode, addAllToOther);
-            return factory().createSet(storage);
+            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
+                return factory().createFrozenSet(storage);
+            } else {
+                return factory().createSet(storage);
+            }
         }
 
         @Fallback
@@ -221,21 +216,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class XorNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("xor") @Cached HashingStorageXor xorNode) {
-            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
-            return factory().createFrozenSet(storage);
-        }
-
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
+        @Specialization(guards = "canDoSetBinOp(right)")
+        @SuppressWarnings("truffle-static-method")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile rightIsSetProfile,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Shared("xor") @Cached HashingStorageXor xorNode) {
-            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory().createSet(storage);
+                        @Cached HashingStorageXor xorNode) {
+            HashingStorage rightStorage = getHashingStorageNode.execute(frame, inliningTarget, right);
+            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), rightStorage);
+            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
+                return factory().createFrozenSet(storage);
+            } else {
+                return factory().createSet(storage);
+            }
         }
 
         @Fallback
@@ -264,21 +258,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+        @Specialization(guards = "canDoSetBinOp(right)")
+        @SuppressWarnings("truffle-static-method")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Shared("diffNode") @Cached HashingStorageDiff diffNode) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
-            return factory().createFrozenSet(storage);
-        }
-
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
-                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile rightIsSetProfile,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Shared("diffNode") @Cached HashingStorageDiff diffNode) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory().createSet(storage);
+                        @Cached HashingStorageDiff diffNode) {
+            HashingStorage rightStorage = getHashingStorageNode.execute(frame, inliningTarget, right);
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), rightStorage);
+            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
+                return factory().createFrozenSet(storage);
+            } else {
+                return factory().createSet(storage);
+            }
         }
 
         @Fallback

@@ -139,6 +139,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -172,7 +173,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Exclusive @Cached GetClassNode getClassNode) {
             return getClassNode.execute(inliningTarget, self);
         }
 
@@ -182,13 +183,14 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
+        @SuppressWarnings("truffle-static-method")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                         @Cached IsOtherBuiltinClassProfile classProfile1,
                         @Cached IsOtherBuiltinClassProfile classProfile2,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Exclusive @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             if (isBuiltinClassNotModule(inliningTarget, value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(inliningTarget, type, classProfile2) ||
                             PGuards.isNativeClass(type)) {
@@ -423,7 +425,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type);
@@ -435,7 +437,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind("this") Node inliningTarget,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
@@ -640,18 +642,18 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
-                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"})
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"}, limit = "1")
         static Object dict(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @SuppressWarnings("unused") @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Bind("getClassNode.execute(inliningTarget, self)") Object selfClass,
-                        @Cached @Shared GetBaseClassNode getBaseNode,
+                        @Exclusive @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") @Shared LookupAttributeInMRONode getDescrNode,
                         @Cached DescrGetNode getNode,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached @Shared InlinedBranchProfile branchProfile) {
+                        @Exclusive @Cached InlinedBranchProfile branchProfile) {
             // typeobject.c#subtype_getdict()
             Object func = getDescrFromBuiltinBase(inliningTarget, selfClass, getBaseNode, getDescrNode);
             if (func != null) {
@@ -663,18 +665,18 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
-                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"})
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"}, limit = "1")
         static Object dict(VirtualFrame frame, Object self, PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @SuppressWarnings("unused") @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Bind("getClassNode.execute(inliningTarget, self)") Object selfClass,
-                        @Cached @Shared GetBaseClassNode getBaseNode,
-                        @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") @Shared LookupAttributeInMRONode getDescrNode,
+                        @Exclusive @Cached GetBaseClassNode getBaseNode,
+                        @Shared @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrSetNode setNode,
                         @Cached SetDictNode setDict,
-                        @Cached @Shared InlinedBranchProfile branchProfile) {
+                        @Exclusive @Cached InlinedBranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
             Object func = getDescrFromBuiltinBase(inliningTarget, getClassNode.execute(inliningTarget, self), getBaseNode, getDescrNode);
             if (func != null) {
@@ -689,12 +691,12 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object dict(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Cached @Shared GetBaseClassNode getBaseNode,
-                        @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") @Shared LookupAttributeInMRONode getDescrNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetBaseClassNode getBaseNode,
+                        @Shared @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrDeleteNode deleteNode,
                         @Cached DeleteDictNode deleteDictNode,
-                        @Cached @Shared InlinedBranchProfile branchProfile) {
+                        @Exclusive @Cached InlinedBranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
             Object func = getDescrFromBuiltinBase(inliningTarget, getClassNode.execute(inliningTarget, self), getBaseNode, getDescrNode);
             if (func != null) {
@@ -730,12 +732,12 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isFallback(self, mapping, inliningTarget, getClassNode, otherBuiltinClassProfile, isBuiltinClassProfile)", limit = "1")
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "truffle-static-method"})
         Object raise(Object self, Object mapping,
                         @Bind("this") Node inliningTarget,
-                        @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
-                        @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
-                        @Shared("getClass") @Cached GetClassNode getClassNode) {
+                        @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
+                        @Exclusive @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Exclusive @Cached GetClassNode getClassNode) {
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
         }
 

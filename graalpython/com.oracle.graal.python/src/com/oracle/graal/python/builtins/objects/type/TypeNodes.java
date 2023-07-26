@@ -194,6 +194,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.Standalone
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -507,7 +508,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static void doNative(PythonNativeClass clazz, long flags,
-                        @Cached CStructAccess.WriteLongNode write) {
+                        @Cached(inline = false) CStructAccess.WriteLongNode write) {
             write.writeToObject(clazz, PyTypeObject__tp_flags, flags);
         }
     }
@@ -602,14 +603,14 @@ public abstract class TypeNodes {
         @Specialization
         @InliningCutoff
         static MroSequenceStorage doNativeClass(Node inliningTarget, PythonNativeClass obj,
-                        @Cached CStructAccess.ReadObjectNode getTpMroNode,
-                        @Shared @Cached PRaiseNode.Lazy raise,
-                        @Cached InlinedConditionProfile lazyTypeInitProfile,
-                        @Cached InlinedExactClassProfile tpMroProfile,
-                        @Cached InlinedExactClassProfile storageProfile) {
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpMroNode,
+                        @Exclusive @Cached InlinedConditionProfile lazyTypeInitProfile,
+                        @Exclusive @Cached InlinedExactClassProfile tpMroProfile,
+                        @Exclusive @Cached InlinedExactClassProfile storageProfile,
+                        @Exclusive @Cached InlinedBranchProfile raiseSystemErrorBranch) {
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
             if (lazyTypeInitProfile.profile(inliningTarget, tupleObj == PNone.NO_VALUE)) {
-                tupleObj = initializeType(inliningTarget, obj, getTpMroNode, raise);
+                tupleObj = initializeType(inliningTarget, obj, getTpMroNode);
             }
             Object profiled = tpMroProfile.profile(inliningTarget, tupleObj);
             if (profiled instanceof PTuple) {
@@ -618,17 +619,18 @@ public abstract class TypeNodes {
                     return (MroSequenceStorage) sequenceStorage;
                 }
             }
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+            raiseSystemErrorBranch.enter(inliningTarget);
+            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
         }
 
-        private static Object initializeType(Node inliningTarget, PythonNativeClass obj, CStructAccess.ReadObjectNode getTpMroNode, PRaiseNode.Lazy raise) {
+        private static Object initializeType(Node inliningTarget, PythonNativeClass obj, CStructAccess.ReadObjectNode getTpMroNode) {
             // Special case: lazy type initialization (should happen at most only once per type)
             CompilerDirectives.transferToInterpreter();
 
             // call 'PyType_Ready' on the type
             int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
+                PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
             }
 
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
@@ -638,8 +640,7 @@ public abstract class TypeNodes {
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
-        static MroSequenceStorage doSlowPath(Node inliningTarget, Object obj,
-                        @Shared @Cached PRaiseNode.Lazy raise) {
+        static MroSequenceStorage doSlowPath(Node inliningTarget, Object obj) {
             if (obj instanceof PythonManagedClass) {
                 return doPythonClass((PythonManagedClass) obj, inliningTarget, InlinedConditionProfile.getUncached(), InlinedConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -648,7 +649,7 @@ public abstract class TypeNodes {
                 CStructAccess.ReadObjectNode getTypeMemeberNode = CStructAccess.ReadObjectNode.getUncached();
                 Object tupleObj = getTypeMemeberNode.readFromObj((PythonNativeClass) obj, PyTypeObject__tp_mro);
                 if (tupleObj == PNone.NO_VALUE) {
-                    tupleObj = initializeType(inliningTarget, (PythonNativeClass) obj, CStructAccess.ReadObjectNode.getUncached(), raise);
+                    tupleObj = initializeType(inliningTarget, (PythonNativeClass) obj, CStructAccess.ReadObjectNode.getUncached());
                 }
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
@@ -656,7 +657,7 @@ public abstract class TypeNodes {
                         return (MroSequenceStorage) sequenceStorage;
                     }
                 }
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -698,7 +699,7 @@ public abstract class TypeNodes {
 
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
-                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode) {
+                        @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
         }
 
@@ -750,7 +751,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static Object doNative(Node inliningTarget, PythonNativeClass obj,
-                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBaseNode,
                         @Cached PRaiseNode.Lazy raise,
                         @Cached InlinedExactClassProfile resultTypeProfile) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
@@ -788,7 +789,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static Set<PythonAbstractClass> doNativeClass(Node inliningTarget, PythonNativeClass obj,
-                        @Cached CStructAccess.ReadObjectNode getTpSubclassesNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpSubclassesNode,
                         @Cached InlinedExactClassProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);
 
@@ -948,7 +949,7 @@ public abstract class TypeNodes {
         @Specialization
         static PythonAbstractClass[] doNative(Node inliningTarget, PythonNativeClass obj,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached CStructAccess.ReadObjectNode getTpBasesNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBasesNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.readFromObj(obj, PyTypeObject__tp_bases));
@@ -1014,7 +1015,7 @@ public abstract class TypeNodes {
         @Specialization
         static PythonAbstractClass doNative(Node inliningTarget, PythonNativeClass obj,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBaseNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached IsTypeNode isTypeNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
@@ -1718,7 +1719,7 @@ public abstract class TypeNodes {
         @InliningCutoff
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached InlineIsBuiltinClassProfile profile,
-                        @Cached GetClassNode getClassNode,
+                        @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {

@@ -58,6 +58,7 @@ import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -263,10 +264,11 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(next)")
+        @SuppressWarnings("truffle-static-method")
         Object set(PTraceback self, PTraceback next,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Shared @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+                        @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             // Check for loops
             PTraceback tb = next;
             while (loopProfile.profile(inliningTarget, tb != null)) {

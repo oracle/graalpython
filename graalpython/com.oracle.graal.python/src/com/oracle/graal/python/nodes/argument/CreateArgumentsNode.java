@@ -886,11 +886,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         static void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
                         @SuppressWarnings("unused") int co_kwonlyargcount,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
-                        @Shared @Cached InlinedConditionProfile missingProfile) {
+                        @Exclusive @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[cachedKwOnlyArgcount];
             int missingCnt = 0;
             for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
@@ -907,16 +907,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise.get(inliningTarget));
             }
         }
 
         @Specialization(replaces = "doCached")
         static void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
-                        @Shared @Cached InlinedConditionProfile missingProfile) {
+                        @Exclusive @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[co_kwonlyargcount];
             int missingCnt = 0;
             for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
@@ -933,7 +933,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise.get(inliningTarget));
             }
         }
     }

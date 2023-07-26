@@ -103,7 +103,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.ReadObjectNode readObject) {
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObject) {
             return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__cause));
         }
 
@@ -138,8 +138,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteObjectNewRefNode writeObject,
-                        @Cached CStructAccess.WriteByteNode writeByte) {
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
+                        @Cached(inline = false) CStructAccess.WriteByteNode writeByte) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__cause, noneToNativeNull(inliningTarget, value));
             writeByte.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, (byte) 1);
         }
@@ -169,7 +169,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.ReadObjectNode readObject) {
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObject) {
             return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__context));
         }
 
@@ -204,7 +204,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__context, noneToNativeNull(inliningTarget, value));
         }
 
@@ -233,7 +233,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static boolean doNative(Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.ReadByteNode read) {
+                        @Cached(inline = false) CStructAccess.ReadByteNode read) {
 
             return read.readFromObj(exception, CFields.PyBaseExceptionObject__suppress_context) != 0;
         }
@@ -263,7 +263,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, boolean value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteByteNode write) {
+                        @Cached(inline = false) CStructAccess.WriteByteNode write) {
             write.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, value ? (byte) 1 : (byte) 0);
         }
 
@@ -302,7 +302,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.ReadObjectNode readObject) {
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObject) {
             return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__traceback));
         }
 
@@ -335,7 +335,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__traceback, noneToNativeNull(inliningTarget, value));
         }
 
@@ -393,7 +393,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static PTuple doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.ReadObjectNode readObject) {
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObject) {
             return (PTuple) noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__args));
         }
 
@@ -423,7 +423,7 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, PTuple argsTuple,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__args, argsTuple);
         }
 

@@ -80,6 +80,7 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -188,29 +189,22 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "!isNoValue(defaultValue)")
+        @Specialization
         public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasKeyProfile,
-                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
+                        @Cached InlinedConditionProfile defaultIsNoneProfile,
+                        @Cached HashingStorageDelItem delItem) {
             Object retVal = delItem.executePop(frame, inliningTarget, dict.getDictStorage(), key, dict);
             if (hasKeyProfile.profile(inliningTarget, retVal != null)) {
                 return retVal;
             } else {
-                return defaultValue;
+                if (defaultIsNoneProfile.profile(inliningTarget, PGuards.isNoValue(defaultValue))) {
+                    throw raise(KeyError, new Object[]{key});
+                } else {
+                    return defaultValue;
+                }
             }
-        }
-
-        @Specialization(guards = "isNoValue(defaultValue)")
-        public Object popWithoutDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") PNone defaultValue,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
-            Object retVal = delItem.executePop(frame, inliningTarget, dict.getDictStorage(), key, dict);
-            if (retVal != null) {
-                return retVal;
-            }
-            throw raise(KeyError, new Object[]{key});
         }
     }
 

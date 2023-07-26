@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
@@ -98,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,6 +116,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -381,24 +384,31 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "isNone(obj) || getObject.execute(inliningTarget, self) != null", limit = "1")
-        @SuppressWarnings("unused")
+        @Specialization
         Object doNoneOrBound(SuperObject self, Object obj, Object type,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetObjectNode getObject) {
-            return this;
-        }
-
-        @Specialization(guards = {"!isNone(obj)", "getObject.execute(inliningTarget, self) == null"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetObjectNode getObject,
+                        @Cached InlinedConditionProfile objIsNoneProfile,
+                        @Cached GetObjectNode getObject,
+                        @Cached DoGetNode doGetNode) {
+            if (objIsNoneProfile.profile(inliningTarget, PGuards.isNone(obj)) || getObject.execute(inliningTarget, self) != null) {
+                return this;
+            }
+            return doGetNode.execute(inliningTarget, self, obj);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class DoGetNode extends Node {
+        public abstract Object execute(Node inliningTarget, SuperObject self, Object obj);
+
+        @Specialization
+        static Object doIt(Node inliningTarget, SuperObject self, Object obj,
                         @Cached GetTypeNode getType,
-                        @Cached SuperInitNode superInit,
-                        @Cached GetClassNode getClass) {
-            SuperObject newSuper = factory().createSuperObject(getClass.execute(inliningTarget, self));
+                        @Cached(inline = false) SuperInitNode superInit,
+                        @Cached GetClassNode getClass,
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            SuperObject newSuper = factory.createSuperObject(getClass.execute(inliningTarget, self));
             superInit.execute(null, newSuper, getType.execute(inliningTarget, self), obj);
             return newSuper;
         }

@@ -95,7 +95,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -333,30 +333,32 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
                         PNone strict,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect) {
+                        @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect) {
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
             return getDialect.execute(frame, module, dialectName);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
+                        @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
             return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, TruffleString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
+                        @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
+                        @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
             CSVDialect dialectObj = getDialect.execute(frame, module, dialectName);
 
@@ -390,16 +392,17 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                         Object strictObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr getFirstAttributesNode,
-                        @Shared @Cached PyObjectLookupAttr getSecondAttributesNode,
-                        @Shared @Cached PyObjectLookupAttr getThirdAttributesNode,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
+                        @Exclusive @Cached PyObjectLookupAttr getFirstAttributesNode,
+                        @Exclusive @Cached PyObjectLookupAttr getSecondAttributesNode,
+                        @Exclusive @Cached PyObjectLookupAttr getThirdAttributesNode,
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
+                        @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             // We use multiple AttributeNodes to be able to cache all attributes as current
             // CACHE_SIZE is 3.
@@ -421,11 +424,11 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                        @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
+                        @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             TruffleString dialectNameStr = castToStringNode.execute(inliningTarget, dialectName);
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
@@ -461,15 +464,16 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
+        @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectLookupAttr getFirstAttributesNode,
-                        @Shared @Cached PyObjectLookupAttr getSecondAttributesNode,
-                        @Shared @Cached PyObjectLookupAttr getThirdAttributesNode,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
+                        @Exclusive @Cached PyObjectLookupAttr getFirstAttributesNode,
+                        @Exclusive @Cached PyObjectLookupAttr getSecondAttributesNode,
+                        @Exclusive @Cached PyObjectLookupAttr getThirdAttributesNode,
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
+                        @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             delimiterObj = getAttributeValue(frame, inliningTarget, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
             doublequoteObj = getAttributeValue(frame, inliningTarget, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);

@@ -79,7 +79,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -132,22 +131,22 @@ public abstract class HashingStorage {
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, dictLike, getClassNode, lookupIter)"})
+        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, dictLike, getClassNode, lookupIter)"}, limit = "1")
         static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("copy") @Cached HashingStorageCopy copyNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Exclusive @Cached HashingStorageCopy copyNode) {
             return copyNode.execute(inliningTarget, dictLike.getDictStorage());
         }
 
-        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, iterable, getClassNode, lookupIter)"})
+        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, iterable, getClassNode, lookupIter)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Exclusive @Cached HashingStorageCopy copyNode,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             PythonContext contextRef = PythonContext.get(this);
             PythonLanguage language = PythonLanguage.get(this);
@@ -161,18 +160,18 @@ public abstract class HashingStorage {
             }
         }
 
-        @Specialization(guards = "hasIterAttrButNotBuiltin(inliningTarget, col, getClassNode, lookupIter)")
+        @Specialization(guards = "hasIterAttrButNotBuiltin(inliningTarget, col, getClassNode, lookupIter)", limit = "1")
         static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
-                        @Shared("getNext") @Cached GetNextNode nextNode,
-                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Exclusive @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Exclusive @Cached PyObjectGetItem getItemNode,
+                        @Exclusive @Cached GetNextNode nextNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(0);
             return copyToStorage(frame, inliningTarget, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
         }
@@ -185,13 +184,13 @@ public abstract class HashingStorage {
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         static HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
-                        @Shared("getNext") @Cached GetNextNode nextNode,
-                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Exclusive @Cached PyObjectGetItem getItemNode,
+                        @Exclusive @Cached GetNextNode nextNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(0);
             return copyToStorage(frame, inliningTarget, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
@@ -199,16 +198,16 @@ public abstract class HashingStorage {
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
         static HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Exclusive @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode.Lazy raise,
-                        @Shared("getNext") @Cached GetNextNode nextNode,
+                        @Exclusive @Cached GetNextNode nextNode,
                         @Cached FastConstructListNode createListNode,
-                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
+                        @Exclusive @Cached PyObjectGetItem getItemNode,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
 
             return addSequenceToStorage(frame, inliningTarget, iterable, kwargs, PDict::createNewStorage, getIter, nextNode, createListNode,

@@ -240,25 +240,25 @@ public final class PythonCextBuiltins {
 
         @Specialization
         public static PString doString(TruffleString str,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createString(str);
         }
 
         @Specialization
         static PythonBuiltinObject doInteger(int i,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization
         static PythonBuiltinObject doLong(long i,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(i);
         }
 
         @Specialization(guards = "!isNaN(d)")
         static PythonBuiltinObject doDouble(double d,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createFloat(d);
         }
 

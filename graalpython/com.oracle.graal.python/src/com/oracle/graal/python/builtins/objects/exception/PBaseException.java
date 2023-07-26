@@ -71,6 +71,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -338,7 +339,7 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     ExceptionType getExceptionType(
                     @Bind("$node") Node inliningTarget,
-                    @Shared @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached GetClassNode getClassNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -386,9 +387,9 @@ public final class PBaseException extends PythonObject {
     int getExceptionExitStatus(
                     @Cached CastToJavaIntExactNode castToInt,
                     @Bind("$node") Node inliningTarget,
-                    @Shared @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
-                    @Shared("unsupportedProfile") @Cached InlinedBranchProfile unsupportedProfile,
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -429,7 +430,7 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     Object getExceptionCause(
                     @Bind("$node") Node inliningTarget,
-                    @Shared("unsupportedProfile") @Cached InlinedBranchProfile unsupportedProfile,
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {

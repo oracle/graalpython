@@ -80,7 +80,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -111,7 +111,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("dobj") @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
@@ -121,10 +121,11 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()", "!isBytes(data)"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
-                        @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("dobj") @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(frame, data);
@@ -135,7 +136,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()"})
         PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength,
-                        @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes) {
             byte[] bytes = toBytes.execute(frame, data);
             byte[] res = ZlibNodes.JavaDecompressor.execute(frame, self, bytes, maxLength, DEF_BUF_SIZE, this, factory(), toBytes);
             return factory().createBytes(res);

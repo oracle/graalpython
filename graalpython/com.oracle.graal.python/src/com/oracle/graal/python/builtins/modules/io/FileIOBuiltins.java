@@ -731,7 +731,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("e") @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
                 return posixWrite.write(self.getFD(), toBytes.execute(frame, data),
@@ -753,7 +753,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached CastToTruffleStringNode castStr,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("e") @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             byte[] bytes = encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
             try {

@@ -410,7 +410,7 @@ public final class PythonCextBytesBuiltins {
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray) {
-            if (isSubtypeNode.execute(getClassNode.execute(this, obj), PythonBuiltinClassType.PBytes)) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
             return doError(obj);

@@ -78,7 +78,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -169,7 +169,7 @@ public final class CycleBuiltins extends PythonBuiltins {
         @Specialization(guards = "hasIterable(self)")
         Object reduce(PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClass) {
+                        @Cached @Exclusive GetClassNode getClass) {
             Object type = getClass.execute(inliningTarget, self);
             PTuple iterableTuple = factory().createTuple(new Object[]{self.getIterable()});
             PTuple tuple = factory().createTuple(new Object[]{getSavedList(self), self.isFirstpass()});
@@ -180,7 +180,7 @@ public final class CycleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object reduceNoIterable(VirtualFrame frame, PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClass,
+                        @Cached @Exclusive GetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectGetIter getIterNode,

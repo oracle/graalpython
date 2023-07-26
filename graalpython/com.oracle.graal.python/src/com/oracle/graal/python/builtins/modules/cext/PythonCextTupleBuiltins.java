@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -188,8 +189,8 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
-                        @Shared("setItem") @Cached SetItemScalarNode setItemNode,
-                        @Shared("getItem") @Cached GetItemScalarNode getItemNode) {
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(key, sequenceStorage);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
@@ -208,8 +209,8 @@ public final class PythonCextTupleBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Shared("setItem") @Cached SetItemScalarNode setItemNode,
-                        @Shared("getItem") @Cached GetItemScalarNode getItemNode) {
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(key, sequenceStorage);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);

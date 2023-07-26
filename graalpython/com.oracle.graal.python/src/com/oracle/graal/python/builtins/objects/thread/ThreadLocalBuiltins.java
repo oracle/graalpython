@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -122,7 +121,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private LookupCallableSlotInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
-        @Child private HashingStorageGetItem getDictStorageItem;
         @Child private GetClassNode getDescClassNode;
 
         @Specialization
@@ -131,7 +129,8 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
-                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Cached HashingStorageGetItem getDictStorageItem) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
@@ -160,7 +159,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            Object value = readAttribute(frame, localDict, key);
+            Object value = getDictStorageItem.execute(frame, inliningTarget, localDict.getDictStorage(), key);
             if (value != null) {
                 return value;
             }
@@ -173,14 +172,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 }
             }
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
-        }
-
-        private Object readAttribute(VirtualFrame frame, PDict object, Object key) {
-            if (getDictStorageItem == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictStorageItem = insert(HashingStorageGetItemNodeGen.create());
-            }
-            return getDictStorageItem.executeCached(frame, object.getDictStorage(), key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {

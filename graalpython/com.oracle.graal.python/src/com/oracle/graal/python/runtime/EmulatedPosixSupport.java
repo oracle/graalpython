@@ -719,7 +719,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public long lseek(int fd, long offset, int how,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
                     @Exclusive @Cached InlinedConditionProfile notSupported,
                     @Exclusive @Cached InlinedConditionProfile noFile,
                     @Exclusive @Cached InlinedConditionProfile notSeekable,
@@ -954,8 +954,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
@@ -975,8 +975,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long[] fstat(int fd,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached InlinedBranchProfile nullPathProfile,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);

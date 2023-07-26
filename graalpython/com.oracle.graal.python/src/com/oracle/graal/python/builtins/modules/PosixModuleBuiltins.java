@@ -131,6 +131,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -2660,8 +2661,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!checkEmpty")
         static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyOSFSPathNode fspathNode,
-                        @Shared @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+                        @Exclusive @Cached PyOSFSPathNode fspathNode,
+                        @Exclusive @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.execute(frame, inliningTarget, obj));
         }
 
@@ -2669,9 +2670,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyOSFSPathNode fspathNode,
+                        @Exclusive @Cached PyOSFSPathNode fspathNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Shared @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+                        @Exclusive @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             Object stringOrBytes = fspathNode.execute(frame, inliningTarget, obj);
             if (sizeNode.execute(frame, inliningTarget, obj) == 0) {
                 throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
@@ -2879,7 +2880,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         int doFdPInt(PInt value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
             return doFdLong(castToLongNode.execute(inliningTarget, value));
         }
 
@@ -2889,7 +2890,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
             if (indexCheckNode.execute(inliningTarget, value)) {
                 Object o = indexNode.execute(frame, inliningTarget, value);
                 return doFdLong(castToLongNode.execute(inliningTarget, o));
@@ -2957,7 +2958,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "allowFd")
         PosixFileHandle doFdPInt(PInt value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(inliningTarget, value), getRaiseNode()));
         }
 
@@ -2968,9 +2969,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PosixFileHandle doUnicode(PString value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             TruffleString str = castToStringNode.execute(inliningTarget, value);
             return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)), false);
@@ -2978,7 +2980,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PosixFileHandle doBytes(PBytes value,
-                        @Shared @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
         }
@@ -2999,27 +3001,27 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(this, value)"})
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached CastToJavaLongLossyNode castToLongNode) {
+                        @Exclusive @Cached CastToJavaLongLossyNode castToLongNode) {
             Object o = indexNode.execute(frame, inliningTarget, value);
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(inliningTarget, o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(this, value)"})
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(this, value)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath,
-                        @Shared @Cached BytesNodes.ToBytesNode toByteArrayNode,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
+                        @Exclusive @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             Object pathObject = callFSPath.executeObject(frame, value);
             if (pathObject == PNone.NO_VALUE) {

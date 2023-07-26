@@ -101,13 +101,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeBuildEncodingMapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeDecodeCharmapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeEncodeCharmapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecRegisterErrorNode;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -158,6 +158,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -481,7 +482,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PyLongAsIntNode asIntNode,
-                        @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Exclusive @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {

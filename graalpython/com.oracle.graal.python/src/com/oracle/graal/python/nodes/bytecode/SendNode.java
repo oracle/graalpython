@@ -55,7 +55,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,8 +74,8 @@ public abstract class SendNode extends PNodeWithContext {
     static boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.SendNode sendNode,
-                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = sendNode.execute(virtualFrame, generator, arg);
             virtualFrame.setObject(stackTop, value);
@@ -91,8 +91,8 @@ public abstract class SendNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
                     @Cached GetNextNode getNextNode,
-                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = getNextNode.execute(virtualFrame, iter);
             virtualFrame.setObject(stackTop, value);
@@ -107,8 +107,8 @@ public abstract class SendNode extends PNodeWithContext {
     static boolean doOther(VirtualFrame virtualFrame, int stackTop, Object obj, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
-                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
             virtualFrame.setObject(stackTop, value);

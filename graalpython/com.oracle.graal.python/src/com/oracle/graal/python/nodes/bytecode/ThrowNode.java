@@ -56,7 +56,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -78,9 +78,9 @@ public abstract class ThrowNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                     @Cached CommonGeneratorBuiltins.CloseNode closeNode,
-                    @Shared("exitProfile") @Cached IsBuiltinObjectProfile profileExit,
-                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached IsBuiltinObjectProfile profileExit,
+                    @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
             closeNode.execute(frame, generator);
             throw exception;
@@ -104,9 +104,9 @@ public abstract class ThrowNode extends PNodeWithContext {
                     @Cached CallNode callThrow,
                     @Cached CallNode callClose,
                     @Cached WriteUnraisableNode writeUnraisableNode,
-                    @Shared("exitProfile") @Cached IsBuiltinObjectProfile profileExit,
-                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached IsBuiltinObjectProfile profileExit,
+                    @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {

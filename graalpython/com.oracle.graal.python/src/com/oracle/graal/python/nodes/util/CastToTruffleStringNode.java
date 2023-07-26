@@ -109,6 +109,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // Footprint reduction 48 -> 29
     public abstract static class ReadNativeStringNode extends PNodeWithContext {
 
         public abstract TruffleString execute(Object pointer);
@@ -156,8 +157,8 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     @InliningCutoff
     static TruffleString doNativeObject(Node inliningTarget, PythonNativeObject x,
                     @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached ReadNativeStringNode read) {
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) ReadNativeStringNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
             return read.execute(x.getPtr());
         }

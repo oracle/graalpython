@@ -86,8 +86,10 @@ import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -386,7 +388,7 @@ public final class RangeBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)", limit = "1")
+        @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)")
         static Object doPRange(VirtualFrame frame, PIntRange self, Object idx,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
@@ -395,7 +397,7 @@ public final class RangeBuiltins extends PythonBuiltins {
             return self.getIntItemNormalized(normalize.execute(asSizeNode.executeExact(frame, inliningTarget, idx), self.getIntLength()));
         }
 
-        @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)", limit = "1")
+        @Specialization(guards = "canBeIndex(this, idx, indexCheckNode)")
         Object doPRange(PBigRange self, Object idx,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaBigIntegerNode toBigInt,
@@ -403,8 +405,9 @@ public final class RangeBuiltins extends PythonBuiltins {
             return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(inliningTarget, self, idx, toBigInt)));
         }
 
-        @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)", limit = "1")
+        @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)")
         @SuppressWarnings("truffle-static-method")
+        @InliningCutoff
         Object doPRangeSliceSlowPath(VirtualFrame frame, PIntRange self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ComputeIndices compute,
@@ -433,10 +436,13 @@ public final class RangeBuiltins extends PythonBuiltins {
             return createRange(inliningTarget, info, rangeStart, rangeStep, lenOfRangeNode);
         }
 
-        @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)", limit = "1")
+        @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)")
         @SuppressWarnings("truffle-static-method")
         Object doPRangeSliceSlowPath(VirtualFrame frame, PBigRange self, PSlice slice,
                         @Bind("this") Node inliningTarget,
+                        // Note the dummy profiles: it is better to have everything @Shared
+                        @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile isNumIndexProfile,
+                        @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile isSliceIndexProfile,
                         @Shared @Cached ComputeIndices compute,
                         @Shared @Cached IsBuiltinObjectProfile profileError,
                         @Shared @Cached CoerceToBigRange toBigIntRange,
@@ -466,10 +472,11 @@ public final class RangeBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
+        @InliningCutoff
         Object doGeneric(VirtualFrame frame, PRange self, Object idx,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isNumIndexProfile,
-                        @Cached InlinedConditionProfile isSliceIndexProfile,
+                        @Shared @Cached InlinedConditionProfile isNumIndexProfile,
+                        @Shared @Cached InlinedConditionProfile isSliceIndexProfile,
                         @Shared @Cached ComputeIndices compute,
                         @Shared @Cached IsBuiltinObjectProfile profileError,
                         @Shared @Cached CoerceToBigRange toBigIntRange,
@@ -492,7 +499,8 @@ public final class RangeBuiltins extends PythonBuiltins {
                     return doPRangeSliceSlowPath(frame, (PIntRange) self, slice, inliningTarget, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode,
                                     indexCheckNode);
                 }
-                return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, inliningTarget, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode,
+                return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, inliningTarget, isNumIndexProfile, isSliceIndexProfile, compute, profileError, toBigIntRange, toBigIntSlice,
+                                lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode,
                                 asSizeNode);
             }
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
@@ -546,7 +554,7 @@ public final class RangeBuiltins extends PythonBuiltins {
 
         public abstract boolean execute(VirtualFrame frame, PRange self, Object value);
 
-        private boolean containsInt(Node inliningTarget, PIntRange self, int other, InlinedConditionProfile stepOneProfile, InlinedConditionProfile stepMinusOneProfile) {
+        private static boolean containsInt(Node inliningTarget, PIntRange self, int other, InlinedConditionProfile stepOneProfile, InlinedConditionProfile stepMinusOneProfile) {
             int step = self.getIntStep();
             int start = self.getIntStart();
             int stop = self.getIntStop();
@@ -584,7 +592,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private boolean containsBigInt(PBigRange self, BigInteger other) {
+        private static boolean containsBigInt(PBigRange self, BigInteger other) {
             BigInteger step = self.getBigIntegerStep();
             BigInteger start = self.getBigIntegerStart();
             BigInteger stop = self.getBigIntegerStop();
@@ -648,12 +656,12 @@ public final class RangeBuiltins extends PythonBuiltins {
             return isBuiltin.execute(inliningTarget, value);
         }
 
-        @Specialization(guards = "isBuiltinPInt(this, other, isBuiltin)")
-        boolean containsFastNumPInt(PIntRange self, PInt other,
+        @Specialization(guards = "isBuiltinPInt(this, other, isBuiltin)", limit = "1")
+        static boolean containsFastNumPInt(PIntRange self, PInt other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile stepOneProfile,
-                        @Shared @Cached InlinedConditionProfile stepMinusOneProfile,
-                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
+                        @Exclusive @Cached InlinedConditionProfile stepOneProfile,
+                        @Exclusive @Cached InlinedConditionProfile stepMinusOneProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckExactNode isBuiltin) {
             try {
                 return containsInt(inliningTarget, self, other.intValueExact(), stepOneProfile, stepMinusOneProfile);
             } catch (OverflowException e) {
@@ -662,7 +670,7 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "doubleIsExactInteger(other)")
-        boolean containsFastNum(PIntRange self, double other,
+        static boolean containsFastNum(PIntRange self, double other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile stepOneProfile,
                         @Shared @Cached InlinedConditionProfile stepMinusOneProfile) {
@@ -684,20 +692,21 @@ public final class RangeBuiltins extends PythonBuiltins {
             return containsBigInt(self, (long) other);
         }
 
-        @Specialization(guards = "isBuiltinPInt(this, other, isBuiltin)")
-        boolean containsSlowNum(PBigRange self, PInt other,
-                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
+        @Specialization(guards = "isBuiltinPInt(inliningTarget, other, isBuiltin)", limit = "1")
+        static boolean containsSlowNum(PBigRange self, PInt other,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckExactNode isBuiltin) {
             return containsBigInt(self, other.getValue());
         }
 
-        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(this, elem, isBuiltin)")
+        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(inliningTarget, elem, isBuiltin)", limit = "1")
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
+                        @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckExactNode isBuiltin) {
             Object iter = getIter.execute(frame, inliningTarget, self);
             while (true) {
                 try {

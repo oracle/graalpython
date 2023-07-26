@@ -103,6 +103,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -202,14 +203,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization
         static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared HashingStorageGetItem getItem) {
+                        @Exclusive @Cached HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, inliningTarget, self.getWrappedDict().getDictStorage(), key);
         }
 
         @Specialization
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared HashingStorageGetItem getItem,
+                        @Exclusive @Cached HashingStorageGetItem getItem,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached InlinedConditionProfile tupleLenProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {

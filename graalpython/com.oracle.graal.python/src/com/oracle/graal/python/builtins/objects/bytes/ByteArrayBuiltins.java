@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -189,8 +190,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(this, key)", limit = "1")
+        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(inliningTarget, key)", limit = "1")
         static Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
@@ -811,7 +813,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         boolean cmp(PByteArray self, PBytesLike other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetInternalByteArrayNode getArray) {
+                        @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
             return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
@@ -823,7 +825,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyByteArrayCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Shared @Cached GetInternalByteArrayNode getArray,
+                        @Exclusive @Cached GetInternalByteArrayNode getArray,
                         @CachedLibrary("other") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);

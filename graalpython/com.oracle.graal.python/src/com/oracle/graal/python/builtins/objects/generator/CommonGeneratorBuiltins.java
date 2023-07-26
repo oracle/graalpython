@@ -82,7 +82,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -158,9 +158,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cached(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached(value = "createDirectCall(self.getCurrentCallTarget())", inline = false) CallTargetInvokeNode call,
-                        @Shared @Cached InlinedBranchProfile returnProfile,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached InlinedBranchProfile returnProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -185,9 +185,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         static Object generic(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached InlinedConditionProfile hasFrameProfile,
                         @Cached(inline = false) GenericInvokeNode call,
-                        @Shared @Cached InlinedBranchProfile returnProfile,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached InlinedBranchProfile returnProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {

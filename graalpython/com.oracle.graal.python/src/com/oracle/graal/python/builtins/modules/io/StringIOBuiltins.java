@@ -120,6 +120,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -792,11 +793,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
             return profile.profileObject(inliningTarget, self, PythonBuiltinClassType.PStringIO);
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
         @SuppressWarnings("truffle-static-method") // raise
         Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode) {
@@ -812,10 +813,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
          * This path is rarely executed.
          */
         @SuppressWarnings("truffle-static-method")
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectProfile profile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
                         @Cached CastToTruffleStringNode toString) {
             self.realize();

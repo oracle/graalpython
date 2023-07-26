@@ -82,7 +82,8 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
 
     @Specialization
     static boolean doPInt(Node inliningTarget, PInt x,
-                    @Cached InlinedConditionProfile isBoolean,
+                    // DSL generates better code if all are @Shared
+                    @Shared("dummy") @Cached InlinedConditionProfile isBoolean,
                     @Shared @Cached(inline = false) IsSubtypeNode isSubtypeNode,
                     @Shared @Cached GetClassNode getClassNode) {
         if (isBoolean.profile(inliningTarget, isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.Boolean))) {
@@ -94,6 +95,7 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
 
     @Specialization
     static boolean doNativeObject(Node inliningTarget, PythonNativeObject x,
+                    @SuppressWarnings("unused") @Shared("dummy") @Cached InlinedConditionProfile isBoolean,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.Boolean)) {

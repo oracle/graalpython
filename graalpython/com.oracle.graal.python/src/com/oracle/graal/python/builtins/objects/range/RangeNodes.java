@@ -81,9 +81,9 @@ public abstract class RangeNodes {
         @Specialization
         static PBigRange createBigRange(Node inliningTarget, Object start, Object stop, Object step, PythonObjectFactory factory,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @Cached(inline = false) CastToJavaBigIntegerNode startToBI,
-                        @Cached(inline = false) CastToJavaBigIntegerNode stopToBI,
-                        @Cached(inline = false) CastToJavaBigIntegerNode stepToBI,
+                        @Cached CastToJavaBigIntegerNode startToBI,
+                        @Cached CastToJavaBigIntegerNode stopToBI,
+                        @Cached CastToJavaBigIntegerNode stepToBI,
                         @Cached PRaiseNode.Lazy raise) {
             BigInteger stepBI = stepToBI.execute(inliningTarget, step);
             checkStepZero(inliningTarget, stepBI, raise);

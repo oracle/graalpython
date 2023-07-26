@@ -66,6 +66,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -257,7 +258,7 @@ public abstract class BufferStorageNodes {
         @Specialization(guards = "format == UINT_64")
         static void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaUnsignedLongNode castToUnsignedLong) {
             PythonUtils.ARRAY_ACCESSOR.putLong(bytes, offset, castToUnsignedLong.execute(inliningTarget, indexNode.execute(frame, inliningTarget, object)));
         }

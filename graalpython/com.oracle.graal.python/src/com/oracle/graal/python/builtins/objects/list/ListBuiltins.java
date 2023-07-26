@@ -298,7 +298,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)", limit = "1")
+        @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
         protected static Object doScalar(VirtualFrame frame, PList self, Object key,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
@@ -308,7 +308,7 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @SuppressWarnings({"unused", "truffle-static-method"})
-        @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)", limit = "1")
+        @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)")
         protected Object doListError(VirtualFrame frame, Object self, Object key,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode) {

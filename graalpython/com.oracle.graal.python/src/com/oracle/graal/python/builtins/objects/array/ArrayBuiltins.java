@@ -119,7 +119,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -275,8 +275,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
-                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
@@ -292,8 +292,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
         static boolean eqDoubles(PArray left, PArray right,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
-                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
@@ -318,13 +318,14 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
+        @SuppressWarnings("truffle-static-method")
         boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
-                        @Cached @Shared CoerceToBooleanNode.YesNode coerceToBooleanNode,
-                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
-                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
@@ -338,12 +339,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
+        @SuppressWarnings("truffle-static-method")
         boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
-                        @Cached @Shared CoerceToBooleanNode.YesNode coerceToBooleanNode,
-                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
-                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
+                        @Exclusive @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
+                        @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
@@ -698,10 +700,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "protocol < 3")
+        @SuppressWarnings("truffle-static-method")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode,
-                        @Cached @Shared PyObjectLookupAttr lookupDict,
+                        @Cached @Exclusive GetClassNode getClassNode,
+                        @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached ToListNode toListNode) {
             Object cls = getClassNode.execute(inliningTarget, self);
             Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
@@ -713,10 +716,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "protocol >= 3")
+        @SuppressWarnings("truffle-static-method")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode,
-                        @Cached @Shared PyObjectLookupAttr lookupDict,
+                        @Cached @Exclusive GetClassNode getClassNode,
+                        @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule(T_ARRAY);
@@ -814,9 +818,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object extend(VirtualFrame frame, PArray self, PSequence value,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared ArrayNodes.PutValueNode putValueNode,
+                        @Cached @Exclusive ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, value);
@@ -847,7 +852,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         Object extend(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached @Shared ArrayNodes.PutValueNode putValueNode,
+                        @Cached @Exclusive ArrayNodes.PutValueNode putValueNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             Object iter = getIter.execute(frame, inliningTarget, value);

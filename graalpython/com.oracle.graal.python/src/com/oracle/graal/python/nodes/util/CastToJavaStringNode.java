@@ -85,8 +85,8 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     static String doPStringGeneric(PString x,
                     @Bind("this") Node inliningTarget,
                     @Cached StringMaterializeNode materializeNode,
-                    @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return toJavaStringNode.execute(materializeNode.execute(inliningTarget, x));
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaString) {
+        return toJavaString.execute(materializeNode.execute(inliningTarget, x));
     }
 
     @Specialization
@@ -94,7 +94,7 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaString,
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaString,
                     @Cached ReadNativeStringNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
             return toJavaString.execute(read.execute(x.getPtr()));

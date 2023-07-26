@@ -152,8 +152,8 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         static void check(Node inliningTarget, Object descrType, Object name, Object obj,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (!isSubtypeNode.execute(type, descrType)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);

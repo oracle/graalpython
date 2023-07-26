@@ -160,7 +160,7 @@ public class PDict extends PHashingCollection {
     static Object readHashValue(PDict self, Object key,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
+                    @Exclusive @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
@@ -181,7 +181,7 @@ public class PDict extends PHashingCollection {
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Cached PyObjectHashNode hashNode,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
+                    @Exclusive @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {

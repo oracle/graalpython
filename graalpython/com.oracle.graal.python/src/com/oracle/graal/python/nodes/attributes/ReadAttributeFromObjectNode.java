@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.LazyHashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -127,9 +127,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
-                    @Shared("getItem") @Cached LazyHashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
         // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItem.get(inliningTarget).execute(inliningTarget, cachedStorage, key);
+        Object value = getItem.execute(inliningTarget, cachedStorage, key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -151,14 +151,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
                     @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
-                    @Shared("getItem") @Cached LazyHashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
         } else {
             // Note: we should pass the frame. In theory a subclass of a string may override
             // __hash__ or __eq__ and run some side effects in there.
-            Object value = getItem.get(inliningTarget).execute(null, inliningTarget, dict.getDictStorage(), key);
+            Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (value == null) {
                 return PNone.NO_VALUE;
             } else {
@@ -193,7 +193,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
-                        @Shared("getItem") @Cached LazyHashingStorageGetItem getItem) {
+                        @Exclusive @Cached HashingStorageGetItem getItem) {
             return readNative(inliningTarget, key, getDict.execute(object), getItem);
         }
     }
@@ -205,14 +205,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
-                        @Shared("getItem") @Cached LazyHashingStorageGetItem getItem) {
+                        @Exclusive @Cached HashingStorageGetItem getItem) {
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
 
-    private static Object readNative(Node inliningTarget, Object key, Object dict, LazyHashingStorageGetItem getItem) {
+    private static Object readNative(Node inliningTarget, Object key, Object dict, HashingStorageGetItem getItem) {
         if (dict instanceof PHashingCollection) {
-            Object result = getItem.get(inliningTarget).execute(null, inliningTarget, ((PHashingCollection) dict).getDictStorage(), key);
+            Object result = getItem.execute(null, inliningTarget, ((PHashingCollection) dict).getDictStorage(), key);
             if (result != null) {
                 return result;
             }

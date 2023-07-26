@@ -91,7 +91,7 @@ public abstract class DictNodes {
         @Specialization(guards = "!mayHaveSideEffectingEq(self)")
         static void updateDictNoSideEffects(PDict self, PDict other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             // The contract is such that we iterate over 'other' and add its elements to 'self'. If
             // 'other' gets mutated during the iteration, we should raise. This can happen via a
             // side effect of '__eq__' of some key in self, we should not run any other arbitrary
@@ -106,7 +106,7 @@ public abstract class DictNodes {
                         @Cached HashingStorageGetIterator getOtherIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageLen otherLenNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage selfStorage = self.getDictStorage();
             HashingStorage otherStorage = other.getDictStorage();
             int initialSize = otherLenNode.execute(inliningTarget, otherStorage);
@@ -120,36 +120,36 @@ public abstract class DictNodes {
             self.setDictStorage(selfStorage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, inliningTarget, other, lookupKeys)"})
+        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, inliningTarget, other, lookupKeys)"}, limit = "1")
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupKeys,
+                        @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Exclusive @Cached PyObjectGetIter getIter,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Shared @Cached PyObjectGetItem getItem,
+                        @Exclusive @Cached PyObjectGetItem getItem,
                         @Shared @Cached GetNextNode nextNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
                             callKeysNode, getItem, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, inliningTarget, other, lookupKeys)"})
+        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, inliningTarget, other, lookupKeys)"}, limit = "1")
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
-                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupKeys,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Shared @Cached GetNextNode nextNode,
                         @Cached ListNodes.FastConstructListNode createListNode,
-                        @Shared @Cached PyObjectGetItem getItem,
+                        @Exclusive @Cached PyObjectGetItem getItem,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,

@@ -55,7 +55,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -152,7 +152,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         @Specialization
         static int doObjectExact(VirtualFrame frame, Object object, PythonBuiltinClassType errorClass,
                         @Bind("this") Node inliningTarget,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached CastToJavaIntExactNode cast) {
             Object index = indexNode.execute(frame, inliningTarget, object);
@@ -168,7 +168,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         @Specialization
         static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
                         @Bind("this") Node inliningTarget,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode cast) {
             Object index = indexNode.execute(frame, inliningTarget, object);
             try {

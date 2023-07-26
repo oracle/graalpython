@@ -173,7 +173,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         Object next(PIntRangeIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("next") @Cached InlinedConditionProfile profile) {
+                        @Exclusive @Cached InlinedConditionProfile profile) {
             if (profile.profile(inliningTarget, self.hasNextInt())) {
                 return self.nextInt();
             }
@@ -222,7 +222,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
-                        @Shared("next") @Cached InlinedConditionProfile profile) {
+                        @Exclusive @Cached InlinedConditionProfile profile) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
             if (profile.profile(inliningTarget, nextNode.execute(inliningTarget, storage, it))) {

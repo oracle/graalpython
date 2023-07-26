@@ -220,7 +220,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     boolean isMetaInstance(Object instance,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isType,
                     @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,

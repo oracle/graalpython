@@ -126,6 +126,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -159,9 +160,11 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -172,6 +175,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -475,7 +479,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         PBytesLike add(PBytesLike self, PBytesLike other,
                         @Bind("this") Node node,
                         @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached @Shared BytesNodes.CreateBytesNode create) {
+                        @Cached @Exclusive BytesNodes.CreateBytesNode create) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             return create.execute(node, factory(), self, res);
         }
@@ -488,7 +492,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached @Shared BytesNodes.CreateBytesNode create) {
+                        @Cached @Exclusive BytesNodes.CreateBytesNode create) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
@@ -511,23 +515,13 @@ public final class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytesLike mul(VirtualFrame frame, Object self, int times,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
-                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached @Shared BytesNodes.CreateBytesNode create) {
-            SequenceStorage res = repeatNode.execute(frame, getBytesStorage.execute(inliningTarget, self), times);
-            return create.execute(inliningTarget, factory(), self, res);
-        }
-
-        @Specialization
         @SuppressWarnings("truffle-static-method")
         public PBytesLike mul(VirtualFrame frame, Object self, Object times,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
+                        @Cached GetBytesStorage getBytesStorage,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached @Shared BytesNodes.CreateBytesNode create) {
+                        @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, getBytesStorage.execute(inliningTarget, self), asSizeNode.executeExact(frame, inliningTarget, times));
             return create.execute(inliningTarget, factory(), self, res);
         }
@@ -560,37 +554,28 @@ public final class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         boolean cmp(PBytes self, PBytes other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetInternalByteArrayNode getArray) {
+                        @Exclusive @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
             return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "check.execute(inliningTarget, other)"})
+        @Fallback
         @SuppressWarnings("truffle-static-method")
-        boolean cmp(Object self, Object other,
+        Object cmp(Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode check,
+                        @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Shared @Cached GetInternalByteArrayNode getArray) {
-            SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
-            SequenceStorage otherStorage = getBytesStorage.execute(inliningTarget, other);
-            return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
-        }
-
-        @Specialization(guards = {"check.execute(inliningTarget, self)", "!check.execute(inliningTarget, other)"})
-        @SuppressWarnings("unused")
-        static Object cmp(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyBytesCheckNode check) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @Specialization(guards = "!check.execute(inliningTarget, self)")
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        Object error(Object self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyBytesCheckNode check) {
+                        @Cached GetInternalByteArrayNode getArray) {
+            if (check.execute(inliningTarget, self)) {
+                if (check.execute(inliningTarget, other)) {
+                    SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
+                    SequenceStorage otherStorage = getBytesStorage.execute(inliningTarget, other);
+                    return doCmp(getArray.execute(inliningTarget, selfStorage), selfStorage.length(), getArray.execute(inliningTarget, otherStorage), otherStorage.length());
+                } else {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
+            }
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTES, self);
         }
     }
@@ -741,34 +726,18 @@ public final class BytesBuiltins extends PythonBuiltins {
     abstract static class PrefixSuffixBaseNode extends PythonQuaternaryClinicBuiltinNode {
         // common and specialized cases --------------------
 
-        @Specialization(guards = "!isPTuple(substr)")
-        boolean doPrefixStartEnd(VirtualFrame frame, Object self, Object substr, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
-                        @Shared @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached("createToBytes()") BytesNodes.ToBytesNode tobytes) {
-            SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
-            byte[] bytes = getBytes.execute(inliningTarget, storage);
-            int len = storage.length();
-            byte[] substrBytes = tobytes.execute(frame, substr);
-            int begin = adjustStartIndex(start, len);
-            int last = adjustEndIndex(end, len);
-            return doIt(bytes, substrBytes, begin, last);
-        }
-
         @Specialization
-        boolean doTuplePrefixStartEnd(VirtualFrame frame, Object self, PTuple substrs, int start, int end,
+        boolean doIt(VirtualFrame frame, Object self, Object substrs, int start, int end,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
-                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached("createToBytesFromTuple()") BytesNodes.ToBytesNode tobytes,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached PrefixSuffixDispatchNode dispatchNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             byte[] bytes = getBytes.execute(inliningTarget, storage);
             int len = storage.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return doIt(frame, bytes, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
+            return dispatchNode.execute(frame, inliningTarget, this, bytes, substrs, begin, last);
         }
 
         @Fallback
@@ -790,6 +759,26 @@ public final class BytesBuiltins extends PythonBuiltins {
                 }
             }
             return false;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PrefixSuffixDispatchNode extends Node {
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last);
+
+        @Specialization
+        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, PTuple substrs, int begin, int last,
+                        @Cached(value = "createToBytesFromTuple()", inline = false) BytesNodes.ToBytesNode tobytes,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
+            return parent.doIt(frame, bytes, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
+        }
+
+        @Fallback
+        static boolean doOthers(VirtualFrame frame, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last,
+                        @Cached(value = "createToBytes()", inline = false) BytesNodes.ToBytesNode tobytes) {
+            byte[] substrBytes = tobytes.execute(frame, substrs);
+            return parent.doIt(bytes, substrBytes, begin, last);
         }
 
         @NeverDefault
@@ -1501,12 +1490,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(fill)")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike none(Object self, int width, @SuppressWarnings("unused") PNone fill,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
+                        @Exclusive @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Shared("copy") @Cached SequenceStorageNodes.CopyNode copyNode,
-                        @Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
+                        @Exclusive @Cached SequenceStorageNodes.CopyNode copyNode,
+                        @Exclusive @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             if (checkSkip(len, width)) {
@@ -1519,9 +1509,9 @@ public final class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         PBytesLike bytes(VirtualFrame frame, Object self, Object w, Object fill,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetBytesStorage getBytesStorage,
-                        @Shared("copy") @Cached SequenceStorageNodes.CopyNode copyNode,
-                        @Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
+                        @Exclusive @Cached GetBytesStorage getBytesStorage,
+                        @Exclusive @Cached SequenceStorageNodes.CopyNode copyNode,
+                        @Exclusive @Cached BytesNodes.CreateBytesNode create,
                         @CachedLibrary("fill") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -2164,32 +2154,27 @@ public final class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
     @GenerateNodeFactory
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
-
         @Specialization
-        PList doSplitlinesDefault(Object self, @SuppressWarnings("unused") PNone keepends,
+        PList doSplitlines(Object self, Object keependsObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared("append") @Cached ListNodes.AppendNode appendNode,
-                        @Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
-            return doSplitlines(self, false, inliningTarget, toBytesNode, appendNode, create);
-        }
-
-        @Specialization(guards = "!isPNone(keepends)")
-        PList doSplitlinesDefault(Object self, Object keepends,
-                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile isPNoneProfile,
+                        @Cached InlinedBranchProfile isBooleanProfile,
+                        @Cached InlinedConditionProfile keependsProfile,
                         @Cached CastToJavaIntExactNode cast,
-                        @Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared("append") @Cached ListNodes.AppendNode appendNode,
-                        @Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
-            return doSplitlines(self, cast.execute(inliningTarget, keepends) != 0, inliningTarget, toBytesNode, appendNode, create);
-        }
-
-        @Specialization
-        PList doSplitlines(Object self, boolean keepends,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared("append") @Cached ListNodes.AppendNode appendNode,
-                        @Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached ListNodes.AppendNode appendNode,
+                        @Cached BytesNodes.CreateBytesNode create) {
+            boolean keepends;
+            if (keependsObj instanceof Boolean b) {
+                isBooleanProfile.enter(inliningTarget);
+                keepends = b;
+            } else if (PGuards.isPNone(keependsObj)) {
+                isPNoneProfile.enter(inliningTarget);
+                keepends = false;
+            } else {
+                keepends = cast.execute(inliningTarget, keependsObj) != 0;
+            }
+            keepends = keependsProfile.profile(inliningTarget, keepends);
             byte[] bytes = toBytesNode.execute(null, self);
             PList list = factory().createList();
             int sliceStart = 0;

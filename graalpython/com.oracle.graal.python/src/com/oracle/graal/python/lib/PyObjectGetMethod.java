@@ -219,7 +219,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached(inline = false) TruffleString.ToJavaStringNode toJavaString,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Shared @Cached PyObjectGetAttr getAttr) {
+                    @Exclusive @Cached PyObjectGetAttr getAttr) {
         String jName = toJavaString.execute(name);
         if (lib.isMemberInvocable(receiver, jName)) {
             return new BoundDescriptor(new ForeignMethod(receiver, jName));
@@ -230,7 +230,7 @@ public abstract class PyObjectGetMethod extends Node {
 
     @Fallback
     static Object getGenericAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
-                    @Shared @Cached PyObjectGetAttr getAttr) {
+                    @Exclusive @Cached PyObjectGetAttr getAttr) {
         return new BoundDescriptor(getAttr.execute(frame, inliningTarget, receiver, name));
     }
 }

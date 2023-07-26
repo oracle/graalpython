@@ -108,33 +108,33 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return codePointLengthNode.execute(str, TS_ENCODING);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doList(Node inliningTarget, PList object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doTuple(Node inliningTarget, PTuple object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doDict(Node inliningTarget, PDict object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doSet(Node inliningTarget, PSet object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     @InliningCutoff
     static int doPString(Node inliningTarget, PString object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
@@ -142,7 +142,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return lenNode.execute(object);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doPBytes(Node inliningTarget, PBytesLike object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length();

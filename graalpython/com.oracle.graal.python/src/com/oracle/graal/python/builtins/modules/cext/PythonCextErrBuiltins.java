@@ -124,6 +124,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -432,7 +433,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(this, exc, getClassNode, isSubtypeNode)"})
         static int matches(Object err, Object exc,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
@@ -452,7 +453,7 @@ public final class PythonCextErrBuiltins {
         @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
         static int matches(Object errArg, Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached IsTypeNode isTypeNode,

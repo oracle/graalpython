@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -68,8 +69,8 @@ public abstract class GetAwaitableNode extends Node {
     @Specialization
     public static Object doGenerator(PGenerator generator,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raise,
-                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseReusedCoro) {
+                    @Exclusive @Cached PRaiseNode.Lazy raise,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseReusedCoro) {
         if (generator.isCoroutine()) {
             if (generator.getYieldFrom() != null) {
                 throw raiseReusedCoro.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
@@ -84,8 +85,8 @@ public abstract class GetAwaitableNode extends Node {
     @Specialization
     public static Object doGeneric(Frame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode.Lazy raiseNoAwait,
-                    @Cached.Exclusive @Cached PRaiseNode.Lazy raiseNotIter,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNoAwait,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached GetClassNode getAwaitableType,

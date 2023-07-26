@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -95,11 +96,11 @@ public abstract class PrepareExceptionNode extends Node {
         throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"})
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
-                    @Shared @Cached PyExceptionInstanceCheckNode check,
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                    @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -118,11 +119,11 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(this, type)")
+    @Specialization(guards = "isTypeNode.execute(this, type)", limit = "1")
     static Object doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
-                    @Shared @Cached PyExceptionInstanceCheckNode check,
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                    @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
@@ -135,11 +136,11 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(inliningTarget, type)")
+    @Specialization(guards = "isTypeNode.execute(inliningTarget, type)", limit = "1")
     static Object doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
-                    @Shared @Cached PyExceptionInstanceCheckNode check,
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                    @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
@@ -157,7 +158,7 @@ public abstract class PrepareExceptionNode extends Node {
     @Specialization(guards = "fallbackGuard(type, inliningTarget, isTypeNode)", limit = "1")
     static Object doError(Object type, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Shared @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
     }

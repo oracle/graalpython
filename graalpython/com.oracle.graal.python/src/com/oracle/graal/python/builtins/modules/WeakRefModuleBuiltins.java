@@ -84,7 +84,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -384,7 +384,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
-                        @Shared @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode setAttrNode) {
             Object obj = object;
@@ -419,7 +419,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached InlineIsBuiltinClassProfile profile,
                         @Cached GetMroNode getMroNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;

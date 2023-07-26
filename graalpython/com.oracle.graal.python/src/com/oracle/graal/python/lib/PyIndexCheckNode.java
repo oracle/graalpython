@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -50,7 +49,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -87,14 +86,6 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @InliningCutoff
-    @Specialization
-    static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
-        return lookupIndex.execute(getClassNode.execute(inliningTarget, object)) != PNone.NO_VALUE;
-    }
-
     @Specialization
     static boolean doLong(@SuppressWarnings("unused") Long object) {
         return true;
@@ -116,11 +107,11 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     }
 
     @InliningCutoff
-    @Specialization(replaces = "doPythonObject")
+    @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached LazyInteropLibrary lazyInteropLibrary,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             InteropLibrary interop = lazyInteropLibrary.get(inliningTarget);

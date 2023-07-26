@@ -53,7 +53,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -83,7 +83,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Bind("this") Node inliningTarget,
                     @Cached("create(GetAttribute)") LookupAndCallBinaryNode getAttributeNode,
-                    @Shared("exceptionMaskProfile") @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
+                    @Exclusive @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
         try {
             Object bases = getAttributeNode.executeObject(frame, cls, T___BASES__);
             if (bases instanceof PTuple) {
@@ -100,7 +100,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Cached CallNode callGetattributeNode,
-                    @Shared("exceptionMaskProfile") @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
+                    @Exclusive @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
         Object getattr = lookupGetattributeNode.execute(inliningTarget, cls, T___GETATTRIBUTE__);
         try {
             Object bases = callGetattributeNode.execute(frame, getattr, cls, T___BASES__);

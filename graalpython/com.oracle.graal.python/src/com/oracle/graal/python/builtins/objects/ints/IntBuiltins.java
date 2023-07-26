@@ -2229,7 +2229,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return left.compareTo(right) < 0;
         }
 
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)", limit = "1")
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)")
         static boolean doDN(VirtualFrame frame, long x, PythonAbstractNativeObject y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
@@ -2240,7 +2240,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {
                         "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)",
-                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"}, limit = "1")
+                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"})
         static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, PythonAbstractNativeObject y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
@@ -2250,7 +2250,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
         }
 
-        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)", limit = "1")
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)")
         static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, double y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
@@ -2430,9 +2430,9 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
+                        @Exclusive @Cached InlinedConditionProfile negativeByteCountProfile,
+                        @Exclusive @Cached InlinedConditionProfile negativeNumberProfile,
+                        @Exclusive @Cached InlinedConditionProfile overflowProfile) {
             if (negativeByteCountProfile.profile(inliningTarget, byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }
@@ -2509,8 +2509,8 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         public PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
+                        @Exclusive @Cached InlinedConditionProfile negativeByteCountProfile,
+                        @Exclusive @Cached InlinedConditionProfile overflowProfile) {
             if (negativeByteCountProfile.profile(inliningTarget, byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }

@@ -199,7 +199,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization
         static Object string(Node inliningTarget, DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash,
                         @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
-                        @Shared @Cached InlinedConditionProfile noValueProfile) {
+                        @Exclusive @Cached InlinedConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
             return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
@@ -210,7 +210,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
                         @Cached IsBuiltinObjectProfile profile,
-                        @Shared @Cached InlinedConditionProfile noValueProfile) {
+                        @Exclusive @Cached InlinedConditionProfile noValueProfile) {
             return string(inliningTarget, self, castStr.execute(inliningTarget, key), -1, readKey, noValueProfile);
         }
 

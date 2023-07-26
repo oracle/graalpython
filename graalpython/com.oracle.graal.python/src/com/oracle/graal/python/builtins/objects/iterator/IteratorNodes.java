@@ -80,7 +80,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.CastBuiltinStringToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -131,40 +131,40 @@ public abstract class IteratorNodes {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doList(Node inliningTarget, PList object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doTuple(Node inliningTarget, PTuple object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doDict(Node inliningTarget, PDict object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doSet(Node inliningTarget, PSet object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doPString(Node inliningTarget, PString object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) StringNodes.StringLenNode lenNode) {
             return lenNode.execute(object);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
         static int doPBytes(Node inliningTarget, PBytesLike object,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
             return object.getSequenceStorage().length();
@@ -386,14 +386,16 @@ public abstract class IteratorNodes {
     public abstract static class ToArrayNode extends PNodeWithRaise {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
-        @Specialization
-        public static Object[] doIt(TruffleString iterable,
+        @Specialization(guards = "isString(iterableObj)")
+        public static Object[] doIt(Object iterableObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
-                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached @Shared TruffleStringIterator.NextNode nextNode,
-                        @Cached @Shared TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Cached CastBuiltinStringToTruffleStringNode castToStringNode,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            TruffleString iterable = castToStringNode.execute(inliningTarget, iterableObj);
             Object[] result = new Object[codePointLengthNode.execute(iterable, TS_ENCODING)];
             loopProfile.profileCounted(inliningTarget, result.length);
             TruffleStringIterator it = createCodePointIteratorNode.execute(iterable, TS_ENCODING);
@@ -406,18 +408,6 @@ public abstract class IteratorNodes {
         }
 
         @Specialization
-        public static Object[] doIt(PString iterable,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
-                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached @Shared TruffleStringIterator.NextNode nextNode,
-                        @Cached @Shared TruffleString.FromCodePointNode fromCodePointNode) {
-            return doIt(castToStringNode.execute(inliningTarget, iterable), inliningTarget, loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
-        }
-
-        @Specialization
         public static Object[] doIt(PSequence iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached GetSequenceStorageNode getStorageNode,
@@ -426,7 +416,7 @@ public abstract class IteratorNodes {
             return toArrayNode.execute(inliningTarget, storage);
         }
 
-        @Specialization(guards = {"!isPSequence(iterable)", "!isString(iterable)"})
+        @Fallback
         public static Object[] doIt(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,

@@ -71,6 +71,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -118,7 +119,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         protected static PList starredTupleCachedLength(PTuple v,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PythonObjectFactory factory,
                         @Cached("getLength(v)") int cachedLength,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = v.getSequenceStorage();
@@ -132,13 +133,13 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, inliningTarget, getClassNode)", limit = "1")
         protected static PList starredTuple(PTuple v,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
+                        @Exclusive @Cached PythonObjectFactory factory,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
-        @Specialization(guards = "cannotBeOverridden(v, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(v, inliningTarget, getClassNode)")
         protected static PList starredList(PList v,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClassNode) {

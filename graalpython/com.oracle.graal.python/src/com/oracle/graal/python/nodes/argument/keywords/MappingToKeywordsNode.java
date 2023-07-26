@@ -63,7 +63,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -87,14 +87,14 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
                     @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
-                    @Shared("convert") @Cached HashingStorageToKeywords convert) {
+                    @Exclusive @Cached HashingStorageToKeywords convert) {
         return convert.execute(frame, inliningTarget, starargs.getDictStorage());
     }
 
     @Fallback
     static PKeyword[] doMapping(VirtualFrame frame, Node inliningTarget, Object starargs,
                     @Cached(inline = false) ConcatDictToStorageNode concatDictToStorageNode,
-                    @Shared("convert") @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
+                    @Exclusive @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
         HashingStorage storage = concatDictToStorageNode.execute(frame, EmptyStorage.INSTANCE, starargs);
         return convert.execute(frame, inliningTarget, storage);
     }

@@ -58,6 +58,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -185,7 +186,7 @@ public final class SliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(length)", rewriteOn = PException.class)
         protected PTuple doSliceObject(VirtualFrame frame, PSlice self, Object length,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SliceExactCastToInt toInt,
+                        @Exclusive @Cached SliceExactCastToInt toInt,
                         @Shared @Cached ComputeIndices compute) {
             return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute);
         }
@@ -194,7 +195,7 @@ public final class SliceBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         protected PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached SliceExactCastToInt toInt,
+                        @Exclusive @Cached SliceExactCastToInt toInt,
                         @Shared @Cached ComputeIndices compute,
                         @Cached IsBuiltinObjectProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,

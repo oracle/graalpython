@@ -88,10 +88,10 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached PythonToNativeNode objectToSulong,
-                    @Cached PythonToNativeNode dictToSulong,
-                    @Cached CExtNodes.PCallCapiFunction callGetDictNode,
-                    @Cached CheckPrimitiveFunctionResultNode checkResult) {
+                    @Cached(inline = false) PythonToNativeNode objectToSulong,
+                    @Cached(inline = false) PythonToNativeNode dictToSulong,
+                    @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
+                    @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
         PythonContext context = getContext();
         Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull().getPtr());

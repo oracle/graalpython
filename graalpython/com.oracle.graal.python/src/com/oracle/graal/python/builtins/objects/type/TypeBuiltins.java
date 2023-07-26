@@ -115,6 +115,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeHelperNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -124,7 +126,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -377,6 +378,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
+        @Child CallNodeHelper callNodeHelper;
 
         @NeverDefault
         public static CallNode create() {
@@ -388,13 +390,21 @@ public final class TypeBuiltins extends PythonBuiltins {
             return execute(frame, self, arguments, keywords);
         }
 
+        public CallNodeHelper getCallNodeHelper() {
+            if (callNodeHelper == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNodeHelper = insert(CallNodeHelperNodeGen.create());
+            }
+            return callNodeHelper;
+        }
+
         @Specialization(guards = "isNoValue(self)")
         Object selfInArgs(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached CallNodeHelper callNodeHelper,
                         @Cached SplitArgsNode splitArgsNode,
-                        @Shared("isSameTypeNode") @Cached IsSameTypeNode isSameTypeNode,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("callNode") @Cached LazyCallNodeHelper callNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached GetClassNode getClassNode) {
             if (isSameTypeNode.execute(inliningTarget, PythonBuiltinClassType.PythonClass, arguments[0])) {
                 if (arguments.length == 2 && keywords.length == 0) {
                     return getClassNode.execute(inliningTarget, arguments[1]);
@@ -402,15 +412,14 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
                 }
             }
-            return callNode.get(inliningTarget).execute(frame, arguments[0], splitArgsNode.execute(inliningTarget, arguments), keywords);
+            return callNodeHelper.execute(frame, arguments[0], splitArgsNode.execute(inliningTarget, arguments), keywords);
         }
 
         @Fallback
         Object selfSeparate(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isSameTypeNode") @Cached IsSameTypeNode isSameTypeNode,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("callNode") @Cached LazyCallNodeHelper callNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached GetClassNode getClassNode) {
             if (isSameTypeNode.execute(inliningTarget, PythonBuiltinClassType.PythonClass, self)) {
                 if (arguments.length == 1 && keywords.length == 0) {
                     return getClassNode.execute(inliningTarget, arguments[0]);
@@ -418,7 +427,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
                 }
             }
-            return callNode.get(inliningTarget).execute(frame, self, arguments, keywords);
+            return getCallNodeHelper().execute(frame, self, arguments, keywords);
         }
     }
 
@@ -452,21 +461,6 @@ public final class TypeBuiltins extends PythonBuiltins {
                 return callGet.execute(frame, getMethod, descriptor, PNone.NONE, type);
             }
             return descriptor;
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class LazyCallNodeHelper extends Node {
-        public CallNodeHelper get(Node inliningTarget) {
-            return execute(inliningTarget);
-        }
-
-        public abstract CallNodeHelper execute(Node inliningTarget);
-
-        @Specialization
-        static CallNodeHelper doIt(@Cached(inline = false) CallNodeHelper node) {
-            return node;
         }
     }
 
@@ -830,7 +824,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetNameNode getName,
+                        @Cached GetNameNode getName,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
                         @Cached GetBestBaseClassNode getBestBase,
@@ -892,10 +886,8 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPTuple(value)")
-        Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetNameNode getName) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", getName.execute(inliningTarget, cls), "__bases__", value);
+        Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
         }
 
         @Specialization
@@ -1008,7 +1000,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
         boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsSameTypeNode isSameTypeNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode) {
             return isSameType(inliningTarget, cls, derived, isSameTypeNode) || isSubtypeNode.execute(frame, derived, cls);
         }
 
@@ -1016,7 +1008,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
                         @Cached IsBuiltinObjectProfile isAttrErrorProfile,
                         @Cached TypeNodes.IsTypeNode isClsTypeNode,
                         @Cached TypeNodes.IsTypeNode isDerivedTypeNode) {
@@ -1263,6 +1255,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        @SuppressWarnings("truffle-static-method")
         Object setName(PythonClass cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
@@ -1351,8 +1344,8 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         Object get(Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsSameTypeNode isSameTypeNode,
-                        @Shared @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
             // Avoid returning this descriptor
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 Object result = readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__);
@@ -1368,8 +1361,8 @@ public final class TypeBuiltins extends PythonBuiltins {
         Object set(VirtualFrame frame, PythonClass self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Shared @Cached IsSameTypeNode isSameTypeNode,
-                        @Shared @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, value);
                 self.setAbstractClass(isTrueNode.execute(frame, inliningTarget, value));
@@ -1379,11 +1372,12 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
+        @SuppressWarnings("truffle-static-method")
         Object delete(PythonClass self, @SuppressWarnings("unused") DescriptorDeleteMarker value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsSameTypeNode isSameTypeNode,
-                        @Shared @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                        @Shared @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Exclusive @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 if (readAttributeFromObjectNode.execute(self, T___ABSTRACTMETHODS__) != PNone.NO_VALUE) {
                     writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, PNone.NO_VALUE);

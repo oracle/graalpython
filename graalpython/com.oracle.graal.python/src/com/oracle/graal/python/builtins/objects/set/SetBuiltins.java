@@ -89,10 +89,12 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -285,17 +287,18 @@ public final class SetBuiltins extends PythonBuiltins {
             addAllToOther.execute(frame, inliningTarget, dictStorage, collection);
         }
 
+        @Idempotent
         static boolean isBuiltinSequence(Node inliningTarget, Object other, GetPythonObjectClassNode getClassNode) {
             return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute(inliningTarget, (PSequence) other) instanceof PythonBuiltinClassType;
         }
 
-        @Specialization(guards = "isBuiltinSequence(inliningTarget, other, getClassNode)")
+        @Specialization(guards = "isBuiltinSequence(inliningTarget, other, getClassNode)", limit = "1")
         static void doBuiltin(VirtualFrame frame, PHashingCollection collection, @SuppressWarnings("unused") PSequence other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Shared @Cached HashingStorageSetItem setStorageItem) {
+                        @Exclusive @Cached HashingStorageSetItem setStorageItem) {
             SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, other);
             int length = sequenceStorage.length();
             HashingStorage curStorage = collection.getDictStorage();
@@ -306,14 +309,14 @@ public final class SetBuiltins extends PythonBuiltins {
             collection.setDictStorage(curStorage);
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(inliningTarget, other, getClassNode)"})
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(inliningTarget, other, getClassNode)"}, limit = "1")
         static void doIterable(VirtualFrame frame, PHashingCollection collection, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared @Cached HashingStorageSetItem setStorageItem) {
+                        @Exclusive @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = collection.getDictStorage();
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {

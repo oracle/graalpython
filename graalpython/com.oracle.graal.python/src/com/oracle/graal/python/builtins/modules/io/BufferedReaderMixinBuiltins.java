@@ -99,7 +99,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -280,10 +280,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached EnterBufferedNode lock,
+                        @Exclusive @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Shared @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
+                        @Exclusive @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
@@ -379,8 +379,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached EnterBufferedNode lock,
-                        @Shared @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Exclusive @Cached EnterBufferedNode lock,
+                        @Exclusive @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(T_READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached InlinedConditionProfile hasReadallProfile,
                         @Cached InlinedConditionProfile currentSize0Profile,

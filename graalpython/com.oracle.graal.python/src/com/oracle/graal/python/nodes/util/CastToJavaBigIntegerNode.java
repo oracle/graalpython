@@ -107,7 +107,7 @@ public abstract class CastToJavaBigIntegerNode extends Node {
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode) {
         if (indexCheckNode.execute(inliningTarget, x)) {
-            return rec.execute(inliningTarget, indexNode.execute(null, inliningTarget, x));
+            return rec.execute(null, indexNode.execute(null, inliningTarget, x));
         }
         throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(inliningTarget, x));
     }

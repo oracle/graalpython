@@ -70,6 +70,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -186,8 +187,8 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
-                    @Cached CStructAccess.ReadPointerNode readPointerNode,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                    @Shared @Cached CStructAccess.ReadPointerNode readPointerNode,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < mroLength; i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readSlot(kls, readAttrNodes[i], readPointerNode, interopLibrary);
@@ -210,8 +211,8 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
                     @Cached("mro.length()") int cachedMroLength,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
-                    @Cached CStructAccess.ReadPointerNode readPointerNode,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                    @Shared @Cached CStructAccess.ReadPointerNode readPointerNode,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < cachedMroLength; i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readSlot(kls, readAttrNodes[i], readPointerNode, interopLibrary);
@@ -228,9 +229,9 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     protected Object lookupGeneric(PythonManagedClass klass,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached GetMroStorageNode getMroStorageNode,
-                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached CStructAccess.ReadPointerNode readPointerNode,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                    @Exclusive @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                    @Shared @Cached CStructAccess.ReadPointerNode readPointerNode,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         MroSequenceStorage mro = getMroStorageNode.execute(inliningTarget, klass);
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
