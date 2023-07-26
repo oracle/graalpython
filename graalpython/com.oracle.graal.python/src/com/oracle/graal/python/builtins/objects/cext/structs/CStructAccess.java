@@ -257,15 +257,27 @@ public class CStructAccess {
         }
 
         @Specialization
-        static int readLong(long pointer, long offset) {
+        static int readLong(long pointer, long offset,
+                        @Shared @Cached(value = "isCharSigned()", allowUncached = true, neverDefault = false) boolean isCharSigned) {
             assert offset >= 0;
-            return UNSAFE.getByte(pointer + offset);
+            byte signedByteValue = UNSAFE.getByte(pointer + offset);
+            /*
+             * The C type 'char' may be signed or unsigned (depends on the specific
+             * architecture/platform/compiler). For example, 'char' is signed on amd64/linux/gcc but
+             * it is unsigned on aarch64/darwin/clang. If 'char' is unsigned, we must not do a
+             * sign-extending cast and therefore mask (after we casted to Java int) with 0xFF.
+             */
+            if (isCharSigned) {
+                return signedByteValue;
+            }
+            return Byte.toUnsignedInt(signedByteValue);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static int readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            return readLong(asPointer(pointer, lib), offset);
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Shared @Cached(value = "isCharSigned()", allowUncached = true, neverDefault = false) boolean isCharSigned) {
+            return readLong(asPointer(pointer, lib), offset, isCharSigned);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
@@ -274,6 +286,14 @@ public class CStructAccess {
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             return (int) call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
+        }
+
+        /**
+         * Determines if the C type {@code char} is signed by looking at {@code CHAR_MIN}. If
+         * {@code CHAR_MIN < 0}, then the type is signed.
+         */
+        protected static boolean isCharSigned() {
+            return CConstants.CHAR_MIN.longValue() < 0;
         }
     }
 

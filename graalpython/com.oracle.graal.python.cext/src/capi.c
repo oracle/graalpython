@@ -4639,6 +4639,7 @@ PyAPI_FUNC(int64_t*) PyTruffle_constants() {
     static int64_t constants[] = {
         (int64_t) PYLONG_BITS_IN_DIGIT,
         (int64_t) READONLY,
+        (int64_t) CHAR_MIN,
         0xdead1111 // marker value
     };
     return constants;
