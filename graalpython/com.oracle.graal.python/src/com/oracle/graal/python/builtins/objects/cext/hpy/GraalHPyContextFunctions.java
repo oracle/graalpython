@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrSetStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrWarnExNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrWriteUnraisableNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyEvalCodeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFatalErrorNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFieldLoadNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFieldStoreNodeGen;
@@ -267,6 +268,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyPackKe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -279,7 +282,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -324,6 +329,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -351,6 +357,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -564,6 +571,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.create();
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.create();
                 case CTX_COMPILE_S -> GraalHPyCompileNodeGen.create();
+                case CTX_EVALCODE -> GraalHPyEvalCodeNodeGen.create();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -726,6 +734,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_SLICE_UNPACK -> GraalHPySliceUnpackNodeGen.getUncached();
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.getUncached();
                 case CTX_COMPILE_S -> GraalHPyCompileNodeGen.getUncached();
+                case CTX_EVALCODE -> GraalHPyEvalCodeNodeGen.getUncached();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -3658,6 +3667,39 @@ public abstract class GraalHPyContextFunctions {
                 throw raiseNode.raise(SystemError, ErrorMessages.HPY_INVALID_SOURCE_KIND);
             }
             return callNode.execute(builtinFunction, src, filename, sourceKind.getMode());
+        }
+    }
+
+    @HPyContextFunction("ctx_EvalCode")
+    @GenerateUncached
+    public abstract static class GraalHPyEvalCode extends HPyQuaternaryContextFunction {
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, PCode code, Object globals, Object locals,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
+                        @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
+                        @Cached GenericInvokeNode invokeNode) {
+
+            // prepare Python frame arguments
+            Signature signature = getSignatureNode.execute(inliningTarget, code);
+            Object[] pArguments = PArguments.create();
+
+            if (locals == PNone.NO_VALUE) {
+                locals = globals;
+            }
+            PArguments.setSpecialArgument(pArguments, locals);
+            // TODO(fa): set builtins in globals
+            // PythonModule builtins = getContext().getBuiltins();
+            // setBuiltinsInGlobals(globals, setBuiltins, builtins, lib);
+            if (globals instanceof PythonObject) {
+                PArguments.setGlobals(pArguments, (PythonObject) globals);
+            } else {
+                throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
+
+            RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
+            return invokeNode.execute(rootCallTarget, pArguments);
         }
     }
 }
