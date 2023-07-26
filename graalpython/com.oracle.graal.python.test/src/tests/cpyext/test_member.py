@@ -90,6 +90,7 @@ class TestMethod(object):
             "TestMember",
             '''
             #include <string.h>
+            #include <limits.h>
 
             PyObject* set_string(PyObject *self, PyObject *arg) {
                 TestMemberObject *tmo = (TestMemberObject *)self;
@@ -100,18 +101,32 @@ class TestMethod(object):
                 Py_INCREF(Py_None);
                 return Py_None;
             }
-            
-            PyObject* get_sizes(PyObject *self) {
+
+            PyObject* get_min_values(PyObject *self) {
                 PyObject *result = PyTuple_New(9);
-                PyTuple_SetItem(result, 0, PyLong_FromSize_t(sizeof(char)));
-                PyTuple_SetItem(result, 1, PyLong_FromSize_t(sizeof(unsigned char)));
-                PyTuple_SetItem(result, 2, PyLong_FromSize_t(sizeof(short)));
-                PyTuple_SetItem(result, 3, PyLong_FromSize_t(sizeof(unsigned short)));
-                PyTuple_SetItem(result, 4, PyLong_FromSize_t(sizeof(int)));
-                PyTuple_SetItem(result, 5, PyLong_FromSize_t(sizeof(unsigned int)));
-                PyTuple_SetItem(result, 6, PyLong_FromSize_t(sizeof(long)));
-                PyTuple_SetItem(result, 7, PyLong_FromSize_t(sizeof(unsigned long)));
-                PyTuple_SetItem(result, 8, PyLong_FromSize_t(sizeof(Py_ssize_t)));
+                PyTuple_SetItem(result, 0, PyLong_FromSsize_t(CHAR_MIN));
+                PyTuple_SetItem(result, 1, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 2, PyLong_FromSsize_t(SHRT_MIN));
+                PyTuple_SetItem(result, 3, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 4, PyLong_FromSsize_t(INT_MIN));
+                PyTuple_SetItem(result, 5, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 6, PyLong_FromSsize_t(LONG_MIN));
+                PyTuple_SetItem(result, 7, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 8, PyLong_FromSsize_t(PY_SSIZE_T_MIN));
+                return result;
+            }
+
+            PyObject* get_max_values(PyObject *self) {
+                PyObject *result = PyTuple_New(9);
+                PyTuple_SetItem(result, 0, PyLong_FromSize_t(CHAR_MAX));
+                PyTuple_SetItem(result, 1, PyLong_FromSize_t(UCHAR_MAX));
+                PyTuple_SetItem(result, 2, PyLong_FromSize_t(SHRT_MAX));
+                PyTuple_SetItem(result, 3, PyLong_FromSize_t(USHRT_MAX));
+                PyTuple_SetItem(result, 4, PyLong_FromSize_t(INT_MAX));
+                PyTuple_SetItem(result, 5, PyLong_FromSize_t(UINT_MAX));
+                PyTuple_SetItem(result, 6, PyLong_FromSize_t(LONG_MAX));
+                PyTuple_SetItem(result, 7, PyLong_FromSize_t(ULONG_MAX));
+                PyTuple_SetItem(result, 8, PyLong_FromSize_t(PY_SSIZE_T_MAX));
                 return result;
             }
             ''',
@@ -158,7 +173,8 @@ class TestMethod(object):
             """,
             tp_methods='''
             {"set_string", (PyCFunction)set_string, METH_O, ""},
-            {"get_sizes", (PyCFunction)get_sizes, METH_NOARGS, ""}
+            {"get_min_values", (PyCFunction)get_min_values, METH_NOARGS, ""},
+            {"get_max_values", (PyCFunction)get_max_values, METH_NOARGS, ""}
             ''',
         )
 
@@ -198,16 +214,8 @@ class TestMethod(object):
         warnings.simplefilter("ignore")
 
         # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
-        sizes = obj.get_sizes()
-        max_values = [0] * len(sizes)
-        min_values = [0] * len(sizes)
-        for i, size in enumerate(sizes):
-            if i % 2 == 0:
-                max_values[i] = (1 << (size * 8 - 1)) - 1
-                min_values[i] = -(1 << (size * 8 - 1))
-            else:
-                max_values[i] = (1 << (size * 8)) - 1
-                min_values[i] = 0
+        max_values = obj.get_max_values()
+        min_values = obj.get_min_values()
 
         # all int-like members smaller than C long
         for i, m in enumerate(("member_byte", "member_ubyte", "member_short", "member_ushort", "member_int",
