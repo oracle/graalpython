@@ -778,7 +778,7 @@ suite = {
             "moduleInfo" : {
                 "name" : "org.graalvm.py.launcher",
                 "exports" : [
-                    "com.oracle.graal.python.shell to com.oracle.graal.python.enterprise.shell",
+                    "com.oracle.graal.python.shell to org.graalvm.py.enterprise.launcher",
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
@@ -853,12 +853,8 @@ suite = {
                 "name" : "org.graalvm.py",
                 "exports" : [
                     "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.buffer to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.bytes to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.floats to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.function to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.ints to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.object to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.* to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.lib to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.nodes to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.nodes.function to org.graalvm.py.enterprise",
