@@ -686,7 +686,7 @@ class TestObject(object):
                 return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
             }
             """,
-            struct_base="PyFloatObject base",
+            struct_base="PyFloatObject base;",
             cmembers="double myobval;",
             tp_base="&PyFloat_Type",
             tp_new="fp_tp_new",

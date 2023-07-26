@@ -203,7 +203,7 @@ assert example_traceback
 ExceptionSubclass = CPyExtType(
     "ExceptionSubclass",
     '',
-    struct_base='PyBaseExceptionObject base',
+    struct_base='PyBaseExceptionObject base;',
     tp_new='0',
     tp_alloc='0',
     tp_free='0',
