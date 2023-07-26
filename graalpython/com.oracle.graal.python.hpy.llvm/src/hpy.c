@@ -540,8 +540,8 @@ void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
     return polyglot_from_string(addr, "utf-8");
 }
 
-void* graal_hpy_read_HPy(void* object, HPy_ssize_t offset) {
-    return UNWRAP(ReadMember(object, offset, HPy));
+void* graal_hpy_read_HPyField(void* object, HPy_ssize_t offset) {
+    return UNWRAP_FIELD(ReadMember(object, offset, HPyField));
 }
 
 char graal_hpy_read_c(void* object, HPy_ssize_t offset) {
@@ -619,8 +619,8 @@ void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* val
 	memcpy(addr, value, n);
 }
 
-void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
-    WriteMember(object, offset, WRAP(value), HPy);
+void graal_hpy_write_HPyField(void* object, HPy_ssize_t offset, void* value) {
+    WriteMember(object, offset, WRAP_FIELD(value), HPyField);
 }
 
 void graal_hpy_write_c(void* object, HPy_ssize_t offset, char value) {

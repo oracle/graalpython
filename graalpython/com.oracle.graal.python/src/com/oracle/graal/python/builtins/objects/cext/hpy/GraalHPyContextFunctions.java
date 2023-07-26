@@ -261,6 +261,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseA
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldLoadNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
@@ -374,7 +376,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -3089,64 +3090,15 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, PythonObject owner, Object hpyFieldPtr, Object referent,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached ConditionProfile nullHandleProfile) {
+                        @Cached HPyFieldStoreNode hPyFieldStoreNode) {
             Object hpyFieldObject = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
-            int idx;
-            if (lib.isNull(hpyFieldObject)) { // uninitialized
-                idx = 0;
-            } else if (hpyFieldObject instanceof GraalHPyHandle) {
-                // avoid `asPointer` message dispatch
-                idx = ((GraalHPyHandle) hpyFieldObject).getFieldId();
-            } else {
-                if (hpyFieldObject instanceof Long) {
-                    // branch profile in lib.asPointer
-                    try {
-                        idx = PInt.intValueExact((Long) hpyFieldObject);
-                    } catch (OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    try {
-                        idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
-                    } catch (InteropException | OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                }
-            }
-            // TODO: (tfel) do not actually allocate the index / free the existing one when
-            // value can be stored as tagged handle
-            if (nullHandleProfile.profile(referent == NULL_HANDLE_DELEGATE && idx == 0)) {
-                // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
-            } else {
-                idx = assign(owner, referent, idx);
-            }
+            int idx = hPyFieldStoreNode.execute(inliningTarget, owner, hpyFieldObject, referent);
             GraalHPyHandle newHandle = asHandleNode.executeField(referent, idx);
             callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
             return 0;
-        }
-
-        public static int assign(PythonObject owner, Object referent, int location) {
-            Object[] hpyFields = owner.getHPyData();
-            if (location != 0) {
-                assert hpyFields != null;
-                hpyFields[location] = referent;
-                return location;
-            } else {
-                int newLocation;
-                if (hpyFields == null) {
-                    newLocation = 1;
-                    hpyFields = new Object[]{0, referent};
-                } else {
-                    newLocation = hpyFields.length;
-                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation + 1);
-                    hpyFields[newLocation] = referent;
-                }
-                owner.setHPyData(hpyFields);
-                return newLocation;
-            }
         }
     }
 
@@ -3157,39 +3109,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, PythonObject owner, Object hpyFieldPtr,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached InlinedExactClassProfile fieldTypeProfile) {
-            Object hpyFieldObject = fieldTypeProfile.profile(inliningTarget, hpyFieldPtr);
-            // fast track in case field is not initialized.
-            if (lib.isNull(hpyFieldObject)) {
-                return NULL_HANDLE_DELEGATE;
-            }
-            Object referent;
-            // avoid `asPointer` message dispatch
-            if (hpyFieldObject instanceof GraalHPyHandle) {
-                referent = ((GraalHPyHandle) hpyFieldObject).getDelegate();
-            } else {
-                int idx;
-                if (hpyFieldObject instanceof Long) {
-                    // branch profile in lib.asPointer
-                    try {
-                        idx = PInt.intValueExact((Long) hpyFieldObject);
-                    } catch (OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    try {
-                        idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
-                    } catch (InteropException | OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                }
-                if (idx == 0) {
-                    return NULL_HANDLE_DELEGATE;
-                }
-                referent = owner.getHPyData()[idx];
-            }
-            return referent;
+                        @Cached HPyFieldLoadNode hPyFieldLoadNode) {
+            return hPyFieldLoadNode.execute(inliningTarget, owner, hpyFieldPtr);
         }
     }
 

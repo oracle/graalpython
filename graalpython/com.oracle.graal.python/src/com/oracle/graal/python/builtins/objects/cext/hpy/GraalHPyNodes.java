@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
@@ -206,6 +207,8 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -3055,6 +3058,129 @@ public abstract class GraalHPyNodes {
                 result[i] = new PKeyword(name, kwvalues[i]);
             }
             return result;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(true)
+    public abstract static class HPyFieldLoadNode extends Node {
+
+        public abstract Object execute(Node inliningTarget, PythonObject owner, Object hpyFieldPtr);
+
+        @Specialization
+        static Object doHandle(@SuppressWarnings("unused") PythonObject owner, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(replaces = "doHandle")
+        static Object doGeneric(Node inliningTarget, PythonObject owner, Object hpyFieldPtr,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached InlinedExactClassProfile fieldTypeProfile) {
+            Object hpyFieldObject = fieldTypeProfile.profile(inliningTarget, hpyFieldPtr);
+            Object referent;
+            // avoid `asPointer` message dispatch
+            if (hpyFieldObject instanceof GraalHPyHandle) {
+                referent = ((GraalHPyHandle) hpyFieldObject).getDelegate();
+            } else {
+                int idx;
+                if (hpyFieldObject instanceof Long) {
+                    // branch profile in lib.asPointer
+                    try {
+                        idx = PInt.intValueExact((Long) hpyFieldObject);
+                    } catch (OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    try {
+                        idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                    } catch (InteropException | OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                }
+                if (idx == 0) {
+                    return NULL_HANDLE_DELEGATE;
+                }
+                referent = owner.getHPyData()[idx];
+            }
+            return referent;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(true)
+    public abstract static class HPyFieldStoreNode extends Node {
+
+        public abstract int execute(Node inliningTarget, PythonObject owner, Object hpyFieldObject, Object referent);
+
+        @Specialization
+        static int doHandle(Node inliningTarget, @SuppressWarnings("unused") PythonObject owner, GraalHPyHandle hpyFieldObject, Object referent,
+                        @Shared @Cached InlinedConditionProfile nullHandleProfile) {
+            int idx = hpyFieldObject.getFieldId();
+            if (nullHandleProfile.profile(inliningTarget, referent == NULL_HANDLE_DELEGATE && idx == 0)) {
+                // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
+                return 0;
+            } else {
+                return assign(owner, referent, idx);
+            }
+        }
+
+        @Specialization(replaces = "doHandle")
+        static int doGeneric(Node inliningTarget, PythonObject owner, Object hpyFieldObject, Object referent,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached InlinedConditionProfile nullHandleProfile) {
+            int idx;
+            if (lib.isNull(hpyFieldObject)) { // uninitialized
+                idx = 0;
+            } else if (hpyFieldObject instanceof GraalHPyHandle) {
+                // avoid `asPointer` message dispatch
+                idx = ((GraalHPyHandle) hpyFieldObject).getFieldId();
+            } else {
+                if (hpyFieldObject instanceof Long) {
+                    // branch profile in lib.asPointer
+                    try {
+                        idx = PInt.intValueExact((Long) hpyFieldObject);
+                    } catch (OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    try {
+                        idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                    } catch (InteropException | OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                }
+            }
+            // TODO: (tfel) do not actually allocate the index / free the existing one when
+            // value can be stored as tagged handle
+            if (nullHandleProfile.profile(inliningTarget, referent == NULL_HANDLE_DELEGATE && idx == 0)) {
+                // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
+            } else {
+                idx = assign(owner, referent, idx);
+            }
+            return idx;
+        }
+
+        public static int assign(PythonObject owner, Object referent, int location) {
+            Object[] hpyFields = owner.getHPyData();
+            if (location != 0) {
+                assert hpyFields != null;
+                hpyFields[location] = referent;
+                return location;
+            } else {
+                int newLocation;
+                if (hpyFields == null) {
+                    newLocation = 1;
+                    hpyFields = new Object[]{0, referent};
+                } else {
+                    newLocation = hpyFields.length;
+                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation + 1);
+                    hpyFields[newLocation] = referent;
+                }
+                owner.setHPyData(hpyFields);
+                return newLocation;
+            }
         }
     }
 }

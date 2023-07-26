@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyBinaryContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyTernaryContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
@@ -969,7 +969,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         increment(HPyJNIUpcall.HPyFieldStore);
         PythonObject owner = (PythonObject) context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object referent = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value));
-        return GraalHPyFieldStore.assign(owner, referent, (int) idx);
+        return HPyFieldStoreNode.assign(owner, referent, (int) idx);
     }
 
     public long ctxGlobalLoad(long bits) {
