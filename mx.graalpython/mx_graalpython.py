@@ -667,6 +667,10 @@ def update_unittest_tags(args):
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path'),
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check'),
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.RequestHandlerLoggingTestCase.test_err'),
+        # Disabled because of fatal error in Sulong (GR-47592)
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores'),
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers'),
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores')
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
