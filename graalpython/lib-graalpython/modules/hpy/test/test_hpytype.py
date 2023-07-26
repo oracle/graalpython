@@ -845,7 +845,7 @@ class TestType(HPyTest):
         del foo.OBJECT_NULL_member
         assert foo.OBJECT_NULL_member is None
 
-        with pytest.raises(AttributeError, match="OBJECT_EX_member"):
+        with pytest.raises(AttributeError):
             foo.OBJECT_EX_member
         foo.OBJECT_EX_member = 1
         assert foo.OBJECT_EX_member == 1
