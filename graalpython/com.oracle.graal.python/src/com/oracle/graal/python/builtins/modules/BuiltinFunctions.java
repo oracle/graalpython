@@ -115,10 +115,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -194,8 +193,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -1304,71 +1301,41 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // getattr(object, name[, default])
     @Builtin(name = J_GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
-        @NeverDefault
-        public static GetAttrNode create() {
-            return GetAttrNodeFactory.create();
+    abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(defaultValue)")
+        static Object getAttrNoDefault(VirtualFrame frame, Object primary, Object nameObj, @SuppressWarnings("unused") Object defaultValue,
+                        @Shared @Cached CastToTruffleStringNode cast,
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectGetAttr getAttr) {
+            TruffleString name = castName(nameObj, cast, raiseNode);
+            return getAttr.execute(frame, primary, name);
         }
 
-        public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
-
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        @Specialization(guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
-        public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
+        @Specialization(guards = "!isNoValue(defaultValue)")
+        static Object getAttrWithDefault(VirtualFrame frame, Object primary, Object nameObj, Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile stringProfile,
-                        @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached("name") TruffleString cachedName,
-                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(frame, primary);
-        }
-
-        @SuppressWarnings({"unused", "truffle-static-method"})
-        @Specialization(guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
-        Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile stringProfile,
-                        @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached("name") TruffleString cachedName,
-                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
-            try {
-                return getAttributeNode.executeObject(frame, primary);
-            } catch (PException e) {
-                e.expectAttributeError(inliningTarget, errorProfile);
+                        @Shared @Cached CastToTruffleStringNode cast,
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Cached InlinedConditionProfile noValueProfile,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            TruffleString name = castName(nameObj, cast, raiseNode);
+            Object result = lookupAttr.execute(frame, primary, name);
+            if (noValueProfile.profile(inliningTarget, result == NO_VALUE)) {
                 return defaultValue;
+            } else {
+                return result;
             }
         }
 
-        @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
-        Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, @SuppressWarnings("unused") PNone defaultValue,
-                        @Shared @Cached GetAnyAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(frame, primary, name);
-        }
-
-        @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
-        @SuppressWarnings("truffle-static-method")
-        Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetAnyAttributeNode getAttributeNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
+        private static TruffleString castName(Object nameObj, CastToTruffleStringNode cast, PRaiseNode raiseNode) {
+            TruffleString name;
             try {
-                return getAttributeNode.executeObject(frame, primary, name);
-            } catch (PException e) {
-                e.expectAttributeError(inliningTarget, errorProfile);
-                return defaultValue;
+                name = cast.execute(nameObj);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING);
             }
-        }
-
-        @Specialization
-        Object getAttr2(VirtualFrame frame, Object object, PString name, Object defaultValue) {
-            return executeWithArgs(frame, object, name.getValueUncached(), defaultValue);
-        }
-
-        @Specialization(guards = "!isString(name)")
-        @SuppressWarnings("unused")
-        Object getAttrGeneric(Object primary, Object name, Object defaultValue) {
-            throw raise(TypeError, ErrorMessages.GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING);
+            return name;
         }
     }
 
