@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python;
+package com.oracle.graal.python.resources;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
@@ -56,6 +56,13 @@ import com.oracle.truffle.api.InternalResource.Id;
  */
 @Id("python-home")
 public final class PythonResource implements InternalResource {
+    // These fields should be initialized by the language using these resource so the layout will
+    // match up
+    public static int PYTHON_MAJOR = 0;
+    public static int PYTHON_MINOR = 0;
+    public static int GRAALVM_MAJOR = 0;
+    public static int GRAALVM_MINOR = 0;
+
     private static final Path BASE_PATH = Path.of("META-INF", "resources");
     private static final String LIBGRAALPY = "libgraalpy";
     private static final String LIBPYTHON = "libpython";
@@ -76,8 +83,8 @@ public final class PythonResource implements InternalResource {
             env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("Lib"), BASE_PATH.resolve(LIBPYTHON));
             env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib-graalpython"), BASE_PATH.resolve(LIBGRAALPY));
         } else {
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve("python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR), BASE_PATH.resolve(LIBPYTHON));
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY));
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve("python" + PYTHON_MAJOR + "." + PYTHON_MINOR), BASE_PATH.resolve(LIBPYTHON));
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + GRAALVM_MAJOR + "." + GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY));
         }
         // include files are in the same place on all platforms
         env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory, BASE_PATH);

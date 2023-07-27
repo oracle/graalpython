@@ -357,6 +357,22 @@ suite = {
             ],
         },
 
+        "com.oracle.graal.python.resources": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "truffle:TRUFFLE_API",
+            ],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyleVersion": "8.36.1",
+            "annotationProcessors": [
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
         # GRAALPYTHON
         "com.oracle.graal.python": {
             "subDir": "graalpython",
@@ -365,6 +381,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
+                "com.oracle.graal.python.resources",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
@@ -781,6 +798,7 @@ suite = {
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
+            # "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python.shell",
             ],
@@ -842,6 +860,34 @@ suite = {
             "maven": True,
         },
 
+        "GRAALPYTHON_RESOURCES": {
+            "platformDependent": False,
+            "moduleInfo": {
+                "name": "org.graalvm.py.resources",
+                "exports": [
+                    "com.oracle.graal.python.resources to org.graalvm.py",
+                ],
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "com.oracle.graal.python.resources",
+                "GRAALPYTHON_LIBPYTHON_RESOURCES",
+                "GRAALPYTHON_LIBGRAALPY_RESOURCES",
+                "GRAALPYTHON_INCLUDE_RESOURCES",
+                "GRAALPYTHON_NATIVE_RESOURCES",
+            ],
+            "distDependencies": [
+                "truffle:TRUFFLE_API",
+            ],
+            "requires": [
+                "java.base",
+            ],
+            "maven" : {
+                "artifactId" : "python-resources",
+                "groupId" : "org.graalvm.python",
+            },
+        },
+
         "GRAALPYTHON": {
             "moduleInfo" : {
                 "name" : "org.graalvm.py",
@@ -859,14 +905,14 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
+                "requires": [
+                    "static org.graalvm.py.resources",
+                ],
             },
+            "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python",
                 "com.oracle.graal.python.frozen",
-                "GRAALPYTHON_LIBPYTHON_RESOURCES",
-                "GRAALPYTHON_LIBGRAALPY_RESOURCES",
-                "GRAALPYTHON_INCLUDE_RESOURCES",
-                "GRAALPYTHON_NATIVE_RESOURCES",
             ],
             "distDependencies": [
                 "truffle:TRUFFLE_API",
@@ -876,6 +922,7 @@ suite = {
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
                 "truffle:TRUFFLE_ICU4J",
+                "GRAALPYTHON_RESOURCES", # overridden below to make this an optional dependency
             ],
             "requires": [
                 "java.base",
@@ -894,6 +941,10 @@ suite = {
                 "python.jni.library": "<lib:pythonjni>"
             },
             "description": "GraalPython engine",
+            "maven" : {
+                "artifactId" : "python-language",
+                "groupId" : "org.graalvm.python",
+            },
         },
 
         "GRAALPYTHON_PROCESSOR": {
@@ -902,6 +953,7 @@ suite = {
             ],
             "description": "GraalPython Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
+            "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {
@@ -917,6 +969,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
             ],
             "testDistribution": True,
+            "maven": False,
         },
 
         "GRAALPYTHON_BENCH" : {
@@ -942,6 +995,7 @@ suite = {
                 "sdk:POLYGLOT_TCK",
             ],
             "testDistribution": True,
+            "maven": False,
         },
 
         # Now come the different resource projects. These all end up bundled
@@ -963,6 +1017,7 @@ suite = {
                     "dependency:graalpython:python-test-support-lib/*",
                 ],
             },
+            "maven": False,
         },
 
         # The GraalPy core library. On Windows the Java code will extract this
@@ -985,6 +1040,7 @@ suite = {
                     "file:graalpy_virtualenv/graalpy_virtualenv",
                 ],
             },
+            "maven": False,
         },
 
         # The Python and HPy headers. These go to "/include" on all platforms.
@@ -1009,6 +1065,7 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
                 ],
             },
+            "maven": False,
         },
 
         # The native libraries we ship. These are platform specific, and even
@@ -1125,6 +1182,7 @@ suite = {
             "layout": {
                 "graalpy_virtualenv": "file:graalpy_virtualenv",
             },
+            "maven": False,
         },
 
         "GRAALPYTHON_GRAALVM_DOCS": {

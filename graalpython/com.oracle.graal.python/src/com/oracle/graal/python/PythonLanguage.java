@@ -85,6 +85,7 @@ import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.resources.PythonResource;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -186,6 +187,27 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MAJOR = 23;
     public static final int GRAALVM_MINOR = 1;
 
+    public static final Class<PythonResource> PYTHON_RESOURCE_CLASS;
+
+    @SuppressWarnings("unchecked")
+    private static Class<PythonResource> getPythonResourceClass() {
+        Class<PythonResource> pr;
+        try {
+            pr = (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+        try {
+            pr.getDeclaredField("PYTHON_MAJOR").set(pr, MAJOR);
+            pr.getDeclaredField("PYTHON_MINOR").set(pr, MINOR);
+            pr.getDeclaredField("GRAALVM_MAJOR").set(pr, GRAALVM_MAJOR);
+            pr.getDeclaredField("GRAALVM_MINOR").set(pr, GRAALVM_MINOR);
+        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+            return null;
+        }
+        return pr;
+    }
+
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
@@ -201,6 +223,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             default:
                 RELEASE_LEVEL_STRING = tsLiteral("final");
         }
+
+        PYTHON_RESOURCE_CLASS = getPythonResourceClass();
     }
     public static final int RELEASE_SERIAL = 0;
     public static final int VERSION_HEX = MAJOR << 24 |

@@ -98,7 +98,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.PythonResource;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
@@ -1725,11 +1724,14 @@ public final class PythonContext extends Python3Core {
         Supplier<?>[] homeCandidates = new Supplier<?>[] {
             () -> { return home; },
             () -> {
-                try {
-                    return newEnv.getInternalResource(PythonResource.class).getAbsoluteFile();
-                } catch (IOException e) {
-                    return null;
+                if (PythonLanguage.PYTHON_RESOURCE_CLASS != null) {
+                    try {
+                        return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
+                    } catch (IOException e) {
+                        // fall through
+                    }
                 }
+                return null;
             }
         };
         for (Supplier<?> homeCandidateSupplier : homeCandidates) {
