@@ -126,7 +126,7 @@ suite = {
         },
         "BOUNCYCASTLE-PROVIDER": {
             "digest": "sha512:b2d267e5d198a4c51318a53fa3cac5a769521f217ea69dd40c3d2372ea3a00d1245585f8916cad77c9a11d561aed04840c73c6095d785b598a385561f99af8ac",
-            "sourceSha1": "c092c4f5af620ea5fd40a48d844c556826bebb63",
+            "sourceDigest": "sha512:3ff983178dbf03aa6265b28c1bf79a813e53a1403188ffd9688347f3bcf0269b8587b071913fc0cfec8d2e81126fbafa7977143d4d920f8cbdbd2ead3a2c92bd",
             "maven": {
               "groupId": "org.bouncycastle",
               "artifactId": "bcprov-jdk15on",
@@ -136,7 +136,7 @@ suite = {
         },
         "BOUNCYCASTLE-PKIX": {
             "digest": "sha512:1d18b43537370e0c7eb29332c9f9a4f0162f9bf68a79d6df3fb76080a8b96e1e378537e5a7aff481f2e1390cf45558b18679a1557ffd3c3b670b7ba1d625e8dd",
-            "sourceSha1": "a5407438fed5d271f129d85e3f92cc027fa246a9",
+            "sourceDigest": "sha512:f48cbec79f4999a009a77a955587259d3bd6a27563d572fea1dcf101e12474e3de3395d9c0b10702233b190f36b8282c9d8115fa7815cfa67eb76f81cd8b5c15",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcpkix-jdk15on",
