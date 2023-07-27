@@ -82,7 +82,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return execute(null, derived, cls);
     }
 
-    @Specialization(guards = "isSameMetaObject(isSameTypeNode, derived, cls)", limit = "1")
+    @Specialization(guards = "isSameMetaObject(isSameTypeNode, derived, cls)")
     @SuppressWarnings("unused")
     static boolean doSameClass(Object derived, Object cls, @SuppressWarnings("unused") int depth,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode) {

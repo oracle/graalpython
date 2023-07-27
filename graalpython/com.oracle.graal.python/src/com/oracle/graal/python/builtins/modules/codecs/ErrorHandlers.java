@@ -275,7 +275,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class IgnoreErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)")
         Object doDecodeException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -283,7 +283,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
         }
 
-        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)")
         Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -291,7 +291,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
         }
 
-        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -304,7 +304,7 @@ public final class ErrorHandlers {
 
         private static final TruffleString T_REPLACEMENT = tsLiteral("\uFFFD");
 
-        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)")
         Object doDecodeException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -312,7 +312,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{T_REPLACEMENT, getEndNode.execute(inliningTarget, exception)});
         }
 
-        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)")
         Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -328,7 +328,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{result, end});
         }
 
-        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -339,7 +339,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class XmlCharRefReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)")
         Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -365,7 +365,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
-        @Specialization(guards = "!isEncode(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "!isEncode(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -376,7 +376,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class BackslashReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)")
         Object doDecodeException(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -408,7 +408,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
-        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncodeOrTranslate(exception, pyObjectTypeCheck)")
         Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -445,7 +445,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
-        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isNeither(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -456,7 +456,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class NameReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)")
         Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -495,7 +495,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{toStringNode.execute(tsb), end});
         }
 
-        @Specialization(guards = "!isEncode(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "!isEncode(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -506,7 +506,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class SurrogatePassErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)")
         Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -540,7 +540,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{factory().createBytes(result), end});
         }
 
-        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)")
         Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -576,7 +576,7 @@ public final class ErrorHandlers {
             }
         }
 
-        @Specialization(guards = "!isEncodeOrDecode(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "!isEncodeOrDecode(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);
@@ -636,7 +636,7 @@ public final class ErrorHandlers {
     @SuppressWarnings("truffle-static-method")
     abstract static class SurrogateEscapeErrorHandlerNode extends ErrorHandlerBaseNode {
 
-        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isEncode(exception, pyObjectTypeCheck)")
         Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -662,7 +662,7 @@ public final class ErrorHandlers {
             return factory().createTuple(new Object[]{factory().createBytes(result), end});
         }
 
-        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "isDecode(exception, pyObjectTypeCheck)")
         Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck,
@@ -698,7 +698,7 @@ public final class ErrorHandlers {
             }
         }
 
-        @Specialization(guards = "!isEncodeOrDecode(o, pyObjectTypeCheck)", limit = "1")
+        @Specialization(guards = "!isEncodeOrDecode(o, pyObjectTypeCheck)")
         Object doFallback(Object o,
                         @SuppressWarnings("unused") @Cached @Shared PyObjectTypeCheck pyObjectTypeCheck) {
             throw wrongExceptionType(o);

@@ -170,6 +170,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestOrdering.test_functools_total_ordering
 *graalpython.lib-python.3.test.test_dataclasses.TestOrdering.test_no_order
 *graalpython.lib-python.3.test.test_dataclasses.TestOrdering.test_overwriting_order
+*graalpython.lib-python.3.test.test_dataclasses.TestReplace.test
 *graalpython.lib-python.3.test.test_dataclasses.TestReplace.test_classvar
 *graalpython.lib-python.3.test.test_dataclasses.TestReplace.test_frozen
 *graalpython.lib-python.3.test.test_dataclasses.TestReplace.test_initvar_is_specified

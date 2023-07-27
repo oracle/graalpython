@@ -1483,7 +1483,7 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"}, limit = "2")
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"})
         static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
@@ -1509,7 +1509,7 @@ public abstract class SequenceStorageNodes {
             singleStep(self, start, stop, data, needed, inliningTarget, setLenNode, ensureCapacityNode, memove, memcpy, memoryError, negGrowth, posGrowth, raiseNode);
         }
 
-        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"}, limit = "2")
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"})
         static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
@@ -2277,7 +2277,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, inliningTarget, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, inliningTarget, getClassNode)"})
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode,
@@ -2308,7 +2308,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, inliningTarget, getClassNode)")
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @Bind("this") Node inliningTarget,
@@ -2831,13 +2831,13 @@ public abstract class SequenceStorageNodes {
 
         // TODO primitive native storages?
 
-        @Specialization(guards = "isAssignCompatibleNode.execute(s, indicationStorage)", limit = "1")
+        @Specialization(guards = "isAssignCompatibleNode.execute(s, indicationStorage)")
         static TypedSequenceStorage doTyped(TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
                         @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             return s;
         }
 
-        @Specialization(guards = "isFallbackCase(s, value, isAssignCompatibleNode)", limit = "1")
+        @Specialization(guards = "isFallbackCase(s, value, isAssignCompatibleNode)")
         static ObjectSequenceStorage doTyped(SequenceStorage s, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedExactClassProfile selfProfile,

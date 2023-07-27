@@ -98,14 +98,14 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "checkCallableNode.execute(callable)", limit = "1")
+        @Specialization(guards = "checkCallableNode.execute(callable)")
         protected static PNone init(PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
             self.setCallable(callable);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!checkCallableNode.execute(callable)", limit = "1")
+        @Specialization(guards = "!checkCallableNode.execute(callable)")
         protected PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
             throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);

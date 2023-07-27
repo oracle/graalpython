@@ -308,14 +308,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return lenNode.execute(self.getDictStorage()) == 0;
         }
 
-        @Specialization(guards = {"self != other", "cannotBeOverridden(other, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"self != other", "cannotBeOverridden(other, getClassNode)"})
         static boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached HashingStorageAreDisjoint disjointNode,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return disjointNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
-        @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"})
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,

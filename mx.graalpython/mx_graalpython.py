@@ -615,7 +615,58 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
         # Transient, GR-41056
-        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed')
+        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed'),
+        # Transient, at least on M1
+        ('test_ctypes.txt', '*ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf'),
+        # Transient hash mismatch
+        ('test_lib2to3.txt', '*lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess'),
+        # Connects to internet, sometimes can't reach
+        ('test_ssl.txt', '*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex'),
+        # Transiently fails because it's dependent on timings
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        # The whole suite sometimes transiently crashes because of hanging thread at the end, not sure which test causes this
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response'),
+        # Transiently hang
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_command'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_error_content_length'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_handler'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_head_via_send_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_close'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_keep_alive'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_internal_key_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_latin1_header'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_request_line_trimming'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_custom_status'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_explain_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_header_keep_alive'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_blank'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_bogus'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_digits'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_invalid'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_authorization'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_invaliduri'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_issue19435'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_post'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_continuous_slashes'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_multiple_question_mark'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.RequestHandlerLoggingTestCase.test_err'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions

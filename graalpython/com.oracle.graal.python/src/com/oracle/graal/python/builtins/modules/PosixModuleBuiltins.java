@@ -2957,7 +2957,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"})
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
@@ -2967,7 +2967,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"})
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,

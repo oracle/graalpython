@@ -69,7 +69,6 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -141,6 +140,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -937,7 +937,7 @@ public abstract class CExtNodes {
             return !aLib.isIdentical(a, b, bLib);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
@@ -947,7 +947,7 @@ public abstract class CExtNodes {
             return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
@@ -957,7 +957,7 @@ public abstract class CExtNodes {
             return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
+        @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
@@ -1251,10 +1251,10 @@ public abstract class CExtNodes {
         Object upcall0(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode receiverToJavaNode,
-                        @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
+                        @Shared("getAttrNode") @Cached PyObjectGetAttr getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1]);
             return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -1262,10 +1262,10 @@ public abstract class CExtNodes {
         Object upcall1(VirtualFrame frame, Object[] args,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached NativeToPythonNode receiverToJavaNode,
-                        @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
+                        @Shared("getAttrNode") @Cached PyObjectGetAttr getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1]);
             return callNode.executeObject(frame, callable, args[2]);
         }
 
@@ -1273,10 +1273,10 @@ public abstract class CExtNodes {
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached NativeToPythonNode receiverToJavaNode,
-                        @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
+                        @Shared("getAttrNode") @Cached PyObjectGetAttr getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1]);
             return callNode.executeObject(frame, callable, args[2], args[3]);
         }
 
@@ -1284,10 +1284,10 @@ public abstract class CExtNodes {
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
                         @Cached NativeToPythonNode receiverToJavaNode,
-                        @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
+                        @Shared("getAttrNode") @Cached PyObjectGetAttr getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1]);
             return callNode.execute(frame, callable, args[2], args[3], args[4]);
         }
 
@@ -1295,12 +1295,12 @@ public abstract class CExtNodes {
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode receiverToJavaNode,
-                        @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
+                        @Shared("getAttrNode") @Cached PyObjectGetAttr getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1]);
             return callNode.execute(frame, callable, Arrays.copyOfRange(args, 2, args.length), PKeyword.EMPTY_KEYWORDS);
         }
     }

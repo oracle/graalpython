@@ -871,7 +871,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LowerNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString lowerAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -893,7 +893,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(self, getCodeRangeNode)")
         static TruffleString lower(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -926,7 +926,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UpperNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString upperAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -948,7 +948,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(self, getCodeRangeNode)")
         static TruffleString upper(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -2359,7 +2359,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return make(self, width, ' ', codePointLengthNode, appendCodePointNode, appendStringNode, toStringNode);
         }
 
-        @Specialization(guards = "isSingleCodePoint(fill, codePointLengthNode)", limit = "1")
+        @Specialization(guards = "isSingleCodePoint(fill, codePointLengthNode)")
         TruffleString doStringIntString(TruffleString self, int width, TruffleString fill,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,

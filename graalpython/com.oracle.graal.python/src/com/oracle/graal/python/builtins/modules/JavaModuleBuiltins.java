@@ -226,7 +226,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"})
         boolean check(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
@@ -242,7 +242,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"})
         boolean checkForeign(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {

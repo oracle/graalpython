@@ -151,13 +151,13 @@ public abstract class BytesNodes {
             return factory.createByteArray(bytes);
         }
 
-        @Specialization(guards = "checkBytes.execute(inliningTarget, basedOn)", limit = "1")
+        @Specialization(guards = "checkBytes.execute(inliningTarget, basedOn)")
         static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
                         @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
             return factory.createBytes(bytes);
         }
 
-        @Specialization(guards = "!checkBytes.execute(inliningTarget, basedOn)", limit = "1")
+        @Specialization(guards = "!checkBytes.execute(inliningTarget, basedOn)")
         static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
                         @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
             assert PyByteArrayCheckNode.executeUncached(basedOn);
@@ -298,7 +298,7 @@ public abstract class BytesNodes {
     public abstract static class NeedleToBytesNode extends PNodeWithContext {
         public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, Object needle);
 
-        @Specialization(guards = "indexCheck.execute(needle)", limit = "1")
+        @Specialization(guards = "indexCheck.execute(needle)")
         static byte[] number(VirtualFrame frame, Object needle,
                         @SuppressWarnings("unused") @Shared @Cached(inline = false) PyIndexCheckNode indexCheck,
                         @Cached(inline = false) CastToByteNode castToByteNode) {
@@ -859,7 +859,7 @@ public abstract class BytesNodes {
     public abstract static class HexStringToBytesNode extends PNodeWithRaise {
         public abstract byte[] execute(TruffleString str);
 
-        @Specialization(guards = "isAscii(str, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(str, getCodeRangeNode)")
         byte[] ascii(TruffleString str,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -893,7 +893,7 @@ public abstract class BytesNodes {
             return bytes;
         }
 
-        @Specialization(guards = "!isAscii(str, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(str, getCodeRangeNode)")
         byte[] nonAscii(TruffleString str,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,

@@ -642,7 +642,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
-                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"}, limit = "1")
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"})
         Object dict(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
@@ -665,7 +665,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
-                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"}, limit = "1")
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"})
         static Object dict(VirtualFrame frame, Object self, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,

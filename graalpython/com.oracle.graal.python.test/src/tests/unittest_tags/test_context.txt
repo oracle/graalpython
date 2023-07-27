@@ -1,6 +1,8 @@
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_copy_1
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_get_context_1
+*graalpython.lib-python.3.test.test_context.ContextTest.test_context_getset_1
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_getset_2
+*graalpython.lib-python.3.test.test_context.ContextTest.test_context_getset_3
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_getset_5
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_run_1
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_run_2

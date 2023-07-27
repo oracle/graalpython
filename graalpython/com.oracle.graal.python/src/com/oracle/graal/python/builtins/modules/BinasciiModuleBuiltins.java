@@ -138,13 +138,13 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "isAscii(value, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(value, getCodeRangeNode)")
         Object asciiString(TruffleString value,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             return new AsciiStringBuffer(value);
         }
 
-        @Specialization(guards = "!isAscii(value, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
         Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);

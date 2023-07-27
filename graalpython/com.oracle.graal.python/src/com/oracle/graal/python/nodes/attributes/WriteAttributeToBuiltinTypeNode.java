@@ -74,14 +74,14 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"})
     static void writeToDynamicStorage(PythonBuiltinClass klass, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         dylib.put(klass, key, value);
     }
 
-    @Specialization(guards = "dict != null", limit = "1")
+    @Specialization(guards = "dict != null")
     static void writeToDictNoType(@SuppressWarnings("unused") PythonBuiltinClass klass, TruffleString key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,

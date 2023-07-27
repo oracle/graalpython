@@ -58,7 +58,6 @@
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_pending
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_read_write
 *graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_get_server_certificate_ipv6
-*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_bad_server_hostname
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_str
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_subclass

@@ -785,7 +785,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             return profile.profileObject(inliningTarget, self, PythonBuiltinClassType.PStringIO);
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"})
         @SuppressWarnings("truffle-static-method") // raise
         Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
@@ -805,7 +805,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
          * This path is rarely executed.
          */
         @SuppressWarnings("truffle-static-method")
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"})
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,

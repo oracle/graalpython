@@ -330,7 +330,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "isIndexOrSlice(indexCheckNode, key)", limit = "1")
+        @Specialization(guards = "isIndexOrSlice(indexCheckNode, key)")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile generalizedProfile,
@@ -342,7 +342,7 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isIndexOrSlice(indexCheckNode, key)", limit = "1")
+        @Specialization(guards = "!isIndexOrSlice(indexCheckNode, key)")
         protected Object doError(Object self, Object key, Object value,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);

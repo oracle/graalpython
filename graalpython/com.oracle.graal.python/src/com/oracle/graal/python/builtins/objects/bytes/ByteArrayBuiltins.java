@@ -667,7 +667,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)")
         PByteArray doBytes(Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
@@ -675,7 +675,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             return factory().createByteArray(cls, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)")
         Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,

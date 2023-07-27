@@ -278,7 +278,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(idNum)", limit = "1")
+        @Specialization(guards = "!callableCheck.execute(idNum)")
         Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
@@ -312,7 +312,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "callableCheck.execute(handler)", limit = "1")
+        @Specialization(guards = "callableCheck.execute(handler)")
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,

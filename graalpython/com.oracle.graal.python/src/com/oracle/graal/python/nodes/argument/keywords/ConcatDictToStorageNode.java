@@ -78,7 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     public abstract HashingStorage execute(Frame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                     @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
@@ -86,7 +86,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
         return copyNode.execute(other.getDictStorage());
     }
 
-    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
+    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
