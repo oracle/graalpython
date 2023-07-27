@@ -58,6 +58,8 @@ import mx_graalpython_bisect
 import mx_graalpython_import
 import mx_graalpython_python_benchmarks
 
+from mx_truffle import ShadedLibraryProject
+
 # re-export custom mx project classes so they can be used from suite.py
 from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 
@@ -2186,7 +2188,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'graalpython:GRAALPYTHON',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
-        'graalpython:XZ-1.8',
+        'graalpython:TRUFFLE_XZ',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',

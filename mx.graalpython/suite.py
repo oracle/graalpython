@@ -107,8 +107,9 @@ suite = {
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
-        "XZ-1.8": {
+        "XZ-1.9": {
             "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
+            "sourceDigest": "sha512:5625f7392d1958466507f0530585c2c40c5b301981ab64115f489dc4599e3364acd7f00bfdc69aa3124d4641a562923dc3ee038faee5a52dd3cbe29a1a35e5ab",
             "maven": {
                 "groupId": "org.tukaani",
                 "artifactId": "xz",
@@ -255,6 +256,38 @@ suite = {
     },
 
     "projects": {
+        "org.graalvm.shadowed.org.tukaani.xz" : {
+            # shaded XZ
+            "subDir" : "src",
+            "sourceDirs" : ["src"],
+            "javaCompliance" : "17+",
+            "spotbugs" : "false",
+            "requires" : [
+            ],
+            "dependencies" : [
+            ],
+            "shadedDependencies" : [
+                "graalpython:XZ-1.9",
+            ],
+            "class" : "ShadedLibraryProject",
+            "shade" : {
+                "packages" : {
+                    "org.tukaani.xz" : "org.graalvm.shadowed.org.tukaani.xz",
+                },
+                "include" : [
+                ],
+                "exclude" : [
+                    "META-INF/**",
+                ],
+                "patch" : {
+                },
+            },
+            "description" : "XZ shaded library.",
+            "allowsJavadocWarnings": True,
+            "javac.lint.overrides" : 'none',
+            "jacoco" : "exclude",
+        },
+
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -387,7 +420,7 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
-                "XZ-1.8",
+                "graalpython:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
@@ -790,6 +823,38 @@ suite = {
     #
     # --------------------------------------------------------------------------------------------------------------
     "distributions": {
+        "TRUFFLE_XZ" : {
+            # shaded XZ
+            "moduleInfo" : {
+                "name" : "org.graalvm.shadowed.org.tukaani.xz",
+                "requires" : [
+                ],
+                "exports" : [
+                    "org.graalvm.shadowed.org.tukaani.xz to org.graalvm.py",
+                    "org.graalvm.shadowed.org.tukaani.xz.check to org.graalvm.py",
+                    "org.graalvm.shadowed.org.tukaani.xz.common to org.graalvm.py",
+                ],
+            },
+            "subDir" : "src",
+            "sourceDirs" : ["src"],
+            "javaCompliance" : "17+",
+            "spotbugs" : "false",
+            "dependencies" : [
+                "org.graalvm.shadowed.org.tukaani.xz",
+            ],
+            "distDependencies" : [
+            ],
+            "exclude" : [
+            ],
+            "description" : "XZ shaded module.",
+            "allowsJavadocWarnings" : True,
+            # "license" : ["Public"],
+            "maven" : {
+                "groupId" : "org.graalvm.shadowed",
+                "artifactId" : "xz",
+            },
+        },
+
         "GRAALPYTHON-LAUNCHER": {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
@@ -921,6 +986,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+                "graalpython:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "GRAALPYTHON_RESOURCES", # overridden below to make this an optional dependency
             ],
@@ -935,7 +1001,6 @@ suite = {
             "exclude": [
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
-                "XZ-1.8",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
