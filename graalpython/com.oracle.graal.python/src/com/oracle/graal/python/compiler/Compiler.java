@@ -235,18 +235,16 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @SuppressWarnings("hiding")
-    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, boolean futureAnnotations) {
+    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, EnumSet<FutureFeature> futureFeatures) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
             parseFuture(((ModTy.Module) mod).body);
         } else if (mod instanceof ModTy.Interactive) {
             parseFuture(((ModTy.Interactive) mod).body);
         }
-        this.env = ScopeEnvironment.analyze(mod, errorCallback, futureFeatures);
+        this.futureFeatures.addAll(futureFeatures);
+        this.env = ScopeEnvironment.analyze(mod, errorCallback, this.futureFeatures);
         this.optimizationLevel = optimizationLevel;
-        if (futureAnnotations) {
-            this.futureFeatures.add(FutureFeature.ANNOTATIONS);
-        }
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;

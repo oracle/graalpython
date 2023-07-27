@@ -240,6 +240,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -1033,9 +1034,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int CO_FUTURE_PRINT_FUNCTION = 0x100000;
         private static final int CO_FUTURE_UNICODE_LITERALS = 0x200000;
 
-        private static final int CO_FUTURE_BARRY_AS_BDFL = 0x400000;
+        private static final int CO_FUTURE_BARRY_AS_BDFL = FutureFeature.BARRY_AS_BDFL.flagValue;
         private static final int CO_FUTURE_GENERATOR_STOP = 0x800000;
-        private static final int CO_FUTURE_ANNOTATIONS = 0x1000000;
+        private static final int CO_FUTURE_ANNOTATIONS = FutureFeature.ANNOTATIONS.flagValue;
 
         // compile.h
         private static final int PyCF_MASK = CO_FUTURE_DIVISION | CO_FUTURE_ABSOLUTE_IMPORT | CO_FUTURE_WITH_STATEMENT | CO_FUTURE_PRINT_FUNCTION | CO_FUTURE_UNICODE_LITERALS |
@@ -1077,7 +1078,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         int featureVersion);
 
         @Specialization
-        Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize,
+        Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             if (!dontInherit) {
@@ -1131,14 +1132,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
                 if (type == InputType.FILE) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(optimize, (flags & CO_FUTURE_ANNOTATIONS) != 0));
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(optimize, flags));
                     return context.getEnv().parsePublic(source);
                 } else if (type == InputType.EVAL) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(optimize, (flags & CO_FUTURE_ANNOTATIONS) != 0));
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(optimize, flags));
                     return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null, (flags & CO_FUTURE_ANNOTATIONS) != 0);
+                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null, FutureFeature.fromFlags(flags));
                 }
             };
             if (getCore().isCoreInitialized()) {
@@ -1190,7 +1191,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
                 Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, (flags & CO_FUTURE_ANNOTATIONS) != 0);
+                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, FutureFeature.fromFlags(flags));
                 return wrapRootCallTarget(rootCallTarget);
             }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);

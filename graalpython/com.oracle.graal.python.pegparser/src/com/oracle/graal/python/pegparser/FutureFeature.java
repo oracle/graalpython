@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,35 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import java.util.EnumSet;
+
 public enum FutureFeature {
-    ANNOTATIONS(0x1000000), // these values are duplicated in BuiltinFunctions.Compiler
+    ANNOTATIONS(0x1000000),
     BARRY_AS_BDFL(0x400000);
 
     public final int flagValue;
+    public static final int ALL_FLAGS;
+
+    private static final FutureFeature[] VALUES = FutureFeature.values();
+    static {
+        int flags = 0;
+        for (FutureFeature feat : VALUES) {
+            flags |= feat.flagValue;
+        }
+        ALL_FLAGS = flags;
+    }
 
     FutureFeature(int flagValue) {
         this.flagValue = flagValue;
+    }
+
+    public static EnumSet<FutureFeature> fromFlags(int flags) {
+        EnumSet<FutureFeature> set = EnumSet.noneOf(FutureFeature.class);
+        for (FutureFeature feat : VALUES) {
+            if ((feat.flagValue & flags) != 0) {
+                set.add(feat);
+            }
+        }
+        return set;
     }
 }
