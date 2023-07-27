@@ -614,6 +614,7 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
+        ('test_plistlib.txt', '*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_deep_nesting'),
         # Transient, GR-41056
         ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed'),
         # Transient, at least on M1
