@@ -543,6 +543,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+                    RaisePythonExceptionErrorCallback errorCallback, int flags) {
+        return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCallback, FutureFeature.fromFlags(flags));
+    }
+
+    @TruffleBoundary
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
                     RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = errorCallback;
         if (errorCb == null) {
