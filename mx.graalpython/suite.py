@@ -108,7 +108,7 @@ suite = {
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
         "XZ-1.8": {
-            "digest" : "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
+            "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
             "maven": {
                 "groupId": "org.tukaani",
                 "artifactId": "xz",
@@ -280,11 +280,11 @@ suite = {
 
         "com.oracle.graal.python.pegparser.generator": {
             "subDir": "graalpython",
-            "class" : "CMakeNinjaProject",
-            "ninja_targets" : [
+            "class": "CMakeNinjaProject",
+            "ninja_targets": [
                 "all",
             ],
-            "results" : [
+            "results": [
                 "Parser.java",
                 "Python.asdl.stamp",
             ]
@@ -436,8 +436,8 @@ suite = {
             ],
             "workingSets": "Truffle,Python",
             "testProject": True,
-            "javaProperties" : {
-                "test.graalpython.home" : "<suite:graalpython>/graalpython"
+            "javaProperties": {
+                "test.graalpython.home": "<suite:graalpython>/graalpython"
              },
         },
 
@@ -457,10 +457,10 @@ suite = {
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "17+",
-            "annotationProcessors" : ["mx:JMH_1_21"],
+            "annotationProcessors": ["mx:JMH_1_21"],
             "workingSets": "Truffle,Python",
-            "spotbugsIgnoresGenerated" : True,
-            "testProject" : True,
+            "spotbugsIgnoresGenerated": True,
+            "testProject": True,
         },
 
         "com.oracle.graal.python.tck": {
@@ -478,15 +478,15 @@ suite = {
 
         "python-libbz2": {
             "subDir": "graalpython",
-            "class" : "CMakeNinjaProject",
-            "max_jobs" : "4",
-            "vpath" : True,
-            "ninja_targets" : ["<lib:bz2support>"],
-            "ninja_install_targets" : ["install"],
-            "results" : [
+            "class": "CMakeNinjaProject",
+            "max_jobs": "4",
+            "vpath": True,
+            "ninja_targets": ["<lib:bz2support>"],
+            "ninja_install_targets": ["install"],
+            "results": [
                 "bin/<lib:bz2support>",
             ],
-            "cmakeConfig" : {
+            "cmakeConfig": {
                 "BZIP2_ROOT": "<path:BZIP2>",
                 "BZIP2_VERSION_MAJOR": "1",
                 "BZIP2_VERSION_MINOR": "0",
@@ -500,7 +500,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
+                        "defaultBuild": True,
                     },
                 },
             },
@@ -517,15 +517,15 @@ suite = {
 
         "python-liblzma": {
             "subDir": "graalpython",
-            "class" : "CMakeNinjaProject",
-            "max_jobs" : "8",
-            "vpath" : True,
-            "ninja_targets" : ["<lib:lzmasupport>"],
-            "ninja_install_targets" : ["install"],
-            "results" : [
+            "class": "CMakeNinjaProject",
+            "max_jobs": "8",
+            "vpath": True,
+            "ninja_targets": ["<lib:lzmasupport>"],
+            "ninja_install_targets": ["install"],
+            "results": [
                 "bin/<lib:lzmasupport>",
             ],
-            "cmakeConfig" : {
+            "cmakeConfig": {
                 "XZ_SRC": "<path:XZ-5.2.6>",
                 "XZ_VERSION_MAJOR": "5",
                 "XZ_VERSION_MINOR": "2",
@@ -539,7 +539,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
+                        "defaultBuild": True,
                     },
                 },
             },
@@ -550,24 +550,24 @@ suite = {
 
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
-            "class" : "CMakeNinjaProject",
-            "toolchain" : "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
-            "max_jobs" : "8",
-            "vpath" : True,
-            "ninja_targets" : ["all"],
-            "ninja_install_targets" : ["install"],
+            "class": "CMakeNinjaProject",
+            "toolchain": "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+            "max_jobs": "8",
+            "vpath": True,
+            "ninja_targets": ["all"],
+            "ninja_install_targets": ["install"],
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "cmakeConfig" : {
-                            "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
+                        "cmakeConfig": {
+                            "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE" : "native",
-                            "GRAALPY_EXT" : "<graalpy_ext:native>",
+                            "LLVM_MODE": "native",
+                            "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
-                        "results" : [
+                        "results": [
                             "bin/<lib:python-native>",
                             "bin/python-native.lib",
                             "bin/modules/_sqlite3<graalpy_ext:native>",
@@ -579,14 +579,14 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "cmakeConfig" : {
+                        "cmakeConfig": {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE" : "native",
-                            "GRAALPY_EXT" : "<graalpy_ext:native>",
+                            "LLVM_MODE": "native",
+                            "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
-                        "results" : [
+                        "results": [
                             "bin/<lib:python-native>",
                             "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
@@ -609,15 +609,15 @@ suite = {
 
         "com.oracle.graal.python.hpy.llvm": {
             "subDir": "graalpython",
-            "class" : "CMakeNinjaProject",
-            "toolchain" : "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
-            "max_jobs" : "8",
-            "vpath" : True,
-            "ninja_targets" : [
+            "class": "CMakeNinjaProject",
+            "toolchain": "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+            "max_jobs": "8",
+            "vpath": True,
+            "ninja_targets": [
                 "<lib:hpy-native>",
             ],
-            "ninja_install_targets" : ["install"],
-            "results" : [
+            "ninja_install_targets": ["install"],
+            "results": [
                 "bin/<lib:hpy-native>",
             ],
             "buildDependencies": [
@@ -628,11 +628,11 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "cmakeConfig" : {
-                            "GRAALVM_LLVM_LIB_DIR" : "<path:SULONG_NATIVE_HOME>/native/lib",
-                            "LLVM_MODE" : "native",
-                            "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
-                            "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
+                        "cmakeConfig": {
+                            "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
+                            "LLVM_MODE": "native",
+                            "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
+                            "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
                         },
@@ -640,10 +640,10 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "cmakeConfig" : {
-                            "LLVM_MODE" : "native",
-                            "GRAALVM_HPY_INCLUDE_DIR" : "<path:com.oracle.graal.python.hpy.llvm>/include",
-                            "GRAALVM_PYTHON_INCLUDE_DIR" : "<path:com.oracle.graal.python.cext>/include",
+                        "cmakeConfig": {
+                            "LLVM_MODE": "native",
+                            "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
+                            "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
                         },
@@ -714,7 +714,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "defaultBuild" : True,
+                        "defaultBuild": True,
                     },
                 },
             },
@@ -743,7 +743,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "ldlibs": ["-lutil", "-lcrypt"],
-                        "defaultBuild" : True,
+                        "defaultBuild": True,
                     },
                 },
             },
@@ -791,9 +791,9 @@ suite = {
     # --------------------------------------------------------------------------------------------------------------
     "distributions": {
         "GRAALPYTHON-LAUNCHER": {
-            "moduleInfo" : {
-                "name" : "org.graalvm.py.launcher",
-                "exports" : [
+            "moduleInfo": {
+                "name": "org.graalvm.py.launcher",
+                "exports": [
                     "com.oracle.graal.python.shell to org.graalvm.py.enterprise.launcher",
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
@@ -810,7 +810,7 @@ suite = {
             "description": "GraalPython launcher",
         },
 
-        "GRAALPYTHON_NATIVE_LIBS" : {
+        "GRAALPYTHON_NATIVE_LIBS": {
             "native": True,
             "platformDependent": True,
             "type": "dir",
@@ -857,7 +857,7 @@ suite = {
                 },
             },
             "description": "Contains the JNI native lib, the C API and support libs.",
-            "maven": True,
+            "maven": False,
         },
 
         "GRAALPYTHON_RESOURCES": {
@@ -882,16 +882,16 @@ suite = {
             "requires": [
                 "java.base",
             ],
-            "maven" : {
-                "artifactId" : "python-resources",
-                "groupId" : "org.graalvm.python",
+            "maven": {
+                "artifactId": "python-resources",
+                "groupId": "org.graalvm.python",
             },
         },
 
         "GRAALPYTHON": {
-            "moduleInfo" : {
-                "name" : "org.graalvm.py",
-                "exports" : [
+            "moduleInfo": {
+                "name": "org.graalvm.py",
+                "exports": [
                     "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.builtins.objects to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.builtins.objects.* to org.graalvm.py.enterprise",
@@ -941,9 +941,9 @@ suite = {
                 "python.jni.library": "<lib:pythonjni>"
             },
             "description": "GraalPython engine",
-            "maven" : {
-                "artifactId" : "python-language",
-                "groupId" : "org.graalvm.python",
+            "maven": {
+                "artifactId": "python-language",
+                "groupId": "org.graalvm.python",
             },
         },
 
@@ -972,16 +972,16 @@ suite = {
             "maven": False,
         },
 
-        "GRAALPYTHON_BENCH" : {
+        "GRAALPYTHON_BENCH": {
             "description": "java python interop benchmarks",
-            "dependencies" : ["com.oracle.graal.python.benchmarks"],
+            "dependencies": ["com.oracle.graal.python.benchmarks"],
             "exclude": ["mx:JMH_1_21"],
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
                 "sdk:GRAAL_SDK",
             ],
-            "testDistribution" : True,
+            "testDistribution": True,
             "maven": False,
         },
 
@@ -1007,8 +1007,8 @@ suite = {
         "GRAALPYTHON_LIBPYTHON_RESOURCES": {
             "native": False,
             "platformDependent": False,
-            "hashEntry" :  "META-INF/resources/libpython.sha256",
-            "fileListEntry" : "META-INF/resources/libpython.files",
+            "hashEntry":  "META-INF/resources/libpython.sha256",
+            "fileListEntry": "META-INF/resources/libpython.files",
             "type": "dir",
             "description": "GraalVM Python lib-python resources",
             "layout": {
@@ -1025,8 +1025,8 @@ suite = {
         "GRAALPYTHON_LIBGRAALPY_RESOURCES": {
             "native": False,
             "platformDependent": False,
-            "hashEntry" :  "META-INF/resources/libgraalpy.sha256",
-            "fileListEntry" : "META-INF/resources/libgraalpy.files",
+            "hashEntry":  "META-INF/resources/libgraalpy.sha256",
+            "fileListEntry": "META-INF/resources/libgraalpy.files",
             "type": "dir",
             "description": "GraalVM Python lib-graalpython resources",
             "buildDependencies": [
@@ -1047,8 +1047,8 @@ suite = {
         "GRAALPYTHON_INCLUDE_RESOURCES": {
             "native": False,
             "platformDependent": False,
-            "hashEntry" :  "META-INF/resources/include.sha256",
-            "fileListEntry" : "META-INF/resources/include.files",
+            "hashEntry":  "META-INF/resources/include.sha256",
+            "fileListEntry": "META-INF/resources/include.files",
             "type": "dir",
             "description": "GraalVM Python header resources",
             "buildDependencies": [
@@ -1074,8 +1074,8 @@ suite = {
         "GRAALPYTHON_NATIVE_RESOURCES": {
             "native": True,
             "platformDependent": True,
-            "hashEntry" :  "META-INF/resources/<os>/<arch>/native.sha256",
-            "fileListEntry" : "META-INF/resources/<os>/<arch>/native.files",
+            "hashEntry":  "META-INF/resources/<os>/<arch>/native.sha256",
+            "fileListEntry": "META-INF/resources/<os>/<arch>/native.files",
             "type": "dir",
             "description": "GraalVM Python platform dependent resources",
             "buildDependencies": [
@@ -1124,7 +1124,7 @@ suite = {
             "platformDependent": True,
             "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM",
-            "platforms" : [
+            "platforms": [
                 "linux-amd64",
                 "linux-aarch64",
                 "darwin-amd64",
