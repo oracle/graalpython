@@ -349,6 +349,7 @@ suite = {
                 # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
