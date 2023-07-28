@@ -365,7 +365,7 @@ suite = {
             ],
             "jacoco": "include",
             "javaCompliance": "17+",
-            "checkstyleVersion": "8.36.1",
+            "checkstyle": "com.oracle.graal.python",
             "annotationProcessors": [
                 "truffle:TRUFFLE_DSL_PROCESSOR"
             ],
