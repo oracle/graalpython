@@ -84,10 +84,10 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
-GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
-GRAAL_VERSION_NODOT = GRAAL_VERSION.replace('.', '')
-PYTHON_VERSION = "3.10"
-PYTHON_VERSION_NODOT = "3.10".replace('.', '')
+GRAAL_VERSION = SUITE.suiteDict['version']
+GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
+PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
+PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -1746,14 +1746,21 @@ def _get_output_root(projectname):
 
 def py_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return PYTHON_VERSION_NODOT
-    return PYTHON_VERSION
+        return PYTHON_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p)) for p in PYTHON_VERSION.split(".")])
+    else:
+        return PYTHON_VERSION_MAJ_MIN
 
 
 def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return GRAAL_VERSION_NODOT
-    return GRAAL_VERSION
+        return GRAAL_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p)) for p in GRAAL_VERSION.split(".")])
+    else:
+        return GRAAL_VERSION_MAJ_MIN
+
 
 def graalpy_ext(llvm_mode, **kwargs):
     if not llvm_mode:
@@ -1774,7 +1781,7 @@ def graalpy_ext(llvm_mode, **kwargs):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
 
-    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{pyos}.{ext}'
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "")}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.resources;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
@@ -56,12 +57,22 @@ import com.oracle.truffle.api.InternalResource.Id;
  */
 @Id("python-home")
 public final class PythonResource implements InternalResource {
-    // These fields should be initialized by the language using these resource so the layout will
-    // match up
-    public static int PYTHON_MAJOR = 0;
-    public static int PYTHON_MINOR = 0;
-    public static int GRAALVM_MAJOR = 0;
-    public static int GRAALVM_MINOR = 0;
+    private static final int PYTHON_MAJOR;
+    private static final int PYTHON_MINOR;
+    private static final int GRAALVM_MAJOR;
+    private static final int GRAALVM_MINOR;
+
+    static {
+        try (InputStream is = PythonResource.class.getResourceAsStream("/graalpy_versions")) {
+            PYTHON_MAJOR = is.read();
+            PYTHON_MINOR = is.read();
+            is.read(); // skip python micro version
+            GRAALVM_MAJOR = is.read();
+            GRAALVM_MINOR = is.read();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private static final Path BASE_PATH = Path.of("META-INF", "resources");
     private static final String LIBGRAALPY = "libgraalpy";

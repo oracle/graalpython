@@ -34,6 +34,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -180,9 +181,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /**
      * GraalVM version. Unfortunately, we cannot just use {@link Version#getCurrent} as it relies on
-     * a GraalVM build, but we may run from Jar files directly during development. So we hardcode
-     * the version here. It will fail at runtime if it doesn't match the distribution layout that is
-     * derived from the actual version.
+     * a GraalVM build, but we may run from Jar files directly during development. We generate the
+     * version during the build that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR = 23;
     public static final int GRAALVM_MINOR = 1;
@@ -191,21 +191,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @SuppressWarnings("unchecked")
     private static Class<PythonResource> getPythonResourceClass() {
-        Class<PythonResource> pr;
         try {
-            pr = (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
+            return (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
         } catch (ClassNotFoundException e) {
             return null;
         }
-        try {
-            pr.getDeclaredField("PYTHON_MAJOR").set(pr, MAJOR);
-            pr.getDeclaredField("PYTHON_MINOR").set(pr, MINOR);
-            pr.getDeclaredField("GRAALVM_MAJOR").set(pr, GRAALVM_MAJOR);
-            pr.getDeclaredField("GRAALVM_MINOR").set(pr, GRAALVM_MINOR);
-        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-            return null;
-        }
-        return pr;
     }
 
     static {
@@ -225,6 +215,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         PYTHON_RESOURCE_CLASS = getPythonResourceClass();
+        try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
+            if (MAJOR != is.read()) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR");
+            }
+            if (MINOR != is.read()) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR");
+            }
+            if (MICRO != is.read()) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO");
+            }
+            if (GRAALVM_MAJOR != is.read()) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR");
+            }
+            if (GRAALVM_MINOR != is.read()) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     public static final int RELEASE_SERIAL = 0;
     public static final int VERSION_HEX = MAJOR << 24 |

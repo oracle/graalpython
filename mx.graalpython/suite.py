@@ -10,6 +10,7 @@ suite = {
     "versionConflictResolution": "latest",
 
     "version": "23.1.0",
+    "graalpython:pythonVersion": "3.10.8",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -790,6 +791,18 @@ suite = {
     #
     # --------------------------------------------------------------------------------------------------------------
     "distributions": {
+        # We need the versions twice (even though that's silly), because
+        # otherwise they will not get included in both the resources jar and
+        # the language jar.
+        "GRAALPYTHON_VERSIONS_RES": {
+            "type": "dir",
+            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+        },
+        "GRAALPYTHON_VERSIONS_MAIN": {
+            "type": "dir",
+            "layout": {"./graalpy_versions": ["string:<py_ver:binary><graal_ver:binary>"]},
+        },
+
         "GRAALPYTHON-LAUNCHER": {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
@@ -871,6 +884,7 @@ suite = {
             "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python.resources",
+                "GRAALPYTHON_VERSIONS_RES",
                 "GRAALPYTHON_LIBPYTHON_RESOURCES",
                 "GRAALPYTHON_LIBGRAALPY_RESOURCES",
                 "GRAALPYTHON_INCLUDE_RESOURCES",
@@ -911,6 +925,7 @@ suite = {
             },
             "useModulePath": True,
             "dependencies": [
+                "GRAALPYTHON_VERSIONS_MAIN",
                 "com.oracle.graal.python",
                 "com.oracle.graal.python.frozen",
             ],
