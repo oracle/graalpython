@@ -75,10 +75,10 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import org.graalvm.shadowed.org.tukaani.xz.FilterOptions;
-import org.graalvm.shadowed.org.tukaani.xz.LZMA2Options;
-import org.graalvm.shadowed.org.tukaani.xz.XZ;
-import org.graalvm.shadowed.org.tukaani.xz.XZOutputStream;
+import org.tukaani.xz.FilterOptions;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.XZ;
+import org.tukaani.xz.XZOutputStream;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;

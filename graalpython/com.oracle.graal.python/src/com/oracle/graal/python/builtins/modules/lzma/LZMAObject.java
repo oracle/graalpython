@@ -52,14 +52,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import org.graalvm.shadowed.org.tukaani.xz.FilterOptions;
-import org.graalvm.shadowed.org.tukaani.xz.FinishableOutputStream;
-import org.graalvm.shadowed.org.tukaani.xz.LZMA2Options;
-import org.graalvm.shadowed.org.tukaani.xz.LZMAInputStream;
-import org.graalvm.shadowed.org.tukaani.xz.LZMAOutputStream;
-import org.graalvm.shadowed.org.tukaani.xz.XZInputStream;
-import org.graalvm.shadowed.org.tukaani.xz.XZOutputStream;
-import org.graalvm.shadowed.org.tukaani.xz.common.DecoderUtil;
+import org.tukaani.xz.FilterOptions;
+import org.tukaani.xz.FinishableOutputStream;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.LZMAInputStream;
+import org.tukaani.xz.LZMAOutputStream;
+import org.tukaani.xz.XZInputStream;
+import org.tukaani.xz.XZOutputStream;
+import org.tukaani.xz.common.DecoderUtil;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
