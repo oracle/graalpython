@@ -58,10 +58,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
@@ -90,6 +92,7 @@ public class Py2BinLauncher {
             .allowAllAccess(true)
             .allowIO(true)
             .fileSystem(vfs)
+            .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
             .option("python.PosixModuleBackend", "java")
             .option("python.NativeModules", "")
             .option("python.DontWriteBytecodeFlag", "true")
@@ -100,7 +103,7 @@ public class Py2BinLauncher {
             .option("python.ForceImportSite", "true")
             .option("python.RunViaLauncher", "true")
             .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))            
+            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
             .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
             .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
@@ -118,5 +121,16 @@ public class Py2BinLauncher {
                 }
             }
         }
+    }
+
+    private static String getProgramName() {
+        if (ImageInfo.inImageRuntimeCode()) {
+            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
+                return ProcessProperties.getArgumentVectorProgramName();
+            } else {
+                return ProcessProperties.getExecutableName();
+            }
+        }
+        return "";
     }
 }
