@@ -102,6 +102,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrap
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckPrimitiveResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
@@ -113,14 +121,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySelfHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckPrimitiveResultNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIFunctionPointer;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -131,7 +131,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -2345,13 +2344,11 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached HPyTypeSplitNameNode splitName,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PythonObjectFactory factory,
@@ -2378,12 +2375,13 @@ public abstract class GraalHPyNodes {
                 // the name as given by the specification
                 Object specNamePtr = ptrLib.readMember(typeSpec, "name");
 
-                // TODO(fa): function 'graal_hpy_type_name' returns a new string (created with 'strdup'). We need to free it.
+                // TODO(fa): function 'graal_hpy_type_name' returns a new string (created with
+                // 'strdup'). We need to free it.
                 Object tpName = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_NAME, specNamePtr);
                 TruffleString specName = fromCharPointerNode.execute(specNamePtr, false);
 
                 // extract module and type name
-                TruffleString[] names = splitName(specName, switchEncodingNode, indexOfCodepointNode, substringNode, lengthNode);
+                TruffleString[] names = splitName.execute(inliningTarget, specName);
                 assert names.length == 2;
 
                 PDict namespace;
@@ -2659,29 +2657,6 @@ public abstract class GraalHPyNodes {
             return null;
         }
 
-        /**
-         * Extract the heap type's and the module's name from the name given by the type
-         * specification.<br/>
-         * According to CPython, we need to look for the first {@code '.'} and everything before it
-         * is the module name. Everything after it (which may also contain more dots) is the type
-         * name. See also: {@code typeobject.c: PyType_FromSpecWithBases}
-         */
-        private static TruffleString[] splitName(TruffleString specNameUtf8,
-                        TruffleString.SwitchEncodingNode switchEncodingNode,
-                        TruffleString.IndexOfCodePointNode indexOfCodepointNode,
-                        TruffleString.SubstringNode substringNode,
-                        TruffleString.CodePointLengthNode lengthNode) {
-            TruffleString specName = switchEncodingNode.execute(specNameUtf8, TS_ENCODING);
-            int length = lengthNode.execute(specName, TS_ENCODING);
-            int firstDotIdx = indexOfCodepointNode.execute(specName, '.', 0, length, TS_ENCODING);
-            if (firstDotIdx > -1) {
-                TruffleString left = substringNode.execute(specName, 0, firstDotIdx, TS_ENCODING, false);
-                TruffleString right = substringNode.execute(specName, firstDotIdx + 1, length - firstDotIdx - 1, TS_ENCODING, false);
-                return new TruffleString[]{left, right};
-            }
-            return new TruffleString[]{null, specName};
-        }
-
         private static void checkInheritanceConstraints(long flags, long baseFlags, int builtinShape, boolean baseIsPure, PRaiseNode raiseNode) {
             // Pure types may inherit from:
             //
@@ -2719,6 +2694,38 @@ public abstract class GraalHPyNodes {
                 }
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * Extract the heap type's and the module's name from the name given by the type
+     * specification.<br/>
+     * According to CPython, we need to look for the last {@code '.'} and everything before it
+     * (which may also contain more dots) is the module name. Everything after it is the type name.
+     * See also: {@code typeobject.c: PyType_FromSpecWithBases}
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class HPyTypeSplitNameNode extends Node {
+
+        public abstract TruffleString[] execute(Node inliningTarget, TruffleString tpName);
+
+        @Specialization
+        static TruffleString[] doGeneric(TruffleString specNameUtf8,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodepointNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+            TruffleString specName = switchEncodingNode.execute(specNameUtf8, TS_ENCODING);
+            int length = lengthNode.execute(specName, TS_ENCODING);
+            int firstDotIdx = indexOfCodepointNode.execute(specName, '.', length, 0, TS_ENCODING);
+            if (firstDotIdx > -1) {
+                TruffleString left = substringNode.execute(specName, 0, firstDotIdx, TS_ENCODING, false);
+                TruffleString right = substringNode.execute(specName, firstDotIdx + 1, length - firstDotIdx - 1, TS_ENCODING, false);
+                return new TruffleString[]{left, right};
+            }
+            return new TruffleString[]{null, specName};
         }
     }
 
