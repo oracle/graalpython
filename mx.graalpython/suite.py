@@ -882,7 +882,7 @@ suite = {
                     "com.oracle.graal.python.resources to org.graalvm.py",
                 ],
             },
-            "useModulePath": True,
+            # "useModulePath": True,
             "dependencies": [
                 "com.oracle.graal.python.resources",
                 "GRAALPYTHON_VERSIONS_RES",
@@ -924,7 +924,7 @@ suite = {
                     "static org.graalvm.py.resources",
                 ],
             },
-            "useModulePath": True,
+            # "useModulePath": True,
             "dependencies": [
                 "GRAALPYTHON_VERSIONS_MAIN",
                 "com.oracle.graal.python",
