@@ -309,7 +309,7 @@ public final class GraalHPyContext extends CExtContext {
     private final ScheduledExecutorService scheduler;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) throws Exception {
-        super(context, hpyLibrary);
+        super(context, hpyLibrary, false /* TODO: provide proper value */);
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);

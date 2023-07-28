@@ -554,7 +554,7 @@ class TestObject(object):
         TestSlots = CPyExtType("TestSlots", 
                                '''
                                static PyObject* testslots_bincomp(PyObject* cls) {
-                                   return ((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False;
+                                   return Py_NewRef(((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False);
                                }
                                ''',
                               includes='#include "datetime.h"',
@@ -593,9 +593,7 @@ class TestObject(object):
                               static PyTypeObject* datetime_type = NULL;
                                 
                               PyObject* TestSlotsInitialized_new(PyTypeObject* self, PyObject* args, PyObject* kwargs) {
-                                  PyObject* result =  datetime_type->tp_new(self, args, kwargs);
-                                  Py_XINCREF(result);
-                                  return result;
+                                  return Py_XNewRef(datetime_type->tp_new(self, args, kwargs));
                               }
                               ''',
                               includes='#include "datetime.h"',
@@ -688,7 +686,7 @@ class TestObject(object):
                 return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
             }
             """,
-            struct_base="PyFloatObject base",
+            struct_base="PyFloatObject base;",
             cmembers="double myobval;",
             tp_base="&PyFloat_Type",
             tp_new="fp_tp_new",

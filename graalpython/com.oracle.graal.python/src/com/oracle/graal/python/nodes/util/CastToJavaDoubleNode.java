@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ImportCAPISymbolNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -117,11 +117,9 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
                     @Bind("this") Node node,
                     @Cached GetPythonObjectClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached ImportCAPISymbolNode importSymNode) {
+                    @Cached CStructAccess.ReadDoubleNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(node, x), PythonBuiltinClassType.PFloat)) {
-            return FromNativeSubclassNode.readObFval(x, toSulongNode, interopLibrary, importSymNode);
+            return read.readFromObj(x, PyFloatObject__ob_fval);
         }
         // the object's type is not a subclass of 'float'
         throw CannotCastException.INSTANCE;

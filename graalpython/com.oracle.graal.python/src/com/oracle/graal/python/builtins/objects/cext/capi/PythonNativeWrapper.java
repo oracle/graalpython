@@ -42,12 +42,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
@@ -106,30 +102,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.nativePointer = nativePointer;
     }
 
-    public final boolean isNative(ConditionProfile hasNativePointerProfile) {
-        return hasNativePointerProfile.profile(nativePointer != UNINITIALIZED);
-    }
-
     public final boolean isNative(Node inliningTarget, InlinedConditionProfile hasNativePointerProfile) {
         return hasNativePointerProfile.profile(inliningTarget, nativePointer != UNINITIALIZED);
     }
 
     public final boolean isNative() {
         return nativePointer != UNINITIALIZED;
-    }
-
-    protected static long coerceToLong(Object allocated, InteropLibrary lib) {
-        if (allocated instanceof Long) {
-            return (long) allocated;
-        } else {
-            if (!lib.isPointer(allocated)) {
-                lib.toNative(allocated);
-            }
-            try {
-                return lib.asPointer(allocated);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
     }
 }

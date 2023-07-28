@@ -56,7 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -66,7 +65,6 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
@@ -77,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
@@ -88,6 +85,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -132,8 +131,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -156,9 +155,8 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class ExternalFunctionNodes {
 
@@ -222,6 +220,20 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    public abstract static class FromUInt32Node extends CExtToJavaNode {
+
+        @Specialization
+        static int doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static int doLong(long value) {
+            assert value < (1L << 32);
+            return (int) value;
+        }
+    }
+
     public abstract static class ToInt64Node extends CExtToNativeNode {
 
         @Specialization
@@ -257,6 +269,24 @@ public abstract class ExternalFunctionNodes {
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
             return toNative.execute(object);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ToNativeReplacedNode extends CExtToNativeNode {
+
+        @Specialization
+        public Object replace(Object object,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            if (profile.profile(inliningTarget, object instanceof PythonReplacingNativeWrapper)) {
+                if (!lib.isPointer(object)) {
+                    lib.toNative(object);
+                }
+                return ((PythonReplacingNativeWrapper) object).getReplacement();
+            }
+            return object;
         }
     }
 
@@ -303,7 +333,7 @@ public abstract class ExternalFunctionNodes {
      * Enum of well-known function and slot signatures. The integer values must stay in sync with
      * the definition in {code capi.h}.
      */
-    public enum PExternalFunctionWrapper {
+    public enum PExternalFunctionWrapper implements NativeCExtSymbol {
         DIRECT(1, PyObjectTransfer, PyObject, PyObject),
         FASTCALL(2, PyObjectTransfer, PyObject, Pointer, Py_ssize_t),
         FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, Pointer, Py_ssize_t, PyObject),
@@ -588,8 +618,7 @@ public abstract class ExternalFunctionNodes {
                         PythonObjectFactory factory, boolean doArgAndResultConversion) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             InteropLibrary lib = InteropLibrary.getUncached(callable);
-            PythonContext context = PythonContext.get(null);
-            assert !isClosurePointer(context, callable, lib);
+            assert !isClosurePointer(PythonContext.get(null), callable, lib);
             if (flags < 0) {
                 flags = 0;
             }
@@ -607,7 +636,7 @@ public abstract class ExternalFunctionNodes {
             }
 
             // ensure that 'callable' is executable via InteropLibrary
-            Object boundCallable = ensureExecutable(context, callable, sig, lib);
+            Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);
 
             Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
             // TODO(fa): this should eventually go away
@@ -634,35 +663,6 @@ public abstract class ExternalFunctionNodes {
                 }
             }
             return false;
-        }
-
-        @TruffleBoundary
-        public static Object ensureExecutable(PythonContext context, Object callable, PExternalFunctionWrapper sig, InteropLibrary lib) {
-            if (!lib.isExecutable(callable)) {
-                Env env = context.getEnv();
-                boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
-                Object nfiSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + sig.signature, sig.name()).build()).call();
-
-                /*
-                 * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM
-                 * pointer (that is still not executable). To avoid unnecessary indirections, we
-                 * test 'isPointer(callable)' and if so, we retrieve the bare long value using
-                 * 'asPointer(callable)' and wrap it in our own PointerContainer.
-                 */
-                Object funPtr;
-                if (lib.isPointer(callable)) {
-                    try {
-                        funPtr = new PointerContainer(lib.asPointer(callable));
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    funPtr = callable;
-                }
-                return SignatureLibrary.getUncached().bind(nfiSignature, funPtr);
-            }
-            // nothing to do
-            return callable;
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -702,6 +702,18 @@ public abstract class ExternalFunctionNodes {
                 result[i] = descriptors[i].createPythonToNativeNode();
             }
             return result;
+        }
+
+        public String getName() {
+            return name();
+        }
+
+        public TruffleString getTsName() {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        public String getSignature() {
+            return signature;
         }
     }
 
@@ -850,7 +862,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
-        @Child private PRaiseNode raiseNode;
         @Children private final CExtToNativeNode[] convertArgs;
 
         private final TruffleString name;
@@ -953,14 +964,6 @@ public abstract class ExternalFunctionNodes {
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseNativeWrapperNode;
-        }
-
-        protected final PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         @Override
@@ -1351,7 +1354,7 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "key"), KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
-        @Child private PCallCapiFunction callFreeNode;
+        @Child private CStructAccess.FreeNode free;
 
         GetAttrFuncRootNode(PythonLanguage language, TruffleString name) {
             super(language, name, false);
@@ -1361,6 +1364,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asCharPointerNode = AsCharPointerNodeGen.create();
+            this.free = CStructAccess.FreeNode.create();
         }
 
         @Override
@@ -1375,15 +1379,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-            ensureCallFreeNode().call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, cArguments[1]);
-        }
-
-        private PCallCapiFunction ensureCallFreeNode() {
-            if (callFreeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFreeNode = insert(PCallCapiFunction.create());
-            }
-            return callFreeNode;
+            free.free(cArguments[1]);
         }
 
         @Override
@@ -1400,7 +1396,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
-        @Child private PCallCapiFunction callFreeNode;
+        @Child private CStructAccess.FreeNode free;
 
         SetAttrFuncRootNode(PythonLanguage language, TruffleString name) {
             super(language, name, false);
@@ -1411,6 +1407,7 @@ public abstract class ExternalFunctionNodes {
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asCharPointerNode = AsCharPointerNodeGen.create();
+            this.free = CStructAccess.FreeNode.create();
         }
 
         @Override
@@ -1427,16 +1424,8 @@ public abstract class ExternalFunctionNodes {
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            ensureCallFreeNode().call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, cArguments[1]);
+            free.free(cArguments[1]);
             releaseNativeWrapperNode.execute(cArguments[2]);
-        }
-
-        private PCallCapiFunction ensureCallFreeNode() {
-            if (callFreeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFreeNode = insert(PCallCapiFunction.create());
-            }
-            return callFreeNode;
         }
 
         @Override
@@ -2013,14 +2002,7 @@ public abstract class ExternalFunctionNodes {
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization
-        Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
-            return result;
-        }
-
-        @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
+        Object doNativeWrapper(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             checkFunctionResult(this, name, false, true, context, errOccurredProfile);
             return result;
@@ -2066,12 +2048,12 @@ public abstract class ExternalFunctionNodes {
         }
 
         /*
-         * Our fallback case, but with some cached params. PythonObjectNativeWrapper results should
-         * be unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
+         * Our fallback case, but with some cached params. PythonNativeWrapper results should be
+         * unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
          * specially, because we consider it as null in #doNoValue and as not null in
          * #doPythonObject
          */
-        @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
+        @Specialization(guards = {"!isPythonNativeWrapper(result)", "!isPNone(result)"})
         Object doForeign(PythonContext context, TruffleString name, Object result,
                         @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -2139,12 +2121,8 @@ public abstract class ExternalFunctionNodes {
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
 
-        protected static boolean isNativeNull(Object object) {
-            return object instanceof PythonNativePointer;
-        }
-
-        protected static boolean isPythonObjectNativeWrapper(Object object) {
-            return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+        protected static boolean isPythonNativeWrapper(Object object) {
+            return object instanceof PythonNativeWrapper;
         }
     }
 

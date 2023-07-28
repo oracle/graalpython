@@ -324,9 +324,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
 
-    /** Strong reference to the C API library call target (workaround until GR-32297 is fixed). */
-    public CallTarget capiLibraryCallTarget;
-
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
 

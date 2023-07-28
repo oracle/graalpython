@@ -362,8 +362,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Forces AST sharing for inner contexts.") //
     public static final OptionKey<Boolean> ForceSharingForInnerContexts = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, help = "Comma-separated list of modules that should be loaded as native code, or 'all' (default).") //
-    public static final OptionKey<String> NativeModules = new OptionKey<>("all");
+    @Option(category = OptionCategory.EXPERT, help = "Whether C extension modules should be loaded as native code (as opposed to Sulong bitcode execution).") //
+    public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);

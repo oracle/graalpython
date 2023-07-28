@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
     int flags = PyMethodDef_ml_flags(method);
     return GraalPyTruffleDescr_NewClassMethod(method,
-                    truffleString(PyMethodDef_ml_name(method)),
+                    PyMethodDef_ml_name(method),
 					PyMethodDef_ml_doc(method),
                     flags,
                     get_method_flags_wrapper(flags),
@@ -54,10 +54,10 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
 PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
     getter getter_fun = PyGetSetDef_get(getset);
     setter setter_fun = PyGetSetDef_set(getset);
-    return GraalPyTruffleDescr_NewGetSet(truffleString(PyGetSetDef_name(getset)),
+    return GraalPyTruffleDescr_NewGetSet(PyGetSetDef_name(getset),
                     type,
-                    getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
-                    setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                    getter_fun,
+                    setter_fun,
                     PyGetSetDef_doc(getset),
 					PyGetSetDef_closure(getset));
 }
@@ -73,4 +73,8 @@ PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
 
 PyObject* PyDescrObject_GetName(PyObject* descr) {
 	return PyDescrObject_d_name(descr);
+}
+
+int PyDescr_IsData(PyObject *ob) {
+    return Py_TYPE(ob)->tp_descr_set != NULL;
 }

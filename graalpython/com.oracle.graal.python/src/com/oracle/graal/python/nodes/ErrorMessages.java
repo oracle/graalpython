@@ -997,7 +997,6 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_CTRL_CHARACTER_AT = tsLiteral("Invalid control character at");
     public static final TruffleString UNTERMINATED_STR_STARTING_AT = tsLiteral("Unterminated string starting at");
     public static final TruffleString DEFLATED_SET_DICT = tsLiteral("deflateSetDictionary()");
-    public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES = tsLiteral("Expecting property name enclosed in double quotes");
     public static final TruffleString EXPECTING_COLON_DELIMITER = tsLiteral("Expecting ':' delimiter");
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
@@ -1006,6 +1005,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
+    public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1369,6 +1369,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNHANDLED_ERROR = tsLiteral("Unhandled Error!");
 
     // cext
+    public static final TruffleString NO_BITCODE_FOUND = tsLiteral("no bitcode found for %s");
     public static final TruffleString CANNOT_MULTICONTEXT = tsLiteral("cannot execute multi-context code with native extensions");
     public static final TruffleString CREATION_FAILD_WITHOUT_EXCEPTION = tsLiteral("creation of module %s failed without setting an exception");
     public static final TruffleString CREATION_RAISED_EXCEPTION = tsLiteral("creation of module %s raised unreported exception");
@@ -1387,7 +1388,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ML_FLAGS_IS_NOT_INTEGER = tsLiteral("ml_flags of %s is not an integer");
     public static final TruffleString INVALID_STRUCT_MEMBER = tsLiteral("Invalid struct member '%s'");
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
-    public static final TruffleString FIELD_DID_NOT_RETURN_ARRAY = tsLiteral("field '%s' did not return an array");
+    public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString HPY_CAPI_SYM_NOT_CALLABLE = tsLiteral("HPy C API symbol %s is not callable");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
     public static final TruffleString UNSUPPORTED_HYPMETH_SIG = tsLiteral("Unsupported HPyMeth signature");

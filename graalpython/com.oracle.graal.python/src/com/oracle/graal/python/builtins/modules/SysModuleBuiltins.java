@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.castToString;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.classNameNoDot;
@@ -164,9 +165,8 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.Tex
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -221,7 +221,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -936,13 +935,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         protected long doGeneric(PythonAbstractObject object,
-                        @Cached PCallCapiFunction callGetObRefCntNode,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            if (object instanceof PythonAbstractNativeObject) {
-                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ((PythonAbstractNativeObject) object).getPtr()));
+                        @Cached CStructAccess.ReadI64Node read) {
+            if (object instanceof PythonAbstractNativeObject nativeKlass) {
+                return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
             }
 
-            DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+            PythonNativeWrapper wrapper = object.getNativeWrapper();
             if (wrapper == null) {
                 return -1;
             } else {

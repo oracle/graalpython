@@ -52,8 +52,6 @@
 #include "capi.h"
 #include <time.h>
 
-POLYGLOT_DECLARE_TYPE(PyDateTime_CAPI);
-
 /* Forward declarations. */
 static PyTypeObject PyDateTime_DateType;
 static PyTypeObject PyDateTime_DateTimeType;
@@ -61,47 +59,27 @@ static PyTypeObject PyDateTime_DeltaType;
 static PyTypeObject PyDateTime_TimeType;
 static PyTypeObject PyDateTime_TZInfoType;
 
-
-/* special built-in module 'datetime' */
-POLYGLOT_DECLARE_TYPE(PyDateTime_Date);
-POLYGLOT_DECLARE_TYPE(PyDateTime_Time);
-POLYGLOT_DECLARE_TYPE(PyDateTime_DateTime);
-POLYGLOT_DECLARE_TYPE(PyDateTime_Delta);
-POLYGLOT_DECLARE_TYPE(PyDateTime_TZInfo);
-
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
-PyAPI_FUNC(polyglot_typeid) set_PyDateTime_typeids(PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
+PyAPI_FUNC(void) set_PyDateTime_types() {
     /* safe native get/set descriptors */
     PyGetSetDef* getsets_date= PyDateTime_DateType.tp_getset;
     PyGetSetDef* getsets_time = PyDateTime_TimeType.tp_getset;
     PyGetSetDef* getsets_datetime = PyDateTime_DateTimeType.tp_getset;
     PyMemberDef* members_delta = PyDateTime_DeltaType.tp_members;
 
-    initialize_type_structure(&PyDateTime_DateType, dateType, polyglot_PyDateTime_Date_typeid());
-    initialize_type_structure(&PyDateTime_DateTimeType, dateTimeType, polyglot_PyDateTime_DateTime_typeid());
-    initialize_type_structure(&PyDateTime_TimeType, timeType, polyglot_PyDateTime_Time_typeid());
-    initialize_type_structure(&PyDateTime_DeltaType, deltaType, polyglot_PyDateTime_Delta_typeid());
-    initialize_type_structure(&PyDateTime_TZInfoType, tzinfoType, polyglot_PyDateTime_TZInfo_typeid());
+    initialize_type_structure(&PyDateTime_DateType, "datetime.date");
+    initialize_type_structure(&PyDateTime_DateTimeType, "datetime.datetime");
+    initialize_type_structure(&PyDateTime_TimeType, "datetime.time");
+    initialize_type_structure(&PyDateTime_DeltaType, "datetime.timedelta");
+    initialize_type_structure(&PyDateTime_TZInfoType, "datetime.timezone");
 
     /* register native get/set descriptors to managed types */
     register_native_slots(&PyDateTime_DateType, getsets_date, NULL);
     register_native_slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
     register_native_slots(&PyDateTime_TimeType, getsets_time, NULL);
     register_native_slots(&PyDateTime_DeltaType, NULL, members_delta);
-
-    return polyglot_PyDateTime_CAPI_typeid();
 }
 
-
-/** to be used from Java code only; returns a type's basic size */
-#define BASICSIZE_GETTER(__typename__) PyAPI_FUNC(Py_ssize_t) get_ ## __typename__ ## _basicsize() { \
-	return sizeof(__typename__); \
-}
-
-BASICSIZE_GETTER(PyDateTime_Date);
-BASICSIZE_GETTER(PyDateTime_Time);
-BASICSIZE_GETTER(PyDateTime_DateTime);
-BASICSIZE_GETTER(PyDateTime_Delta);
 
 /* Helper method: implements parsing of longobject to C int as format specifier 'i' does. */
 static int PyLong_AsInt(PyObject *arg) {

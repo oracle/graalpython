@@ -53,9 +53,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
+
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -131,11 +131,15 @@ public abstract class CExtContext {
     /** A cache for C symbols. */
     private DynamicObject symbolCache;
 
-    protected boolean supportsNativeBackend = true;
+    /**
+     * The native API implementation was loaded as native code (as opposed to bitcode via Sulong).
+     */
+    protected final boolean useNativeBackend;
 
-    public CExtContext(PythonContext context, Object llvmLibrary) {
+    public CExtContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
         this.context = context;
         this.llvmLibrary = llvmLibrary;
+        this.useNativeBackend = useNativeBackend;
     }
 
     public final PythonContext getContext() {
@@ -281,21 +285,6 @@ public abstract class CExtContext {
         return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
     }
 
-    private static boolean moduleMatches(String name, String[] modules) {
-        for (String module : modules) {
-            module = module.trim();
-            if (!module.isEmpty()) {
-                if (name.equals(module)) {
-                    return true;
-                }
-                if (name.length() > module.length() && name.startsWith(module) && name.charAt(module.length()) == '.') {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private static String dlopenFlagsToString(int flags) {
         String str = "RTLD_NOW";
         if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
@@ -334,45 +323,26 @@ public abstract class CExtContext {
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         Object library = null;
 
-        if (cApiContext.supportsNativeBackend) {
-            String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
-            boolean loaded = cApiContext.ensureNative();
-            if (loaded) {
-                String name = spec.name.toJavaStringUncached();
-                if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                    GraalHPyJNIContext.loadJNIBackend();
-                    getLogger().config("loading module " + spec.path + " as native");
-                    String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
-                    if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
-                        loadExpr = "with panama " + loadExpr;
-                    }
-                    try {
-                        Source src = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
-                        library = context.getEnv().parseInternal(src).call();
-                    } catch (AbstractTruffleException e) {
-                        if (e instanceof PException pe) {
-                            throw pe;
-                        } else {
-                            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
-                        }
-                    }
-                }
-            } else {
-                cApiContext.supportsNativeBackend = false;
+        if (cApiContext.useNativeBackend) {
+            GraalHPyJNIContext.loadJNIBackend();
+            getLogger().config("loading module " + spec.path + " as native");
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
+            if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+                loadExpr = "with panama " + loadExpr;
             }
-        }
-
-        if (library == null) {
+            try {
+                Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
+                library = context.getEnv().parseInternal(librarySource).call();
+            } catch (PException e) {
+                throw e;
+            } catch (AbstractTruffleException e) {
+                throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+            }
+        } else {
             library = loadLLVMLibrary(location, context, spec.name, spec.path);
             try {
                 if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
-                    if (cApiContext.supportsNativeBackend) {
-                        getLogger().config("loading module " + spec.path + " as native (no bitcode found)");
-                    } else {
-                        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
-                    }
-                } else {
-                    getLogger().config("loading module " + spec.path + " as llvm bitcode");
+                    throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -387,17 +357,6 @@ public abstract class CExtContext {
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
-    }
-
-    private static boolean isForcedLLVM(String name) {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 &&
-                        ("_cpython_unicodedata".equals(name) || "_cpython_sre".equals(name) || "_sqlite3".equals(name))) {
-            // We build these internal extensions with the LLVM toolchain and link against the
-            // bitcode python-native,
-            // not the fully native pythonjni. We cannot load them natively on Windows like that.
-            return true;
-        }
-        return "_mmap".equals(name) || "_cpython_struct".equals(name);
     }
 
     public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {

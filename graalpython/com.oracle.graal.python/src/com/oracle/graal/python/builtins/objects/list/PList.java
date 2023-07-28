@@ -34,7 +34,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -83,23 +82,7 @@ public final class PList extends PSequence {
     @Override
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        StringBuilder buf = new StringBuilder("[");
-
-        if (!(store instanceof NativeSequenceStorage)) {
-            for (int i = 0; i < store.length(); i++) {
-                Object item = store.getItemNormalized(i);
-                buf.append(item.toString());
-
-                if (i < store.length() - 1) {
-                    buf.append(", ");
-                }
-            }
-        } else {
-            buf.append(store);
-        }
-
-        buf.append("]");
-        return buf.toString();
+        return store.toString();
     }
 
     public final void reverse() {

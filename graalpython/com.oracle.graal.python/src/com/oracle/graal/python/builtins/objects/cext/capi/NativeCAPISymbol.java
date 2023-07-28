@@ -40,10 +40,27 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.HashMap;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -51,283 +68,111 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeCAPISymbol implements NativeCExtSymbol {
 
-    /* Sulong intrinsics */
+    FUN_VA_ARG_POINTER("truffle_va_arg_pointer", Pointer, Pointer),
+    FUN_CONVERT_POINTER("truffle_convert_pointer", Pointer, Py_ssize_t),
 
-    FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
-    FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
-    FUN_POLYGLOT_FROM_STRING("polyglot_from_string"),
-    GRAALVM_LLVM_VA_ARG("_graalvm_llvm_va_arg"),
-
-    FUN_PYTRUFFLE_ALLOCATE_TYPE("PyTruffle_AllocateType"),
-    FUN_PYTRUFFLE_POPULATE_TYPE("PyTruffle_PopulateType"),
-    FUN_PYTRUFFLE_PATCH_TYPE("PyTruffle_PatchType"),
-    FUN_PYTRUFFLE_ALLOCATE_METHOD_DEF("PyTruffle_AllocateMethodDef"),
-    FUN_PYTRUFFLE_ALLOCATE_DATETIME_API("PyTruffle_AllocateDateTimeAPI"),
-    FUN_PYTRUFFLE_ALLOCATE_MEMORY_VIEW("PyTruffle_AllocateMemoryView"),
-    FUN_PYTRUFFLE_CONVERT_TO_POINTER("PyTruffle_ConvertToPointer"),
+    FUN_PYTRUFFLE_CONSTANTS("PyTruffle_constants", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_STRUCT_OFFSETS("PyTruffle_struct_offsets", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_STRUCT_SIZES("PyTruffle_struct_sizes", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_ADD_OFFSET("PyTruffle_Add_Offset", Pointer, Pointer, ArgDescriptor.Long),
 
     /* C functions for reading native members by offset */
 
-    FUN_READ_SHORT_MEMBER("ReadShortMember"),
-    FUN_READ_INT_MEMBER("ReadIntMember"),
-    FUN_READ_LONG_MEMBER("ReadLongMember"),
-    FUN_READ_FLOAT_MEMBER("ReadFloatMember"),
-    FUN_READ_DOUBLE_MEMBER("ReadDoubleMember"),
-    FUN_READ_STRING_MEMBER("ReadStringMember"),
-    FUN_READ_STRING_IN_PLACE_MEMBER("ReadStringInPlaceMember"),
-    FUN_READ_OBJECT_MEMBER("ReadObjectMember"),
-    FUN_READ_OBJECT_EX_MEMBER("ReadObjectExMember"),
-    FUN_READ_CHAR_MEMBER("ReadCharMember"),
-    FUN_READ_UBYTE_MEMBER("ReadUByteMember"),
-    FUN_READ_USHORT_MEMBER("ReadUShortMember"),
-    FUN_READ_UINT_MEMBER("ReadUIntMember"),
-    FUN_READ_ULONG_MEMBER("ReadULongMember"),
-    FUN_READ_LONGLONG_MEMBER("ReadLongLongMember"),
-    FUN_READ_ULONGLONG_MEMBER("ReadULongLongMember"),
-    FUN_READ_PYSSIZET_MEMBER("ReadPySSizeT"),
+    FUN_READ_SHORT_MEMBER("ReadShortMember", Int, Pointer, Py_ssize_t),
+    FUN_READ_INT_MEMBER("ReadIntMember", Int, Pointer, Py_ssize_t),
+    FUN_READ_LONG_MEMBER("ReadLongMember", ArgDescriptor.Long, Pointer, Py_ssize_t),
+    FUN_READ_FLOAT_MEMBER("ReadFloatMember", ArgDescriptor.Double, Pointer, Py_ssize_t),
+    FUN_READ_DOUBLE_MEMBER("ReadDoubleMember", ArgDescriptor.Double, Pointer, Py_ssize_t),
+    FUN_READ_STRING_MEMBER("ReadStringMember", ConstCharPtrAsTruffleString, Pointer, Py_ssize_t),
+    FUN_READ_STRING_IN_PLACE_MEMBER("ReadStringInPlaceMember", ConstCharPtrAsTruffleString, Pointer, Py_ssize_t),
+    FUN_READ_OBJECT_MEMBER("ReadObjectMember", Pointer, Pointer, Py_ssize_t),
+    FUN_READ_POINTER_MEMBER("ReadPointerMember", Pointer, Pointer, Py_ssize_t),
+    FUN_READ_OBJECT_EX_MEMBER("ReadObjectExMember", Pointer, Pointer, Py_ssize_t),
+    FUN_READ_CHAR_MEMBER("ReadCharMember", Int, Pointer, Py_ssize_t),
+    FUN_READ_UBYTE_MEMBER("ReadUByteMember", Int, Pointer, Py_ssize_t),
+    FUN_READ_USHORT_MEMBER("ReadUShortMember", Int, Pointer, Py_ssize_t),
+    FUN_READ_UINT_MEMBER("ReadUIntMember", ArgDescriptor.Long, Pointer, Py_ssize_t),
+    FUN_READ_ULONG_MEMBER("ReadULongMember", ArgDescriptor.UNSIGNED_LONG, Pointer, Py_ssize_t),
+    FUN_READ_LONGLONG_MEMBER("ReadLongLongMember", ArgDescriptor.LONG_LONG, Pointer, Py_ssize_t),
+    FUN_READ_ULONGLONG_MEMBER("ReadULongLongMember", ArgDescriptor.UNSIGNED_LONG_LONG, Pointer, Py_ssize_t),
+    FUN_READ_PYSSIZET_MEMBER("ReadPySSizeT", Py_ssize_t, Pointer, Py_ssize_t),
 
     /* C functions for writing native members by offset */
 
-    FUN_WRITE_SHORT_MEMBER("WriteShortMember"),
-    FUN_WRITE_INT_MEMBER("WriteIntMember"),
-    FUN_WRITE_LONG_MEMBER("WriteLongMember"),
-    FUN_WRITE_FLOAT_MEMBER("WriteFloatMember"),
-    FUN_WRITE_DOUBLE_MEMBER("WriteDoubleMember"),
-    FUN_WRITE_STRING_MEMBER("WriteStringMember"),
-    FUN_WRITE_STRING_IN_PLACE_MEMBER("WriteStringInPlaceMember"),
-    FUN_WRITE_OBJECT_MEMBER("WriteObjectMember"),
-    FUN_WRITE_OBJECT_EX_MEMBER("WriteObjectExMember"),
-    FUN_WRITE_CHAR_MEMBER("WriteCharMember"),
-    FUN_WRITE_UBYTE_MEMBER("WriteUByteMember"),
-    FUN_WRITE_USHORT_MEMBER("WriteUShortMember"),
-    FUN_WRITE_UINT_MEMBER("WriteUIntMember"),
-    FUN_WRITE_ULONG_MEMBER("WriteULongMember"),
-    FUN_WRITE_LONGLONG_MEMBER("WriteLongLongMember"),
-    FUN_WRITE_ULONGLONG_MEMBER("WriteULongLongMember"),
-    FUN_WRITE_PYSSIZET_MEMBER("WritePySSizeT"),
+    FUN_WRITE_SHORT_MEMBER("WriteShortMember", Int, Pointer, Py_ssize_t, Int),
+    FUN_WRITE_INT_MEMBER("WriteIntMember", Int, Pointer, Py_ssize_t, Int),
+    FUN_WRITE_LONG_MEMBER("WriteLongMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Long),
+    FUN_WRITE_FLOAT_MEMBER("WriteFloatMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Double),
+    FUN_WRITE_DOUBLE_MEMBER("WriteDoubleMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Double),
+    FUN_WRITE_STRING_MEMBER("WriteStringMember", Int, Pointer, Py_ssize_t, ConstCharPtr),
+    FUN_WRITE_STRING_IN_PLACE_MEMBER("WriteStringInPlaceMember", Int, Pointer, Py_ssize_t, ConstCharPtr),
+    FUN_WRITE_OBJECT_MEMBER("WriteObjectMember", Int, Pointer, Py_ssize_t, Pointer),
+    FUN_WRITE_OBJECT_EX_MEMBER("WriteObjectExMember", Int, Pointer, Py_ssize_t, Pointer),
+    FUN_WRITE_CHAR_MEMBER("WriteCharMember", Int, Pointer, Py_ssize_t, Int),
+    FUN_WRITE_UBYTE_MEMBER("WriteUByteMember", Int, Pointer, Py_ssize_t, Int),
+    FUN_WRITE_USHORT_MEMBER("WriteUShortMember", Int, Pointer, Py_ssize_t, Int),
+    FUN_WRITE_UINT_MEMBER("WriteUIntMember", Int, Pointer, Py_ssize_t, UNSIGNED_INT),
+    FUN_WRITE_ULONG_MEMBER("WriteULongMember", Int, Pointer, Py_ssize_t, UNSIGNED_LONG),
+    FUN_WRITE_LONGLONG_MEMBER("WriteLongLongMember", Int, Pointer, Py_ssize_t, LONG_LONG),
+    FUN_WRITE_ULONGLONG_MEMBER("WriteULongLongMember", Int, Pointer, Py_ssize_t, UNSIGNED_LONG_LONG),
+    FUN_WRITE_PYSSIZET_MEMBER("WritePySSizeT", Int, Pointer, Py_ssize_t, Py_ssize_t),
 
     /* Python C API functions */
 
-    FUN_PY_TRUFFLE_STRING_TO_CSTR("PyTruffle_StringToCstr"),
-    FUN_WHCAR_SIZE("PyTruffle_Wchar_Size"),
-    FUN_PY_TRUFFLE_CSTR_TO_STRING("PyTruffle_CstrToString"),
-    FUN_PY_TRUFFLE_ASCII_TO_STRING("PyTruffle_AsciiToString"),
-    FUN_PY_FLOAT_AS_DOUBLE("truffle_read_ob_fval"),
-    FUN_GET_OB_TYPE("get_ob_type"),
-    FUN_GET_OB_REFCNT("get_ob_refcnt"),
-    FUN_GET_OB_SIZE("get_ob_size"),
-    FUN_GET_TP_DICT("get_tp_dict"),
-    FUN_GET_TP_BASE("get_tp_base"),
-    FUN_GET_TP_BASES("get_tp_bases"),
-    FUN_GET_TP_NAME("get_tp_name"),
-    FUN_GET_TP_MRO("get_tp_mro"),
-    FUN_GET_TP_ALLOC("get_tp_alloc"),
-    FUN_GET_TP_DEALLOC("get_tp_dealloc"),
-    FUN_GET_TP_FREE("get_tp_free"),
-    FUN_GET_TP_FLAGS("get_tp_flags"),
-    FUN_GET_TP_SUBCLASSES("get_tp_subclasses"),
-    FUN_GET_TP_DICTOFFSET("get_tp_dictoffset"),
-    FUN_GET_TP_WEAKLISTOFFSET("get_tp_weaklistoffset"),
-    FUN_GET_TP_VECTORCALLOFFSET("get_tp_vectorcall_offset"),
-    FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
-    FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
-    FUN_GET_TP_AS_BUFFER("get_tp_as_buffer"),
-    FUN_GET_OB_SVAL("get_ob_sval"),
-    FUN_GET_METHODS_FLAGS("get_methods_flags"),
-    FUN_GET_M_INDEX("get_m_index"),
-    FUN_GET_M_SIZE("get_m_size"),
-    FUN_GET_M_DOC("get_m_doc"),
-    FUN_GET_TP_REPR("get_tp_repr"),
-    FUN_GET_TP_STR("get_tp_str"),
-    FUN_GET_TP_GETATTRO("get_tp_getattro"),
-    FUN_GET_TP_SETATTRO("get_tp_setattro"),
-    FUN_GET_TP_HASH("get_tp_hash"),
-    FUN_GET_TP_CALL("get_tp_call"),
-    FUN_GET_TP_ITER("get_tp_iter"),
-    FUN_GET_TP_ITERNEXT("get_tp_iternext"),
-    FUN_GET_TP_DESCR_GET("get_tp_descr_get"),
-    FUN_GET_TP_DESCR_SET("get_tp_descr_set"),
-    FUN_GET_TP_INIT("get_tp_init"),
-    FUN_GET_TP_RICHCOMPARE("get_tp_richcompare"),
-    FUN_GET_NB_ADD("get_nb_add"),
-    FUN_GET_NB_SUBTRACT("get_nb_subtract"),
-    FUN_GET_NB_MULTIPLY("get_nb_multiply"),
-    FUN_GET_NB_REMAINDER("get_nb_remainder"),
-    FUN_GET_NB_DIVMOD("get_nb_divmod"),
-    FUN_GET_NB_POWER("get_nb_power"),
-    FUN_GET_NB_NEGATIVE("get_nb_negative"),
-    FUN_GET_NB_POSITIVE("get_nb_positive"),
-    FUN_GET_NB_ABSOLUTE("get_nb_absolute"),
-    FUN_GET_NB_BOOL("get_nb_bool"),
-    FUN_GET_NB_INVERT("get_nb_invert"),
-    FUN_GET_NB_LSHIFT("get_nb_lshift"),
-    FUN_GET_NB_RSHIFT("get_nb_rshift"),
-    FUN_GET_NB_AND("get_nb_and"),
-    FUN_GET_NB_XOR("get_nb_xor"),
-    FUN_GET_NB_OR("get_nb_or"),
-    FUN_GET_NB_INT("get_nb_int"),
-    FUN_GET_NB_FLOAT("get_nb_float"),
-    FUN_GET_NB_INPLACE_ADD("get_nb_inplace_add"),
-    FUN_GET_NB_INPLACE_SUBTRACT("get_nb_inplace_subtract"),
-    FUN_GET_NB_INPLACE_MULTIPLY("get_nb_inplace_multiply"),
-    FUN_GET_NB_INPLACE_REMAINDER("get_nb_inplace_remainder"),
-    FUN_GET_NB_INPLACE_POWER("get_nb_inplace_power"),
-    FUN_GET_NB_INPLACE_LSHIFT("get_nb_inplace_lshift"),
-    FUN_GET_NB_INPLACE_RSHIFT("get_nb_inplace_rshift"),
-    FUN_GET_NB_INPLACE_AND("get_nb_inplace_and"),
-    FUN_GET_NB_INPLACE_XOR("get_nb_inplace_xor"),
-    FUN_GET_NB_INPLACE_OR("get_nb_inplace_or"),
-    FUN_GET_NB_FLOOR_DIVIDE("get_nb_floor_divide"),
-    FUN_GET_NB_TRUE_DIVIDE("get_nb_true_divide"),
-    FUN_GET_NB_INPLACE_FLOOR_DIVIDE("get_nb_inplace_floor_divide"),
-    FUN_GET_NB_INPLACE_TRUE_DIVIDE("get_nb_inplace_true_divide"),
-    FUN_GET_NB_INDEX("get_nb_index"),
-    FUN_GET_NB_MATRIX_MULTIPLY("get_nb_matrix_multiply"),
-    FUN_GET_NB_INPLACE_MATRIX_MULTIPLY("get_nb_inplace_matrix_multiply"),
-    FUN_GET_SQ_LENGTH("get_sq_length"),
-    FUN_GET_SQ_CONCAT("get_sq_concat"),
-    FUN_GET_SQ_REPEAT("get_sq_repeat"),
-    FUN_GET_SQ_ITEM("get_sq_item"),
-    FUN_GET_SQ_ASS_ITEM("get_sq_ass_item"),
-    FUN_GET_SQ_CONTAINS("get_sq_contains"),
-    FUN_GET_SQ_INPLACE_CONCAT("get_sq_inplace_concat"),
-    FUN_GET_SQ_INPLACE_REPEAT("get_sq_inplace_repeat"),
-    FUN_GET_MP_LENGTH("get_mp_length"),
-    FUN_GET_MP_SUBSCRIPT("get_mp_subscript"),
-    FUN_GET_MP_ASS_SUBSCRIPT("get_mp_ass_subscript"),
-    FUN_GET_PY_COMPLEX_CVAL_REAL("get_cval_real"),
-    FUN_GET_PY_COMPLEX_CVAL_IMAG("get_cval_imag"),
-    FUN_GET_EXCEPTION_ARGS("get_args"),
-    FUN_GET_EXCEPTION_CAUSE("get_cause"),
-    FUN_GET_EXCEPTION_CONTEXT("get_context"),
-    FUN_GET_EXCEPTION_SUPPRESS_CONTEXT("get_suppress_context"),
-    FUN_GET_EXCEPTION_TRACEBACK("get_traceback"),
-    FUN_SET_EXCEPTION_ARGS("set_args"),
-    FUN_SET_EXCEPTION_CAUSE("set_cause"),
-    FUN_SET_EXCEPTION_CONTEXT("set_context"),
-    FUN_SET_EXCEPTION_SUPPRESS_CONTEXT("set_suppress_context"),
-    FUN_SET_EXCEPTION_TRACEBACK("set_traceback"),
-    FUN_GET_PYMODULEDEF_M_METHODS("get_PyModuleDef_m_methods"),
-    FUN_GET_PYMODULEDEF_M_SLOTS("get_PyModuleDef_m_slots"),
-    FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
-    FUN_GET_PTR_ARRAY_TYPE_ID("get_ptr_array_typeid"),
-    FUN_PTR_COMPARE("truffle_ptr_compare"),
-    FUN_PTR_ADD("truffle_ptr_add"),
-    FUN_PTR_CONVERT("truffle_ptr_convert"),
-    FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE("PyTruffle_ByteArrayToNative"),
-    FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE("PyTruffle_IntArrayToNative"),
-    FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE("PyTruffle_LongArrayToNative"),
-    FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE("PyTruffle_DoubleArrayToNative"),
-    FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE("PyTruffle_ObjectArrayToNative"),
-    FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC("PyTruffle_ByteArrayRealloc"),
-    FUN_PY_TRUFFLE_INT_ARRAY_REALLOC("PyTruffle_IntArrayRealloc"),
-    FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC("PyTruffle_LongArrayRealloc"),
-    FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC("PyTruffle_DoubleArrayRealloc"),
-    FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC("PyTruffle_ObjectArrayRealloc"),
-    FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE("PyTruffle_PrimitiveArrayFree"),
-    FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE("PyTruffle_ObjectArrayFree"),
-    FUN_PY_TRUFFLE_SET_STORAGE_ITEM("PyTruffle_SetStorageItem"),
-    FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM("PyTruffle_InitializeStorageItem"),
-    FUN_PY_TRUFFLE_NATIVE_LIST_ITEMS("PyTruffle_NativeListItems"),
-    FUN_PY_TRUFFLE_NATIVE_TUPLE_ITEMS("PyTruffle_NativeTupleItems"),
-    FUN_PY_TRUFFLE_NATIVE_BYTES_ITEMS("PyTruffle_NativeBytesItems"),
-    FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict"),
-    FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict"),
-    FUN_PY_OBJECT_NEW("PyTruffle_Object_New"),
-    FUN_GET_THREAD_STATE_TYPE_ID("get_thread_state_typeid"),
-    FUN_GET_PY_BUFFER_TYPEID("get_Py_buffer_typeid"),
-    FUN_ADD_NATIVE_SLOTS("PyTruffle_Type_AddSlots"),
-    FUN_PY_TRUFFLE_OBJECT_SIZE("PyTruffle_Object_Size"),
-    FUN_PY_TYPE_READY("PyType_Ready"),
-    FUN_GET_NEWFUNC_TYPE_ID("get_newfunc_typeid"),
-    FUN_GET_BUFFER_R("get_buffer_r"),
-    FUN_GET_BUFFER_RW("get_buffer_rw"),
-    FUN_CONVERTBUFFER("convertbuffer"),
-    FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
-    FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
-    FUN_GET_UINT32_T_ARRAY_TYPE_ID("get_uint32_t_array_typeid"),
-    FUN_PYMEM_RAWCALLOC("PyMem_RawCalloc"),
-    FUN_PY_TRUFFLE_FREE("PyTruffle_Free"),
-    FUN_INCREF("Py_IncRef"),
-    FUN_DECREF("Py_DecRef"),
-    FUN_ADDREF("PyTruffle_ADDREF"),
-    FUN_SUBREF("PyTruffle_SUBREF"),
-    FUN_GET_LONG_BITS_PER_DIGIT("get_long_bits_in_digit"),
-    FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC"),
-    FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset"),
-    FUN_PY_TRUFFLE_PY_MAPPING_CHECK("PyTruffle_PyMapping_Check"),
-    FUN_PY_TRUFFLE_PY_MAPPING_SIZE("PyTruffle_PyMapping_Size"),
-    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER("PyTruffle_MemoryViewFromBuffer"),
-    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject"),
-    FUN_PY_TRUFFLE_PY_OBJECT_SIZE("PyTruffle_PyObject_Size"),
-    FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer"),
-    FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK("PyTruffle_PySequence_Check"),
-    FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE("PyTruffle_PySequence_Size"),
-    FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM("PyTruffle_PySequence_GetItem"),
-    FUN_GET_PY_METHOD_DEF_TYPEID("get_PyMethodDef_typeid"),
-    FUN_GET_INT_T_TYPEID("get_int_t_typeid"),
-    FUN_GET_INT8_T_TYPEID("get_int8_t_typeid"),
-    FUN_GET_INT16_T_TYPEID("get_int16_t_typeid"),
-    FUN_GET_INT32_T_TYPEID("get_int32_t_typeid"),
-    FUN_GET_INT64_T_TYPEID("get_int64_t_typeid"),
-    FUN_GET_UINT_T_TYPEID("get_uint_t_typeid"),
-    FUN_GET_UINT8_T_TYPEID("get_uint8_t_typeid"),
-    FUN_GET_UINT16_T_TYPEID("get_uint16_t_typeid"),
-    FUN_GET_UINT32_T_TYPEID("get_uint32_t_typeid"),
-    FUN_GET_UINT64_T_TYPEID("get_uint64_t_typeid"),
-    FUN_GET_LONG_T_TYPEID("get_long_t_typeid"),
-    FUN_GET_ULONG_T_TYPEID("get_ulong_t_typeid"),
-    FUN_GET_LONGLONG_T_TYPEID("get_longlong_t_typeid"),
-    FUN_GET_ULONGLONG_T_TYPEID("get_ulonglong_t_typeid"),
-    FUN_GET_PY_COMPLEX_TYPEID("get_Py_complex_typeid"),
-    FUN_GET_FLOAT_T_TYPEID("get_float_t_typeid"),
-    FUN_GET_DOUBLE_T_TYPEID("get_double_t_typeid"),
-    FUN_GET_SIZE_T_TYPEID("get_size_t_typeid"),
-    FUN_GET_PY_SSIZE_T_TYPEID("get_Py_ssize_t_typeid"),
-    FUN_GET_PYOBJECT_TYPEID("get_PyObject_typeid"),
-    FUN_GET_PYTYPEOBJECT_TYPEID("get_PyTypeObject_typeid"),
-    FUN_GET_PYOBJECT_PTR_T_TYPEID("get_PyObject_ptr_t_typeid"),
-    FUN_GET_PYOBJECT_PTR_PTR_T_TYPEID("get_PyObject_ptr_ptr_t_typeid"),
-    FUN_GET_CHAR_PTR_T_TYPEID("get_char_ptr_t_typeid"),
-    FUN_GET_VOID_PTR_T_TYPEID("get_void_ptr_t_typeid"),
-    FUN_GET_INT8_PTR_T_TYPEID("get_int8_ptr_t_typeid"),
-    FUN_GET_INT16_PTR_T_TYPEID("get_int16_ptr_t_typeid"),
-    FUN_GET_INT32_PTR_T_TYPEID("get_int32_ptr_t_typeid"),
-    FUN_GET_INT64_PTR_T_TYPEID("get_int64_ptr_t_typeid"),
-    FUN_GET_UINT8_PTR_T_TYPEID("get_uint8_ptr_t_typeid"),
-    FUN_GET_UINT16_PTR_T_TYPEID("get_uint16_ptr_t_typeid"),
-    FUN_GET_UINT32_PTR_T_TYPEID("get_uint32_ptr_t_typeid"),
-    FUN_GET_UINT64_PTR_T_TYPEID("get_uint64_ptr_t_typeid"),
-    FUN_GET_PY_COMPLEX_PTR_T_TYPEID("get_Py_complex_ptr_t_typeid"),
-    FUN_GET_FLOAT_PTR_T_TYPEID("get_float_ptr_t_typeid"),
-    FUN_GET_DOUBLE_PTR_T_TYPEID("get_double_ptr_t_typeid"),
-    FUN_GET_PY_SSIZE_PTR_T_TYPEID("get_Py_ssize_ptr_t_typeid"),
-    FUN_GET_PYTHREADSTATE_TYPEID("get_PyThreadState_typeid"),
-    FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new"),
-    FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new"),
-    FUN_FLOAT_SUBTYPE_NEW("float_subtype_new"),
-    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new"),
-    FUN_SUBCLASS_CHECK("truffle_subclass_check"),
-    FUN_BASETYPE_CHECK("truffle_BASETYPE_check"),
-    FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
-    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
-    FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate"),
-    FUN_TRUFFLE_SET_TP_FLAGS("truffle_set_tp_flags"),
-    FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready"),
+    FUN_GET_METHODS_FLAGS("get_methods_flags", INT64_T, PyTypeObject),
+    FUN_PTR_COMPARE("truffle_ptr_compare", Int, Pointer, Pointer, Int),
+    FUN_PTR_ADD("truffle_ptr_add", Pointer, Pointer, Py_ssize_t),
+    FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE("PyTruffle_ObjectArrayRelease", ArgDescriptor.Void, Pointer, Int),
+    FUN_PY_TRUFFLE_SET_STORAGE_ITEM("PyTruffle_SetStorageItem", ArgDescriptor.Void, Pointer, Int, PyObject),
+    FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM("PyTruffle_InitializeStorageItem", ArgDescriptor.Void, Pointer, Int, PyObject),
+    FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict", PyObject, PyObject),
+    FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
+    FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObject, PyTypeObject),
+    FUN_ADD_NATIVE_SLOTS("PyTruffle_Type_AddSlots", ArgDescriptor.Void, PyTypeObject, Pointer, UINT64_T, Pointer, UINT64_T),
+    FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
+    FUN_GET_BUFFER_R("get_buffer_r", Int, PyObject, Pointer),
+    FUN_GET_BUFFER_RW("get_buffer_rw", Int, PyObject, Pointer),
+    FUN_CONVERTBUFFER("convertbuffer", Py_ssize_t, PyObject, Pointer),
+    FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
+    FUN_PY_TRUFFLE_FREE("PyTruffle_Free", ArgDescriptor.Void, Pointer),
+    FUN_PYMEM_ALLOC("PyMem_Calloc", Pointer, SIZE_T, SIZE_T),
+    FUN_INCREF("Py_IncRef", Void, Pointer),
+    FUN_DECREF("Py_DecRef", Void, Pointer),
+    FUN_ADDREF("PyTruffle_ADDREF", Py_ssize_t, Pointer, Py_ssize_t),
+    FUN_SUBREF("PyTruffle_SUBREF", Py_ssize_t, Pointer, Py_ssize_t),
+    FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
+    FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
+    FUN_PY_TRUFFLE_PY_MAPPING_CHECK("PyTruffle_PyMapping_Check", Int, PyObject),
+    FUN_PY_TRUFFLE_PY_MAPPING_SIZE("PyTruffle_PyMapping_Size", Py_ssize_t, PyObject),
+    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject", PyObject, PyObject, Int),
+    FUN_PY_TRUFFLE_PY_OBJECT_SIZE("PyTruffle_PyObject_Size", Py_ssize_t, PyObject),
+    FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer", ArgDescriptor.Void, Pointer),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK("PyTruffle_PySequence_Check", Int, PyObject),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE("PyTruffle_PySequence_Size", Py_ssize_t, PyObject),
+    FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM("PyTruffle_PySequence_GetItem", PyObject, PyObject, Py_ssize_t),
+    FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObject, PyTypeObject, PyObject),
+    FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new", PyObject, PyTypeObject, Pointer, Py_ssize_t),
+    FUN_FLOAT_SUBTYPE_NEW("float_subtype_new", PyObject, PyTypeObject, ArgDescriptor.Double),
+    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new", PyObject, PyTypeObject, PyObject),
+    FUN_SUBCLASS_CHECK("truffle_subclass_check", Int, PyObject),
+    FUN_BASETYPE_CHECK("truffle_BASETYPE_check", Int, PyObject),
+    FUN_MEMCPY_BYTES("truffle_memcpy_bytes", ArgDescriptor.Void, Pointer, SIZE_T, Pointer, SIZE_T, SIZE_T),
+    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new", PyObject, PyTypeObject, PyObject),
+    FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate", Int, PyTypeObject, Int),
+    FUN_MMAP_INIT_BUFFERPROTOCOL("mmap_init_bufferprotocol", ArgDescriptor.Void, PyTypeObject),
+    FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
 
     /* PyDateTime_CAPI */
 
-    FUN_SET_PY_DATETIME_IDS("set_PyDateTime_typeids"),
-    FUN_GET_DATETIME_DATE_BASICSIZE("get_PyDateTime_Date_basicsize"),
-    FUN_GET_DATETIME_TIME_BASICSIZE("get_PyDateTime_Time_basicsize"),
-    FUN_GET_DATETIME_DATETIME_BASICSIZE("get_PyDateTime_DateTime_basicsize"),
-    FUN_GET_DATETIME_DELTA_BASICSIZE("get_PyDateTime_Delta_basicsize"),
+    FUN_SET_PY_DATETIME_TYPES("set_PyDateTime_types", ArgDescriptor.Void),
 
     // ctypes
-    FUN_STRLEN("strlen"),
-    FUN_MEMCPY("memcpy"),
-    FUN_MEMMOVE("memmove"),
-    FUN_MEMSET("memset"),
+    FUN_STRLEN("strlen", SIZE_T, Pointer),
+    FUN_MEMCPY("memcpy", Pointer, Pointer, Pointer, SIZE_T),
+    FUN_FREE("truffle_free", Int, Pointer),
+    FUN_MEMMOVE("memmove", Pointer, Pointer, Pointer, SIZE_T),
+    FUN_MEMSET("memset", Pointer, Pointer, Int, SIZE_T),
+    FUN_CALLOC("truffle_calloc", Pointer, SIZE_T),
     FUN_STRING_AT("string_at"),
     FUN_CAST("cast"),
     FUN_WSTRING_AT("wstring_at");
@@ -335,12 +180,34 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     private final String name;
     private final TruffleString tsName;
 
+    private final ArgDescriptor returnValue;
+    private final ArgDescriptor[] arguments;
+    private final String signature;
+
     @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
     private static final HashMap<String, NativeCAPISymbol> MAP = new HashMap<>();
+
+    private NativeCAPISymbol(String name, ArgDescriptor returnValue, ArgDescriptor... arguments) {
+        this.name = name;
+        this.tsName = toTruffleStringUncached(name);
+        this.returnValue = returnValue;
+        this.arguments = arguments;
+
+        StringBuilder s = new StringBuilder("(");
+        for (int i = 0; i < arguments.length; i++) {
+            s.append(i == 0 ? "" : ",");
+            s.append(arguments[i].getNFISignature());
+        }
+        s.append("):").append(returnValue.getNFISignature());
+        this.signature = s.toString();
+    }
 
     private NativeCAPISymbol(String name) {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
+        this.returnValue = null;
+        this.arguments = null;
+        this.signature = null;
     }
 
     @Override
@@ -367,5 +234,10 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
             assert !MAP.containsKey(symbol.name);
             MAP.put(symbol.name, symbol);
         }
+    }
+
+    public String getSignature() {
+        assert signature != null : "no signature for " + this;
+        return signature;
     }
 }

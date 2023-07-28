@@ -36,9 +36,9 @@ import java.util.Set;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
@@ -79,7 +79,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
-    @CompilationFinal private Object sulongType;
     @CompilationFinal private boolean mroInitialized = false;
 
     public PTuple mroStore;
@@ -272,7 +271,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
                 if (PGuards.isNativeClass(base)) {
-                    Object nativeBase = ToSulongNode.getUncached().execute(base);
+                    Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
                     PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
                 }
                 GetSubclassesNode.getUncached().execute(base).add(this);
@@ -374,15 +373,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public PythonClassNativeWrapper getClassNativeWrapper() {
         return (PythonClassNativeWrapper) super.getNativeWrapper();
-    }
-
-    public final Object getSulongType() {
-        return sulongType;
-    }
-
-    @TruffleBoundary
-    public final void setSulongType(Object dynamicSulongType) {
-        this.sulongType = dynamicSulongType;
     }
 
     public boolean needsNativeAllocation() {

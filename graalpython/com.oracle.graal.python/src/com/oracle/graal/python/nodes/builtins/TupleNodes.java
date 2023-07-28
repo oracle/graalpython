@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -56,9 +58,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -70,9 +71,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -172,20 +170,16 @@ public abstract class TupleNodes {
 
     @GenerateInline(false)
     public abstract static class GetNativeTupleStorage extends Node {
-        public abstract NativeSequenceStorage execute(PythonAbstractNativeObject tuple);
+        public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
 
         @Specialization
-        NativeSequenceStorage getNative(PythonAbstractNativeObject tuple,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached PCallCapiFunction callCapiFunction) {
+        NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple,
+                        @Cached CStructAccess.ReadPointerNode getContents,
+                        @Cached CStructAccess.ReadI64Node readI64Node) {
             assert PyTupleCheckNode.executeUncached(tuple);
-            try {
-                Object interopArray = callCapiFunction.call(NativeCAPISymbol.FUN_PY_TRUFFLE_NATIVE_TUPLE_ITEMS, tuple.getPtr());
-                int size = (int) lib.getArraySize(interopArray);
-                return NativeSequenceStorage.create(interopArray, size, size, ListStorageType.Generic, false);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            Object array = getContents.readFromObj(tuple, PyTupleObject__ob_item);
+            int size = (int) readI64Node.readFromObj(tuple, PyVarObject__ob_size);
+            return NativeObjectSequenceStorage.create(array, size, size, false);
         }
     }
 }

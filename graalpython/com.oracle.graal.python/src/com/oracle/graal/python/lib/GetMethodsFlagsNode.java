@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
@@ -92,7 +94,7 @@ public abstract class GetMethodsFlagsNode extends Node {
     }
 
     protected static long getMethodsFlags(PythonAbstractNativeObject cls) {
-        return doNative(cls, CExtNodes.GetTypeMemberNode.getUncached(), HashingStorageGetItemNodeGen.getUncached());
+        return doNative(cls, CStructAccessFactory.ReadObjectNodeGen.getUncached(), HashingStorageGetItemNodeGen.getUncached());
     }
 
     // The assumption should hold unless `PyType_Modified` is called.
@@ -109,10 +111,10 @@ public abstract class GetMethodsFlagsNode extends Node {
 
     @Specialization(replaces = "doNativeCached")
     static long doNative(PythonAbstractNativeObject cls,
-                    @Cached CExtNodes.GetTypeMemberNode getTpDictNode,
+                    @Cached CStructAccess.ReadObjectNode getTpDictNode,
                     @Cached HashingStorageGetItem getItem) {
         // classes must have tp_dict since they are set during PyType_Ready
-        PDict dict = (PDict) getTpDictNode.execute(cls, NativeMember.TP_DICT);
+        PDict dict = (PDict) getTpDictNode.readFromObj(cls, PyTypeObject__tp_dict);
         Object f = getItem.execute(null, dict.getDictStorage(), METHODS_FLAGS);
         if (f == null) {
             return populateMethodsFlags(cls, dict);

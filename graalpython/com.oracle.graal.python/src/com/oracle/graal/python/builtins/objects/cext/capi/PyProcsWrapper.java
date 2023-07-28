@@ -79,10 +79,8 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     protected final CApiTiming timing;
@@ -101,20 +99,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     @SuppressWarnings({"unused", "static-method"})
     protected Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
         throw CompilerDirectives.shouldNotReachHere("abstract class");
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
     }
 
     @ExportMessage
@@ -858,11 +842,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
     }
 
-    public static GetAttrWrapper createGetAttrWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new GetAttrWrapper(method);
-    }
-
     public static UnaryFuncWrapper createUnaryFuncWrapper(Object method) {
         assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new UnaryFuncWrapper(method);
@@ -873,16 +852,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         return new BinaryFuncWrapper(method);
     }
 
-    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
-        assert !(setAttrMethod instanceof PNone) && !(setAttrMethod instanceof PNotImplemented);
-        return new SetAttrWrapper(setAttrMethod);
-    }
-
-    public static InitWrapper createInitWrapper(Object setInitMethod) {
-        assert !(setInitMethod instanceof PNone) && !(setInitMethod instanceof PNotImplemented);
-        return new InitWrapper(setInitMethod);
-    }
-
     public static VarargWrapper createVarargWrapper(Object method) {
         assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new VarargWrapper(method);
@@ -891,23 +860,5 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     public static VarargKeywordWrapper createVarargKeywordWrapper(Object method) {
         assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new VarargKeywordWrapper(method);
-    }
-
-    /**
-     * Wraps CPython's {@code ternaryfunc} slots.
-     */
-    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new TernaryFunctionWrapper(method);
-    }
-
-    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new SsizeargfuncWrapper(method);
-    }
-
-    public static LenfuncWrapper createLenfuncWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new LenfuncWrapper(method);
     }
 }

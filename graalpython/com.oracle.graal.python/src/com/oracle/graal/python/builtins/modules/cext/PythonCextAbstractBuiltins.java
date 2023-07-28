@@ -87,8 +87,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -696,7 +696,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             Object state = IndirectCallContext.enter(null, this);
             try {
@@ -774,7 +774,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = {"isNativeObject(obj)"})
         Object size(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             Object state = IndirectCallContext.enter(null, this);
             try {
@@ -876,7 +876,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         static Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
         }
@@ -906,7 +906,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         static Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
         }

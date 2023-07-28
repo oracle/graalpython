@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -114,6 +114,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -671,7 +672,15 @@ public abstract class PGuards {
 
     @InliningCutoff
     public static boolean isNativeWrapper(PythonAbstractObject object) {
-        DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+        PythonNativeWrapper wrapper = object.getNativeWrapper();
         return wrapper != null && wrapper.isNative();
+    }
+
+    public static boolean isNullOrZero(Object value, InteropLibrary lib) {
+        if (value instanceof Long) {
+            return ((long) value) == 0;
+        } else {
+            return lib.isNull(value);
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,12 +38,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.runtime.sequence.storage;
 
-char* PyByteArray_AsString(PyObject* obj) {
-    return PyByteArray_AS_STRING(obj);
-}
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.truffle.api.CompilerAsserts;
 
-Py_ssize_t PyByteArray_Size(PyObject *self) {
-    return PyByteArray_GET_SIZE(self);
+public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
+
+    private NativeObjectSequenceStorage(Object ptr, int length, int capacity) {
+        super(ptr, length, capacity);
+    }
+
+    /**
+     * @param ownsMemory whether the memory should be freed when this object dies. Should be true
+     *            when actually used as a sequence storage
+     */
+    public static NativeObjectSequenceStorage create(Object ptr, int length, int capacity, boolean ownsMemory) {
+        NativeObjectSequenceStorage storage = new NativeObjectSequenceStorage(ptr, length, capacity);
+        if (ownsMemory) {
+            CApiTransitions.registerNativeSequenceStorage(storage);
+        }
+        return storage;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        // TODO Auto-generated method stub
+        return ListStorageType.Generic;
+    }
+
+    @Override
+    public String toString(boolean isList) {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("%sNativeObjectSequenceStorage(len=%d, cap=%d) at %s%s", isList ? "[" : "(", length, capacity, getPtr(), isList ? "]" : ")");
+    }
 }

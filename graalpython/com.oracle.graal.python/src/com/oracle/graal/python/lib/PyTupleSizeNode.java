@@ -41,20 +41,18 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -76,14 +74,8 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CExtNodes.PCallCapiFunction callSizeNode,
-                    @Cached CExtNodes.ToSulongNode toSulongNode,
-                    @Cached CastToJavaIntLossyNode asIntNode) {
-        try {
-            return asIntNode.execute(callSizeNode.call(FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(tuple)));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("Failed to cast result of PyTruffle_Object_Size");
-        }
+                    @Cached CStructAccess.ReadI64Node getSize) {
+        return PythonUtils.toIntError(getSize.readFromObj(tuple, PyVarObject__ob_size));
     }
 
     @SuppressWarnings("unused")

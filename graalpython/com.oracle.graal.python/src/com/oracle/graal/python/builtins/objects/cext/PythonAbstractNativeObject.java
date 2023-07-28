@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
+
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -234,7 +235,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     String getMetaSimpleName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
+                    @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         return getSimpleName(getMetaQualifiedName(isType, getTpNameNode, castToJavaStringNode, gil));
@@ -252,7 +253,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     String getMetaQualifiedName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
+                    @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -262,7 +263,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             }
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             try {
-                return castToJavaStringNode.execute(getTpNameNode.execute(this, NativeMember.TP_NAME));
+                return castToJavaStringNode.execute(getTpNameNode.readFromObj(this, PyTypeObject__tp_name));
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }

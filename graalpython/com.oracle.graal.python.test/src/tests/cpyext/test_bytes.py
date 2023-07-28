@@ -86,7 +86,7 @@ class CIter:
 BytesSubclass = CPyExtType(
     "BytesSubclass",
     '',
-    struct_base='PyBytesObject bytes',
+    struct_base='PyBytesObject bytes;',
     tp_itemsize='sizeof(char)',
     tp_base='&PyBytes_Type',
     tp_new='0',
@@ -97,7 +97,7 @@ BytesSubclass = CPyExtType(
 ByteArraySubclass = CPyExtType(
     "ByteArraySubclass",
     '',
-    struct_base='PyByteArrayObject bytes',
+    struct_base='PyByteArrayObject bytes;',
     tp_itemsize='sizeof(char)',
     tp_base='&PyByteArray_Type',
     tp_new='0',

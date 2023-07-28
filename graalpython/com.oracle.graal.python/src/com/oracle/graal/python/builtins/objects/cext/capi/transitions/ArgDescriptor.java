@@ -49,7 +49,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
@@ -68,13 +70,16 @@ enum ArgBehavior {
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
+    ReplacedPointer("POINTER", "J", "jlong", "long", ToNativeReplacedNodeGen::create, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null),
     Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null),
+    UInt32("UINT32", "I", "jint", "int", ToInt32NodeGen::create, FromUInt32NodeGen::create, null),
     Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null),
     Long("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, FromLongNodeGen::create, null),
+    Float32("FLOAT", "F", "jfloat", "float", null, null, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
     Void("VOID", "V", "void", "void", null, null, null),
     Unknown("SINT64", "J", "jlong", "long", null, null, null);
@@ -129,6 +134,7 @@ public enum ArgDescriptor {
     Int(ArgBehavior.Int32, "int"),
     ConstInt(ArgBehavior.Int32, "const int"),
     Double(ArgBehavior.Float64, "double"),
+    Float(ArgBehavior.Float32, "float"),
     Long(ArgBehavior.Long, "long"),
 
     _FRAME(ArgBehavior.PyObject, "struct _frame*"),
@@ -163,9 +169,9 @@ public enum ArgDescriptor {
     CONST_PYCONFIG_PTR("const PyConfig*"),
     CONST_PYPRECONFIG_PTR("const PyPreConfig*"),
     CONST_UNSIGNED_CHAR_PTR("const unsigned char*"),
-    CONST_VOID_PTR("const void*"),
+    CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
-    CONST_WCHAR_PTR("const wchar_t*"),
+    CONST_WCHAR_PTR(ArgBehavior.Pointer, "const wchar_t*"),
     CROSSINTERPDATAFUNC("crossinterpdatafunc"),
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
@@ -177,8 +183,9 @@ public enum ArgDescriptor {
     LONG_PTR("long*"),
     PyASCIIObject(ArgBehavior.PyObject, "PyASCIIObject*"),
     PY_AUDITHOOKFUNCTION("Py_AuditHookFunction"),
-    PY_BUFFER("Py_buffer*"),
-    PY_C_FUNCTION("PyCFunction"),
+    Py_buffer("Py_buffer"),
+    PY_BUFFER_PTR("Py_buffer*"),
+    PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),
     PyCMethodObject(ArgBehavior.PyObject, "PyCMethodObject*"),
@@ -207,6 +214,7 @@ public enum ArgDescriptor {
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true),
     PyMethodDef(ArgBehavior.WrappedPointer, "PyMethodDef*"),
     PyModuleDef(ArgBehavior.Pointer, "PyModuleDef*"), // it's unclear if this should be PyObject
+    PyModuleDefSlot(ArgBehavior.Pointer, "PyModuleDef_Slot*"),
     PyNumberMethods(ArgBehavior.Pointer, "PyNumberMethods*"),
     PySequenceMethods(ArgBehavior.Pointer, "PySequenceMethods*"),
     PyMappingMethods(ArgBehavior.Pointer, "PyMappingMethods*"),
@@ -219,9 +227,9 @@ public enum ArgDescriptor {
     PY_OPENCODEHOOKFUNCTION("Py_OpenCodeHookFunction"),
     PY_OS_SIGHANDLER("PyOS_sighandler_t"),
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
-    PY_SSIZE_T_PTR("Py_ssize_t*"),
+    PY_SSIZE_T_PTR(ArgBehavior.Pointer, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
-    PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
+    PyThreadState(ArgBehavior.ReplacedPointer, "PyThreadState*"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
     PyTryBlock("PyTryBlock*"),
@@ -245,7 +253,7 @@ public enum ArgDescriptor {
     PYMEMALLOCATOREX_PTR("PyMemAllocatorEx*"),
     PYMODULEDEF_PTR("struct PyModuleDef*"),
     PyObjectConst("PyObject*const"),
-    PyObjectConstPtr("PyObject*const*"),
+    PyObjectConstPtr(ArgBehavior.Pointer, "PyObject*const*"),
     PYOBJECT_CONST_PTR_LIST("PyObject*const**"),
     PyObjectPtr(ArgBehavior.Pointer, "PyObject**"),
     PYOBJECTARENAALLOCATOR_PTR("PyObjectArenaAllocator*"),
@@ -265,8 +273,8 @@ public enum ArgDescriptor {
     TM_PTR("struct tm*"),
     UINTPTR_T(ArgBehavior.Pointer, "uintptr_t"),
     UINT64_T(ArgBehavior.Int64, "uint64_t"),
-    UNSIGNED_CHAR_PTR("unsigned char*"),
-    UNSIGNED_INT(ArgBehavior.Int32, "unsigned int"),
+    UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "unsigned char*"),
+    UNSIGNED_INT(ArgBehavior.UInt32, "unsigned int"),
     UNSIGNED_LONG(ArgBehavior.Long, "unsigned long"),
     UNSIGNED_LONG_LONG(ArgBehavior.Int64, "unsigned long long"),
     VA_LIST(ArgBehavior.Pointer, "va_list"),
@@ -309,7 +317,7 @@ public enum ArgDescriptor {
     releasebufferproc(ArgBehavior.Pointer, "releasebufferproc"),
     getter(ArgBehavior.Pointer, "getter"),
     setter(ArgBehavior.Pointer, "setter"),
-    mmap_object(ArgBehavior.PyObject, "mmap_object*"),
+    sendfunc(ArgBehavior.Pointer, "sendfunc"),
 
     func_objint("int (*)(PyObject*value)"),
     func_voidvoidptr("void (*)(void*)"),
@@ -416,12 +424,25 @@ public enum ArgDescriptor {
                         behavior == ArgBehavior.TruffleStringPointer;
     }
 
+    public boolean isPointer() {
+        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer;
+    }
+
+    public boolean isPyObject() {
+        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed;
+    }
+
+    public boolean isCharPtr() {
+        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString;
+    }
+
     public boolean isIntType() {
-        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long || behavior == ArgBehavior.Char16 || behavior == ArgBehavior.Unknown;
+        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.UInt32 || behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long || behavior == ArgBehavior.Char16 ||
+                        behavior == ArgBehavior.Unknown;
     }
 
     public boolean isFloatType() {
-        return behavior == ArgBehavior.Float64;
+        return behavior == ArgBehavior.Float64 || behavior == ArgBehavior.Float32;
     }
 
     public boolean isVoid() {
@@ -445,5 +466,29 @@ public enum ArgDescriptor {
             }
         }
         throw new IllegalArgumentException("unknown C signature: " + sig);
+    }
+
+    public boolean isI64() {
+        return behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long;
+    }
+
+    public boolean isI8() {
+        return behavior == ArgBehavior.Char8;
+    }
+
+    public boolean isI32() {
+        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.UInt32;
+    }
+
+    public boolean isI16() {
+        return behavior == ArgBehavior.Char16;
+    }
+
+    public boolean isFloat() {
+        return behavior == ArgBehavior.Float32;
+    }
+
+    public boolean isDouble() {
+        return behavior == ArgBehavior.Float64;
     }
 }

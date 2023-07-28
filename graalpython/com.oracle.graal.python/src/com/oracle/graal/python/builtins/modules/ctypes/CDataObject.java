@@ -58,7 +58,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -143,7 +142,6 @@ public class CDataObject extends PythonBuiltinObject {
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static class CDataObjectWrapper extends PythonNativeWrapper {
 
         final byte[] storage;
@@ -244,20 +242,6 @@ public class CDataObject extends PythonBuiltinObject {
             if (!isNative(inliningTarget, isNativeProfile)) {
                 CApiTransitions.firstToNative(this);
             }
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasNativeType() {
-            // TODO implement native type
-            return false;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType() {
-            // TODO implement native type
-            return null;
         }
     }
 }

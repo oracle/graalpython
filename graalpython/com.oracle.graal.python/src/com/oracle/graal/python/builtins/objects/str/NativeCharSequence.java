@@ -45,9 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -55,6 +53,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public final class NativeCharSequence implements CharSequence {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeCharSequence.class);
@@ -65,6 +64,8 @@ public final class NativeCharSequence implements CharSequence {
      * characters)
      */
     private final Object ptr;
+
+    private final int elements;
 
     /**
      * The size of a single character in bytes (valid values are {@code 1, 2, 4}).
@@ -78,12 +79,14 @@ public final class NativeCharSequence implements CharSequence {
 
     private TruffleString materialized;
 
-    public NativeCharSequence(Object ptr, int elementSize, boolean asciiOnly) {
+    public NativeCharSequence(Object ptr, int elements, int elementSize, boolean asciiOnly) {
+        assert elements >= -1; // -1 means until null byte
         assert elementSize == 1 || elementSize == 2 || elementSize == 4;
         assert !(ptr instanceof String);
         assert !(ptr instanceof PString);
         assert !(ptr instanceof TruffleString);
         this.ptr = ptr;
+        this.elements = elements;
         this.elementSize = elementSize;
         this.asciiOnly = asciiOnly;
     }
@@ -125,7 +128,8 @@ public final class NativeCharSequence implements CharSequence {
     TruffleString materialize() {
         if (!isMaterialized()) {
             LOGGER.warning("uncached materialization of NativeCharSequence");
-            materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached());
+            assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
+            materialized = TruffleString.fromIntArrayUTF32Uncached(ReadUnicodeArrayNodeGen.getUncached().execute(getPtr(), getElements(), getElementSize()));
         }
         return materialized;
     }
@@ -149,5 +153,9 @@ public final class NativeCharSequence implements CharSequence {
             return materialized.toJavaStringUncached();
         }
         return Objects.toString(ptr);
+    }
+
+    public int getElements() {
+        return elements;
     }
 }

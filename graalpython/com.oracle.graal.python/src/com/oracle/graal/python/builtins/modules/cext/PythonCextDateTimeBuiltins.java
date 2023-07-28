@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -173,7 +172,7 @@ public final class PythonCextDateTimeBuiltins {
         @Specialization
         static Object get(Object obj,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(null, obj, PyDateTimeMRNode.T_TZINFO);
+            return getAttr.execute(null, obj, PyDateTimeCAPIWrapper.T_TZINFO);
         }
     }
 }

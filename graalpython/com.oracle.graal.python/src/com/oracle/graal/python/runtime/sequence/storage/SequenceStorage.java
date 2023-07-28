@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -126,7 +126,12 @@ public abstract class SequenceStorage {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder("[");
+        return getClass().getSimpleName() + toString(true);
+    }
+
+    public String toString(boolean isList) {
+        CompilerAsserts.neverPartOfCompilation();
+        StringBuilder str = new StringBuilder(isList ? "[" : "(");
         int len = length > 10 ? 10 : length;
         for (int i = 0; i < len; i++) {
             str.append(i == 0 ? "" : ", ");
@@ -135,6 +140,6 @@ public abstract class SequenceStorage {
         if (length > 10) {
             str.append("...").append('(').append(length).append(')');
         }
-        return str.append(']').toString();
+        return str.append(isList ? ']' : ')').toString();
     }
 }

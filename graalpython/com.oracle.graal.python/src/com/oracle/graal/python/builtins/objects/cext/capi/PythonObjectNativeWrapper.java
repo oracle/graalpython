@@ -38,82 +38,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
- * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
+ * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
+ * correct shape of the corresponding native type {@code struct _object}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SlotGroup.class)
-public class PySequenceMethodsWrapper extends PythonNativeWrapper {
+public final class PythonObjectNativeWrapper extends PythonNativeWrapper {
 
-    public PySequenceMethodsWrapper(PythonManagedClass delegate) {
-        super(delegate);
+    public PythonObjectNativeWrapper(PythonAbstractObject object) {
+        super(object);
     }
 
-    public PythonManagedClass getWrappedClass() {
-        return (PythonManagedClass) getDelegate();
+    public static PythonNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
+        // important: native wrappers are cached
+        PythonNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (noWrapperProfile.profile(nativeWrapper == null)) {
+            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
     }
 
-    @ExportMessage
-    protected boolean hasMembers() {
-        return true;
-    }
-
-    @ExportMessage
-    protected boolean isMemberReadable(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode) {
-        return readSlotByNameNode.getSlot(member) != null;
-    }
-
-    @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonUtils.formatJString("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
     @ExportMessage
-    protected Object readMember(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
-            if (result == null) {
-                throw UnknownIdentifierException.create(member);
+    protected boolean isNull() {
+        return getDelegate() == PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    protected boolean isPointer() {
+        return getDelegate() == PNone.NO_VALUE || isNative();
+    }
+
+    @ExportMessage
+    protected long asPointer() {
+        return getDelegate() == PNone.NO_VALUE ? 0L : getNativePointer();
+    }
+
+    @ExportMessage
+    protected void toNative() {
+        if (getDelegate() != PNone.NO_VALUE) {
+            if (!isNative()) {
+                CApiTransitions.firstToNative(this);
             }
-            return result;
-        } finally {
-            gil.release(mustRelease);
         }
     }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
-    }
-
 }

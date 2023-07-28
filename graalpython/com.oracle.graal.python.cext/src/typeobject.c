@@ -1,42 +1,7 @@
-/*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2022 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #include "capi.h"
 #include "pycore_object.h"
@@ -90,15 +55,15 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
     if (key == NULL) {
         return -1;
     }
-    PyObject *dict = PyTypeObject_tp_subclasses(base);
+    PyObject *dict = base->tp_subclasses;
     if (dict == NULL) {
-    	set_PyTypeObject_tp_subclasses(base, dict = PyDict_New());
+    	base->tp_subclasses = dict = PyDict_New();
         if (dict == NULL) {
             return -1;
         }
     }
     // TODO value should be a weak reference !
-    return PyDict_SetItem(PyTypeObject_tp_subclasses(base), key, (PyObject*)type);
+    return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
 }
 
 /*
@@ -135,7 +100,7 @@ find_signature(const char *name, const char *doc)
 }
 
 static void pytruffle_trace_type(PyTypeObject* type) {
-    GraalPyTruffle_Trace_Type(type, type->tp_name != NULL ? truffleString(type->tp_name) : NULL);
+    GraalPyTruffle_Trace_Type(type, type->tp_name != NULL);
 }
 
 #define SIGNATURE_END_MARKER         ")\n--\n\n"
@@ -172,84 +137,116 @@ _PyType_DocWithoutSignature(const char *name, const char *internal_doc)
 }
 
 void PyType_Modified(PyTypeObject* type) {
-	GraalPyTruffle_Type_Modified(type, truffleString(type->tp_name), type->tp_mro);
+	GraalPyTruffle_Type_Modified(type, type->tp_name, type->tp_mro);
 }
 
-static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
+unsigned long PyType_GetFlags(struct _typeobject *type) {
+    return type->tp_flags;
+}
 
-    /* Copying basicsize is connected to the GC flags */
-    unsigned long flags = PyTypeObject_tp_flags(type);
-    unsigned long base_flags = PyTypeObject_tp_flags(base);
-    if (!(flags & Py_TPFLAGS_HAVE_GC) &&
-        (base_flags & Py_TPFLAGS_HAVE_GC) &&
-        (!PyTypeObject_tp_traverse(type) && !PyTypeObject_tp_clear(type))) {
-
-        flags |= Py_TPFLAGS_HAVE_GC;
-        if (PyTypeObject_tp_traverse(type) == NULL)
-            set_PyTypeObject_tp_traverse(type, PyTypeObject_tp_traverse(base));
-        if (PyTypeObject_tp_clear(type) == NULL)
-            set_PyTypeObject_tp_clear(type, PyTypeObject_tp_clear(base));
+static void
+inherit_special(PyTypeObject *type, PyTypeObject *base)
+{
+    /* Copying tp_traverse and tp_clear is connected to the GC flags */
+    if (!(type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+        (base->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+        (!type->tp_traverse && !type->tp_clear)) {
+        type->tp_flags |= Py_TPFLAGS_HAVE_GC;
+        if (type->tp_traverse == NULL)
+            type->tp_traverse = base->tp_traverse;
+        if (type->tp_clear == NULL)
+            type->tp_clear = base->tp_clear;
     }
+
+    if (type->tp_basicsize == 0)
+        type->tp_basicsize = base->tp_basicsize;
 
     /* Copy other non-function slots */
 
-#undef COPYVAL
 #define COPYVAL(SLOT) \
-    if (PyTypeObject_##SLOT(type) == 0) set_PyTypeObject_##SLOT(type, PyTypeObject_##SLOT(base))
+    if (type->SLOT == 0) { type->SLOT = base->SLOT; }
 
-    COPYVAL(tp_basicsize);
     COPYVAL(tp_itemsize);
     COPYVAL(tp_weaklistoffset);
     COPYVAL(tp_dictoffset);
+#undef COPYVAL
 
     /* Setup fast subclass flags */
-    if (PyType_IsSubtype(base, (PyTypeObject*)PyExc_BaseException))
-        flags |= Py_TPFLAGS_BASE_EXC_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyType_Type))
-        flags |= Py_TPFLAGS_TYPE_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyLong_Type))
-        flags |= Py_TPFLAGS_LONG_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyBytes_Type))
-        flags |= Py_TPFLAGS_BYTES_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyUnicode_Type))
-        flags |= Py_TPFLAGS_UNICODE_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyTuple_Type))
-        flags |= Py_TPFLAGS_TUPLE_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyList_Type))
-        flags |= Py_TPFLAGS_LIST_SUBCLASS;
-    else if (PyType_IsSubtype(base, &PyDict_Type))
-        flags |= Py_TPFLAGS_DICT_SUBCLASS;
-    if (PyType_HasFeature(base, _Py_TPFLAGS_MATCH_SELF))
-        flags |= _Py_TPFLAGS_MATCH_SELF;
-
-    if (flags != PyTypeObject_tp_flags(type)) {
-        set_PyTypeObject_tp_flags(type, flags);
+    if (PyType_IsSubtype(base, (PyTypeObject*)PyExc_BaseException)) {
+        type->tp_flags |= Py_TPFLAGS_BASE_EXC_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyType_Type)) {
+        type->tp_flags |= Py_TPFLAGS_TYPE_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyLong_Type)) {
+        type->tp_flags |= Py_TPFLAGS_LONG_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyBytes_Type)) {
+        type->tp_flags |= Py_TPFLAGS_BYTES_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyUnicode_Type)) {
+        type->tp_flags |= Py_TPFLAGS_UNICODE_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyTuple_Type)) {
+        type->tp_flags |= Py_TPFLAGS_TUPLE_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyList_Type)) {
+        type->tp_flags |= Py_TPFLAGS_LIST_SUBCLASS;
+    }
+    else if (PyType_IsSubtype(base, &PyDict_Type)) {
+        type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
+    }
+    if (PyType_HasFeature(base, _Py_TPFLAGS_MATCH_SELF)) {
+        type->tp_flags |= _Py_TPFLAGS_MATCH_SELF;
     }
 }
 
-static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
-    const PyTypeObject *basebase = base->tp_base;
+static int
+overrides_hash(PyTypeObject *type)
+{
+    PyObject *dict = type->tp_dict;
+    _Py_IDENTIFIER(__eq__);
+    _Py_IDENTIFIER(__hash__);
 
-#define SLOTDEFINED(BASE, BASEBASE, GETFUNC) \
-    (GETFUNC(BASE) != 0 && (BASEBASE == NULL || GETFUNC(BASE) != GETFUNC(BASEBASE)))
+    assert(dict != NULL);
+    int r = _PyDict_ContainsId(dict, &PyId___eq__);
+    if (r == 0) {
+        r = _PyDict_ContainsId(dict, &PyId___hash__);
+    }
+    return r;
+}
 
-#define COPYSLOT_GENERIC(SLOT, TYPE, BASE, BASEBASE, GETFUNC) \
-    if (!TYPE->SLOT && SLOTDEFINED(BASE, BASEBASE, GETFUNC)) TYPE->SLOT = GETFUNC(BASE);
+static int inherit_slots(PyTypeObject *type, PyTypeObject *base)
+{
+    PyTypeObject *basebase;
 
-#define COPYSLOT(SLOT) COPYSLOT_GENERIC(SLOT, type, base, basebase, PyTypeObject_##SLOT)
-#define COPYSLOT_GENERIC_GROUP(SLOT, GROUP, PREFIX) COPYSLOT_GENERIC(SLOT, type_##GROUP, base_##GROUP, basebase_##GROUP, PREFIX##_##SLOT)
-#define GROUP_DECL(GROUP, TYPE) \
-    TYPE* type_##GROUP = type->GROUP; \
-    TYPE* base_##GROUP = PyTypeObject_##GROUP(base); \
-    TYPE* basebase_##GROUP = basebase ? PyTypeObject_##GROUP(basebase) : NULL; \
-    if (type_##GROUP != NULL && base_##GROUP != NULL)
-#define COPYASYNC(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_async, PyAsyncMethods)
-#define COPYNUM(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_number, PyNumberMethods)
-#define COPYSEQ(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_sequence, PySequenceMethods)
-#define COPYMAP(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_mapping, PyMappingMethods)
-#define COPYBUF(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_buffer,  PyBufferProcs)
+#undef SLOTDEFINED
+#undef COPYSLOT
+#undef COPYNUM
+#undef COPYSEQ
+#undef COPYMAP
+#undef COPYBUF
 
-    GROUP_DECL(tp_as_number, PyNumberMethods) {
+#define SLOTDEFINED(SLOT) \
+    (base->SLOT != 0 && \
+     (basebase == NULL || base->SLOT != basebase->SLOT))
+
+#define COPYSLOT(SLOT) \
+    if (!type->SLOT && SLOTDEFINED(SLOT)) type->SLOT = base->SLOT
+
+#define COPYASYNC(SLOT) COPYSLOT(tp_as_async->SLOT)
+#define COPYNUM(SLOT) COPYSLOT(tp_as_number->SLOT)
+#define COPYSEQ(SLOT) COPYSLOT(tp_as_sequence->SLOT)
+#define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
+#define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
+
+    /* This won't inherit indirect slots (from tp_as_number etc.)
+       if type doesn't provide the space. */
+
+    if (type->tp_as_number != NULL && base->tp_as_number != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_number == NULL)
+            basebase = NULL;
         COPYNUM(nb_add);
         COPYNUM(nb_subtract);
         COPYNUM(nb_multiply);
@@ -287,13 +284,19 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         COPYNUM(nb_inplace_matrix_multiply);
     }
 
-    GROUP_DECL(tp_as_async, PyAsyncMethods) {
+    if (type->tp_as_async != NULL && base->tp_as_async != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_async == NULL)
+            basebase = NULL;
         COPYASYNC(am_await);
         COPYASYNC(am_aiter);
         COPYASYNC(am_anext);
     }
 
-    GROUP_DECL(tp_as_sequence, PySequenceMethods) {
+    if (type->tp_as_sequence != NULL && base->tp_as_sequence != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_sequence == NULL)
+            basebase = NULL;
         COPYSEQ(sq_length);
         COPYSEQ(sq_concat);
         COPYSEQ(sq_repeat);
@@ -304,60 +307,98 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         COPYSEQ(sq_inplace_repeat);
     }
 
-    GROUP_DECL(tp_as_mapping, PyMappingMethods) {
+    if (type->tp_as_mapping != NULL && base->tp_as_mapping != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_mapping == NULL)
+            basebase = NULL;
         COPYMAP(mp_length);
         COPYMAP(mp_subscript);
         COPYMAP(mp_ass_subscript);
     }
 
-    GROUP_DECL(tp_as_buffer, PyBufferProcs) {
+    if (type->tp_as_buffer != NULL && base->tp_as_buffer != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_buffer == NULL)
+            basebase = NULL;
         COPYBUF(bf_getbuffer);
         COPYBUF(bf_releasebuffer);
     }
 
+    basebase = base->tp_base;
+
     COPYSLOT(tp_dealloc);
     if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
-        type->tp_getattr = PyTypeObject_tp_getattr(base);
-        type->tp_getattro = PyTypeObject_tp_getattro(base);
+        type->tp_getattr = base->tp_getattr;
+        type->tp_getattro = base->tp_getattro;
     }
     if (type->tp_setattr == NULL && type->tp_setattro == NULL) {
-        type->tp_setattr = PyTypeObject_tp_setattr(base);
-        type->tp_setattro = PyTypeObject_tp_setattro(base);
+        type->tp_setattr = base->tp_setattr;
+        type->tp_setattro = base->tp_setattro;
     }
+    COPYSLOT(tp_repr);
+    /* tp_hash see tp_richcompare */
     {
         /* Always inherit tp_vectorcall_offset to support PyVectorcall_Call().
-         * If _Py_TPFLAGS_HAVE_VECTORCALL is not inherited, then vectorcall
+         * If Py_TPFLAGS_HAVE_VECTORCALL is not inherited, then vectorcall
          * won't be used automatically. */
         COPYSLOT(tp_vectorcall_offset);
 
-        /* Inherit _Py_TPFLAGS_HAVE_VECTORCALL for non-heap types
+        /* Inherit Py_TPFLAGS_HAVE_VECTORCALL for non-heap types
         * if tp_call is not overridden */
         if (!type->tp_call &&
-            (PyTypeObject_tp_flags(base) & _Py_TPFLAGS_HAVE_VECTORCALL) &&
+            (base->tp_flags & Py_TPFLAGS_HAVE_VECTORCALL) &&
             !(type->tp_flags & Py_TPFLAGS_HEAPTYPE))
         {
-        	type->tp_flags |= _Py_TPFLAGS_HAVE_VECTORCALL;
+            type->tp_flags |= Py_TPFLAGS_HAVE_VECTORCALL;
         }
-        /* COPYSLOT(tp_call); */
+        COPYSLOT(tp_call);
+    }
+    COPYSLOT(tp_str);
+    {
+        /* Copy comparison-related slots only when
+           not overriding them anywhere */
+        if (type->tp_richcompare == NULL &&
+            type->tp_hash == NULL)
+        {
+            int r = overrides_hash(type);
+            if (r < 0) {
+                return -1;
+            }
+            if (!r) {
+                type->tp_richcompare = base->tp_richcompare;
+                type->tp_hash = base->tp_hash;
+            }
+        }
     }
     {
         COPYSLOT(tp_iter);
         COPYSLOT(tp_iternext);
     }
     {
-        COPYSLOT(tp_alloc);
-        if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
-            (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_FINALIZE)) {
-            COPYSLOT(tp_finalize);
+        COPYSLOT(tp_descr_get);
+        /* Inherit Py_TPFLAGS_METHOD_DESCRIPTOR if tp_descr_get was inherited,
+         * but only for extension types */
+        if (base->tp_descr_get &&
+            type->tp_descr_get == base->tp_descr_get &&
+            !(type->tp_flags & Py_TPFLAGS_HEAPTYPE) &&
+            (base->tp_flags & Py_TPFLAGS_METHOD_DESCRIPTOR))
+        {
+            type->tp_flags |= Py_TPFLAGS_METHOD_DESCRIPTOR;
         }
+        COPYSLOT(tp_descr_set);
+        COPYSLOT(tp_dictoffset);
+        COPYSLOT(tp_init);
+        COPYSLOT(tp_alloc);
+        COPYSLOT(tp_is_gc);
+        COPYSLOT(tp_finalize);
         if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) ==
-            (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_GC)) {
+            (base->tp_flags & Py_TPFLAGS_HAVE_GC)) {
             /* They agree about gc. */
             COPYSLOT(tp_free);
         }
         else if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
-                type->tp_free == NULL &&
-                PyTypeObject_tp_free(base) == PyObject_Free) {
+                 type->tp_free == NULL &&
+                 base->tp_free == PyObject_Free) {
             /* A bit of magic to plug in the correct default
              * tp_free function when a derived class adds gc,
              * didn't define tp_free, and the base uses the
@@ -369,6 +410,7 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
          * obvious to be done -- the type is on its own.
          */
     }
+    return 0;
 }
 
 static int add_member(PyTypeObject* cls, PyObject* type_dict, const char* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
@@ -380,9 +422,9 @@ int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter
     /* do not convert the closure, it is handed to the getter and setter as-is */
     return GraalPyTruffleType_AddGetSet(cls,
                         type_dict,
-                        truffleString(name),
-                        getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
-                        setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                        name,
+                        getter_fun,
+                        setter_fun,
                         doc,
                         closure);
 }
@@ -391,8 +433,8 @@ static void add_method(PyTypeObject* cls, PyObject* type_dict, PyMethodDef* def)
         GraalPyTruffleType_AddFunctionToType(def,
                        cls,
                        type_dict,
-                       truffleString(def->ml_name),
-                       function_pointer_to_java(def->ml_meth),
+                       def->ml_name,
+                       def->ml_meth,
                        def->ml_flags,
                        get_method_flags_wrapper(def->ml_flags),
                        def->ml_doc);
@@ -402,8 +444,8 @@ static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* m
     if (meth) {
         GraalPyTruffleType_AddSlot(cls,
                 type_dict,
-                truffleString(name),
-                function_pointer_to_java(meth),
+                name,
+                meth,
                 flags,
                 (signature != 0 ? signature : get_method_flags_wrapper(flags)),
                 doc);
@@ -415,7 +457,7 @@ static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* m
 static int
 type_add_methods(PyTypeObject *type, PyObject *dict)
 {
-    PyMethodDef *meth = PyTypeObject_tp_methods(type);
+    PyMethodDef *meth = type->tp_methods;
     if (meth == NULL) {
         return 0;
     }
@@ -443,13 +485,13 @@ type_ready_set_new(PyTypeObject *type, PyObject *dict)
        Heap types, of course, are under our control, so they do inherit tp_new;
        static extension types that specify some other built-in type as the
        default also inherit object.__new__. */
-    newfunc tp_new = PyTypeObject_tp_new(type);
-    unsigned long tp_flags = PyTypeObject_tp_flags(type);
+    newfunc tp_new = type->tp_new;
+    unsigned long tp_flags = type->tp_flags;
     if (tp_new == NULL
         && base == &PyBaseObject_Type
         && !(tp_flags & Py_TPFLAGS_HEAPTYPE))
     {
-        set_PyTypeObject_tp_flags(type, tp_flags |= Py_TPFLAGS_DISALLOW_INSTANTIATION);
+        type->tp_flags = tp_flags |= Py_TPFLAGS_DISALLOW_INSTANTIATION;
     }
 
     if (!(type->tp_flags & Py_TPFLAGS_DISALLOW_INSTANTIATION)) {
@@ -460,17 +502,16 @@ type_ready_set_new(PyTypeObject *type, PyObject *dict)
         }
         else {
             // tp_new is NULL: inherit tp_new from base
-            set_PyTypeObject_tp_new(type, PyTypeObject_tp_new(base)) ;
+            type->tp_new = base->tp_new;
         }
     }
     else {
         // Py_TPFLAGS_DISALLOW_INSTANTIATION sets tp_new to NULL
         // not supported yet
-        // set_PyTypeObject_tp_new(type, NULL) ;
+        // type->tp_new = NULL;
     }
     return 0;
 }
-
 
 static int
 type_ready_set_bases(PyTypeObject *type)
@@ -478,10 +519,10 @@ type_ready_set_bases(PyTypeObject *type)
     PyTypeObject* base;
 
     /* Initialize tp_base (defaults to BaseObject unless that's us) */
-    base = PyTypeObject_tp_base(type);
+    base = type->tp_base;
     if (base == NULL && type != &PyBaseObject_Type) {
         base = &PyBaseObject_Type;
-        set_PyTypeObject_tp_base(type, base);
+        type->tp_base = base;
         Py_INCREF(base);
     }
     // assert(type->tp_base != NULL || type == &PyBaseObject_Type);
@@ -490,7 +531,7 @@ type_ready_set_bases(PyTypeObject *type)
      * &PyBaseObject_Type. */
 
     /* Initialize the base class */
-    if (base != NULL && !(PyTypeObject_tp_flags(base) & Py_TPFLAGS_READY)) {
+    if (base != NULL && !(base->tp_flags & Py_TPFLAGS_READY)) {
         if (PyType_Ready(base) < 0) {
         	return -1;
         }
@@ -508,14 +549,14 @@ type_ready_set_bases(PyTypeObject *type)
     }
 
     /* Initialize tp_bases */
-    PyObject* bases = PyTypeObject_tp_bases(type);
+    PyObject* bases = type->tp_bases;
     if (bases == NULL) {
         if (base == NULL) {
             bases = PyTuple_New(0);
         } else {
             bases = PyTuple_Pack(1, base);
         }
-        set_PyTypeObject_tp_bases(type, bases);
+        type->tp_bases = bases;
     }
     return 0;
 }
@@ -524,13 +565,13 @@ type_ready_set_bases(PyTypeObject *type)
 static int
 type_ready_set_dict(PyTypeObject *type)
 {
-    PyObject* dict = PyTypeObject_tp_dict(type);
+    PyObject* dict = type->tp_dict;
     if (dict == NULL) {
         dict = GraalPyTruffle_NewTypeDict(type);
         if (dict == NULL) {
         	return -1;
         }
-        set_PyTypeObject_tp_dict(type, dict);
+        type->tp_dict = dict;
     }
     return 0;
 }
@@ -538,7 +579,7 @@ type_ready_set_dict(PyTypeObject *type)
 static int
 type_add_getset(PyTypeObject *type, PyObject *dict)
 {
-    PyGetSetDef *getsets = PyTypeObject_tp_getset(type);
+    PyGetSetDef *getsets = type->tp_getset;
     if (getsets == NULL) {
         return 0;
     }
@@ -556,12 +597,12 @@ type_add_getset(PyTypeObject *type, PyObject *dict)
 static int
 type_add_members(PyTypeObject *type, PyObject *dict)
 {
-    PyMemberDef* members = PyTypeObject_tp_members(type);
+    PyMemberDef* members = type->tp_members;
     if (members) {
         int i = 0;
         PyMemberDef member = members[i];
         while (member.name != NULL) {
-            add_member(type, dict, truffleString(member.name), member.type, member.offset, member.flags, member.doc);
+            add_member(type, dict, member.name, member.type, member.offset, member.flags, member.doc);
             member = members[++i];
         }
     }
@@ -622,8 +663,8 @@ static int
 type_ready_mro(PyTypeObject *type)
 {
     /* Calculate method resolution order */
-    PyObject* mro = GraalPyTruffle_Compute_Mro(type, truffleString(type->tp_name));
-    set_PyTypeObject_tp_mro(type, mro);
+    PyObject* mro = GraalPyTruffle_Compute_Mro(type, type->tp_name);
+    type->tp_mro = mro;
     return 0;
 }
 
@@ -637,19 +678,19 @@ static void
 type_ready_inherit_as_structs(PyTypeObject *type, PyTypeObject *base)
 {
     if (type->tp_as_async == NULL) {
-        type->tp_as_async = PyTypeObject_tp_as_async(base);
+        type->tp_as_async = base->tp_as_async;
     }
     if (type->tp_as_number == NULL) {
-        type->tp_as_number = PyTypeObject_tp_as_number(base);
+        type->tp_as_number = base->tp_as_number;
     }
     if (type->tp_as_sequence == NULL) {
-        type->tp_as_sequence = PyTypeObject_tp_as_sequence(base);
+        type->tp_as_sequence = base->tp_as_sequence;
     }
     if (type->tp_as_mapping == NULL) {
-        type->tp_as_mapping = PyTypeObject_tp_as_mapping(base);
+        type->tp_as_mapping = base->tp_as_mapping;
     }
-    if (PyTypeObject_tp_as_buffer(type) == NULL) {
-        set_PyTypeObject_tp_as_buffer(type, PyTypeObject_tp_as_buffer(base));
+    if (type->tp_as_buffer == NULL) {
+        type->tp_as_buffer = base->tp_as_buffer;
     }
 }
 
@@ -658,8 +699,8 @@ type_ready_inherit_as_structs(PyTypeObject *type, PyTypeObject *base)
 static void
 inherit_patma_flags(PyTypeObject *type, unsigned long *type_flags, PyTypeObject *base) {
     if ((*type_flags & COLLECTION_FLAGS) == 0) {
-        *type_flags |= PyTypeObject_tp_flags(base) & COLLECTION_FLAGS;
-        set_PyTypeObject_tp_flags(type, *type_flags);
+        *type_flags |= base->tp_flags & COLLECTION_FLAGS;
+        type->tp_flags = *type_flags;
     }
 }
 
@@ -674,9 +715,9 @@ type_ready_inherit(PyTypeObject *type)
     }
 
     // Inherit slots
-    PyObject *mro = PyTypeObject_tp_mro(type);
+    PyObject *mro = type->tp_mro;
     Py_ssize_t n = PyTuple_GET_SIZE(mro);
-    unsigned long type_flags = PyTypeObject_tp_flags(type);
+    unsigned long type_flags = type->tp_flags;
     for (Py_ssize_t i = 1; i < n; i++) {
         PyObject *b = PyTuple_GET_ITEM(mro, i);
         if (PyType_Check(b)) {
@@ -689,11 +730,11 @@ type_ready_inherit(PyTypeObject *type)
         type_ready_inherit_as_structs(type, base);
     }
 
-    if (!(PyTypeObject_tp_alloc(type))) {
-        set_PyTypeObject_tp_alloc(type, PyType_GenericAlloc);
+    if (!(type->tp_alloc)) {
+        type->tp_alloc = PyType_GenericAlloc;
     }
-    if (!(PyTypeObject_tp_new(type))) {
-        set_PyTypeObject_tp_new(type, PyType_GenericNew);
+    if (!(type->tp_new)) {
+        type->tp_new = PyType_GenericNew;
     }
     // /* Sanity check for tp_free. */
     // if (_PyType_IS_GC(type) && (type->tp_flags & Py_TPFLAGS_BASETYPE) &&
@@ -764,8 +805,8 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
        'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
        the default function dispatches to the individual comparison functions which would in
        this case again invoke 'object.__truffle_richcompare__'. */
-    richcmpfunc richcompare = PyTypeObject_tp_richcompare(cls);
-    if (richcompare && richcompare != PyTypeObject_tp_richcompare(&PyBaseObject_Type)) {
+    richcmpfunc richcompare = cls->tp_richcompare;
+    if (richcompare && richcompare != PyBaseObject_Type.tp_richcompare) {
         ADD_SLOT_CONV("__compare__", richcompare, -3, JWRAPPER_RICHCMP);
         ADD_SLOT_CONV("__lt__", richcompare, -2, JWRAPPER_LT);
         ADD_SLOT_CONV("__le__", richcompare, -2, JWRAPPER_LE);
@@ -788,7 +829,7 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
     ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
     // 'tp_as_number' takes precedence over 'tp_as_mapping' and 'tp_as_sequence' !
-    PyNumberMethods* numbers = PyTypeObject_tp_as_number(cls);
+    PyNumberMethods* numbers = cls->tp_as_number;
     if (numbers) {
         ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
         ADD_SLOT_CONV("__radd__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_R);
@@ -842,7 +883,7 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
     }
 
     // 'tp_as_mapping' takes precedence over 'tp_as_sequence' !
-    PyMappingMethods* mappings = PyTypeObject_tp_as_mapping(cls);
+    PyMappingMethods* mappings = cls->tp_as_mapping;
     if (mappings) {
         ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
         ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
@@ -850,7 +891,7 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
         ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
     }
 
-    PySequenceMethods* sequences = PyTypeObject_tp_as_sequence(cls);
+    PySequenceMethods* sequences = cls->tp_as_sequence;
     if (sequences) {
         // sequence functions first, so that the number functions take precendence
         ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
@@ -864,14 +905,14 @@ int type_ready_graalpy_slot_conv(PyTypeObject* cls, PyObject* dict) {
         ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
-    PyAsyncMethods* async = PyTypeObject_tp_as_async(cls);
+    PyAsyncMethods* async = cls->tp_as_async;
     if (async) {
         ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_DIRECT);
         ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_DIRECT);
         ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_DIRECT);
     }
 
-    PyBufferProcs* buffers = PyTypeObject_tp_as_buffer(cls);
+    PyBufferProcs* buffers = cls->tp_as_buffer;
     if (buffers) {
         // TODO ...
     }
@@ -885,11 +926,7 @@ int type_ready_graalpy_process_inherited_slots(PyTypeObject* cls) {
     // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
     // dynamic slots from a managed Python class. Since the managed Python class may be created
     // when the C API is not loaded, we need to do that later.
-    PyGetSetDef** inherited_getset = (PyGetSetDef**) GraalPyTruffle_Get_Inherited_Native_Slots(cls, truffleString("getsets"));
-    PyMemberDef** inherited_members = (PyMemberDef**) GraalPyTruffle_Get_Inherited_Native_Slots(cls, truffleString("members"));
-    uint64_t n_getsets = polyglot_get_array_size(inherited_getset);
-    uint64_t n_members = polyglot_get_array_size(inherited_members);
-  	PyTruffle_Type_AddSlots(cls, inherited_getset, n_getsets, inherited_members, n_members);
+    GraalPyTruffle_AddInheritedSlots(cls);
     
     return 0;
 }
@@ -911,7 +948,7 @@ type_ready(PyTypeObject *type)
     if (type_ready_mro(type) < 0) {
         return -1;
     }
-    PyObject* dict = PyTypeObject_tp_dict(type);
+    PyObject* dict = type->tp_dict;
     if (type_ready_set_new(type, dict) < 0) {
         return -1;
     }
@@ -939,7 +976,7 @@ type_ready(PyTypeObject *type)
 int
 PyType_Ready(PyTypeObject *type)
 {
-    unsigned long type_flags = PyTypeObject_tp_flags(type);
+    unsigned long type_flags = type->tp_flags;
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
     if ((type_flags & Py_TPFLAGS_READY) || (type_flags & Py_TPFLAGS_READYING)) {
@@ -953,7 +990,7 @@ PyType_Ready(PyTypeObject *type)
         type_flags |= Py_TPFLAGS_IMMUTABLETYPE;
     }
 
-    set_PyTypeObject_tp_flags(type, type_flags);
+    type->tp_flags = type_flags;
 
     /* Types are often just static mem; so register them to be able to rule out invalid accesses.  */
     if(PyTruffle_Trace_Memory()) {
@@ -967,16 +1004,16 @@ PyType_Ready(PyTypeObject *type)
     Py_INCREF(type); // TODO: this second incref keeps types alive forever...
 
     if (type_ready(type) < 0) {
-        set_PyTypeObject_tp_flags(type, type_flags & ~Py_TPFLAGS_READYING);
+        type->tp_flags = type_flags & ~Py_TPFLAGS_READYING;
         Py_DECREF(type);
         return -1;
     }
 
     /* All done -- set the ready flag */
-    set_PyTypeObject_tp_flags(type, (PyTypeObject_tp_flags(type) & ~Py_TPFLAGS_READYING ) | Py_TPFLAGS_READY);
+    type->tp_flags = (type->tp_flags & ~Py_TPFLAGS_READYING ) | Py_TPFLAGS_READY;
 
     // it may be that the type was used uninitialized
-	GraalPyTruffle_Type_Modified(type, truffleString(type->tp_name), NULL);
+	GraalPyTruffle_Type_Modified(type, type->tp_name, NULL);
 
 	// Truffle-specific decref (for reason, see first call to Py_INCREF in this function)
 	Py_DECREF(type);
@@ -991,34 +1028,6 @@ MUST_INLINE static int valid_identifier(PyObject *s) {
         return 0;
     }
     return 1;
-}
-
-
-/* Add get-set descriptors for slots provided in 'getsets' and 'members'. */
-static void PyTruffle_Type_AddSlots(PyTypeObject *cls, PyGetSetDef **getsets, uint64_t n_getsets, PyMemberDef **members, uint64_t n_members) {
-    const PyObject *dict = PyTypeObject_tp_dict(cls);
-    for (uint64_t j = 0; j < n_getsets; j++) {
-        PyGetSetDef *getsets_sub = getsets[j];
-        if (getsets_sub) {
-            int i = 0;
-            PyGetSetDef getset = getsets_sub[i];
-            while (getset.name != NULL) {
-                add_getset(cls, dict, getset.name, getset.get, getset.set, getset.doc, getset.closure);
-                getset = getsets_sub[++i];
-            }
-        }
-    }
-    for (uint64_t j = 0; j < n_getsets; j++) {
-        PyMemberDef *members_sub = members[j];
-        if (members_sub) {
-            int i = 0;
-            PyMemberDef member = members_sub[i];
-            while (member.name != NULL) {
-                add_member(cls, dict, truffleString(member.name), member.type, member.offset, member.flags, member.doc);
-                member = members_sub[++i];
-            }
-        }
-    }
 }
 
 // taken from CPython "Objects/typeobject.c"

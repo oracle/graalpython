@@ -40,12 +40,6 @@
  */
 #include "capi.h"
 
-#if SIZEOF_SIZE_T == 8
-#define polyglot_from_size_array polyglot_from_i64_array
-#elif SIZEOF_SIZE_T == 4
-#define polyglot_from_size_array polyglot_from_i32_array
-#endif
-
 /* Macros taken from CPython */
 /* Memoryview buffer properties */
 #define MV_C_CONTIGUOUS(flags) (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C))
@@ -80,8 +74,8 @@
     }
 
 /* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
-int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset, Py_ssize_t remaining_length) {
-        return polyglot_from_i8_array(*(int8_t**)(ptr + offset) + suboffset, remaining_length);
+int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset) {
+        return *(int8_t**)(ptr + offset) + suboffset;
 }
 
 /* called back from the above upcall only if the object was native */
@@ -106,12 +100,12 @@ PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags) {
                 buffer->len,
                 buffer->readonly,
                 buffer->itemsize,
-                polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
+                buffer->format ? buffer->format : "B",
                 buffer->ndim,
-                polyglot_from_i8_array(buffer->buf, buffer->len),
-                buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
-                buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
-                buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
+                buffer->buf,
+                buffer->shape,
+                buffer->strides,
+                buffer->suboffsets);
         if (!needs_release) {
             free(buffer);
         }
@@ -153,12 +147,12 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
             buffer->len,
             buffer->readonly,
             buffer->itemsize,
-            polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
+            buffer->format ? buffer->format : "B",
             buffer->ndim,
-            polyglot_from_i8_array(buffer->buf, buffer->len),
-            buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
-            buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
-            buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
+            buffer->buf,
+            buffer->shape,
+            buffer->strides,
+            buffer->suboffsets);
 }
 
 PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
@@ -166,7 +160,7 @@ PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
     assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
     int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
     return GraalPyTruffle_MemoryViewFromBuffer(
-            NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL);
+            NULL, NULL, size, readonly, 1, "B", 1, (int8_t*)mem, NULL, NULL, NULL);
 }
 
 /* Taken from CPython memoryobject.c: memory_getbuf */

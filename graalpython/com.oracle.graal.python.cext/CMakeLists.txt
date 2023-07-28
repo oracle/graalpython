@@ -43,6 +43,7 @@ if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
 endif()
 require_var(TRUFFLE_H_INC)
+require_var(TRUFFLE_NFI_H_INC)
 require_var(LLVM_MODE)
 require_var(GRAALPY_EXT)
 
@@ -91,17 +92,17 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/memoryobject.c ${CAPI_SRC}/traceback.c ${CAPI_SRC}/unicodeobject.c ${CAPI_SRC}/pythonrun.c
               ${CAPI_SRC}/funcobject.c ${CAPI_SRC}/codeobject.c ${CAPI_SRC}/unicodectype.c ${CAPI_SRC}/structseq.c
               ${CAPI_SRC}/import.c ${CAPI_SRC}/pytime.c ${CAPI_SRC}/bytearrayobject.c ${CAPI_SRC}/listobject.c
-              ${CAPI_SRC}/bytesobject.c ${CAPI_SRC}/object_shared.c ${CAPI_SRC}/longobject.c ${CAPI_SRC}/sysmodule.c
+              ${CAPI_SRC}/bytesobject.c ${CAPI_SRC}/longobject.c ${CAPI_SRC}/sysmodule.c
               ${CAPI_SRC}/pystrtod.c ${CAPI_SRC}/tupleobject.c ${CAPI_SRC}/iterobject.c ${CAPI_SRC}/sliceobject.c
               ${CAPI_SRC}/classobject.c ${CAPI_SRC}/floatobject.c ${CAPI_SRC}/namespaceobject.c ${CAPI_SRC}/_warnings.c
               ${CAPI_SRC}/dictobject.c ${CAPI_SRC}/pystate.c ${CAPI_SRC}/mysnprintf.c ${CAPI_SRC}/ceval.c
-              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c ${CAPI_SRC}/descrobject_shared.c
+              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c
               ${CAPI_SRC}/modsupport.c ${CAPI_SRC}/context.c ${CAPI_SRC}/abstract.c ${CAPI_SRC}/frameobject.c
-              ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/longobject_shared.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
-              ${CAPI_SRC}/typeobject_shared.c ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
+              ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
+              ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
               ${CAPI_SRC}/modsupport_shared.c ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
-              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/bytearrayobject_shared.c
+              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c
 )
 
 file(GLOB_RECURSE ACTUAL_SRC_FILES
@@ -138,6 +139,7 @@ include_directories(
     ${CAPI_SRC}
     "${SRC_DIR}/include"
     "${TRUFFLE_H_INC}"
+    "${TRUFFLE_NFI_H_INC}"
 )
 
 function(native_module name core src_files)
@@ -170,7 +172,6 @@ endfunction()
 ######################################################################
 
 add_library(${TARGET_LIBPYTHON} SHARED)
-simple_native_module("_mmap")
 simple_native_module("_cpython_sre")
 simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
@@ -228,6 +229,9 @@ target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 if(WIN32)
     target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
     target_link_libraries(${TARGET_LIBPYTHON} sulong-native graalvm-llvm)
+else()
+    # Link to math library; required for functions like 'hypot' or similar
+    target_link_libraries(${TARGET_LIBPYTHON} m)
 endif()
 
 install(TARGETS ${TARGET_LIBPYTHON} DESTINATION bin)

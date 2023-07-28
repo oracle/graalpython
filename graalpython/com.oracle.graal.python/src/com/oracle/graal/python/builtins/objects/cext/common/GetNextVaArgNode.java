@@ -40,13 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.Node;
@@ -56,31 +53,13 @@ import com.oracle.truffle.api.nodes.Node;
  * like {@code va_arg(*valist, void *)}
  */
 @GenerateUncached
-@ImportStatic(LLVMType.class)
 public abstract class GetNextVaArgNode extends Node {
 
-    public final Object getPyObjectPtr(Object valist) throws InteropException {
-        return execute(valist, LLVMType.PyObject_ptr_t);
-    }
-
-    public final Object getCharPtr(Object valist) throws InteropException {
-        return execute(valist, LLVMType.char_ptr_t);
-    }
-
-    public final Object getVoidPtr(Object valist) throws InteropException {
-        return execute(valist, LLVMType.void_ptr_t);
-    }
-
-    public final Object getPyComplexPtr(Object valist) throws InteropException {
-        return execute(valist, LLVMType.Py_complex_ptr_t);
-    }
-
-    public abstract Object execute(Object valist, LLVMType llvmType) throws InteropException;
+    public abstract Object execute(Object valist) throws InteropException;
 
     @Specialization
-    static Object doGeneric(Object valist, LLVMType llvmType,
-                    @Cached PCallCapiFunction nextNode,
-                    @Cached GetLLVMType getLLVMType) {
-        return nextNode.call(NativeCAPISymbol.GRAALVM_LLVM_VA_ARG, valist, getLLVMType.execute(llvmType));
+    static Object doGeneric(Object valist,
+                    @Cached PCallCapiFunction nextNode) {
+        return nextNode.call(NativeCAPISymbol.FUN_VA_ARG_POINTER, valist);
     }
 }

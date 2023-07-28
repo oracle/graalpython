@@ -87,11 +87,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -101,7 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyBinaryArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyInplaceArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyTernaryArithmeticNode;
@@ -275,6 +272,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -1230,7 +1229,7 @@ public abstract class GraalHPyContextFunctions {
                     nModuleDefines = 0;
                 } else if (!ptrLib.hasArrayElements(moduleDefines)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "defines");
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, "defines");
                 } else {
                     nModuleDefines = ptrLib.getArraySize(moduleDefines);
                 }
@@ -1267,24 +1266,18 @@ public abstract class GraalHPyContextFunctions {
             if (!ptrLib.isNull(legacyMethods)) {
                 if (!ptrLib.hasArrayElements(legacyMethods)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "legacyMethods");
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, "legacyMethods");
                 }
 
-                try {
-                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                    CApiContext capiContext = nLegacyMethods > 0 ? PythonContext.get(ptrLib).getCApiContext() : null;
-                    for (long i = 0; i < nLegacyMethods; i++) {
-                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+                for (int i = 0;; i++) {
 
-                        PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, legacyMethod);
-                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
-                        writeAttrNode.execute(module, fun.getName(), method);
+                    PBuiltinFunction fun = addLegacyMethodNode.execute(legacyMethods, i);
+                    if (fun == null) {
+                        break;
                     }
-                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    // should not happen since we check if 'legacyMethods' has array
-                    // elements
-                    throw CompilerDirectives.shouldNotReachHere();
+                    PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                    writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
+                    writeAttrNode.execute(module, fun.getName(), method);
                 }
             }
 
@@ -1888,18 +1881,12 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object unicodeObject, Object sizePtr,
-                        @Cached PCallHPyFunction callFromTyped,
-                        @Cached GetLLVMType getLLVMType,
+                        @Cached CStructAccess.WriteLongNode writeNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib) {
             byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, T_STRICT);
             if (!ptrLib.isNull(sizePtr)) {
-                sizePtr = callFromTyped.call(hpyContext, GraalHPyNativeSymbol.POLYGLOT_FROM_TYPED, sizePtr, getLLVMType.execute(LLVMType.Py_ssize_ptr_t));
-                try {
-                    ptrLib.writeArrayElement(sizePtr, 0, (long) result.length);
-                } catch (InteropException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
+                writeNode.write(sizePtr, result.length);
             }
             return new CByteArrayWrapper(result);
         }
@@ -1922,15 +1909,12 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object wcharPtr, long len,
-                        @Cached PCallHPyFunction callFromWcharArrayNode,
-                        @Cached UnicodeFromWcharNode unicodeFromWcharNode) {
-            // Note: 'len' may be -1; in this case, function GRAAL_HPY_I8_FROM_WCHAR_ARRAY will
-            // use 'wcslen' to determine the C array's length.
-            Object dataArray = callFromWcharArrayNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_WCHAR_ARRAY, wcharPtr, len);
+                        @Cached ReadUnicodeArrayNode readArray,
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
             try {
-                return unicodeFromWcharNode.execute(dataArray, PInt.intValueExact(hpyContext.getWcharSize()));
+                return fromArray.execute(readArray.execute(wcharPtr, PInt.intValueExact(len), CStructs.wchar_t.size()));
             } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }
@@ -2063,8 +2047,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Cached PRaiseNode raiseNode) {
-            if (object instanceof PBytes) {
-                return new PySequenceArrayWrapper(object, 1);
+            if (object instanceof PBytes bytes) {
+                return PySequenceArrayWrapper.ensureNativeSequence(bytes);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, object);
         }
@@ -3484,9 +3468,10 @@ public abstract class GraalHPyContextFunctions {
                     pyCapsule.setPointer(valuePtr);
                 }
                 case CapsuleKey.Context -> pyCapsule.setContext(valuePtr);
-                case CapsuleKey.Name ->
+                case CapsuleKey.Name -> {
                     // we may assume that the pointer is owned
                     pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
+                }
                 case CapsuleKey.Destructor -> pyCapsule.setDestructor(valuePtr);
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }

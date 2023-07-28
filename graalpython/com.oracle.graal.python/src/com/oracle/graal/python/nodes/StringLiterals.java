@@ -215,4 +215,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_EXEC = tsLiteral("exec");
 
     public static final TruffleString T_EVAL = tsLiteral("eval");
+
+    public static final String J_OB_REFCNT = "ob_refcnt";
+
 }

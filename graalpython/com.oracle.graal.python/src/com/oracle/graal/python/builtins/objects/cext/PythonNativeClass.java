@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -50,15 +49,11 @@ import com.oracle.truffle.api.object.HiddenKey;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public interface PythonNativeClass extends PythonAbstractClass {
+public interface PythonNativeClass extends PythonAbstractClass, PythonNativeObject {
 
     public static final HiddenKey INSTANCESHAPE = new HiddenKey("instanceshape");
 
     Object getPtr();
-
-    default String getName() {
-        return PythonUtils.formatJString("PythonNativeClass(%s)", getPtr());
-    }
 
     static boolean isInstance(Object object) {
         return object instanceof PythonAbstractNativeObject;

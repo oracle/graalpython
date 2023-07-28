@@ -45,8 +45,8 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
@@ -235,8 +235,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
         // possibly do so, but for now leaving it as it is.
         PDict dict;
-        if (klass instanceof PythonAbstractNativeObject) {
-            Object nativedict = CExtNodes.GetTypeMemberNode.getUncached().execute(klass, NativeMember.TP_DICT);
+        if (klass instanceof PythonAbstractNativeObject nativeKlass) {
+            Object nativedict = CStructAccess.ReadObjectNode.getUncached().readFromObj(nativeKlass, CFields.PyTypeObject__tp_dict);
             dict = nativedict == PNone.NO_VALUE ? null : (PDict) nativedict;
         } else {
             dict = GetDictIfExistsNode.getUncached().execute(klass);

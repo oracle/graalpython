@@ -44,7 +44,15 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseExcep
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_TRUFFLE_SET_TP_FLAGS;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dictoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_flags;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_itemsize;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_mro;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_DICTOFFSET;
@@ -106,13 +114,12 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -186,7 +193,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -268,13 +274,8 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doNative(PythonNativeClass clazz,
-                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-            Object result = getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
-            if (result instanceof Long) {
-                return (long) result;
-            } else {
-                return (int) result;
-            }
+                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
+            return getTpFlagsNode.readFromObj(clazz, PyTypeObject__tp_flags);
         }
 
         @TruffleBoundary
@@ -301,7 +302,7 @@ public abstract class TypeNodes {
                     mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
                 }
                 if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, CStructAccess.ReadI64Node.getUncached()));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
                     long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromDynamicObjectNode.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(),
                                     InlinedCountingConditionProfile.getUncached());
@@ -318,6 +319,9 @@ public abstract class TypeNodes {
                 case StructParam:
                 case CArgObject:
                 case MultibyteCodec:
+                case PEllipsis:
+                case PNotImplemented:
+                case PNone:
                     result = DEFAULT;
                     break;
                 case PythonObject:
@@ -333,26 +337,32 @@ public abstract class TypeNodes {
                 case MultibyteIncrementalDecoder:
                 case MultibyteStreamReader:
                 case MultibyteStreamWriter:
+                case PyCSimpleType:
+                case PyCFuncPtrType:
                     result = DEFAULT | BASETYPE;
                     break;
                 case PArray:
                     result = DEFAULT | BASETYPE | SEQUENCE;
                     break;
-                case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
-                case PyCSimpleType: // DEFAULT | BASETYPE | PythonClass.flags
-                case PyCFuncPtrType: // DEFAULT | BASETYPE | PythonClass.flags
-                case PyCStructType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
-                case PyCPointerType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
-                case UnionType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
                 case PythonClass:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TYPE_SUBCLASS;
-                    break;
                 case Super:
                 case PythonModule:
                 case PReferenceType:
                 case PProperty:
                 case PDeque:
                 case PSimpleQueue:
+                case PSimpleNamespace:
+                case PMap:
+                case PStaticmethod:
+                case PZip:
+                case PReverseIterator:
+                case PCycle:
+                case PEnumerate:
+                case PyCStructType:
+                case PyCPointerType:
+                case PyCArrayType:
+                case UnionType:
+                case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
                 case PFrozenSet:
@@ -360,27 +370,19 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF;
                     break;
                 case Boolean:
-                    result = DEFAULT | LONG_SUBCLASS | MATCH_SELF;
-                    break;
-                case PBytes:
-                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | MATCH_SELF;
+                    result = DEFAULT | MATCH_SELF;
                     break;
                 case PFunction:
                 case PBuiltinFunction:
-                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
-                    break;
                 case WrapperDescriptor:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
+                case PBytesIOBuf:
                 case PMethod:
                 case PBuiltinFunctionOrMethod:
                 case PBuiltinMethod:
                 case MethodWrapper:
-                    result = DEFAULT | HAVE_GC;
-                    break;
                 case PInstancemethod:
-                    result = DEFAULT | HAVE_GC;
-                    break;
                 case GetSetDescriptor:
                 case MemberDescriptor:
                 case PFrame:
@@ -392,6 +394,9 @@ public abstract class TypeNodes {
                 case CField:
                 case CThunkObject:
                 case PArrayIterator:
+                case PAsyncGenerator:
+                case PCell:
+                case PIterator:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PMappingproxy:
@@ -401,25 +406,14 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | MATCH_SELF | MAPPING;
+                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF | MAPPING;
                     break;
                 case PDefaultDict:
                     result = DEFAULT | HAVE_GC | BASETYPE | MAPPING;
                     break;
-                case PBaseException:
-                    result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
-                    break;
                 case PList:
-                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | MATCH_SELF | SEQUENCE;
-                    break;
-                case PInt:
-                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | MATCH_SELF;
-                    break;
-                case PString:
-                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | MATCH_SELF;
-                    break;
                 case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | MATCH_SELF | SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF | SEQUENCE;
                     break;
                 case PRange:
                     result = DEFAULT | SEQUENCE;
@@ -430,13 +424,38 @@ public abstract class TypeNodes {
                     break;
                 case PByteArray:
                 case PFloat:
+                case PInt:
+                case PString:
+                case PBytes:
                     result = DEFAULT | BASETYPE | MATCH_SELF;
                     break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
                     // PNotImplemented, PEllipsis, exceptions
-                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS | HAVE_GC : 0L);
+                    result = DEFAULT;
                     break;
+            }
+            result |= clazz.isAcceptableBase() ? BASETYPE : 0;
+            PythonBuiltinClassType iter = clazz;
+            while (iter != null) {
+                if (iter == PythonBuiltinClassType.PBaseException) {
+                    result |= BASE_EXC_SUBCLASS | HAVE_GC;
+                } else if (iter == PythonBuiltinClassType.PythonClass) {
+                    result |= TYPE_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PInt) {
+                    result |= LONG_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PBytes) {
+                    result |= BYTES_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PString) {
+                    result |= UNICODE_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PTuple) {
+                    result |= TUPLE_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PList) {
+                    result |= LIST_SUBCLASS;
+                } else if (iter == PythonBuiltinClassType.PDict) {
+                    result |= DICT_SUBCLASS;
+                }
+                iter = iter.getBase();
             }
             // we always claim that all types are fully initialized
             // so far, all builtin types we care about are IMMUTABLE
@@ -467,9 +486,8 @@ public abstract class TypeNodes {
 
         @Specialization
         static void doNative(PythonNativeClass clazz, long flags,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
-            callCapiFunction.call(FUN_TRUFFLE_SET_TP_FLAGS, toSulongNode.execute(clazz), flags);
+                        @Cached CStructAccess.WriteLongNode write) {
+            write.writeToObject(clazz, PyTypeObject__tp_flags, flags);
         }
 
         public static SetTypeFlagsNode getUncached() {
@@ -487,7 +505,7 @@ public abstract class TypeNodes {
             flags &= ~COLLECTION_FLAGS;
         }
         result |= flags & (COLLECTION_FLAGS | SUBCLASS_FLAGS | MATCH_SELF);
-        return result;
+        return result | READY;
     }
 
     @GenerateUncached
@@ -547,12 +565,12 @@ public abstract class TypeNodes {
         @Specialization
         static MroSequenceStorage doNativeClass(PythonNativeClass obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetTypeMemberNode getTpMroNode,
+                        @Cached CStructAccess.ReadObjectNode getTpMroNode,
                         @Cached PRaiseNode raise,
                         @Cached InlinedConditionProfile lazyTypeInitProfile,
                         @Cached InlinedExactClassProfile tpMroProfile,
                         @Cached InlinedExactClassProfile storageProfile) {
-            Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
+            Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
             if (lazyTypeInitProfile.profile(inliningTarget, tupleObj == PNone.NO_VALUE)) {
                 tupleObj = initializeType(obj, getTpMroNode, raise);
             }
@@ -566,17 +584,17 @@ public abstract class TypeNodes {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
         }
 
-        private static Object initializeType(PythonNativeClass obj, GetTypeMemberNode getTpMroNode, PRaiseNode raise) {
+        private static Object initializeType(PythonNativeClass obj, CStructAccess.ReadObjectNode getTpMroNode, PRaiseNode raise) {
             // Special case: lazy type initialization (should happen at most only once per type)
             CompilerDirectives.transferToInterpreter();
 
             // call 'PyType_Ready' on the type
-            int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
+            int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
                 throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
             }
 
-            Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
+            Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
             assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
             return tupleObj;
         }
@@ -591,10 +609,10 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonContext.get(null).lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
-                GetTypeMemberNode getTypeMemeberNode = GetTypeMemberNode.getUncached();
-                Object tupleObj = getTypeMemeberNode.execute(obj, NativeMember.TP_MRO);
+                CStructAccess.ReadObjectNode getTypeMemeberNode = CStructAccess.ReadObjectNode.getUncached();
+                Object tupleObj = getTypeMemeberNode.readFromObj((PythonNativeClass) obj, PyTypeObject__tp_mro);
                 if (tupleObj == PNone.NO_VALUE) {
-                    tupleObj = initializeType((PythonNativeClass) obj, GetTypeMemberNode.getUncached(), raise);
+                    tupleObj = initializeType((PythonNativeClass) obj, CStructAccess.ReadObjectNode.getUncached(), raise);
                 }
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
@@ -634,9 +652,8 @@ public abstract class TypeNodes {
 
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
-                        @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            return castToStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode) {
+            return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
         }
 
         @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
@@ -647,7 +664,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return CastToTruffleStringNode.getUncached().execute(CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME));
+                return CStructAccess.ReadCharPtrNode.getUncached().readFromObj((PythonNativeClass) obj, PyTypeObject__tp_name);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -686,10 +703,10 @@ public abstract class TypeNodes {
         @Specialization
         static Object doNative(PythonNativeClass obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetTypeMemberNode getTpBaseNode,
+                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
                         @Cached PRaiseNode raise,
                         @Cached InlinedExactClassProfile resultTypeProfile) {
-            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (PGuards.isPythonClass(result)) {
@@ -719,9 +736,9 @@ public abstract class TypeNodes {
         @Specialization
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetTypeMemberNode getTpSubclassesNode,
+                        @Cached CStructAccess.ReadObjectNode getTpSubclassesNode,
                         @Cached InlinedExactClassProfile profile) {
-            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMember.TP_SUBCLASSES);
+            Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);
 
             Object profiled = profile.profile(inliningTarget, tpSubclasses);
             if (profiled instanceof PDict) {
@@ -884,10 +901,10 @@ public abstract class TypeNodes {
         static PythonAbstractClass[] doNative(PythonNativeClass obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
-                        @Cached GetTypeMemberNode getTpBasesNode,
+                        @Cached CStructAccess.ReadObjectNode getTpBasesNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
-            Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.execute(obj, NativeMember.TP_BASES));
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.readFromObj(obj, PyTypeObject__tp_bases));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
@@ -945,10 +962,10 @@ public abstract class TypeNodes {
         static PythonAbstractClass doNative(PythonNativeClass obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
-                        @Cached GetTypeMemberNode getTpBaseNode,
+                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached IsTypeNode isTypeNode) {
-            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (PGuards.isClass(result, isTypeNode)) {
@@ -1232,9 +1249,8 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeObject(PythonAbstractNativeObject type,
-                        @Cached GetTypeMemberNode getMember,
-                        @Cached CastToJavaIntExactNode cast) {
-            return cast.execute(getMember.execute(type, NativeMember.TP_DICTOFFSET)) != 0;
+                        @Cached CStructAccess.ReadI64Node getMember) {
+            return getMember.readFromObj(type, PyTypeObject__tp_dictoffset) != 0;
         }
 
         @Fallback
@@ -1800,9 +1816,9 @@ public abstract class TypeNodes {
 
         @Specialization
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
-                        @Cached GetTypeMemberNode getTpDictNode,
+                        @Cached CStructAccess.ReadObjectNode getTpDictNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
-            Object tpDictObj = getTpDictNode.execute(clazz, NativeMember.TP_DICT);
+            Object tpDictObj = getTpDictNode.readFromObj(clazz, CFields.PyTypeObject__tp_dict);
             if (tpDictObj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) tpDictObj).getInstanceShape();
             }
@@ -2550,12 +2566,8 @@ public abstract class TypeNodes {
 
         @Specialization
         long lookup(Object cls,
-                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
-            Object value = lookup.execute(cls, NativeMember.TP_BASICSIZE, TYPE_BASICSIZE);
-            if (value != PNone.NO_VALUE) {
-                return (long) value;
-            }
-            return 0;
+                        @Cached CExtNodes.LookupNativeI64MemberInMRONode lookup) {
+            return lookup.execute(cls, PyTypeObject__tp_basicsize, TYPE_BASICSIZE);
         }
     }
 
@@ -2584,15 +2596,11 @@ public abstract class TypeNodes {
 
         @Specialization
         long lookup(Object cls,
-                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
-            Object value = lookup.execute(cls, NativeMember.TP_ITEMSIZE, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
-            if (value != PNone.NO_VALUE) {
-                return (long) value;
-            }
-            return 0;
+                        @Cached CExtNodes.LookupNativeI64MemberInMRONode lookup) {
+            return lookup.execute(cls, PyTypeObject__tp_itemsize, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
         }
 
-        private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+        private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
             // Our formatter currently forces all the case labels on a single line
             // @formatter:off
             return switch (cls) {
@@ -2636,15 +2644,11 @@ public abstract class TypeNodes {
 
         @Specialization
         long lookup(Object cls,
-                        @Cached CExtNodes.LookupNativeMemberInMRONode lookup) {
-            Object value = lookup.execute(cls, NativeMember.TP_DICTOFFSET, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinTypeItemsize);
-            if (value != PNone.NO_VALUE) {
-                return (long) value;
-            }
-            return 0;
+                        @Cached CExtNodes.LookupNativeI64MemberInMRONode lookup) {
+            return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinTypeItemsize);
         }
 
-        private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+        private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
             // TODO properly specify for all builtin classes
             PythonBuiltinClassType current = cls;
             do {

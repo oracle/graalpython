@@ -43,14 +43,16 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -58,6 +60,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
@@ -69,19 +73,24 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -91,7 +100,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextLongBuiltins {
 
@@ -194,19 +203,19 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, Int, Int}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
     abstract static class PyTruffleLong_FromString extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "negative == 0")
-        Object fromString(TruffleString s, int base, @SuppressWarnings("unused") int negative,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode) {
+        Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
+                        @Cached BuiltinConstructors.IntNode intNode) {
             return intNode.executeWith(null, s, base);
         }
 
         @Specialization(guards = "negative != 0")
-        Object fromString(TruffleString s, int base, @SuppressWarnings("unused") int negative,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+        Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
+                        @Cached BuiltinConstructors.IntNode intNode,
                         @Cached NegNode negNode) {
             return negNode.execute(null, intNode.executeWith(null, s, base));
         }
@@ -399,6 +408,53 @@ public final class PythonCextLongBuiltins {
     abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
         @Specialization
         static int run() {
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
+    abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
+        private static void checkSign(boolean negative, int isSigned, PRaiseNode raise) {
+            if (negative) {
+                if (isSigned == 0) {
+                    throw raise.raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                }
+            }
+        }
+
+        @Specialization
+        static Object get(int value, Object bytes, long n, int littleEndian, int isSigned,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile profile,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached CStructAccess.WriteByteNode write) {
+            checkSign(value < 0, isSigned, raise);
+            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+            write.writeByteArray(bytes, array);
+            return 0;
+        }
+
+        @Specialization
+        static Object get(long value, Object bytes, long n, int littleEndian, int isSigned,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile profile,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached CStructAccess.WriteByteNode write) {
+            checkSign(value < 0, isSigned, raise);
+            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+            write.writeByteArray(bytes, array);
+            return 0;
+        }
+
+        @Specialization
+        static Object get(PInt value, Object bytes, long n, int littleEndian, int isSigned,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile profile,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached CStructAccess.WriteByteNode write) {
+            checkSign(value.isNegative(), isSigned, raise);
+            byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+            write.writeByteArray(bytes, array);
             return 0;
         }
     }

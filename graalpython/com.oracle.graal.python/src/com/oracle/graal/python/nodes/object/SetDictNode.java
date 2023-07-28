@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -81,8 +82,8 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached CExtNodes.ToSulongNode objectToSulong,
-                    @Cached CExtNodes.ToSulongNode dictToSulong,
+                    @Cached PythonToNativeNode objectToSulong,
+                    @Cached PythonToNativeNode dictToSulong,
                     @Cached CExtNodes.PCallCapiFunction callGetDictNode,
                     @Cached CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.getUncached().execute(object);

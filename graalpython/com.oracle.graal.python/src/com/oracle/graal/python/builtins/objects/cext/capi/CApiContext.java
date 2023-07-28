@@ -40,15 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_M_INDEX;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
-import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,32 +58,24 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -96,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -126,7 +112,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -134,7 +119,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class CApiContext extends CExtContext {
@@ -146,12 +130,6 @@ public final class CApiContext extends CExtContext {
      */
     public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
-
-    /**
-     * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
-     * should be looked up lazily</it>
-     */
-    static final CApiContext LAZY_CONTEXT = new CApiContext();
 
     /* a random number between 1 and 20 */
     private static final int MAX_COLLECTION_RETRIES = 17;
@@ -173,15 +151,6 @@ public final class CApiContext extends CExtContext {
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
     private final WeakIdentityHashMap<TruffleString, PString> promotedTruffleStringCache;
-
-    /**
-     * Required to emulate PyLongObject's ABI; number of bits per digit (equal to
-     * {@code PYLONG_BITS_IN_DIGIT}.
-     */
-    @CompilationFinal private int pyLongBitsInDigit = -1;
-
-    /** Cache for polyglot types of primitive and pointer types. */
-    @CompilationFinal(dimensions = 1) private final Object[] llvmTypeCache;
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
@@ -217,28 +186,14 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
     private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
     private Object nativeLibrary;
-    private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    /**
-     * Private dummy constructor just for {@link #LAZY_CONTEXT}.
-     */
-    private CApiContext() {
-        super(null, null);
-        primitiveNativeWrapperCache = null;
-        promotedTruffleStringCache = null;
-        llvmTypeCache = null;
-    }
-
-    public CApiContext(PythonContext context, Object llvmLibrary) {
-        super(context, llvmLibrary);
-
-        // initialize primitive and pointer type cache
-        llvmTypeCache = new Object[LLVMType.values().length];
+    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
+        super(context, llvmLibrary, useNativeBackend);
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -248,22 +203,6 @@ public final class CApiContext extends CExtContext {
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
         promotedTruffleStringCache = new WeakIdentityHashMap<>();
-    }
-
-    public int getPyLongBitsInDigit() {
-        if (pyLongBitsInDigit < 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_LONG_BITS_PER_DIGIT);
-        }
-        return pyLongBitsInDigit;
-    }
-
-    public Object getLLVMTypeID(LLVMType llvmType) {
-        return llvmTypeCache[llvmType.ordinal()];
-    }
-
-    public void setLLVMTypeID(LLVMType llvmType, Object llvmTypeId) {
-        llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
     }
 
     public long getAndIncMaxModuleNumber() {
@@ -564,134 +503,51 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Enum of basic C types. These type names need to stay in sync with the declarations in
-     * 'modsupport.c'.
+     * This represents whether the current process has already loaded an instance of the native CAPI
+     * extensions - this can only be loaded once per process.
      */
-    public enum LLVMType {
-        int_t,
-        uint_t,
-        int8_t,
-        int16_t,
-        int32_t,
-        int64_t,
-        uint8_t,
-        uint16_t,
-        uint32_t,
-        uint64_t,
-        long_t,
-        ulong_t,
-        longlong_t,
-        ulonglong_t,
-        float_t,
-        double_t,
-        size_t,
-        Py_ssize_t,
-        Py_complex,
-        PyObject,
-        PyMethodDef,
-        PyTypeObject,
-        PyObject_ptr_t,
-        char_ptr_t,
-        void_ptr_t,
-        int8_ptr_t,
-        int16_ptr_t,
-        int32_ptr_t,
-        int64_ptr_t,
-        uint8_ptr_t,
-        uint16_ptr_t,
-        uint32_ptr_t,
-        uint64_ptr_t,
-        Py_complex_ptr_t,
-        PyObject_ptr_ptr_t,
-        float_ptr_t,
-        double_ptr_t,
-        Py_ssize_ptr_t,
-        PyThreadState;
-
-        private final NativeCAPISymbol getter = NativeCAPISymbol.getByName(J_GET_ + name() + J_TYPE_ID);
-
-        public NativeCAPISymbol getGetterFunctionName() {
-            if (getter == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("no getter for LLVMType " + name());
-            }
-            return getter;
-        }
-
-        public static boolean isPointer(LLVMType llvmType) {
-            switch (llvmType) {
-                case PyObject_ptr_t:
-                case char_ptr_t:
-                case int8_ptr_t:
-                case int16_ptr_t:
-                case int32_ptr_t:
-                case int64_ptr_t:
-                case uint8_ptr_t:
-                case uint16_ptr_t:
-                case uint32_ptr_t:
-                case uint64_ptr_t:
-                case Py_complex_ptr_t:
-                case PyObject_ptr_ptr_t:
-                case float_ptr_t:
-                case double_ptr_t:
-                case Py_ssize_ptr_t:
-                    return true;
-            }
-            return false;
-        }
-
-        public static boolean isPointerToPrimitive(LLVMType llvmType) {
-            switch (llvmType) {
-                case int8_ptr_t:
-                case int16_ptr_t:
-                case int32_ptr_t:
-                case int64_ptr_t:
-                case uint8_ptr_t:
-                case uint16_ptr_t:
-                case uint32_ptr_t:
-                case uint64_ptr_t:
-                case float_ptr_t:
-                case double_ptr_t:
-                case char_ptr_t:
-                    return true;
-            }
-            return false;
-        }
-    }
-
-    // XXX: We have to hold on to this so that NFI doesn't unload the library again
-    static Object nativeLibpython;
+    private static boolean nativeCAPILoaded = false;
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
+            InteropLibrary U = InteropLibrary.getUncached();
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
             String libName = context.getLLVMSupportExt("python");
             TruffleFile capiFile = homePath.resolve(libName);
             try {
-                SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
+                SourceBuilder capiSrcBuilder;
+                boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions()) && !nativeCAPILoaded;
+                nativeCAPILoaded |= useNative;
+                if (useNative) {
+                    capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getAbsoluteFile().getPath() + "\"", "<libpython>");
+                } else {
+                    capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
+                }
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
-                LOGGER.config(() -> "loading CAPI from " + capiFile);
+                LOGGER.config(() -> "loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
-                // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
-                context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
-                Object capiLibrary = capiLibraryCallTarget.call();
-                InteropLibrary.getUncached().invokeMember(capiLibrary, "initialize_graal_capi", new PythonToNativeTransfer(), new JavaStringToTruffleString(), new HandleTester(), new GetBuiltin());
 
-                String libpython = System.getProperty("LibPythonNativeLibrary");
-                if (libpython != null) {
-                    SourceBuilder nfiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
-                    nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
+                Object capiLibrary = capiLibraryCallTarget.call();
+                Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
+                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
+                context.setCApiContext(cApiContext);
+                if (!U.isExecutable(initFunction)) {
+                    Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                    initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                    U.execute(initFunction, new GetBuiltin());
+                } else {
+                    U.execute(initFunction, new PointerContainer(0), new GetBuiltin());
                 }
 
                 assert CApiCodeGen.assertBuiltins(capiLibrary);
-                CApiContext cApiContext = new CApiContext(context, capiLibrary);
-                context.setCapiWasLoaded(cApiContext);
+                PyDateTimeCAPIWrapper.initWrapper(cApiContext);
+                context.runCApiHooks();
 
                 return cApiContext;
             } catch (PException e) {
@@ -782,52 +638,15 @@ public final class CApiContext extends CExtContext {
 
             // _PyState_AddModule
             Object moduleDef = module.getNativeModuleDef();
-            try {
-                Object mIndexObject = PCallCapiFunction.getUncached().call(cApiContext, FUN_GET_M_INDEX, moduleDef);
-                int mIndex = InteropLibrary.getUncached().asInt(mIndexObject);
-                while (modulesByIndex.size() <= mIndex) {
-                    modulesByIndex.add(null);
-                }
-                modulesByIndex.set(mIndex, module);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            int mIndex = PythonUtils.toIntError(CStructAccess.ReadI64Node.getUncached().read(moduleDef, CFields.PyModuleDef_Base__m_index));
+            while (modulesByIndex.size() <= mIndex) {
+                modulesByIndex.add(null);
             }
+            modulesByIndex.set(mIndex, module);
 
             // add to 'import.c: extensions'
             extensions.put(Pair.create(spec.path, spec.name), module.getNativeModuleDef());
             return result;
-        }
-    }
-
-    private final HashMap<String, Long> typeStorePointers = new HashMap<>();
-
-    public Long getTypeStore(String typename) {
-        return typeStorePointers.get(typename);
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    static final class GetAPI implements TruffleObject {
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        @TruffleBoundary
-        Object execute(Object[] arguments) {
-            assert arguments.length == 1;
-            String name = (String) arguments[0];
-            try {
-                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-                LOGGER.finer("getAPI " + name);
-                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
-            } catch (Throwable e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -850,8 +669,7 @@ public final class CApiContext extends CExtContext {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                 if (PythonContext.get(null).getCApiContext() != null) {
                     Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-                    assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
-                                    builtin.name();
+                    assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin, llvmLibrary) : "name clash in builtin vs. CAPI library: " + builtin.name();
                 }
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
                 return builtin;
@@ -860,234 +678,21 @@ public final class CApiContext extends CExtContext {
                 throw new RuntimeException(e);
             }
         }
-    }
 
-    @ExportLibrary(InteropLibrary.class)
-    static final class GetType implements TruffleObject {
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        @TruffleBoundary
-        Object execute(Object[] arguments) {
-            assert arguments.length == 1;
-            String typename = (String) arguments[0];
-
-            Object result = null;
+        private static boolean isAvailable(CApiBuiltinExecutable builtin, Object llvmLibrary) {
+            if (!InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name())) {
+                return false;
+            }
             try {
-                Python3Core core = PythonContext.get(null).getCore();
-                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-                switch (typename) {
-                    case "Py_False":
-                        result = false;
-                        break;
-                    case "Py_True":
-                        result = true;
-                        break;
-                    case "PyLong_One":
-                    case "_PyTruffle_One":
-                        result = 1;
-                        break;
-                    case "PyLong_Zero":
-                    case "_PyTruffle_Zero":
-                        result = 0;
-                        break;
-                    case "Py_NotImplemented":
-                        result = PNotImplemented.NOT_IMPLEMENTED;
-                        break;
-                    case "Py_Ellipsis":
-                        result = PEllipsis.INSTANCE;
-                        break;
-                    case "Py_None":
-                        result = PNone.NONE;
-                        break;
-                    case "capsule":
-                        result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
-                        result = InteropLibrary.getUncached().execute(result);
-                        result = NativeToPythonNode.executeUncached(result);
-                        break;
-                }
-                if (result == null) {
-                    for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                        if (type.getName().toJavaStringUncached().equals(typename)) {
-                            result = core.lookupType(type);
-                            break;
-                        }
-                    }
-                }
-                if (result == null) {
-                    TruffleString tsTypename = PythonUtils.toTruffleStringUncached(typename);
-                    for (TruffleString module : LOOKUP_MODULES) {
-                        Object attribute = core.lookupBuiltinModule(module).getAttribute(tsTypename);
-                        if (attribute instanceof PBuiltinMethod) {
-                            attribute = CallNode.getUncached().execute(attribute);
-                        }
-                        if (attribute != PNone.NO_VALUE) {
-                            result = attribute;
-                            break;
-                        }
-                    }
-                }
-                if (result == null && resolveConstant(typename) != -1) {
-                    // get symbols allocated in bitcode
-                    result = InteropLibrary.getUncached().invokeMember(llvmLibrary, "truffle_get_constant", resolveConstant(typename));
-                    InteropLibrary.getUncached().toNative(result);
-                    return InteropLibrary.getUncached().asPointer(result);
-                }
-                if (result != null) {
-                    result = PythonToNativeNewRefNode.executeUncached(result);
-                    long l;
-                    if (result instanceof Long) {
-                        l = (long) result;
-                    } else {
-                        InteropLibrary.getUncached().toNative(result);
-                        l = InteropLibrary.getUncached().asPointer(result);
-                    }
-                    LOGGER.finer("CApiContext.GetType " + typename + " -> " + java.lang.Long.toHexString(l));
-                    return l;
-                }
-                throw new RuntimeException("type " + typename + " not found");
-            } catch (Throwable e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    static final class SetTypeStore implements TruffleObject {
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        @TruffleBoundary
-        Object execute(Object[] arguments) {
-            assert arguments.length == 2;
-            String typename = (String) arguments[0];
-            long ptr = (long) arguments[1];
-
-            LOGGER.finer("CApiContext.SetTypeStore " + typename + " -> " + java.lang.Long.toHexString(ptr));
-            if (!"unimplemented".equals(typename)) {
-                CApiContext context = PythonContext.get(null).getCApiContext();
-                assert !context.typeStorePointers.containsKey(typename) : typename;
-                context.typeStorePointers.put(typename, ptr);
-            }
-            return 0;
-        }
-    }
-
-    public boolean ensureNative() {
-        if (loadNativeLibrary) {
-            loadNativeLibrary = false;
-            Env env = PythonContext.get(null).getEnv();
-
-            if (!env.isNativeAccessAllowed()) {
-                LOGGER.config("not loading native C API support library (native access not allowed)");
-                return false;
-            }
-
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            if (!J_NATIVE.equals(toolchain.getIdentifier())) {
-                LOGGER.config("not loading native C API support library (non-native toolchain detected)");
-                return false;
-            }
-
-            if (PythonOptions.NativeModules.getValue(env.getOptions()).isBlank()) {
-                LOGGER.config("not loading native C API support library (--python.NativeModules=)");
-                return false;
-            }
-
-            SourceBuilder nfiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + GraalHPyJNIContext.getJNILibrary() + "\"", "<libpython-native>");
-            try {
-                LOGGER.config("loading native C API support library " + GraalHPyJNIContext.getJNILibrary());
-                nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
-                /*-
-                 * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
-                 */
-                Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
-                Object initializeNativeLocations = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "initialize_native_locations");
-                Object signature = env.parseInternal(
-                                Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32",
-                                                "exec").build()).call();
-                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore(), initializeNativeLocations);
-                if (InteropLibrary.getUncached().asInt(result) == 0) {
-                    // this is not the first context - native C API backend not supported
-                    nativeLibrary = null;
-                    LOGGER.config("not using native C API support library (only supported on initial context)");
-                } else {
-                    LOGGER.config("using native C API support library");
-                }
-            } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
-                e.printStackTrace();
+                InteropLibrary.getUncached().readMember(llvmLibrary, builtin.name());
+                return true;
+            } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } catch (UnknownIdentifierException e) {
+                // NFI lied to us about symbol availability!
+                return false;
             }
         }
-        return nativeLibrary != null;
-    }
-
-    private static final TruffleString[] LOOKUP_MODULES = tsArray(new String[]{
-                    "_weakref",
-                    "builtins"
-    });
-
-    private static int resolveConstant(String typename) {
-        // this needs to correspond to truffle_get_constant in capi.c
-        switch (typename) {
-            case "_Py_ascii_whitespace":
-                return 0;
-            case "_Py_ctype_table":
-                return 1;
-            case "_Py_ctype_tolower":
-                return 2;
-            case "_Py_ctype_toupper":
-                return 3;
-            case "_Py_tracemalloc_config":
-                return 4;
-            case "_Py_HashSecret":
-                return 5;
-            case "Py_DebugFlag":
-                return 6;
-            case "Py_VerboseFlag":
-                return 7;
-            case "Py_QuietFlag":
-                return 8;
-            case "Py_InteractiveFlag":
-                return 9;
-            case "Py_InspectFlag":
-                return 10;
-            case "Py_OptimizeFlag":
-                return 11;
-            case "Py_NoSiteFlag":
-                return 12;
-            case "Py_BytesWarningFlag":
-                return 13;
-            case "Py_FrozenFlag":
-                return 14;
-            case "Py_IgnoreEnvironmentFlag":
-                return 15;
-            case "Py_DontWriteBytecodeFlag":
-                return 16;
-            case "Py_NoUserSiteDirectory":
-                return 17;
-            case "Py_UnbufferedStdioFlag":
-                return 18;
-            case "Py_HashRandomizationFlag":
-                return 19;
-            case "Py_IsolatedFlag":
-                return 20;
-        }
-        return -1;
     }
 
     public long getClosurePointer(Object executable) {
@@ -1115,7 +720,7 @@ public final class CApiContext extends CExtContext {
         boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
         Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
-        long pointer = PythonNativeWrapper.coerceToLong(closure, InteropLibrary.getUncached());
+        long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
         return pointer;
     }

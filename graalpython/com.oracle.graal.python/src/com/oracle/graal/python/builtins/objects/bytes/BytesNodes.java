@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBytesObject__ob_sval;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NON_HEX_NUMBER_IN_FROMHEX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -67,8 +69,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -99,9 +100,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -118,8 +118,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -929,20 +927,16 @@ public abstract class BytesNodes {
 
     @GenerateInline(false)
     public abstract static class GetNativeBytesStorage extends Node {
-        public abstract NativeSequenceStorage execute(PythonAbstractNativeObject tuple);
+        public abstract NativeByteSequenceStorage execute(PythonAbstractNativeObject tuple);
 
         @Specialization
-        NativeSequenceStorage getNative(PythonAbstractNativeObject bytes,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached PCallCapiFunction callCapiFunction) {
+        NativeByteSequenceStorage getNative(PythonAbstractNativeObject bytes,
+                        @Cached CStructAccess.GetElementPtrNode getContents,
+                        @Cached CStructAccess.ReadI64Node readI64Node) {
             assert PyBytesCheckNode.executeUncached(bytes) || PyByteArrayCheckNode.executeUncached(bytes);
-            try {
-                Object interopArray = callCapiFunction.call(NativeCAPISymbol.FUN_PY_TRUFFLE_NATIVE_BYTES_ITEMS, bytes.getPtr());
-                int size = (int) lib.getArraySize(interopArray);
-                return NativeSequenceStorage.create(interopArray, size, size, ListStorageType.Byte, false);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            Object array = getContents.getElementPtr(bytes.getPtr(), PyBytesObject__ob_sval);
+            int size = (int) readI64Node.readFromObj(bytes, PyVarObject__ob_size);
+            return NativeByteSequenceStorage.create(array, size, size, false);
         }
     }
 

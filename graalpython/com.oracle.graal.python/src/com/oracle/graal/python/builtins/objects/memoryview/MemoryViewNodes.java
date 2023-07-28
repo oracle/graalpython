@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -84,10 +85,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -205,26 +202,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                for (int i = 0; i < cachedLen; i++) {
-                    dest[destOffset + i] = (byte) lib.readArrayElement(ptr, offset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            readNode.readByteArray(ptr, dest, cachedLen, offset, destOffset);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                for (int i = 0; i < len; i++) {
-                    dest[destOffset + i] = (byte) lib.readArrayElement(ptr, offset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            readNode.readByteArray(ptr, dest, len, offset, destOffset);
         }
 
         @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
@@ -252,26 +237,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                for (int i = 0; i < cachedLen; i++) {
-                    lib.writeArrayElement(ptr, offset + i, src[srcOffset + i]);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+                        @Cached CStructAccess.WriteByteNode writeNode) {
+            writeNode.writeByteArray(ptr, src, cachedLen, srcOffset, offset);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                for (int i = 0; i < len; i++) {
-                    lib.writeArrayElement(ptr, offset + i, src[srcOffset + i]);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+                        @Cached CStructAccess.WriteByteNode writeNode) {
+            writeNode.writeByteArray(ptr, src, len, srcOffset, offset);
         }
 
         @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
@@ -298,32 +271,19 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static Object doNativeCached(PMemoryView self, Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CStructAccess.ReadByteNode readNode,
                         @Cached UnpackValueNode unpackValueNode) {
-            byte[] bytes = new byte[cachedItemSize];
-            try {
-                for (int i = 0; i < cachedItemSize; i++) {
-                    bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+
+            byte[] bytes = readNode.readByteArray(ptr, cachedItemSize, offset);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static Object doNativeGeneric(PMemoryView self, Object ptr, int offset,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CStructAccess.ReadByteNode readNode,
                         @Cached UnpackValueNode unpackValueNode) {
-            int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            try {
-                for (int i = 0; i < itemSize; i++) {
-                    bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+
+            byte[] bytes = readNode.readByteArray(ptr, self.getItemSize(), offset);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
@@ -381,33 +341,20 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doNativeCached(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CStructAccess.WriteByteNode writeNode,
                         @Cached PackValueNode packValueNode) {
             byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            try {
-                for (int i = 0; i < cachedItemSize; i++) {
-                    lib.writeArrayElement(ptr, offset + i, bytes[i]);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+            writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
         static void doNativeGeneric(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CStructAccess.WriteByteNode writeNode,
                         @Cached PackValueNode packValueNode) {
-            int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
+            byte[] bytes = new byte[self.getItemSize()];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            try {
-                for (int i = 0; i < itemSize; i++) {
-                    lib.writeArrayElement(ptr, offset + i, bytes[i]);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
+            writeNode.writeByteArray(ptr, bytes, bytes.length, 0, offset);
         }
 
         @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8", "!isPMMap(self.getOwner())"}, limit = "4")
@@ -489,7 +436,7 @@ public class MemoryViewNodes {
             if (hasSuboffsetsProfile.profile(inliningTarget, suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
-                ptr.ptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim], self.getLength());
+                ptr.ptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim]);
                 ptr.offset = 0;
             }
         }
@@ -661,7 +608,7 @@ public class MemoryViewNodes {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -696,7 +643,7 @@ public class MemoryViewNodes {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {

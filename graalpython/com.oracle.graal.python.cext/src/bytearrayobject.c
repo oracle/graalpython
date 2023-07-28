@@ -65,3 +65,11 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
 void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
     set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) - 1);
 }
+
+char* PyByteArray_AsString(PyObject* obj) {
+    return PyByteArray_AS_STRING(obj);
+}
+
+Py_ssize_t PyByteArray_Size(PyObject *self) {
+    return PyByteArray_GET_SIZE(self);
+}

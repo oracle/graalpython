@@ -40,6 +40,9 @@
  */
 
 #include "capi.h"
+#include <trufflenfi.h>
+
+extern TruffleContext* TRUFFLE_CONTEXT;
 
 PyThreadState *
 _PyThreadState_UncheckedGet(void) {
@@ -116,14 +119,29 @@ int PyState_RemoveModule(struct PyModuleDef* def) {
     return 0;
 }
 
-// This function has a different implementation on NFI in capi_native.c
+#define _PYGILSTATE_LOCKED   0x1
+#define _PYGILSTATE_ATTACHED 0x2
+
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    return GraalPyTruffleGILState_Ensure();
+    int result = 0;
+    if (TRUFFLE_CONTEXT) {
+		if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+			(*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+			result |= _PYGILSTATE_ATTACHED;
+		}
+    }
+    int locked = GraalPyTruffleGILState_Ensure();
+    if (locked) {
+        result |= _PYGILSTATE_LOCKED;
+    }
+    return result;
 }
 
-// This function has a different implementation on NFI in capi_native.c
 PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
-    if (state) {
+    if (state & _PYGILSTATE_LOCKED) {
         GraalPyTruffleGILState_Release();
+    }
+    if (TRUFFLE_CONTEXT && (state & _PYGILSTATE_ATTACHED)) {
+        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
 }

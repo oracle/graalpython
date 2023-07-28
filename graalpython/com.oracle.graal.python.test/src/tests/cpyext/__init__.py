@@ -509,7 +509,7 @@ def CPyExtType(name, code, **kwargs):
     {includes}
 
     typedef struct {{
-        {struct_base};
+        {struct_base}
         {cmembers}
     }} {name}Object;
 

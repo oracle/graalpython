@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInt
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
@@ -162,6 +161,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
@@ -753,6 +753,11 @@ public final class PythonContext extends Python3Core {
 
     // the actual pointer will be set when the cext is initialized
     private final PythonNativePointer nativeNull = new PythonNativePointer(null);
+
+    public RootCallTarget signatureContainer;
+
+    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    }
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;
@@ -2413,12 +2418,12 @@ public final class PythonContext extends Python3Core {
         return cApiContext;
     }
 
-    public void setCapiWasLoaded(CApiContext capiContext) {
+    public void setCApiContext(CApiContext capiContext) {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
+    }
 
-        PyDateTimeCAPIWrapper.initWrapper(capiContext);
-
+    public void runCApiHooks() {
         for (Runnable capiHook : capiHooks) {
             capiHook.run();
         }
