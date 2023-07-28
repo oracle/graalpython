@@ -229,9 +229,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     // a dash follows after the opt flag pair
     static final int MIME_KIND_START = MIME_PREFIX.length() + OPT_FLAGS_LEN + 1;
 
-    static {
+    private static boolean mimeTypesComplete(ArrayList<String> mimeJavaStrings) {
         ArrayList<String> mimeTypes = new ArrayList<>();
-        ArrayList<String> mimeJavaStrings = new ArrayList<>();
         FutureFeature[] all = FutureFeature.values();
         for (int flagset = 0; flagset < (1 << all.length); ++flagset) {
             int flags = 0;
@@ -248,9 +247,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         HashSet<String> currentMimeTypes = new HashSet<>(List.of(PythonLanguage.class.getAnnotation(Registration.class).characterMimeTypes()));
-        if (!currentMimeTypes.containsAll(mimeTypes)) {
-            assert false : "Expected all of {" + String.join(", ", mimeJavaStrings) + "} in the PythonLanguage characterMimeTypes";
-        }
+        return currentMimeTypes.containsAll(mimeTypes);
+    }
+
+    static {
+        ArrayList<String> mimeJavaStrings = new ArrayList<>();
+        assert mimeTypesComplete(mimeJavaStrings) : "Expected all of {" + String.join(", ", mimeJavaStrings) + "} in the PythonLanguage characterMimeTypes";
     }
 
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
