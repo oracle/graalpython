@@ -216,20 +216,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         PYTHON_RESOURCE_CLASS = getPythonResourceClass();
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
-            if (MAJOR != is.read()) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR");
+            int ch;
+            if (MAJOR != (ch = is.read())) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
             }
-            if (MINOR != is.read()) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR");
+            if (MINOR != (ch = is.read())) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
             }
-            if (MICRO != is.read()) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO");
+            if (MICRO != (ch = is.read())) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != is.read()) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR");
+            if (GRAALVM_MAJOR != (ch = is.read())) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
             }
-            if (GRAALVM_MINOR != is.read()) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR");
+            if (GRAALVM_MINOR != (ch = is.read())) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

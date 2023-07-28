@@ -1721,18 +1721,20 @@ public final class PythonContext extends Python3Core {
             home = null;
         }
 
-        Supplier<?>[] homeCandidates = new Supplier<?>[] {
-            () -> { return home; },
-            () -> {
-                if (PythonLanguage.PYTHON_RESOURCE_CLASS != null) {
-                    try {
-                        return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
-                    } catch (IOException e) {
-                        // fall through
-                    }
-                }
-                return null;
-            }
+        Supplier<?>[] homeCandidates = new Supplier<?>[]{
+                        () -> {
+                            return home;
+                        },
+                        () -> {
+                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null) {
+                                try {
+                                    return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
+                                } catch (IOException e) {
+                                    // fall through
+                                }
+                            }
+                            return null;
+                        }
         };
         for (Supplier<?> homeCandidateSupplier : homeCandidates) {
             final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
@@ -1832,6 +1834,7 @@ public final class PythonContext extends Python3Core {
             if (sysPrefix.isEmpty()) {
                 sysPrefix = T_DOT;
             }
+            langHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(langHome.toJavaStringUncached())).getPath());
             coreHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(coreHome.toJavaStringUncached())).getPath());
             stdLibHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(stdLibHome.toJavaStringUncached())).getPath());
             capiHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(capiHome.toJavaStringUncached())).getPath());
