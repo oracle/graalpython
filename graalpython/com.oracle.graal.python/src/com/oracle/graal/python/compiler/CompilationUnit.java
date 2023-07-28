@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -96,8 +97,10 @@ public final class CompilationUnit {
     SourceRange startLocation;
     SourceRange currentLocation;
 
+    final EnumSet<FutureFeature> futureFeatures;
+
     CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int scopeDepth, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
-                    boolean takesVarKeywordArgs, SourceRange startLocation) {
+                    boolean takesVarKeywordArgs, SourceRange startLocation, EnumSet<FutureFeature> futureFeatures) {
         this.scopeType = scopeType;
         this.scope = scope;
         this.name = name;
@@ -107,6 +110,7 @@ public final class CompilationUnit {
         this.takesVarArgs = takesVarArgs;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startLocation = startLocation;
+        this.futureFeatures = futureFeatures;
         currentLocation = startLocation;
 
         if (scopeType == Class) {
@@ -263,6 +267,10 @@ public final class CompilationUnit {
             flags |= PCode.CO_GENERATOR;
         } else if (scope.isCoroutine()) {
             flags |= PCode.CO_COROUTINE;
+        }
+
+        for (FutureFeature flag : futureFeatures) {
+            flags |= flag.flagValue;
         }
 
         final int rangeElements = 4;

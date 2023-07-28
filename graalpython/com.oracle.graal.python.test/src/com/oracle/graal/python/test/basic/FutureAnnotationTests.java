@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,37 +38,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
+package com.oracle.graal.python.test.basic;
 
-import java.util.EnumSet;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-public enum FutureFeature {
-    ANNOTATIONS(0x1000000),
-    BARRY_AS_BDFL(0x400000);
+import org.junit.Test;
 
-    public final int flagValue;
-    public static final int ALL_FLAGS;
-
-    private static final FutureFeature[] VALUES = FutureFeature.values();
-    static {
-        int flags = 0;
-        for (FutureFeature feat : VALUES) {
-            flags |= feat.flagValue;
-        }
-        ALL_FLAGS = flags;
+public class FutureAnnotationTests {
+    @Test
+    public void withoutEvaluates() {
+        assertPrints("hello\n", "def f() -> print('hello'): pass");
     }
 
-    FutureFeature(int flagValue) {
-        this.flagValue = flagValue;
+    @Test
+    public void withDoesNotEvaluate() {
+        assertPrints("", "from __future__ import annotations\ndef f() -> print('hello'): pass");
     }
 
-    public static EnumSet<FutureFeature> fromFlags(int flags) {
-        EnumSet<FutureFeature> set = EnumSet.noneOf(FutureFeature.class);
-        for (FutureFeature feat : VALUES) {
-            if ((feat.flagValue & flags) != 0) {
-                set.add(feat);
-            }
-        }
-        return set;
+    @Test
+    public void worksInExec() {
+        assertPrints("hello\n", "exec('def f() -> print(\\'hello\\'): pass')");
+        assertPrints("", "exec('from __future__ import annotations\\ndef f() -> print(\\'hello\\'): pass')");
     }
+
+    @Test
+    public void execInherits() {
+        assertPrints("", "from __future__ import annotations\nexec('def f() -> print(\\'hello\\'): pass')");
+    }
+
 }

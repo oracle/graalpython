@@ -58,6 +58,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -1096,7 +1097,7 @@ public class CompilerTests extends PythonTests {
         Parser parser = Compiler.createParser(src, errorCallback, type, false);
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
-        CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
+        CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2, EnumSet.noneOf(FutureFeature.class));
         return cu.assemble();
     }
 
