@@ -256,7 +256,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
         }
-        if (!context.getOption(PythonOptions.RunViaLauncher)) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
         }
     }
@@ -959,6 +959,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object list(TruffleString dirPath, TruffleString filesListPath) {
+            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             print(getContext().getStandardOut(), String.format("listing files from '%s' to '%s'\n", dirPath, filesListPath));
 
             TruffleFile dir = getContext().getPublicTruffleFileRelaxed(dirPath);
