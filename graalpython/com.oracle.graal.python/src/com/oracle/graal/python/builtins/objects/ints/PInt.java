@@ -301,6 +301,16 @@ public final class PInt extends PythonBuiltinObject {
         }
     }
 
+    @ExportMessage
+    boolean fitsInBigInteger() {
+      return true;
+    }
+
+    @ExportMessage
+    BigInteger asBigInteger() {
+      return value;
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();
