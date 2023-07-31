@@ -128,35 +128,45 @@ public abstract class GraalHPyObjectBuiltins {
             }
             PythonContext context = PythonContext.get(this);
             Object dataPtr = null;
+            Object defaultCallFunction = null;
             if (self instanceof PythonClass pythonClass) {
                 // allocate native space
-                long basicSize = pythonClass.basicSize;
-                assert basicSize > 0;
-                /*
-                 * This is just calling 'calloc' which is a pure helper function. Therefore, we can
-                 * take any HPy context and don't need to attach a context to this __new__ function
-                 * for that since the helper function won't deal with handles.
-                 */
-                dataPtr = ensureCallHPyFunctionNode().call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                long basicSize = pythonClass.getBasicSize();
+                if(basicSize > 0) {
+                    /*
+                     * This is just calling 'calloc' which is a pure helper function. Therefore, we can
+                     * take any HPy context and don't need to attach a context to this __new__ function
+                     * for that since the helper function won't deal with handles.
+                     */
+                    dataPtr = ensureCallHPyFunctionNode().call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
 
-                if (LOGGER.isLoggable(Level.FINEST)) {
-                    LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                    if (LOGGER.isLoggable(Level.FINEST)) {
+                        LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                    }
                 }
-                // TODO(fa): add memory tracing
+
+                defaultCallFunction = pythonClass.getHPyDefaultCallFunc();
             }
 
             Object builtinConstructor = extractInheritedConstructor(context, builtinClassType);
-            Object pythonObject = ensureCallNewNode().execute(frame, builtinConstructor, argsWithSelf, keywords);
+            Object result = ensureCallNewNode().execute(frame, builtinConstructor, argsWithSelf, keywords);
 
             /*
              * Since we are creating an object with an unknown constructor, the Java type may be
              * anything (e.g. PInt, etc). However, we require it to be a PythonObject otherwise we
              * don't know where to store the native data pointer.
              */
-            if (dataPtr != null && pythonObject instanceof PythonObject) {
-                ((PythonObject) pythonObject).setHPyNativeSpace(dataPtr);
+            if (result instanceof PythonObject pythonObject) {
+                if (dataPtr != null) {
+                    GraalHPyData.setHPyNativeSpace(pythonObject, dataPtr);
+                }
+                if (defaultCallFunction != null) {
+                    GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunction);
+                }
+            } else {
+                assert false : "inherited constructor of HPy type did not create a managed Python object";
             }
-            return pythonObject;
+            return result;
         }
 
         private static PythonBuiltinClassType getBuiltinClassType(int builtinShape) {

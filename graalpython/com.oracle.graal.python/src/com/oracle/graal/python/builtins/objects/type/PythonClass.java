@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyTypeExtra;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -67,11 +69,7 @@ public final class PythonClass extends PythonManagedClass {
     private static final int MRO_SUBTYPES_MAX = 64;
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
 
-    public long flags;
-    public long basicSize = -1;
-    public long itemSize = -1;
-    public Object hpyDestroyFunc;
-    public Object tpName;
+    public HPyTypeExtra hPyTypeExtra;
 
     private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
     private MroShape mroShape;
@@ -377,5 +375,48 @@ public final class PythonClass extends PythonManagedClass {
                 toProcess.addAll(((PythonBuiltinClass) next).getSubClasses());
             }
         }
+    }
+
+    public long getBasicSize() {
+        return hPyTypeExtra != null ? hPyTypeExtra.basicSize : -1;
+    }
+
+    public Object getHPyDestroyFunc() {
+        if (hPyTypeExtra != null) {
+            return hPyTypeExtra.hpyDestroyFunc;
+        }
+        return null;
+    }
+
+    public Object getTpName() {
+        return hPyTypeExtra != null ? hPyTypeExtra.tpName : null;
+    }
+
+    public long getFlags() {
+        return hPyTypeExtra != null ? hPyTypeExtra.flags : 0;
+    }
+
+    public int getBuiltinShape() {
+        return hPyTypeExtra != null ? hPyTypeExtra.builtinShape : GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY;
+    }
+
+    public Object getHPyDefaultCallFunc() {
+        return hPyTypeExtra != null ? hPyTypeExtra.defaultCallFunc : null;
+    }
+
+    public void setHPyDestroyFunc(Object destroyFunc) {
+        hPyTypeExtra.hpyDestroyFunc = destroyFunc;
+    }
+
+    public void setHPyDefaultCallFunc(Object defaultCallFunc) {
+        hPyTypeExtra.defaultCallFunc = defaultCallFunc;
+    }
+
+    public void setHPyTypeExtra(HPyTypeExtra hpyTypeExtra) {
+        this.hPyTypeExtra = hpyTypeExtra;
+    }
+
+    public boolean isHPyType() {
+        return hPyTypeExtra != null;
     }
 }

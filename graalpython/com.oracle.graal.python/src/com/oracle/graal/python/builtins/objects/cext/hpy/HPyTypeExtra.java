@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.object.Shape;
+public final class HPyTypeExtra {
+    public final long flags;
+    public final long basicSize;
+    public final long itemSize;
+    public final Object tpName;
+    public final int builtinShape;
 
-public final class PythonHPyObject extends PythonObject {
+    public Object defaultCallFunc;
+    public Object hpyDestroyFunc;
 
-    public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
-        super(pythonClass, instanceShape);
-        if (hpyNativeSpace != null) {
-            GraalHPyData.setHPyNativeSpace(this, hpyNativeSpace);
-        }
+    public HPyTypeExtra(long flags, long basicSize, long itemSize, Object tpName, int builtinShape) {
+        this.flags = flags;
+        this.basicSize = basicSize;
+        this.itemSize = itemSize;
+        this.tpName = tpName;
+        this.builtinShape = builtinShape;
     }
 }

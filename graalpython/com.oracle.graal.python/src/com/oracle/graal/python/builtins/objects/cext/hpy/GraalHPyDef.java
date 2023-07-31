@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -242,7 +242,7 @@ public abstract class GraalHPyDef {
         BINARYFUNC(LLVMType.HPyFunc_binaryfunc),
         BINARYFUNC_L(LLVMType.HPyFunc_binaryfunc),
         BINARYFUNC_R(LLVMType.HPyFunc_binaryfunc),
-        CALL,
+        CALL(LLVMType.HPyFunc_keywords),
         HASHFUNC(LLVMType.HPyFunc_hashfunc),
         TERNARYFUNC(LLVMType.HPyFunc_ternaryfunc),
         TERNARYFUNC_R(LLVMType.HPyFunc_ternaryfunc),
@@ -382,7 +382,7 @@ public abstract class GraalHPyDef {
         HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
-        HPY_TP_CALL(50, HPySlotWrapper.NULL, T___CALL__),
+        HPY_TP_CALL(50, HPySlotWrapper.CALL, T___CALL__),
         HPY_TP_HASH(59, HPySlotWrapper.HASHFUNC, T___HASH__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
         HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
@@ -507,11 +507,7 @@ public abstract class GraalHPyDef {
 
     public static int getBuiltinShapeFromHiddenAttribute(Object object, ReadAttributeFromObjectNode readNode) {
         if (object instanceof PythonClass pythonClass) {
-            Object builtinShapeObj = readNode.execute(pythonClass, GraalHPyDef.TYPE_HPY_BUILTIN_SHAPE);
-            if (builtinShapeObj != PNone.NO_VALUE) {
-                return (Integer) builtinShapeObj;
-            }
-            return GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY;
+            return pythonClass.getBuiltinShape();
         }
         return -2; // error
     }

@@ -43,10 +43,12 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_CALL;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CALL_FUNCTION_GET_IMPL;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
@@ -1249,16 +1251,17 @@ public abstract class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCreateSlotNode extends PNodeWithContext {
 
-        public abstract Object execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+        public abstract Object execute(GraalHPyContext context, PythonClass enclosingType, Object slotDef);
 
         @Specialization
-        static Object doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+        static Object doIt(GraalHPyContext context, PythonClass enclosingType, Object slotDef,
                         @Bind("this") Node inliningTarget,
                         @Cached HPyReadSlotNode readSlotNode,
                         @Cached PythonObjectFactory factory,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
 
+            assert enclosingType.isHPyType();
             HPySlotData slotData = readSlotNode.execute(inliningTarget, context, slotDef);
             HPySlot slot = slotData.slot;
             HPyProperty property = null;
@@ -1270,10 +1273,7 @@ public abstract class GraalHPyNodes {
              * bare pointer object into Java field.
              */
             if (HPY_TP_DESTROY.equals(slot)) {
-                assert enclosingType instanceof PythonClass : "HPy destroy functions are only possible for user classes";
-                if (enclosingType instanceof PythonClass) {
-                    ((PythonClass) enclosingType).hpyDestroyFunc = slotData.impl();
-                }
+                enclosingType.setHPyDestroyFunc(slotData.impl());
             } else if (HPY_TP_TRAVERSE.equals(slot)) {
                 assert methodNames.length == 0;
                 return HPY_TP_TRAVERSE;
@@ -1291,15 +1291,21 @@ public abstract class GraalHPyNodes {
                     }
                     HPySlotWrapper slotWrapper = slotWrappers[i];
 
-                    Object function;
+                    Object enclosingTypeForFun = HPY_TP_NEW.equals(slot) ? null : enclosingType;
                     PythonLanguage language = PythonLanguage.get(raiseNode);
-                    if (HPY_TP_NEW.equals(slot)) {
-                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), null, factory);
-                    } else {
-                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), enclosingType, factory);
-                    }
+                    Object function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), enclosingTypeForFun, factory);
                     property = new HPyProperty(methodName, function, property);
                 }
+            }
+
+            /*
+             * Special case: HPy_tp_call. The installed attributed __call__ will be just a
+             * dispatcher. The actual function pointer given by the HPy definition is just the
+             * default call function that we need to remember and set on every freshly created
+             * instance of this type.
+             */
+            if (HPY_TP_CALL.equals(slot)) {
+                enclosingType.setHPyDefaultCallFunc(slotData.impl());
             }
             return property;
         }
@@ -2410,12 +2416,11 @@ public abstract class GraalHPyNodes {
                 // allocate additional memory for the metatype and set it
                 long metaBasicSize = 0;
                 Object destroyFunc = null;
-                if (metatype instanceof PythonClass) {
+                if (metatype instanceof PythonClass metaclass) {
                     // get basicsize of metatype and allocate it into
                     // GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
-                    PythonClass metaclass = (PythonClass) metatype;
-                    metaBasicSize = metaclass.basicSize;
-                    destroyFunc = metaclass.hpyDestroyFunc;
+                    metaBasicSize = metaclass.getBasicSize();
+                    destroyFunc = metaclass.getHPyDestroyFunc();
                 } else if (metatype instanceof PythonNativeClass) {
                     // This path is implemented only for completeness,
                     // but is not expected to happen often, hence the
@@ -2425,7 +2430,7 @@ public abstract class GraalHPyNodes {
                 }
                 if (metaBasicSize > 0) {
                     Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
-                    newType.setHPyNativeSpace(dataPtr);
+                    GraalHPyData.setHPyNativeSpace(newType, dataPtr);
                     if (destroyFunc != null) {
                         context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
                     }
@@ -2446,13 +2451,7 @@ public abstract class GraalHPyNodes {
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BUILTIN_SHAPE, builtinShape);
-                newType.basicSize = basicSize;
-                newType.flags = flags;
-                newType.itemSize = itemSize;
-                newType.tpName = tpName;
+                newType.setHPyTypeExtra(new HPyTypeExtra(flags, basicSize, itemSize, tpName, builtinShape));
                 newType.makeStaticBase(dylib);
 
                 boolean seenNew = false;
@@ -2531,19 +2530,22 @@ public abstract class GraalHPyNodes {
                 /*
                  * If 'basicsize > 0' and no explicit constructor is given, the constructor of the
                  * object needs to allocate the native space for the object. However, the inherited
-                 * constructors won't usually do that. The built-in shape determines the "native"
-                 * shape of the object which means that it determines which Java object we need to
-                 * allocate (e.g. PInt, PythonObject, etc.).
+                 * constructors won't do that. Also, if the default call function needs to be set
+                 * (i.e. 'HPy_tp_call' was defined), an inherited constructor won't do it.
+                 *
+                 * The built-in shape determines the "native" shape of the object which means that
+                 * it determines which Java object we need to allocate (e.g. PInt, PythonObject,
+                 * PFloat, etc.).
                  */
-                if (basicSize > 0 && !seenNew) {
+                if (!seenNew && (basicSize > 0 || newType.getHPyDefaultCallFunc() != null)) {
                     PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), builtinShape);
                     writeAttributeToObjectNode.execute(newType, SpecialMethodNames.T___NEW__, constructorDecorator);
                 }
 
                 long baseFlags;
                 Object baseClass = getSuperClassNode.execute(newType);
-                if (baseClass instanceof PythonClass) {
-                    baseFlags = ((PythonClass) baseClass).flags;
+                if (baseClass instanceof PythonClass pythonBaseClass) {
+                    baseFlags = pythonBaseClass.getFlags();
                 } else {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
@@ -2729,22 +2731,22 @@ public abstract class GraalHPyNodes {
 
         public abstract Object execute(Object object);
 
-        @Specialization(guards = "clazz.tpName != null")
-        static Object doPythonClass(PythonClass clazz) {
-            return clazz.tpName;
+        @Specialization(guards = "tpName != null")
+        static Object doPythonClass(PythonClass clazz,
+                        @Bind("clazz.getTpName()") Object tpName) {
+            return tpName;
         }
 
         @Fallback
         static Object doOther(Object type,
                         @Cached GetNameNode getName,
-                        @Cached ReadAttributeFromObjectNode readHPyFlagsNode,
                         @Cached ReadAttributeFromObjectNode readModuleNameNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString baseName = getName.execute(type);
             TruffleString name;
-            if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
+            if (type instanceof PythonClass pythonClass && pythonClass.isHPyType()) {
                 // Types that originated from HPy: although they are ordinary managed
                 // PythonClasses, the name should have "cext semantics", i.e., contain the
                 // module if it was specified in the HPyType_Spec
@@ -2774,7 +2776,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static Object doPythonObject(PythonObject object) {
-            return object.getHPyNativeSpace();
+            return GraalHPyData.getHPyNativeSpace(object);
         }
 
         @Fallback
@@ -3102,7 +3104,7 @@ public abstract class GraalHPyNodes {
                 if (idx == 0) {
                     return NULL_HANDLE_DELEGATE;
                 }
-                referent = owner.getHPyData()[idx];
+                referent = GraalHPyData.getHPyField(owner, idx);
             }
             return referent;
         }
@@ -3123,7 +3125,7 @@ public abstract class GraalHPyNodes {
                 // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
                 return 0;
             } else {
-                return assign(owner, referent, idx);
+                return GraalHPyData.setHPyField(owner, referent, idx);
             }
         }
 
@@ -3158,30 +3160,45 @@ public abstract class GraalHPyNodes {
             if (nullHandleProfile.profile(inliningTarget, referent == NULL_HANDLE_DELEGATE && idx == 0)) {
                 // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
             } else {
-                idx = assign(owner, referent, idx);
+                idx = GraalHPyData.setHPyField(owner, referent, idx);
             }
             return idx;
         }
+    }
 
-        public static int assign(PythonObject owner, Object referent, int location) {
-            Object[] hpyFields = owner.getHPyData();
-            if (location != 0) {
-                assert hpyFields != null;
-                hpyFields[location] = referent;
-                return location;
-            } else {
-                int newLocation;
-                if (hpyFields == null) {
-                    newLocation = 1;
-                    hpyFields = new Object[]{0, referent};
-                } else {
-                    newLocation = hpyFields.length;
-                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation + 1);
-                    hpyFields[newLocation] = referent;
-                }
-                owner.setHPyData(hpyFields);
-                return newLocation;
+    /**
+     * Parses an {@code HPyCallFunction} structure and returns the {@code impl} function pointer. A
+     * {@code NULL} pointer will be translated to Java {@code null}.
+     *
+     * <pre>
+     * typedef struct {
+     *     cpy_vectorcallfunc cpy_trampoline;
+     *     HPyFunc_keywords impl;
+     * } HPyCallFunction;
+     * </pre>
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HPyReadCallFunctionNode extends PNodeWithContext {
+
+        public abstract Object execute(Node inliningTarget, GraalHPyContext context, Object def);
+
+        @Specialization
+        static Object doIt(GraalHPyContext context, Object def,
+                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode) {
+            // read and check the function pointer
+            Object methodFunctionPointer = callHelperFunctionNode.call(context, GRAAL_HPY_CALL_FUNCTION_GET_IMPL, def);
+            if (resultLib.isNull(methodFunctionPointer)) {
+                return null;
             }
+            if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
+                HPySlotWrapper slotWrapper = HPY_TP_CALL.getSignatures()[0];
+                methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, slotWrapper.getLLVMFunctionType());
+            }
+            return methodFunctionPointer;
         }
     }
 }

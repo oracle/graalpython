@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTy
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -1730,16 +1729,11 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        static boolean doUserClass(PythonClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttributeFromObjectNode,
-                        @Cached InlinedBranchProfile hasHPyFlagsProfile) {
+        static boolean doUserClass(PythonClass obj) {
             // Special case for custom classes created via HPy: They are managed classes but can
             // have custom flags. The flags may prohibit subtyping.
-            Object flagsObj = readAttributeFromObjectNode.execute(obj, GraalHPyDef.TYPE_HPY_FLAGS);
-            if (flagsObj != PNone.NO_VALUE) {
-                hasHPyFlagsProfile.enter(inliningTarget);
-                return (((long) flagsObj) & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
+            if (obj.isHPyType()) {
+                return (obj.getFlags() & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
             }
             return true;
         }

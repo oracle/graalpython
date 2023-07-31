@@ -97,6 +97,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT("graal_hpy_HPyType_SpecParam_get_object"),
     GRAAL_HPY_MEMBER_GET_TYPE("graal_hpy_member_get_type"),
     GRAAL_HPY_SLOT_GET_SLOT("graal_hpy_slot_get_slot"),
+    GRAAL_HPY_CALL_FUNCTION_GET_IMPL("graal_hpy_call_function_get_impl"),
     GRAAL_HPY_CALLOC("graal_hpy_calloc"),
     GRAAL_HPY_LEGACY_SLOT_GET_SLOT("graal_hpy_legacy_slot_get_slot"),
     GRAAL_HPY_LEGACY_SLOT_GET_PFUNC("graal_hpy_legacy_slot_get_pfunc"),

@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
@@ -961,7 +961,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         Object owner = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         // HPyField index is always non-zero because zero means: uninitialized
         assert idx > 0;
-        Object referent = ((PythonObject) owner).getHPyData()[(int) idx];
+        Object referent = GraalHPyData.getHPyField((PythonObject) owner, (int) idx);
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(referent));
     }
 
@@ -969,7 +969,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         increment(HPyJNIUpcall.HPyFieldStore);
         PythonObject owner = (PythonObject) context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object referent = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value));
-        return HPyFieldStoreNode.assign(owner, referent, (int) idx);
+        return GraalHPyData.setHPyField(owner, referent, (int) idx);
     }
 
     public long ctxGlobalLoad(long bits) {
@@ -1346,7 +1346,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
          */
         if (type instanceof PythonClass clazz) {
             // allocate native space
-            long basicSize = clazz.basicSize;
+            long basicSize = clazz.getBasicSize();
             if (basicSize == -1) {
                 // create the managed Python object
                 pythonObject = slowPathFactory.createPythonObject(clazz, clazz.getInstanceShape());
@@ -1360,8 +1360,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 UNSAFE.setMemory(dataPtr, basicSize, (byte) 0);
                 UNSAFE.putLong(dataOutVar, dataPtr);
                 pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
-                Object destroyFunc = clazz.hpyDestroyFunc;
+                Object destroyFunc = clazz.getHPyDestroyFunc();
                 context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+            }
+            Object defaultCallFunc = clazz.getHPyDefaultCallFunc();
+            if (defaultCallFunc != null) {
+                GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunc);
             }
         } else {
             // check if argument is still a type (e.g. a built-in type, ...)
@@ -1383,7 +1387,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (type instanceof PythonClass clazz) {
 
             PythonObject pythonObject;
-            long basicSize = clazz.basicSize;
+            long basicSize = clazz.getBasicSize();
             if (basicSize != -1) {
                 // allocate native space
                 long dataPtr = UNSAFE.allocateMemory(basicSize);
@@ -2557,8 +2561,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case Int32_t, Uint32_t -> argBits & 0xFFFFFFFFL;
             case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr -> PCallHPyFunctionNodeGen.getUncached().call(context,
-                            GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr, HPyCallFunctionPtr ->
+                PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }

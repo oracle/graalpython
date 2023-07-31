@@ -226,6 +226,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyRshiftNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetAttrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetAttrSNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetCallFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetItemSNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySliceUnpackNodeGen;
@@ -275,6 +276,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCh
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyPackKeywordArgsNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyReadCallFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
@@ -349,6 +351,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -384,6 +387,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -581,6 +585,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.create();
                 case CTX_COMPILE_S -> GraalHPyCompileNodeGen.create();
                 case CTX_EVALCODE -> GraalHPyEvalCodeNodeGen.create();
+                case CTX_SETCALLFUNCTION -> GraalHPySetCallFunctionNodeGen.create();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -744,6 +749,7 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_TYPE_GETBUILTINSHAPE -> GraalHPyTypeGetBuiltinShapeNodeGen.getUncached();
                 case CTX_COMPILE_S -> GraalHPyCompileNodeGen.getUncached();
                 case CTX_EVALCODE -> GraalHPyEvalCodeNodeGen.getUncached();
+                case CTX_SETCALLFUNCTION -> GraalHPySetCallFunctionNodeGen.getUncached();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
@@ -2247,13 +2253,14 @@ public abstract class GraalHPyContextFunctions {
 
             Object dataPtr = null;
             Object destroyFunc = null;
+            Object defaultCallFunc = null;
 
             if (profiledTypeObject instanceof PythonClass clazz) {
                 // allocate native space
-                long basicSize = clazz.basicSize;
+                long basicSize = clazz.getBasicSize();
                 if (basicSize != -1) {
                     dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    destroyFunc = clazz.hpyDestroyFunc;
+                    destroyFunc = clazz.getHPyDestroyFunc();
 
                     // write data pointer to out var
                     callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
@@ -2263,6 +2270,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     // TODO(fa): add memory tracing
                 }
+                defaultCallFunc = clazz.getHPyDefaultCallFunc();
             }
 
             int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
@@ -2270,6 +2278,9 @@ public abstract class GraalHPyContextFunctions {
 
             if (destroyFunc != null) {
                 hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+            }
+            if (defaultCallFunc != null) {
+                GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunc);
             }
 
             return pythonObject;
@@ -2287,7 +2298,7 @@ public abstract class GraalHPyContextFunctions {
                 default -> throw CompilerDirectives.shouldNotReachHere(INVALID_BUILT_IN_SHAPE);
             };
             if (builtinShape != HPyType_BUILTIN_SHAPE_OBJECT) {
-                result.setHPyNativeSpace(dataPtr);
+                GraalHPyData.setHPyNativeSpace(result, dataPtr);
             }
             return result;
         }
@@ -2332,11 +2343,11 @@ public abstract class GraalHPyContextFunctions {
             Object destroyFunc = null;
 
             if (type instanceof PythonClass clazz) {
-                long basicSize = clazz.basicSize;
+                long basicSize = clazz.getBasicSize();
                 if (basicSize != -1) {
                     // we fully control this attribute; if it is there, it's always a long
                     dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    destroyFunc = clazz.hpyDestroyFunc;
+                    destroyFunc = clazz.getHPyDestroyFunc();
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
                         LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
@@ -3662,6 +3673,27 @@ public abstract class GraalHPyContextFunctions {
 
             RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
             return invokeNode.execute(rootCallTarget, pArguments);
+        }
+    }
+
+    @HPyContextFunction("ctx_SetCallFunction")
+    @GenerateUncached
+    public abstract static class GraalHPySetCallFunction extends HPyTernaryContextFunction {
+        @Specialization
+        static int doGeneric(GraalHPyContext hpyContext, PythonObject object, Object callFunctionDefPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetPythonObjectClassNode getClassNode,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached HPyReadCallFunctionNode readCallFunctionNode) {
+
+            Object clazz = getClassNode.execute(inliningTarget, object);
+            if (!(clazz instanceof PythonClass pythonClass) || !pythonClass.isHPyType()) {
+                errorProfile.enter(inliningTarget);
+                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.HPY_TYPE_DOES_NOT_IMPLEMENT_CALL_PROTOCOL, clazz);
+            }
+            Object callFunction = readCallFunctionNode.execute(inliningTarget, hpyContext, callFunctionDefPtr);
+            GraalHPyData.setHPyCallFunction(object, callFunction);
+            return 0;
         }
     }
 }

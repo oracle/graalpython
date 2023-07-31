@@ -221,6 +221,12 @@ HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
 	return slot->slot;
 }
 
+/* getters for HPyCallFunction */
+
+void* graal_hpy_call_function_get_impl(HPyCallFunction *def) {
+	return (void *)def->impl;
+}
+
 /* getters for PyType_Slot */
 
 int graal_hpy_legacy_slot_get_slot(cpy_PyTypeSlot *slot) {

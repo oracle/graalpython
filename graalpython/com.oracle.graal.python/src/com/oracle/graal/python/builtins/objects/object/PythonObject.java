@@ -188,16 +188,4 @@ public class PythonObject extends PythonAbstractObject {
     public final void setHPyData(Object[] hpyFields) {
         this.hpyData = hpyFields;
     }
-
-    public final void setHPyNativeSpace(Object dataPtr) {
-        if (hpyData == null) {
-            hpyData = new Object[]{dataPtr};
-        } else {
-            hpyData[0] = dataPtr;
-        }
-    }
-
-    public final Object getHPyNativeSpace() {
-        return hpyData != null ? hpyData[0] : 0L;
-    }
 }

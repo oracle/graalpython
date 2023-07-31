@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -138,16 +140,23 @@ public abstract class HPyExternalFunctionNodes {
     public static final TruffleString KW_CALLABLE = tsLiteral("$callable");
     private static final TruffleString KW_CLOSURE = tsLiteral("$closure");
     private static final TruffleString KW_CONTEXT = tsLiteral("$context");
-    private static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = {KW_CALLABLE, KW_CONTEXT};
-    private static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = {KW_CALLABLE, KW_CONTEXT, KW_CLOSURE};
+    private static final TruffleString[] KEYWORDS_HIDDEN_CONTEXT = {KW_CONTEXT};
+    private static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = {KW_CONTEXT, KW_CALLABLE};
+    private static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = {KW_CONTEXT, KW_CALLABLE, KW_CLOSURE};
     private static final Object[] KW_DEFAULTS = {PNone.NO_VALUE};
 
+    private static PKeyword[] createKwDefaults(GraalHPyContext context) {
+        return new PKeyword[]{new PKeyword(KW_CONTEXT, context)};
+    }
+
     private static PKeyword[] createKwDefaults(Object callable, GraalHPyContext context) {
-        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context)};
+        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context)};
+        return new PKeyword[]{new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CALLABLE, callable)};
     }
 
     public static PKeyword[] createKwDefaults(Object callable, Object closure, GraalHPyContext context) {
-        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CLOSURE, closure)};
+        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CLOSURE, closure)};
+        return new PKeyword[]{new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
     /**
@@ -250,7 +259,14 @@ public abstract class HPyExternalFunctionNodes {
         } else {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), 0, callTarget);
+        PKeyword[] kwDefaults;
+        if (wrapper == HPySlotWrapper.CALL) {
+            kwDefaults = createKwDefaults(context);
+        } else {
+            kwDefaults = createKwDefaults(callable, context);
+
+        }
+        return factory.createBuiltinFunction(name, enclosingType, defaults, kwDefaults, 0, callTarget);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -297,6 +313,8 @@ public abstract class HPyExternalFunctionNodes {
                 return new HPyReleaseBufferRootNode(language, name);
             case HASHFUNC:
                 return new HPyMethHashRoot(language, name);
+            case CALL:
+                return new HPyMethCallRoot(language, name);
             default:
                 // TODO(fa): support remaining slot wrappers
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
@@ -426,8 +444,6 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReadIndexedArgumentNode readContextNode;
 
-        @Child private InteropLibrary interop = InteropLibrary.getFactory().createDispatched(5);
-
         private final TruffleString name;
 
         @TruffleBoundary
@@ -501,8 +517,8 @@ public abstract class HPyExternalFunctionNodes {
         protected final ReadIndexedArgumentNode ensureReadCallableNode() {
             if (readCallableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // we insert a hidden argument at the end of the positional arguments
-                int hiddenArg = getSignature().getParameterIds().length;
+                // we insert a hidden argument after the hidden context argument
+                int hiddenArg = getSignature().getParameterIds().length + 1;
                 readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             return readCallableNode;
@@ -511,8 +527,8 @@ public abstract class HPyExternalFunctionNodes {
         protected final GraalHPyContext readContext(VirtualFrame frame) {
             if (readContextNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // we insert a hidden argument after the hidden callable argument
-                int hiddenArg = getSignature().getParameterIds().length + 1;
+                // we insert a hidden argument at the end of the positional arguments
+                int hiddenArg = getSignature().getParameterIds().length;
                 readContextNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             Object hpyContext = readContextNode.execute(frame);
@@ -520,11 +536,6 @@ public abstract class HPyExternalFunctionNodes {
                 return (GraalHPyContext) hpyContext;
             }
             throw CompilerDirectives.shouldNotReachHere("invalid HPy context");
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
         }
 
         @Override
@@ -1296,8 +1307,8 @@ public abstract class HPyExternalFunctionNodes {
         protected final Object readCallable(VirtualFrame frame) {
             if (readCallableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // we insert a hidden argument at the end of the positional arguments
-                int hiddenArg = getSignature().getParameterIds().length;
+                // we insert a hidden argument after the hidden context argument
+                int hiddenArg = getSignature().getParameterIds().length + 1;
                 readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             return readCallableNode.execute(frame);
@@ -1306,8 +1317,8 @@ public abstract class HPyExternalFunctionNodes {
         private GraalHPyContext readContext(VirtualFrame frame) {
             if (readContextNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // we insert a hidden argument after the hidden callable argument
-                int hiddenArg = getSignature().getParameterIds().length + 1;
+                // we insert a hidden argument at the end of the positional arguments
+                int hiddenArg = getSignature().getParameterIds().length;
                 readContextNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             Object hpyContext = readContextNode.execute(frame);
@@ -1816,6 +1827,108 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame)};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethCallRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CONTEXT, true);
+
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private PythonObjectFactory factory;
+
+        @TruffleBoundary
+        public HPyMethCallRoot(PythonLanguage language, TruffleString name) {
+            super(language, name, HPyKeywordsToSulongNodeGen.create());
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            GraalHPyContext hpyContext = readContext(frame);
+            Object[] cArguments = prepareCArguments(frame, hpyContext);
+            Object self = cArguments[0];
+            Object callable;
+            if (self instanceof PythonObject pythonObject) {
+                callable = GraalHPyData.getHPyCallFunction(pythonObject);
+            } else {
+                callable = null;
+            }
+            if (callable == null) {
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.HPY_OBJECT_DOES_NOT_SUPPORT_CALL, self);
+            }
+
+            getCalleeContext().enter(frame);
+            try {
+                return getInvokeNode().execute(frame, getTSName(), callable, hpyContext, cArguments);
+            } finally {
+                getCalleeContext().exit(frame, this);
+                closeCArguments(frame, hpyContext, cArguments);
+            }
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
+            Object[] positionalArgs = getVarargs(frame);
+            PKeyword[] keywords = getKwargs(frame);
+            long nPositionalArgs = positionalArgs.length;
+
+            Object[] args;
+            Object kwnamesTuple;
+            // this condition is implicitly profiled by 'getKwnamesTuple'
+            if (keywords.length > 0) {
+                args = PythonUtils.arrayCopyOf(positionalArgs, positionalArgs.length + keywords.length);
+                TruffleString[] kwnames = new TruffleString[keywords.length];
+                for (int i = 0; i < keywords.length; i++) {
+                    args[positionalArgs.length + i] = keywords[i].getValue();
+                    kwnames[i] = keywords[i].getName();
+                }
+                kwnamesTuple = getKwnamesTuple(kwnames);
+            } else {
+                args = positionalArgs;
+                kwnamesTuple = GraalHPyHandle.NULL_HANDLE_DELEGATE;
+            }
+            return new Object[]{getSelf(frame), createArgumentsArray(hpyContext, args), nPositionalArgs, kwnamesTuple};
+        }
+
+        @Override
+        protected void closeCArguments(VirtualFrame frame, GraalHPyContext hpyContext, Object[] cArguments) {
+            hpyContext.freeArgumentsArray(cArguments[1]);
+        }
+
+        private Object createArgumentsArray(GraalHPyContext hpyContext, Object[] args) {
+            return hpyContext.createArgumentsArray(args);
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
+        }
+
+        private PKeyword[] getKwargs(VirtualFrame frame) {
+            if (PArguments.getKeywordArguments(frame).length == 0) {
+                return PKeyword.EMPTY_KEYWORDS;
+            }
+            if (readKwargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readKwargsNode = insert(ReadVarKeywordsNode.create());
+            }
+            return (PKeyword[]) readKwargsNode.execute(frame);
+        }
+
+        private PTuple getKwnamesTuple(TruffleString[] kwnames) {
+            if (factory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                factory = insert(PythonObjectFactory.create());
+            }
+            return factory.createTuple(kwnames);
         }
 
         @Override
