@@ -2209,7 +2209,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
-                '-Dpolyglot.python.PosixModuleBackend=native'
+                '-H:-CopyLanguageResources',
+                '-Dpolyglot.python.PosixModuleBackend=native',
             ],
             language='python',
             default_vm_args=[
