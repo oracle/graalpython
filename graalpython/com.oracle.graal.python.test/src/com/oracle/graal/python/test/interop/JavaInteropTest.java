@@ -82,6 +82,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
+import java.math.BigInteger;
 
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
@@ -212,6 +213,19 @@ public class JavaInteropTest {
             Value main = context.getPolyglotBindings().getMember("foo");
             main.execute((float) 1.0, (float) 2.0);
             assertEquals("2.0\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void testPassingBigIntegers() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) + int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TWO), BigInteger.valueOf(7));
+            assertEquals("18446744073709551621\n", out.toString("UTF-8"));
         }
 
         @Test

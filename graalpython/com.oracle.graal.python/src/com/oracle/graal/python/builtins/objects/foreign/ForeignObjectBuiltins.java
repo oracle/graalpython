@@ -995,7 +995,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization(limit = "3", guards="lib.fitsInLong(object)")
         protected static long doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
@@ -1024,6 +1024,28 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
+                    }
+                }
+                throw raiseNode.raiseIntegerInterpretationError(object);
+            } finally {
+                gil.acquire();
+            }
+        }
+        @Specialization(limit = "3", guards="lib.fitsInBigInteger(object)")
+        protected static PInt doBigInteger(Object object,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached GilNode gil,
+                        @Cached PythonObjectFactory factory) {
+            gil.release(true);
+            try {
+                if (lib.fitsInBigInteger(object)) {
+                    try {
+                        var big = lib.asBigInteger(object);
+                        return factory.createInt(big);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims to be a boolean but isn't");
                     }
                 }
                 throw raiseNode.raiseIntegerInterpretationError(object);
