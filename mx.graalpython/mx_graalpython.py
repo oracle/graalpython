@@ -1693,6 +1693,9 @@ class ArchiveProject(mx.ArchivableProject):
     def archive_prefix(self):
         return mx_subst.path_substitutions.substitute(getattr(self, "prefix", ""))
 
+    def get_relpath(self, f, outputDir):
+        return super().get_relpath(f, outputDir).replace(os.sep, "/")
+
     def getResults(self):
         if hasattr(self, "outputFile"):
             return [os.path.join(self.dir, self.outputFile)]
