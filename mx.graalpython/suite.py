@@ -886,6 +886,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.resources",
                 "GRAALPYTHON_VERSIONS_RES",
+                "GRAALPYTHON_NI_RESOURCES",
                 "GRAALPYTHON_LIBPYTHON_RESOURCES",
                 "GRAALPYTHON_LIBGRAALPY_RESOURCES",
                 "GRAALPYTHON_INCLUDE_RESOURCES",
@@ -1059,7 +1060,23 @@ suite = {
             "maven": False,
         },
 
-        # The Python and HPy headers. These go to "/include" on all platforms.
+        "GRAALPYTHON_NI_RESOURCES": {
+            "native": False,
+            "platformDependent": False,
+            "hashEntry":  "META-INF/resources/ni.sha256",
+            "fileListEntry": "META-INF/resources/ni.files",
+            "type": "dir",
+            "description": "GraalVM Python native image resources",
+            "layout": {
+                "./META-INF/resources/": [
+                    "file:mx.graalpython/native-image.properties",
+                ],
+            },
+            "maven": False,
+        },
+
+        # The Python and HPy headers. These go to "/include" on windows and
+        # "/include/python<py_ver:major_minor>" on unix
         "GRAALPYTHON_INCLUDE_RESOURCES": {
             "native": False,
             "platformDependent": False,
@@ -1073,9 +1090,6 @@ suite = {
                 "com.oracle.graal.python.hpy.llvm",
             ],
             "layout": {
-                "./META-INF/resources/": [
-                    "file:mx.graalpython/native-image.properties",
-                ],
                 "./META-INF/resources/include/": [
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
                     "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
@@ -1150,6 +1164,7 @@ suite = {
             "buildDependencies": [
                 "GRAALPYTHON_LIBPYTHON_RESOURCES",
                 "GRAALPYTHON_LIBGRAALPY_RESOURCES",
+                "GRAALPYTHON_NI_RESOURCES",
                 "GRAALPYTHON_INCLUDE_RESOURCES",
                 "GRAALPYTHON_NATIVE_RESOURCES",
             ],
@@ -1163,8 +1178,11 @@ suite = {
                             "./lib-graalpython/": [
                                 "dependency:GRAALPYTHON_LIBGRAALPY_RESOURCES/META-INF/resources/libgraalpy/*",
                             ],
+                            "./include/": [
+                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
+                            ],
                             "./": [
-                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
                                 "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
                             ],
                         },
@@ -1179,8 +1197,11 @@ suite = {
                             "./lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_LIBGRAALPY_RESOURCES/META-INF/resources/libgraalpy/*",
                             ],
+                            "./include/python<py_ver:major_minor>/": [
+                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
+                            ],
                             "./": [
-                                "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/*",
+                                "dependency:GRAALPYTHON_NI_RESOURCES/META-INF/resources/*",
                                 "dependency:GRAALPYTHON_NATIVE_RESOURCES/META-INF/resources/<os>/<arch>/*",
                             ],
                         },
@@ -1193,7 +1214,6 @@ suite = {
         "GRAALPY_VIRTUALENV": {
             "native": True, # so it produces a tar, not a jar file
             "platformDependent": False,
-            "maven": False,
             "description": "graalpy-virtualenv plugin sources usable to be installed into other interpreters",
             "layout": {
                 "graalpy_virtualenv": "file:graalpy_virtualenv",
