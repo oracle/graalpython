@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -127,6 +129,23 @@ public final class NtModuleBuiltins extends PythonBuiltins {
                 TruffleString rest = pathString.substringUncached(index, len - index, TS_ENCODING, false);
                 return factory().createTuple(new Object[]{root, rest});
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NtModuleBuiltinsClinicProviders.PathSplitRootNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "device_encoding", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class DeviceEncodingNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object deviceEncoding(@SuppressWarnings("unused") int fd) {
+            // TODO should actually figure this out
+            return PNone.NONE;
         }
 
         @Override
