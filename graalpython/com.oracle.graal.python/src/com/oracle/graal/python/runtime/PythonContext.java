@@ -1681,21 +1681,11 @@ public final class PythonContext extends Python3Core {
     private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
-        sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
-        basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
-        coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
-        stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
-        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
-        jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
-
-        Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
-                        "\n\tLanguage home: {0}" +
-                        "\n\tSysPrefix: {1}" +
-                        "\n\tBaseSysPrefix: {2}" +
-                        "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}" +
-                        "\n\tCAPI: {5}" +
-                        "\n\tJNI library: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome));
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // at buildtime we do not need these paths to be valid, since all boot files are frozen
+            basePrefix = sysPrefix = langHome = coreHome = stdLibHome = capiHome = jniHome = T_DOT;
+            return;
+        }
 
         String pythonHome = newEnv.getOptions().get(PythonOptions.PythonHome);
         if (pythonHome.isEmpty()) {
@@ -1726,7 +1716,7 @@ public final class PythonContext extends Python3Core {
                             return home;
                         },
                         () -> {
-                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null) {
+                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null && !ImageInfo.inImageCode()) {
                                 try {
                                     return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
                                 } catch (IOException e) {
@@ -1741,7 +1731,23 @@ public final class PythonContext extends Python3Core {
             if (homeCandidate == null) {
                 continue;
             }
+            sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
+            basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
+            coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
+            stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+            capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+            jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
             boolean homeSeemsValid = !coreHome.isEmpty() && !stdLibHome.isEmpty();
+
+            Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tBaseSysPrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tCAPI: {5}" +
+                            "\n\tJNI library: {6}" +
+                            "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
 
             langHome = toTruffleStringUncached(homeCandidate.toString());
             if (sysPrefix.isEmpty()) {
@@ -1814,31 +1820,7 @@ public final class PythonContext extends Python3Core {
 
             if (homeSeemsValid) {
                 break;
-            } else {
-                // reset values
-                sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
-                basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
-                coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
-                stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
-                capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
-                jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
             }
-        }
-
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // use relative paths at buildtime to avoid freezing buildsystem paths
-            TruffleFile base = newEnv.getInternalTruffleFile(basePrefix.toJavaStringUncached()).getAbsoluteFile();
-            newEnv.setCurrentWorkingDirectory(base);
-            basePrefix = T_DOT;
-            sysPrefix = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(sysPrefix.toJavaStringUncached())).getPath());
-            if (sysPrefix.isEmpty()) {
-                sysPrefix = T_DOT;
-            }
-            langHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(langHome.toJavaStringUncached())).getPath());
-            coreHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(coreHome.toJavaStringUncached())).getPath());
-            stdLibHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(stdLibHome.toJavaStringUncached())).getPath());
-            capiHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(capiHome.toJavaStringUncached())).getPath());
-            jniHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(jniHome.toJavaStringUncached())).getPath());
         }
 
         Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
