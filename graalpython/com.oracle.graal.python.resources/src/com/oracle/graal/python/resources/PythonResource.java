@@ -64,11 +64,11 @@ public final class PythonResource implements InternalResource {
 
     static {
         try (InputStream is = PythonResource.class.getResourceAsStream("/graalpy_versions")) {
-            PYTHON_MAJOR = is.read();
-            PYTHON_MINOR = is.read();
+            PYTHON_MAJOR = is.read() - ' ';
+            PYTHON_MINOR = is.read() - ' ';
             is.read(); // skip python micro version
-            GRAALVM_MAJOR = is.read();
-            GRAALVM_MINOR = is.read();
+            GRAALVM_MAJOR = is.read() - ' ';
+            GRAALVM_MINOR = is.read() - ' ';
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

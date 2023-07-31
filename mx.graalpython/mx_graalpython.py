@@ -1748,7 +1748,7 @@ def py_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return PYTHON_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        return "".join([chr(int(p)) for p in PYTHON_VERSION.split(".")])
+        return "".join([chr(int(p) + ord(' ')) for p in PYTHON_VERSION.split(".")])
     else:
         return PYTHON_VERSION_MAJ_MIN
 
@@ -1757,7 +1757,7 @@ def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        return "".join([chr(int(p)) for p in GRAAL_VERSION.split(".")])
+        return "".join([chr(int(p) + ord(' ')) for p in GRAAL_VERSION.split(".")])
     else:
         return GRAAL_VERSION_MAJ_MIN
 

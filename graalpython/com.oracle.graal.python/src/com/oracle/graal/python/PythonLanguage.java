@@ -217,19 +217,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         PYTHON_RESOURCE_CLASS = getPythonResourceClass();
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
-            if (MAJOR != (ch = is.read())) {
+            if (MAJOR != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
             }
-            if (MINOR != (ch = is.read())) {
+            if (MINOR != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
             }
-            if (MICRO != (ch = is.read())) {
+            if (MICRO != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != (ch = is.read())) {
+            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
             }
-            if (GRAALVM_MINOR != (ch = is.read())) {
+            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
             }
         } catch (IOException e) {
