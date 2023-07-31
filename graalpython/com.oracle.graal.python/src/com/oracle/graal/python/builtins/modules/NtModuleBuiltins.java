@@ -57,11 +57,17 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -88,20 +94,20 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "_getfullpathname", minNumOfPositionalArgs = 1, parameterNames = {"path"})
-    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @GenerateNodeFactory
-    abstract static class GetfullpathnameNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class GetfullpathnameNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getfullpathname(PosixPath path,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        Object getfullpathname(Object path,
+                        @Cached PyOSFSPathNode fsPathNode,
+                        @Cached CastToJavaStringNode castStr) {
             // TODO should call win api
-            return posixLib.getPathAsString(getPosixSupport(), path.value);
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return NtModuleBuiltinsClinicProviders.GetfullpathnameNodeClinicProviderGen.INSTANCE;
+            try {
+                String fspath = castStr.execute(fsPathNode.execute(null, path));
+                return PythonUtils.toTruffleStringUncached(getContext().getEnv().getPublicTruffleFile(fspath).getAbsoluteFile().toString());
+            } catch (CannotCastException e) {
+                return path;
+            }
         }
     }
 
