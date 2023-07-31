@@ -45,6 +45,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWar
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_FLOAT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LIST;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_TUPLE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_UNICODE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC;
@@ -62,6 +69,7 @@ import java.io.PrintWriter;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -2217,45 +2225,71 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyNew extends HPyTernaryContextFunction {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyNew.class);
+        public static final String INVALID_BUILT_IN_SHAPE = "invalid built-in shape";
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object type, Object dataOutVar,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callMallocNode,
-                        @Cached PCallHPyFunction callWriteDataNode) {
+                        @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+
+            Object profiledTypeObject = classProfile.profile(inliningTarget, type);
 
             // check if argument is actually a type
-            if (!isTypeNode.execute(type)) {
+            if (!isTypeNode.execute(profiledTypeObject)) {
                 return raiseNode.raise(TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
             }
 
-            // create the managed Python object
-            PythonObject pythonObject = null;
+            Object dataPtr = null;
+            Object destroyFunc = null;
 
-            if (type instanceof PythonClass clazz) {
+            if (profiledTypeObject instanceof PythonClass clazz) {
                 // allocate native space
                 long basicSize = clazz.basicSize;
                 if (basicSize != -1) {
-                    Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
-                    Object destroyFunc = clazz.hpyDestroyFunc;
-                    hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                    dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    destroyFunc = clazz.hpyDestroyFunc;
 
                     // write data pointer to out var
                     callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
                     // TODO(fa): add memory tracing
                 }
             }
-            if (pythonObject == null) {
-                pythonObject = factory.createPythonObject(type);
+
+            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            PythonObject pythonObject = createFromBuiltinShape(builtinShape, profiledTypeObject, dataPtr, factory);
+
+            if (destroyFunc != null) {
+                hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
+
             return pythonObject;
+        }
+
+        static PythonObject createFromBuiltinShape(int builtinShape, Object type, Object dataPtr, PythonObjectFactory factory) {
+            PythonObject result = switch (builtinShape) {
+                case HPyType_BUILTIN_SHAPE_OBJECT -> factory.createPythonHPyObject(type, dataPtr);
+                case HPyType_BUILTIN_SHAPE_TYPE -> throw CompilerDirectives.shouldNotReachHere("built-in shape type not yet implemented");
+                case HPyType_BUILTIN_SHAPE_LONG -> factory.createInt(type, BigInteger.ZERO);
+                case HPyType_BUILTIN_SHAPE_FLOAT -> factory.createFloat(type, 0.0);
+                case HPyType_BUILTIN_SHAPE_UNICODE -> factory.createString(type, T_EMPTY_STRING);
+                case HPyType_BUILTIN_SHAPE_TUPLE -> factory.createEmptyTuple(type);
+                case HPyType_BUILTIN_SHAPE_LIST -> factory.createList(type);
+                default -> throw CompilerDirectives.shouldNotReachHere(INVALID_BUILT_IN_SHAPE);
+            };
+            if (builtinShape != HPyType_BUILTIN_SHAPE_OBJECT) {
+                result.setHPyNativeSpace(dataPtr);
+            }
+            return result;
         }
     }
 
@@ -2287,28 +2321,35 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         @SuppressWarnings("unused")
         static Object doGeneric(GraalHPyContext hpyContext, Object type, Object args, long nargs, Object kw,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached PCallHPyFunction callMallocNode) {
+                        @Cached PCallHPyFunction callMallocNode,
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
 
-            // create the managed Python object
-            PythonObject pythonObject = null;
+            Object profiledTypeObject = classProfile.profile(inliningTarget, type);
+            Object dataPtr = null;
+            Object destroyFunc = null;
 
-            // allocate native space
             if (type instanceof PythonClass clazz) {
                 long basicSize = clazz.basicSize;
                 if (basicSize != -1) {
                     // we fully control this attribute; if it is there, it's always a long
-                    Object dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
+                    dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    destroyFunc = clazz.hpyDestroyFunc;
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
                     // TODO(fa): add memory tracing
                 }
             }
-            if (pythonObject == null) {
-                pythonObject = factory.createPythonObject(type);
+
+            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            PythonObject pythonObject = GraalHPyNew.createFromBuiltinShape(builtinShape, type, dataPtr, factory);
+
+            if (destroyFunc != null) {
+                hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
             return pythonObject;
         }
