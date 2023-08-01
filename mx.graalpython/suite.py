@@ -1137,7 +1137,6 @@ suite = {
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
                             ],
                             "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
-                                "file:graalpython/lib-graalpython/*",
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
