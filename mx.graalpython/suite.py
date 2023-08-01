@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.34.0",
+    "mxversion": "6.36.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
