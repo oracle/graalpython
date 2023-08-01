@@ -34,6 +34,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.resources.PythonResource;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -146,6 +148,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //
+                internalResources = PythonResource.class, //
                 website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,
@@ -178,12 +181,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /**
      * GraalVM version. Unfortunately, we cannot just use {@link Version#getCurrent} as it relies on
-     * a GraalVM build, but we may run from Jar files directly during development. So we hardcode
-     * the version here. It will fail at runtime if it doesn't match the distribution layout that is
-     * derived from the actual version.
+     * a GraalVM build, but we may run from Jar files directly during development. We generate the
+     * version during the build that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR = 23;
     public static final int GRAALVM_MINOR = 1;
+
+    public static final Class<PythonResource> PYTHON_RESOURCE_CLASS;
+
+    @SuppressWarnings("unchecked")
+    private static Class<PythonResource> getPythonResourceClass() {
+        try {
+            return (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
 
     static {
         switch (RELEASE_LEVEL) {
@@ -199,6 +212,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             case RELEASE_LEVEL_FINAL:
             default:
                 RELEASE_LEVEL_STRING = tsLiteral("final");
+        }
+
+        PYTHON_RESOURCE_CLASS = getPythonResourceClass();
+        try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
+            int ch;
+            if (MAJOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
+            }
+            if (MINOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
+            }
+            if (MICRO != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
+            }
+            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
+            }
+            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
     public static final int RELEASE_SERIAL = 0;
@@ -325,7 +360,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape hpySymbolCache;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
-    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+    private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
@@ -547,7 +582,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
                     RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = errorCallback;
         if (errorCb == null) {
@@ -556,8 +591,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
+            final ModTy mod;
             if (hasArguments) {
-                mod = transformASTForExecutionWithArguments(argumentNames, mod);
+                mod = transformASTForExecutionWithArguments(argumentNames, modIn);
+            } else {
+                mod = modIn;
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
             CodeUnit co = cu.assemble();
@@ -656,8 +694,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
-                Object locals = getFrameLocalsNode.execute(pFrame);
-                PArguments.setSpecialArgument(arguments, locals);
+                Object pLocals = getFrameLocalsNode.execute(pFrame);
+                PArguments.setSpecialArgument(arguments, pLocals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {

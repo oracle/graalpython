@@ -851,10 +851,7 @@ public abstract class Python3Core {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = null;
-        if (!ImageInfo.inImageBuildtimeCode()) {
-            bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
-        }
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
         PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
@@ -898,10 +895,7 @@ public abstract class Python3Core {
             } else {
                 LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
                 TruffleString t_zipimport = toTruffleStringUncached("zipimport");
-                PythonModule zipimport = null;
-                if (!ImageInfo.inImageBuildtimeCode()) {
-                    zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
-                }
+                PythonModule zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
                 if (zipimport == null) {
                     // true when the frozen module is not available
                     zipimport = createModule(t_zipimport);

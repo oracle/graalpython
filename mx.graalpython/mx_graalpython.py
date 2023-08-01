@@ -84,10 +84,10 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
-GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
-GRAAL_VERSION_NODOT = GRAAL_VERSION.replace('.', '')
-PYTHON_VERSION = "3.10"
-PYTHON_VERSION_NODOT = "3.10".replace('.', '')
+GRAAL_VERSION = SUITE.suiteDict['version']
+GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
+PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
+PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -1302,7 +1302,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'
+                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|advance\.ResourcesTest|basic|builtin|decorator|generator|interop|util))'
                     ],
                     report=True
                 )
@@ -1693,6 +1693,10 @@ class ArchiveProject(mx.ArchivableProject):
     def archive_prefix(self):
         return mx_subst.path_substitutions.substitute(getattr(self, "prefix", ""))
 
+    def getArchivableResults(self, use_relpath=True, single=False):
+        for f, arcname in super().getArchivableResults(use_relpath=use_relpath, single=single):
+            yield f, arcname.replace(os.sep, "/")
+
     def getResults(self):
         if hasattr(self, "outputFile"):
             return [os.path.join(self.dir, self.outputFile)]
@@ -1746,14 +1750,21 @@ def _get_output_root(projectname):
 
 def py_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return PYTHON_VERSION_NODOT
-    return PYTHON_VERSION
+        return PYTHON_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p) + ord(' ')) for p in PYTHON_VERSION.split(".")])
+    else:
+        return PYTHON_VERSION_MAJ_MIN
 
 
 def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return GRAAL_VERSION_NODOT
-    return GRAAL_VERSION
+        return GRAAL_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p) + ord(' ')) for p in GRAAL_VERSION.split(".")])
+    else:
+        return GRAAL_VERSION_MAJ_MIN
+
 
 def graalpy_ext(llvm_mode, **kwargs):
     if not llvm_mode:
@@ -1774,7 +1785,7 @@ def graalpy_ext(llvm_mode, **kwargs):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
 
-    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{pyos}.{ext}'
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "")}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -2184,8 +2195,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:GRAALPYTHON_RESOURCES',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
+        'graalpython:BOUNCYCASTLE-UTIL',
         'graalpython:XZ-1.8',
     ],
     support_distributions=[
@@ -2201,7 +2214,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
-                '-Dpolyglot.python.PosixModuleBackend=native'
+                '-H:-CopyLanguageResources',
+                '-Dpolyglot.python.PosixModuleBackend=native',
             ],
             language='python',
             default_vm_args=[

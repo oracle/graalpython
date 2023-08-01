@@ -226,7 +226,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         PythonModule mod = core.lookupBuiltinModule(T___GRAALPYTHON__);
         PythonLanguage language = context.getLanguage();
         if (!ImageInfo.inImageBuildtimeCode()) {
-            mod.setAttribute(tsLiteral("home"), toTruffleStringUncached(language.getHome()));
+            mod.setAttribute(tsLiteral("home"), context.getLanguageHome());
         }
         mod.setAttribute(tsLiteral("in_image_buildtime"), ImageInfo.inImageBuildtimeCode());
         mod.setAttribute(tsLiteral("in_image"), ImageInfo.inImageCode());

@@ -59,7 +59,6 @@
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii_methodname
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_partial_post
-*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_simple1
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_unicode_host
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_dispatch_func
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_instance_func
