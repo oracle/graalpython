@@ -70,8 +70,8 @@ def get_gp():
         print(
             "Standalone module tests require a GraalVM installation including graalpy, java, javac and native-image",
             "Please point the JAVA_HOME environment variable to such a GraalVM root.",
-            "__graalpython__.home : " + java_home, 
-            "native-image exists: " + str(os.path.exists(ni)), 
+            "__graalpython__.home : " + java_home,
+            "native-image exists: " + str(os.path.exists(ni)),
             "javac exists: " + str(os.path.exists(jc)),
             "graalpy exits: " + str(os.path.exists(graalpy)),
             "java exists: " + str(os.path.exists(java)),
@@ -114,7 +114,7 @@ def test_polyglot_app():
 
     java_home, graalpy, java = get_gp()
     env = get_env(java_home)
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
 
         target_dir = os.path.join(tmpdir, "polyglot_app_test")
@@ -166,7 +166,8 @@ def test_native_executable_one_file():
 
         source_file = os.path.join(tmpdir, "hello.py")
         with open(source_file, 'w') as f:
-            f.write("print('hello world')")
+            f.write("import sys\n")
+            f.write("print('hello world, argv[1:]:', sys.argv[1:])")
 
         target_file = os.path.join(tmpdir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-m", source_file, "-o", target_file]
@@ -177,12 +178,12 @@ def test_native_executable_one_file():
         print(p.stderr.decode(errors='backslashreplace'))
         assert "Bundling Python resources into" in out
 
-        cmd = [target_file]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd = [target_file, "arg1", "arg2"]
+        p = subprocess.run(" ".join(cmd), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out = p.stdout.decode(errors='backslashreplace')
         print(out)
         print(p.stderr.decode(errors='backslashreplace'))
-        assert "hello world" in out
+        assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file_venv():
