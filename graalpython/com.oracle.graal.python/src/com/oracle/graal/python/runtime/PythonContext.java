@@ -1727,16 +1727,16 @@ public final class PythonContext extends Python3Core {
                         }
         };
         for (Supplier<?> homeCandidateSupplier : homeCandidates) {
-            final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
-            if (homeCandidate == null) {
-                continue;
-            }
             sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
             basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
             coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
             stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
             capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
             jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
+            final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
+            if (homeCandidate == null) {
+                continue;
+            }
             boolean homeSeemsValid = !coreHome.isEmpty() && !stdLibHome.isEmpty();
 
             Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
