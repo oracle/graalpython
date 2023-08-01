@@ -144,6 +144,16 @@ suite = {
             },
             "moduleName": "org.bouncycastle.pkix",
         },
+        "BOUNCYCASTLE-UTIL": {
+            "digest": "sha512:385d95b4c32053bb3734c342d5f3255bcc1cee7e35649965bb5fbf8733ec37009fd5f5e06817a45e7857a2e62e923563ce1231ee3a1de411f788dfa93d39ce41",
+            "sourceDigest": "sha512:8d2068b8a90381dde75f25059dfdf3073a2657ea8f7d65872f972aaae6b780a4156b39d922e10302f4c4ddaf22d5057c02e9a0cb2a228f0a43730dfba46b1b22",
+            "maven": {
+                "groupId": "org.bouncycastle",
+                "artifactId": "bcutil-jdk18on",
+                "version": "1.76",
+            },
+            "moduleName": "org.bouncycastle.util",
+        },
         "BZIP2": {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
@@ -394,6 +404,7 @@ suite = {
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
             ],
             "requires": [
                 "java.logging",
@@ -952,6 +963,7 @@ suite = {
             "exclude": [
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
                 "XZ-1.8",
             ],
             "javaProperties": {
