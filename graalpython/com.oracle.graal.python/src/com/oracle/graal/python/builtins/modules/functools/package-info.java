@@ -39,6 +39,6 @@
  * SOFTWARE.
  */
 @SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-limit", "deprecated", "truffle-static-method"})
-package com.oracle.graal.python.builtins.objects.keywrapper;
+package com.oracle.graal.python.builtins.modules.functools;
 
 import com.oracle.truffle.api.dsl.SuppressPackageWarnings;

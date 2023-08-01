@@ -38,14 +38,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.modules.functools;
 
-import static com.oracle.graal.python.builtins.objects.partial.PartialBuiltins.getNewPartialArgs;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonObject;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.truffle.api.nodes.LoopNode.reportLoopCount;
 
 import java.util.List;
@@ -61,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -268,6 +269,67 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object noCallable(Object cls, Object[] args, PKeyword[] keywords) {
             throw raise(PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
+        }
+    }
+}
+
+@CoreFunctions(extendClasses = PythonBuiltinClassType.LsprofProfiler)
+class ProfilerBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return ProfilerBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
+    @GenerateNodeFactory
+    abstract static class Init extends PythonBuiltinNode {
+        @Specialization
+        PNone doit(Profiler self, Object timer, double timeunit, long subcalls, long builtins) {
+            self.subcalls = subcalls > 0;
+            self.builtins = builtins > 0;
+            self.timeunit = timeunit;
+            self.externalTimer = timer;
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PNone doit(Profiler self, Object timer, PNone timeunit, PNone subcalls, PNone builtins) {
+            self.subcalls = true;
+            self.builtins = true;
+            self.timeunit = -1;
+            self.externalTimer = timer;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "enable", minNumOfPositionalArgs = 1, parameterNames = {"$self", "subcalls", "builtins"})
+    @GenerateNodeFactory
+    abstract static class Enable extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PNone doit(Profiler self, long subcalls, long builtins) {
+            self.subcalls = subcalls > 0;
+            self.builtins = builtins > 0;
+            // TODO: deal with any arguments
+            self.time = System.currentTimeMillis();
+            self.sampler.setCollecting(true);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone doit(Profiler self, long subcalls, @SuppressWarnings("unused") PNone builtins) {
+            return doit(self, subcalls, self.builtins ? 1 : 0);
+        }
+
+        @Specialization
+        PNone doit(Profiler self, @SuppressWarnings("unused") PNone subcalls, long builtins) {
+            return doit(self, self.subcalls ? 1 : 0, builtins);
+        }
+
+        @Specialization
+        PNone doit(Profiler self, @SuppressWarnings("unused") PNone subcalls, @SuppressWarnings("unused") PNone builtins) {
+            return doit(self, self.subcalls ? 1 : 0, self.builtins ? 1 : 0);
         }
     }
 }
