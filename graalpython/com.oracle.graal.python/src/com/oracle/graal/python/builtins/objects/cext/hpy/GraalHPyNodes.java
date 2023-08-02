@@ -138,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructorNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -2363,6 +2364,8 @@ public abstract class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PythonObjectFactory factory,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached HasSameConstructorNode hasSameConstructorNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached GetTypeMemberNode getMetaSizeNode,
@@ -2413,6 +2416,15 @@ public abstract class GraalHPyNodes {
                 PTuple bases = extractBases(typeSpecParams, factory);
                 // extract metaclass from type spec params
                 Object metatype = getMetatype(typeSpecParams, raiseNode);
+
+                if (metatype != null) {
+                    if (!isTypeNode.execute(metatype)) {
+                        throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, metatype);
+                    }
+                    if (!hasSameConstructorNode.execute(inliningTarget, metatype, PythonBuiltinClassType.PythonClass)) {
+                        throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_WITH_CUSTOM_CONS_NOT_SUPPORTED);
+                    }
+                }
 
                 // create the type object
                 PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(BuiltinNames.T___GRAALPYTHON__);

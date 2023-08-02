@@ -1462,6 +1462,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_HPYCAPSULE_DESTRUCTOR = tsLiteral("Invalid HPyCapsule destructor");
     public static final TruffleString HPY_MODE_VALUE_MUST_BE_STRING = tsLiteral("Value of HPy mode environment variable must be a string");
     public static final TruffleString HPY_METACLASS_IS_NOT_A_TYPE = tsLiteral("Metaclass '%s' is not a subclass of 'type'.");
+    public static final TruffleString HPY_METACLASS_WITH_CUSTOM_CONS_NOT_SUPPORTED = tsLiteral("Metaclasses with custom constructor are not supported.");
     public static final TruffleString HPY_ERROR_LOADING_EXT_MODULE = tsLiteral("Error during loading of the HPy extension module at path '%s'. " +
                     "Cannot locate the required minimal HPy versions as symbols '%s' and `%s`. Error message from dlopen/WinAPI: %s");
     public static final TruffleString HPY_ABI_VERSION_ERROR = tsLiteral("HPy extension module '%s' requires unsupported version of the HPy runtime. " +

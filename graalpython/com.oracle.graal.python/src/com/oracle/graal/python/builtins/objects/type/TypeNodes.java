@@ -169,6 +169,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1348,20 +1349,7 @@ public abstract class TypeNodes {
                             DynamicObjectLibrary.getUncached());
             Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
-
-            if (typeNewMethod instanceof PBuiltinFunction builtinFunction) {
-                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (typeDecorated != null) {
-                    typeNewMethod = typeDecorated;
-                }
-            }
-            if (baseNewMethod instanceof PBuiltinFunction builtinFunction) {
-                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
-                if (baseDecorated != null) {
-                    baseNewMethod = baseDecorated;
-                }
-            }
-            return typeNewMethod != baseNewMethod;
+            return !HasSameConstructorNode.isSameFunction(typeNewMethod, baseNewMethod);
         }
 
         @TruffleBoundary
@@ -2669,6 +2657,47 @@ public abstract class TypeNodes {
         void set(PythonManagedClass cls, long value,
                         @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_DICTOFFSET, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class HasSameConstructorNode extends Node {
+
+        public abstract boolean execute(Node inliningTarget, Object leftClass, Object rightClass);
+
+        @Specialization
+        static boolean doGeneric(Node inliningTarget, Object left, Object right,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupLeftNode,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupRightNode,
+                        @Cached InlinedExactClassProfile leftNewProfile,
+                        @Cached InlinedExactClassProfile rightNewProfile) {
+            assert IsTypeNode.getUncached().execute(left);
+            assert IsTypeNode.getUncached().execute(right);
+
+            Object leftNew = leftNewProfile.profile(inliningTarget, lookupLeftNode.execute(left));
+            Object rightNew = rightNewProfile.profile(inliningTarget, lookupRightNode.execute(right));
+            return isSameFunction(leftNew, rightNew);
+        }
+
+        static boolean isSameFunction(Object leftFunc, Object rightFunc) {
+            Object leftResolved = leftFunc;
+            if (leftFunc instanceof PBuiltinFunction builtinFunction) {
+                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (typeDecorated != null) {
+                    leftResolved = typeDecorated;
+                }
+            }
+            Object rightResolved = rightFunc;
+            if (rightFunc instanceof PBuiltinFunction builtinFunction) {
+                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (baseDecorated != null) {
+                    rightResolved = baseDecorated;
+                }
+            }
+            return leftResolved == rightResolved;
         }
     }
 }
