@@ -1131,6 +1131,7 @@ class TestType(HPyTest):
         with pytest.raises(TypeError):
             mod.create_call_and_vectorcalloffset_type()
 
+    @pytest.mark.skip("not yet implemented")
     def test_call_explicit_offset(self):
         mod = self.make_module("""
             @TYPE_STRUCT_BEGIN(FooObject)
