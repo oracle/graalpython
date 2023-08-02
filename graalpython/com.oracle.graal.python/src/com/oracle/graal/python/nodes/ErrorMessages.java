@@ -1477,6 +1477,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_METACLASS_SPECIFIED_MULTIPLE_TIMES = tsLiteral("metaclass was specified multiple times");
     public static final TruffleString HPY_INVALID_BUILTIN_SHAPE = tsLiteral("invalid shape: %d");
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS = tsLiteral("Cannot use HPy call protocol with var objects");
+    public static final TruffleString HPY_CANNOT_HAVE_CALL_AND_VECTORCALLOFFSET = tsLiteral("Cannot have HPy_tp_call and explicit member '__vectorcalloffset__'. Specify just one of them.");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

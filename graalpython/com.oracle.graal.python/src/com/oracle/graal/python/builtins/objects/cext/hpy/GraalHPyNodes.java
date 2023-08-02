@@ -1019,7 +1019,7 @@ public abstract class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyAddMemberNode extends PNodeWithContext {
 
-        public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object memberDef);
+        public abstract HPyProperty execute(GraalHPyContext context, PythonClass enclosingType, Object memberDef);
 
         /**
          * <pre>
@@ -1033,11 +1033,13 @@ public abstract class GraalHPyNodes {
          * </pre>
          */
         @Specialization(limit = "1")
-        static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object memberDef,
+        static HPyProperty doIt(GraalHPyContext context, PythonClass enclosingType, Object memberDef,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1050,7 +1052,7 @@ public abstract class GraalHPyNodes {
             assert interopLibrary.isMemberReadable(memberDef, "doc");
 
             try {
-                TruffleString name = fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name"));
+                TruffleString name = switchEncodingNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")), TS_ENCODING);
 
                 // note: 'doc' may be NULL; in this case, we would store 'None'
                 Object memberDoc = PNone.NONE;
@@ -1062,6 +1064,10 @@ public abstract class GraalHPyNodes {
                 int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
                 boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
+
+                if (equalNode.execute(SpecialAttributeNames.T___VECTORCALLOFFSET__, name, TS_ENCODING)) {
+                    enclosingType.setHPyVectorcallOffset(offset);
+                }
 
                 PythonLanguage language = PythonLanguage.get(raiseNode);
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
@@ -2528,6 +2534,14 @@ public abstract class GraalHPyNodes {
                             property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
                         }
                     }
+                }
+
+                /*
+                 * Enforce constraint that we cannot have slot 'HPy_tp_call' and an explicit member
+                 * '__vectorcalloffset__'.
+                 */
+                if (newType.getHPyVectorcallOffset() != Long.MIN_VALUE && newType.getHPyDefaultCallFunc() != null) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_HAVE_CALL_AND_VECTORCALLOFFSET);
                 }
 
                 if (needsTpTraverse) {

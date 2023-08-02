@@ -408,12 +408,20 @@ public final class PythonClass extends PythonManagedClass {
         return hPyTypeExtra != null ? hPyTypeExtra.defaultCallFunc : null;
     }
 
+    public long getHPyVectorcallOffset() {
+        return hPyTypeExtra != null ? hPyTypeExtra.vectorcallOffset : Long.MIN_VALUE;
+    }
+
     public void setHPyDestroyFunc(Object destroyFunc) {
         hPyTypeExtra.hpyDestroyFunc = destroyFunc;
     }
 
     public void setHPyDefaultCallFunc(Object defaultCallFunc) {
         hPyTypeExtra.defaultCallFunc = defaultCallFunc;
+    }
+
+    public void setHPyVectorcallOffset(int vectorcallOffset) {
+        hPyTypeExtra.vectorcallOffset = vectorcallOffset;
     }
 
     public void setHPyTypeExtra(HPyTypeExtra hpyTypeExtra) {

@@ -49,6 +49,7 @@ public final class HPyTypeExtra {
 
     public Object defaultCallFunc;
     public Object hpyDestroyFunc;
+    public long vectorcallOffset = Long.MIN_VALUE;
 
     public HPyTypeExtra(long flags, long basicSize, long itemSize, Object tpName, int builtinShape) {
         this.flags = flags;
