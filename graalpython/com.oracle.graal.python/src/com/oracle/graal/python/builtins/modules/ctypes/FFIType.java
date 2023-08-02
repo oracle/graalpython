@@ -46,6 +46,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -189,10 +191,11 @@ public final class FFIType {
         return type.type.getNFIType();
     }
 
-    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype, boolean isCallback,
-                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+    @TruffleBoundary
+    static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype, boolean isCallback) {
         TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
         boolean first = true;
+        TruffleStringBuilder.AppendStringNode appendStringNode = TruffleStringBuilder.AppendStringNode.getUncached();
         appendStringNode.execute(sb, T_LPAREN);
         for (FFIType type : atypes) {
             if (first) {
@@ -201,8 +204,7 @@ public final class FFIType {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
             }
             if (type.isCallback()) {
-                TruffleString subSignature = buildNFISignature(type.callback.atypes, type.callback.ffi_restype, true,
-                                appendStringNode, toStringNode);
+                TruffleString subSignature = buildNFISignature(type.callback.atypes, type.callback.ffi_restype, true);
                 appendStringNode.execute(sb, subSignature);
             } else {
                 appendStringNode.execute(sb, isCallback ? getNFICallback(type) : getNFIType(type));
@@ -210,12 +212,12 @@ public final class FFIType {
         }
         appendStringNode.execute(sb, T_LEFT_PAREN_COLON);
         appendStringNode.execute(sb, getNFIReturnType(restype));
-        return toStringNode.execute(sb);
+        return TruffleStringBuilder.ToStringNode.getUncached().execute(sb);
     }
 
-    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype,
-                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
-        return buildNFISignature(atypes, restype, false, appendStringNode, toStringNode);
+    @TruffleBoundary
+    static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype) {
+        return buildNFISignature(atypes, restype, false);
     }
 
     enum FieldSet {
@@ -307,8 +309,18 @@ public final class FFIType {
         H('H', FieldSet.H_set, FieldGet.H_get, ffi_type_ushort, FieldSet.H_set_sw, FieldGet.H_get_sw), // unsigned short
         i('i', FieldSet.i_set, FieldGet.i_get, ffi_type_sint, FieldSet.i_set_sw, FieldGet.i_get_sw), // int
         I('I', FieldSet.I_set, FieldGet.I_get, ffi_type_uint, FieldSet.I_set_sw, FieldGet.I_get_sw), // unsigned int
-        l('l', FieldSet.l_set, FieldGet.l_get, ffi_type_sint64, FieldSet.l_set_sw, FieldGet.l_get_sw), // long
-        L('L', FieldSet.L_set, FieldGet.L_get, ffi_type_uint64, FieldSet.L_set_sw, FieldGet.L_get_sw), // unsigned long
+        l('l',
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set : FieldSet.l_set,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get : FieldGet.l_get,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_sint32 : ffi_type_sint64,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set_sw : FieldSet.l_set_sw,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get_sw : FieldGet.l_get_sw), // long
+        L('L',
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set : FieldSet.L_set,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get : FieldGet.L_get,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_uint32 : ffi_type_uint64,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set_sw : FieldSet.L_set_sw,
+                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get_sw : FieldGet.L_get_sw), // unsigned long
         q('q', FieldSet.q_set, FieldGet.q_get, ffi_type_sint64, FieldSet.q_set_sw, FieldGet.q_get_sw), // long long
         Q('Q', FieldSet.Q_set, FieldGet.Q_get, ffi_type_uint64, FieldSet.Q_set_sw, FieldGet.Q_get_sw), // long long
         P('P', FieldSet.P_set, FieldGet.P_get, ffi_type_pointer), // Pointer

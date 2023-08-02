@@ -99,11 +99,6 @@ public final class CThunkObject extends PythonBuiltinObject {
         atypes = new FFIType[nArgs];
     }
 
-    public void createCallback() {
-        this.pcl_exec = new CtypeCallback(this);
-        this.pcl_write = this.pcl_exec;
-    }
-
     @ExportLibrary(InteropLibrary.class)
     protected static class CtypeCallback implements TruffleObject {
         private final CThunkObject thunk;

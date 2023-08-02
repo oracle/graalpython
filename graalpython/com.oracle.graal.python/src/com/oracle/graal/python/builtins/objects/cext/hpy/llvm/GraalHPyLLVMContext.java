@@ -240,7 +240,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         Env env = context.getEnv();
         TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
         // e.g. "libhpy-native.so"
-        TruffleFile capiFile = homePath.resolve(context.getLLVMSupportExt("libhpy"));
+        TruffleFile capiFile = homePath.resolve(context.getLLVMSupportExt("hpy"));
         try {
             LOGGER.fine("Loading HPy LLVM backend from " + capiFile);
             SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
@@ -859,8 +859,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         static Object doCached(Node inliningTarget, @SuppressWarnings("unused") HPyContextMember member, Object[] arguments,
                         @Cached("member") HPyContextMember cachedMember,
                         @Cached(parameters = "member") GraalHPyContextFunction contextFunctionNode,
-                        @Cached(value = "createRetNode(member)", neverDefault = false) CExtToNativeNode retNode,
-                        @Cached(value = "createArgNodes(member)", neverDefault = false) CExtAsPythonObjectNode[] argNodes,
+                        @Cached("createRetNode(member)") CExtToNativeNode retNode,
+                        @Cached("createArgNodes(member)") CExtAsPythonObjectNode[] argNodes,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, cachedMember.getSignature().parameterTypes().length);
             try {

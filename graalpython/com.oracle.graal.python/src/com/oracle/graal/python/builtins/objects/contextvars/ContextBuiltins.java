@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 
 import java.util.List;
@@ -67,7 +68,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsContext)
-public class ContextBuiltins extends PythonBuiltins {
+public final class ContextBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -90,6 +91,42 @@ public class ContextBuiltins extends PythonBuiltins {
         Object get(PContextVarsContext self, Object key,
                         @Cached PRaiseNode raise) {
             return getContextVar(self, key, null, raise);
+        }
+    }
+
+    @Builtin(name = J___ITER__, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Iter extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object iter(PContextVarsContext self) {
+            return factory().createContextIterator(self, PContextIterator.ItemKind.KEYS);
+        }
+    }
+
+    @Builtin(name = "keys", declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Keys extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object keys(PContextVarsContext self) {
+            return factory().createContextIterator(self, PContextIterator.ItemKind.KEYS);
+        }
+    }
+
+    @Builtin(name = "values", declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Values extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object values(PContextVarsContext self) {
+            return factory().createContextIterator(self, PContextIterator.ItemKind.VALUES);
+        }
+    }
+
+    @Builtin(name = "items", declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Items extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object items(PContextVarsContext self) {
+            return factory().createContextIterator(self, PContextIterator.ItemKind.ITEMS);
         }
     }
 

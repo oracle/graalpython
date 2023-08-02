@@ -94,6 +94,7 @@ class ModuleTests(unittest.TestCase):
                 sqlite.enable_shared_cache(enable)
             self.assertIn("dbapi.py", cm.filename)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', "disabled until Py_TPFLAGS_DISALLOW_INSTANTIATION is supported")
     def test_disallow_instantiation(self):
         cx = sqlite.connect(":memory:")
         check_disallow_instantiation(self, type(cx("select 1")))

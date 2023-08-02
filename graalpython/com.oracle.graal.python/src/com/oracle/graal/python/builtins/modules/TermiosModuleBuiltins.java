@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "termios", isEager = true)
-public class TermiosModuleBuiltins extends PythonBuiltins {
+public final class TermiosModuleBuiltins extends PythonBuiltins {
 
     public TermiosModuleBuiltins() {
         addBuiltinConstant(SpecialAttributeNames.T___DOC__,

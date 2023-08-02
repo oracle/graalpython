@@ -108,14 +108,14 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
         return s.toLowerCase();
     }
 
-    @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"}, limit = "1")
+    @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"})
     static Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Shared @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
 
-    @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"}, limit = "1")
+    @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"})
     @SuppressWarnings("truffle-static-method")
     Object doRegistry(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Bind("this") Node inliningTarget,

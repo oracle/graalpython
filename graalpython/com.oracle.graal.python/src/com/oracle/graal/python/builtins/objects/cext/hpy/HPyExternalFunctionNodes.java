@@ -50,20 +50,16 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
@@ -88,6 +84,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -150,12 +148,14 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     private static PKeyword[] createKwDefaults(Object callable, GraalHPyContext context) {
-        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context)};
+        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT,
+        // context)};
         return new PKeyword[]{new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CALLABLE, callable)};
     }
 
     public static PKeyword[] createKwDefaults(Object callable, Object closure, GraalHPyContext context) {
-        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CLOSURE, closure)};
+        // return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT,
+        // context), new PKeyword(KW_CLOSURE, closure)};
         return new PKeyword[]{new PKeyword(KW_CONTEXT, context), new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
@@ -1415,8 +1415,8 @@ public abstract class HPyExternalFunctionNodes {
                 getNativeSpacePointerNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             /*
-             * We now need to pass the native space pointer in a way that the ToSulongNode correctly
-             * exposes the bare pointer object. For this, we pack the pointer into a
+             * We now need to pass the native space pointer in a way that the PythonToNativeNode
+             * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
             Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
@@ -1437,7 +1437,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = PExternalFunctionWrapper.ensureExecutable(pythonContext, target, PExternalFunctionWrapper.GETTER, InteropLibrary.getUncached());
+            target = NativeCExtSymbol.ensureExecutable(target, PExternalFunctionWrapper.GETTER);
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
@@ -1500,8 +1500,8 @@ public abstract class HPyExternalFunctionNodes {
                 getNativeSpacePointerNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             /*
-             * We now need to pass the native space pointer in a way that the ToSulongNode correctly
-             * exposes the bare pointer object. For this, we pack the pointer into a
+             * We now need to pass the native space pointer in a way that the PythonToNativeNode
+             * correctly exposes the bare pointer object. For this, we pack the pointer into a
              * PythonAbstractNativeObject which will just be unwrapped.
              */
             Object nativeSpacePtr = getNativeSpacePointerNode.execute(objects[0]);
@@ -1522,7 +1522,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = PExternalFunctionWrapper.ensureExecutable(pythonContext, target, PExternalFunctionWrapper.SETTER, InteropLibrary.getUncached());
+            target = NativeCExtSymbol.ensureExecutable(target, PExternalFunctionWrapper.SETTER);
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
@@ -1542,11 +1542,9 @@ public abstract class HPyExternalFunctionNodes {
         @Child private PCallHPyFunction callFreeNode;
         @Child private InteropLibrary ptrLib;
         @Child private InteropLibrary valueLib;
-        @Child private PCallCapiFunction callGetByteArrayTypeId;
-        @Child private PCallCapiFunction callFromTyped;
         @Child private HPyCloseAndGetHandleNode closeAndGetHandleNode;
         @Child private FromCharPointerNode fromCharPointerNode;
-        @Child private GetIntArrayNode getIntArrayNode;
+        @Child private CStructAccess.ReadI64Node readLongNode;
         @Child private PRaiseNode raiseNode;
 
         @TruffleBoundary
@@ -1600,14 +1598,6 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ptrLib = insert(InteropLibrary.getFactory().createDispatched(2));
             }
-            if (callGetByteArrayTypeId == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGetByteArrayTypeId = insert(PCallCapiFunction.create());
-            }
-            if (callFromTyped == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFromTyped = insert(PCallCapiFunction.create());
-            }
             if (closeAndGetHandleNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closeAndGetHandleNode = insert(HPyCloseAndGetHandleNodeGen.create());
@@ -1623,12 +1613,6 @@ public abstract class HPyExternalFunctionNodes {
             try {
                 int len = castToInt(ptrLib.readMember(bufferPtr, "len"));
                 Object buf = ptrLib.readMember(bufferPtr, "buf");
-                /*
-                 * Ensure that the 'buf' pointer is typed because later on someone will try to read
-                 * bytes from the pointer via interop.
-                 */
-                Object typeId = callGetByteArrayTypeId.call(NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID, len);
-                buf = callFromTyped.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, buf, typeId);
                 Object ownerObj = ptrLib.readMember(bufferPtr, "obj");
                 /*
                  * Note: Reading 'obj' from 'HPy_buffer *' will just return 'bufferPtr +
@@ -1656,27 +1640,19 @@ public abstract class HPyExternalFunctionNodes {
                 int[] subOffsets = null;
                 if (ndim > 0) {
                     if (!ptrLib.isNull(shapePtr)) {
-                        shape = ensureGetIntArrayNode().execute(shapePtr, ndim, LLVMType.Py_ssize_t);
+                        shape = ensureReadLongNode().readLongAsIntArray(shapePtr, ndim);
                     }
                     if (!ptrLib.isNull(stridesPtr)) {
-                        strides = ensureGetIntArrayNode().execute(stridesPtr, ndim, LLVMType.Py_ssize_t);
+                        strides = ensureReadLongNode().readLongAsIntArray(stridesPtr, ndim);
                     }
                     if (!ptrLib.isNull(suboffsetsPtr)) {
-                        subOffsets = ensureGetIntArrayNode().execute(suboffsetsPtr, ndim, LLVMType.Py_ssize_t);
+                        subOffsets = ensureReadLongNode().readLongAsIntArray(suboffsetsPtr, ndim);
                     }
                 }
                 return new CExtPyBuffer(buf, owner, len, itemSize, readonly, ndim, format, shape, strides, subOffsets, internal);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // that's clearly an internal error
                 throw CompilerDirectives.shouldNotReachHere();
-            } catch (UnsupportedTypeException e) {
-                /*
-                 * This exception is thrown by GetIntArrayNode to indicate that an element cannot be
-                 * casted to a Java integer. We would usually consider that to be an internal error
-                 * but since the values are provided by a user C function, we cannot be sure and
-                 * thus we treat that as a run-time error.
-                 */
-                throw ensureRaiseNode().raise(PythonErrorType.SystemError, ErrorMessages.CANNOT_READ_C_ARRAY);
             }
         }
 
@@ -1707,12 +1683,12 @@ public abstract class HPyExternalFunctionNodes {
             return callFreeNode;
         }
 
-        private GetIntArrayNode ensureGetIntArrayNode() {
-            if (getIntArrayNode == null) {
+        private CStructAccess.ReadI64Node ensureReadLongNode() {
+            if (readLongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getIntArrayNode = insert(GetIntArrayNodeGen.create());
+                readLongNode = insert(CStructAccessFactory.ReadI64NodeGen.create());
             }
-            return getIntArrayNode;
+            return readLongNode;
         }
 
         private PRaiseNode ensureRaiseNode() {

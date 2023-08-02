@@ -42,47 +42,40 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public final class PythonCextHashBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored)
     abstract static class PyTruffleHash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object get(Object secretPtr) {
-            try {
-                InteropLibrary lib = InteropLibrary.getUncached(secretPtr);
-                byte[] secret = getContext().getHashSecret();
-                int len = (int) lib.getArraySize(secretPtr);
-                for (int i = 0; i < len; i++) {
-                    lib.writeArrayElement(secretPtr, i, secret[i]);
-                }
-                return 0;
-            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+        Object get(Object secretPtr,
+                        @Cached CStructAccess.WriteByteNode writeNode) {
+            writeNode.writeByteArray(secretPtr, getContext().getHashSecret());
+            return PNone.NO_VALUE;
         }
     }
 
@@ -122,14 +115,18 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_hash_t, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class _PyTruffle_HashBytes extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR, Py_ssize_t}, call = Direct)
+    abstract static class _Py_HashBytes extends CApiBinaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        static long doI(Object value,
+        static long doI(Object value, long size,
+                        @Cached CStructAccess.ReadByteNode readNode,
+                        @Cached TruffleString.FromByteArrayNode toString,
                         @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, value);
+            byte[] array = readNode.readByteArray(value, (int) size);
+            TruffleString string = toString.execute(array, Encoding.US_ASCII, false);
+            return hashNode.execute(null, string);
         }
     }
 }

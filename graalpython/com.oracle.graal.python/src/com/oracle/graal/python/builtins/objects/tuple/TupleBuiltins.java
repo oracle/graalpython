@@ -120,7 +120,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
-public class TupleBuiltins extends PythonBuiltins {
+public final class TupleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -277,7 +277,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(key)", limit = "1")
+        @Specialization(guards = "indexCheck.execute(key)")
         static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
@@ -292,7 +292,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(key) || isPSlice(key)", limit = "1")
+        @Specialization(guards = "indexCheck.execute(key) || isPSlice(key)")
         static Object doNative(VirtualFrame frame, PythonAbstractNativeObject tuple, Object key,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,

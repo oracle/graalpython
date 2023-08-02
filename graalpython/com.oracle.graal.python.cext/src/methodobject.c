@@ -58,14 +58,14 @@ PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
 
 PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
     return GraalPyTruffleCMethod_NewEx(ml,
-                                               truffleString(PyMethodDef_ml_name(ml)),
-											   function_pointer_to_java(PyMethodDef_ml_meth(ml)),
+                                               PyMethodDef_ml_name(ml),
+											   PyMethodDef_ml_meth(ml),
 											   PyMethodDef_ml_flags(ml),
 											   get_method_flags_wrapper(PyMethodDef_ml_flags(ml)),
                                                self,
                                                module,
                                                cls,
-											   truffleString(PyMethodDef_ml_doc(ml)));
+											   PyMethodDef_ml_doc(ml));
 }
 
 PyCFunction PyCFunction_GetFunction(PyObject *func) {
@@ -83,7 +83,7 @@ int PyCFunction_GetFlags(PyObject *func) {
 	return PyMethodDef_ml_flags(def);
 }
 
-PyTypeObject * PyCFunction_GetClass(PyObject *func) {
+PyAPI_FUNC(PyTypeObject *) PyCFunction_GetClass(PyObject *func) {
 	PyMethodDef* def = PyCFunctionObject_m_ml(func);
 	return PyMethodDef_ml_flags(def) & METH_METHOD ? PyCMethodObject_mm_class(func) : NULL;
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -145,7 +145,7 @@ PyAPI_FUNC(PyObject *) _PyErr_TrySetFromCause(
 
 /* In signalmodule.c */
 
-int PySignal_SetWakeupFd(int fd);
+PyAPI_FUNC(int) PySignal_SetWakeupFd(int fd);
 PyAPI_FUNC(int) _PyErr_CheckSignals(void);
 
 /* Support for adding program text to SyntaxErrors */

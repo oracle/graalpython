@@ -73,16 +73,6 @@ PATCH_TEMPLATE = '''
 
 if sys.implementation.name == "graalpy":
 
-    PKG_SRC_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'patched_package')
-    DIST_DIR = os.path.join(PKG_SRC_DIR, 'dist')
-    BDIST_1_0_0 = os.path.join(DIST_DIR, 'patched_package-1.0.0-py3-none-any.whl')
-    BDIST_1_1_0 = os.path.join(DIST_DIR, 'patched_package-1.1.0-py3-none-any.whl')
-    SDIST_1_0_0 = os.path.join(DIST_DIR, 'patched_package-1.0.0.tar.gz')
-    SDIST_1_1_0 = os.path.join(DIST_DIR, 'patched_package-1.1.0.tar.gz')
-    # TODO simplify legacy structure after ginstall is removed
-    PATCHES_DIRS = os.path.join(PKG_SRC_DIR, 'patches')
-
-
     class PipPatchingTest(unittest.TestCase):
         """
         Checks that our patched pip correctly patches or does not patch a package
@@ -397,31 +387,4 @@ if sys.implementation.name == "graalpy":
                 'patch': 'package-with-dashes.patch',
             }])
             assert self.run_venv_pip_install('package-with-dashes') == ['package-with-dashes-1.0.0']
-            assert self.run_test_fun() == "Patched"
-
-        # Tests for legacy patch structure
-        def test_wheel_unpatched_version_legacy(self):
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
-            self.run_venv_pip_install(BDIST_1_0_0)
-            assert self.run_test_fun() == "Unpatched"
-
-        def test_wheel_patched_version_legacy(self):
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
-            self.run_venv_pip_install(BDIST_1_1_0)
-            assert self.run_test_fun() == "Patched"
-
-        def test_sdist_unpatched_version_legacy(self):
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
-            # Note: PKG_VERSION is used by setup.py
-            self.run_venv_pip_install(SDIST_1_0_0, extra_env={'PKG_VERSION': '1.0.0'})
-            assert self.run_test_fun() == "Unpatched"
-
-        def test_sdist_patched_version_legacy(self):
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
-            self.run_venv_pip_install(SDIST_1_1_0, extra_env={'PKG_VERSION': '1.1.0'})
-            assert self.run_test_fun() == "Patched"
-
-        def test_sdist_patched_with_wheel_patch_legacy(self):
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
-            self.run_venv_pip_install(SDIST_1_1_0, extra_env={'PKG_VERSION': '1.1.0'})
             assert self.run_test_fun() == "Patched"

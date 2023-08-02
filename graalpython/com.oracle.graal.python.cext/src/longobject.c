@@ -1,42 +1,7 @@
-/*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #include "capi.h"
 
@@ -81,18 +46,32 @@ PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     }
 
     char* numberStart = str;
+    int overflow = 0;
     int digits = 0;
     char prev;
-    while (_PyLong_DigitValue[Py_CHARMASK(*str)] < base || *str == '_') {
-        if (*str == '_') {
+    long value;
+    while (true) {
+    	if (*str == '_') {
             if (prev == '_') {
                 goto error;
             }
-        }
+    	} else {
+    		unsigned char digit = _PyLong_DigitValue[Py_CHARMASK(*str)];
+    		if (digit >= base) {
+    			break;
+    		}
+    		long new_value = value * base - digit;
+    		if (new_value > value) {
+    			// overflow
+    			overflow = 1;
+    		}
+    		value = new_value;
+    	}
         prev = *str;
         ++str;
         ++digits;
     }
+
     if (prev == '_') {
         /* Trailing underscore not allowed. */
         goto error;
@@ -103,14 +82,146 @@ PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     if (pend != NULL) {
         *pend = str;
     }
+    if (value == LONG_MIN && !negative) {
+    	overflow = 1;
+    }
 
-    return GraalPyTruffleLong_FromString(polyglot_from_string_n(numberStart, digits, "ascii"), base, negative);
+    if (overflow) {
+    	PyObject* string = PyUnicode_FromStringAndSize(numberStart, digits);
+    	PyObject* result = GraalPyTruffleLong_FromString(string, base, negative);
+    	Py_DecRef(string);
+    	return result;
+    } else {
+    	return PyLong_FromLong(negative ? value : -value);
+    }
 
  error:
     PyErr_Format(PyExc_ValueError,
                  "invalid literal for int() with base %d: %.200R",
                  base, PyUnicode_FromString(inputStr));
     return NULL;
+}
+
+
+/*
+ * There are 4 different modes for 'PyLong_AsPrimitive:
+ * - MODE_COERCE_UNSIGNED
+ *     Will coerce the object to a Python integer and returns it as unsigned primitive.
+ * - MODE_COERCE_SIGNED 1
+ *     Will coerce the object to a Python integer and returns it as signed primitive.
+ * - MODE_PINT_UNSIGNED 2
+ *     Requires the object to be a Python integer and returns it as unsigned primitive.
+ * - MODE_PINT_SIGNED 3
+ *     Requires the object to be a Python integer and returns it as signed primitive.
+ * - MODE_COERCE_MASK 4
+ *     Will coerce the object to a Python integer and does a lossy cast to an unsigned primitive.
+ */
+#define MODE_COERCE_UNSIGNED 0
+#define MODE_COERCE_SIGNED 1
+#define MODE_PINT_UNSIGNED 2
+#define MODE_PINT_SIGNED 3
+#define MODE_COERCE_MASK 4
+
+long PyLong_AsLong(PyObject *obj) {
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+}
+
+long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    long result = GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    if (result == -1L && PyErr_Occurred() != NULL) {
+    	PyErr_Clear();
+    	*overflow = 1;
+    } else {
+    	*overflow = 0;
+    }
+    return result;
+}
+
+long long PyLong_AsLongLong(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    return (long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+}
+
+long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
+    long long result = PyLong_AsLongLong(obj);
+    if (result == -1L && PyErr_Occurred() != NULL) {
+    	PyErr_Clear();
+    	*overflow = 1;
+    } else {
+    	*overflow = 0;
+    }
+    return result;
+}
+
+unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+}
+
+unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
+}
+
+unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long) -1;
+    }
+    return (unsigned long) GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
+}
+
+unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long) -1;
+    }
+    return (unsigned long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
+}
+
+Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+}
+
+size_t PyLong_AsSize_t(PyObject *obj) {
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(size_t));
+}
+
+typedef PyObject* (*fromVoidPtr_fun_t)(void*);
+PyObject * PyLong_FromVoidPtr(void *p) {
+	// directly do the upcall to avoid a cast to primitive and reference counting
+    return ((fromVoidPtr_fun_t)GraalPyLong_FromUnsignedLongLong)(p);
+}
+
+double PyLong_AsDouble(PyObject *v)  {
+    return (double)PyLong_AsLongLong(v);
+}
+
+// Taken from CPython 3.8.1
+int _PyLong_AsInt(PyObject *obj) {
+    int overflow;
+    long result = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (overflow || result > INT_MAX || result < INT_MIN) {
+        /* XXX: could be cute and give a different
+           message for overflow == -1 */
+        PyErr_SetString(PyExc_OverflowError,
+                        "Python int too large to convert to C int");
+        return -1;
+    }
+    return (int)result;
 }
 
 /* Table of digit values for 8-bit string -> integer conversion.

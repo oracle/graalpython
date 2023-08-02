@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.InitNode.overridesBuiltinMethod;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
@@ -93,9 +94,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
@@ -176,7 +176,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -195,7 +194,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
-public class TypeBuiltins extends PythonBuiltins {
+public final class TypeBuiltins extends PythonBuiltins {
 
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(J___DICTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(J___ITEMSIZE__);
@@ -339,7 +338,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object doit(Object object) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_MRO, "type", object);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_MRO, "type", object);
         }
     }
 
@@ -907,8 +906,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doNative(PythonNativeClass self,
-                        @Cached CExtNodes.GetTypeMemberNode getTpDictNode) {
-            return getTpDictNode.execute(self, NativeMember.TP_DICT);
+                        @Cached CStructAccess.ReadObjectNode getTpDictNode) {
+            return getTpDictNode.readFromObj(self, CFields.PyTypeObject__tp_dict);
         }
     }
 
@@ -1043,7 +1042,6 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @ImportStatic(NativeMember.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class AbstractSlotNode extends PythonBinaryBuiltinNode {
     }
@@ -1094,13 +1092,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpNameNode,
-                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            TruffleString tpName = castToStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
+            TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
             int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
             int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
             if (firstDot < 0) {
@@ -1150,8 +1147,7 @@ public class TypeBuiltins extends PythonBuiltins {
         Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Cached GetTypeFlagsNode getTpFlags,
-                        @Cached GetTypeMemberNode getTpNameNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
@@ -1164,7 +1160,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 return module;
             } else {
                 // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-                TruffleString tpName = castToStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
+                TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
                 int len = codePointLengthNode.execute(tpName, TS_ENCODING);
                 int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, len, TS_ENCODING);
                 if (firstDot < 0) {
@@ -1227,13 +1223,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static TruffleString getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpNameNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            TruffleString tpName = castToStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
+            TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
             int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
             int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
             if (firstDot < 0) {

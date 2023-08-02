@@ -58,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_sha512")
-public class Sha512ModuleBuiltins extends PythonBuiltins {
+public final class Sha512ModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return Sha512ModuleBuiltinsFactory.getFactories();

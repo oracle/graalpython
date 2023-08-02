@@ -1,8 +1,0 @@
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods
-*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response

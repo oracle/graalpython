@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -86,8 +87,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -113,9 +114,11 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -490,7 +493,7 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
     abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "checkNode.execute(obj)")
         Object setItem(Object obj, Object key, Object value,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
@@ -505,7 +508,7 @@ public final class PythonCextAbstractBuiltins {
             }
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "!checkNode.execute(obj)")
         Object setItem(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
@@ -516,7 +519,7 @@ public final class PythonCextAbstractBuiltins {
     @TypeSystemReference(PythonTypes.class)
     abstract static class PySequence_GetSlice extends CApiTernaryBuiltinNode {
 
-        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "checkNode.execute(obj)")
         Object getSlice(Object obj, long iLow, long iHigh,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
@@ -526,7 +529,7 @@ public final class PythonCextAbstractBuiltins {
             return callNode.execute(getItemCallable, sliceNode.execute(iLow, iHigh, PNone.NONE));
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "!checkNode.execute(obj)")
         Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
@@ -545,14 +548,14 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_Repeat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "checkNode.execute(obj)")
         Object repeat(Object obj, long n,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createMul()") MulNode mulNode) {
             return mulNode.executeObject(null, obj, n);
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "!checkNode.execute(obj)")
         protected Object repeat(Object obj, @SuppressWarnings("unused") Object n,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
@@ -565,7 +568,7 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(obj)"}, limit = "1")
+        @Specialization(guards = {"checkNode.execute(obj)"})
         Object repeat(Object obj, long n,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
@@ -579,7 +582,7 @@ public final class PythonCextAbstractBuiltins {
             return mulNode.executeObject(null, obj, n);
         }
 
-        @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
+        @Specialization(guards = "!checkNode.execute(obj)")
         protected Object repeat(Object obj, @SuppressWarnings("unused") Object n,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
@@ -592,14 +595,14 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"}, limit = "1")
+        @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"})
         Object concat(Object s1, Object s2,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode) {
             return addNode.executeObject(null, s1, s2);
         }
 
-        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"}, limit = "1")
+        @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"})
         protected Object cantConcat(Object s1, @SuppressWarnings("unused") Object s2,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
@@ -613,7 +616,7 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PySequence_InPlaceConcat extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"checkNode.execute(s1)"}, limit = "1")
+        @Specialization(guards = {"checkNode.execute(s1)"})
         Object concat(Object s1, Object s2,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
@@ -626,7 +629,7 @@ public final class PythonCextAbstractBuiltins {
             return addNode.executeObject(null, s1, s2);
         }
 
-        @Specialization(guards = "!checkNode.execute(s1)", limit = "1")
+        @Specialization(guards = "!checkNode.execute(s1)")
         protected Object concat(Object s1, @SuppressWarnings("unused") Object s2,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
@@ -662,13 +665,12 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doManaged(Object delegate, Object position,
-                        @Cached PySequenceCheckNode pySequenceCheck,
-                        @Cached PyObjectGetItem getItem) {
-            if (!pySequenceCheck.execute(delegate)) {
-                throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
+        Object doManaged(Object delegate, long position,
+                        @Cached PySequenceGetItemNode getItemNode) {
+            if ((int) position != position) {
+                throw PRaiseNode.raiseUncached(this, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
             }
-            return getItem.execute(null, delegate, position);
+            return getItemNode.execute(null, delegate, (int) position);
         }
     }
 
@@ -694,7 +696,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             Object state = IndirectCallContext.enter(null, this);
             try {
@@ -772,7 +774,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = {"isNativeObject(obj)"})
         Object size(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             Object state = IndirectCallContext.enter(null, this);
             try {
@@ -874,7 +876,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         static Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
         }
@@ -904,7 +906,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isNativeObject(obj)")
         static Object doNative(Object obj,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached PythonToNativeNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
         }

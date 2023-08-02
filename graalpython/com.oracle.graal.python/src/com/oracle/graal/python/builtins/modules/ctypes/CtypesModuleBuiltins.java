@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
@@ -122,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -151,6 +153,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -207,10 +211,14 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @CoreFunctions(defineModule = J__CTYPES)
-public class CtypesModuleBuiltins extends PythonBuiltins {
+public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_DL_ERROR = tsLiteral("dlerror");
     private static final TruffleString T_DL_OPEN_ERROR = tsLiteral("dlopen() error");
+
+    private static final TruffleString T_WINDOWS_ERROR = tsLiteral("Windows Error");
+
+    private static final String J_DEFAULT_LIBRARY = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? "msvcrt.dll" : J_EMPTY_STRING;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -238,6 +246,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("_pointer_type_cache", core.factory().createDict());
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            addBuiltinConstant("FUNCFLAG_STDCALL", FUNCFLAG_STDCALL);
+        }
         addBuiltinConstant("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
         addBuiltinConstant("FUNCFLAG_USE_ERRNO", FUNCFLAG_USE_ERRNO);
         addBuiltinConstant("FUNCFLAG_USE_LASTERROR", FUNCFLAG_USE_LASTERROR);
@@ -263,8 +274,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         DLHandler handle;
         if (context.getEnv().isNativeAccessAllowed()) {
-            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_EMPTY_STRING, rtldLocal);
+            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_DEFAULT_LIBRARY, rtldLocal);
             setCtypeNFIHelpers(this, context, handle);
+
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                PythonModule sysModule = context.getSysModule();
+                Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
+                Object pythonLib = CallNode.getUncached().execute(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
+                WriteAttributeToDynamicObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
+            }
         } else {
             try {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
@@ -456,6 +474,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_last_error", maxNumOfPositionalArgs = 1, declaresExplicitSelf = true, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "get_errno", maxNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class GetErrnoNode extends PythonUnaryBuiltinNode {
@@ -473,6 +492,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_last_error", minNumOfPositionalArgs = 1, parameterNames = {"errno"}, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "set_errno", minNumOfPositionalArgs = 1, parameterNames = {"errno"})
     @ArgumentClinic(name = "errno", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
@@ -629,6 +649,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "LoadLibrary", minNumOfPositionalArgs = 1, parameterNames = {"$self", "name", "mode"}, declaresExplicitSelf = true, os = PythonOS.PLATFORM_WIN32)
     @Builtin(name = "dlopen", minNumOfPositionalArgs = 1, parameterNames = {"$self", "name", "mode"}, declaresExplicitSelf = true)
     // TODO: 'name' might need to be processed using FSConverter.
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
@@ -638,8 +659,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         private static final TruffleString MACOS_Security_LIB = tsLiteral("/System/Library/Frameworks/Security.framework/Security");
         private static final TruffleString MACOS_CoreFoundation_LIB = tsLiteral("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
-        // "LibFFILibrary(" + handle + ")"
-        private static final int LIBFFI_ADR_FORMAT_START = "LibFFILibrary".length() + 1;
 
         private static final String T_RTLD_LOCAL = "RTLD_LOCAL|RTLD_NOW";
         private static final String T_RTLD_GLOBAL = "RTLD_GLOBAL|RTLD_NOW";
@@ -668,19 +687,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object handler = load(context, src, name);
             InteropLibrary lib = InteropLibrary.getUncached();
-            String handleStr;
             try {
-                handleStr = lib.asString(lib.toDisplayString(handler));
+                return new DLHandler(handler, lib.asPointer(handler), name, false);
             } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
-            }
-            String adrStr = handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - 1);
-            try {
-                long adr = Long.parseLong(adrStr, 10);
-                return new DLHandler(handler, adr, name, false);
-            } catch (NumberFormatException e) {
-                // TODO handle exception [GR-38101]
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere("Cannot convert NFI library to pointer", e);
             }
         }
 
@@ -1065,6 +1075,35 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "FormatError", minNumOfPositionalArgs = 1, os = PythonOS.PLATFORM_WIN32)
+    @GenerateNodeFactory
+    protected abstract static class FormatErrorNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(Object errorCode) {
+            throw raise(NotImplementedError);
+        }
+    }
+
+    @Builtin(name = "_check_HRESULT", minNumOfPositionalArgs = 1, parameterNames = {"hresult"}, os = PythonOS.PLATFORM_WIN32)
+    @ArgumentClinic(name = "hresult", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    protected abstract static class CheckHresultNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CtypesModuleBuiltinsClinicProviders.CheckHresultNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object check(VirtualFrame frame, int hresult) {
+            if (hresult >= 0) {
+                return hresult;
+            } else {
+                throw raiseOSError(frame, hresult, T_WINDOWS_ERROR);
+            }
+        }
+    }
+
     protected static final class argument {
         FFIType ffi_type;
         StgDictObject stgDict;
@@ -1107,9 +1146,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
                         @Cached GetResultNode getResultNode,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
             int argcount = argarray.length;
             if (argcount > CTYPES_MAX_ARGCOUNT) {
                 throw raise(ArgError, TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D, argcount, CTYPES_MAX_ARGCOUNT);
@@ -1162,7 +1199,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             Object result;
             if (mode == BackendMode.NFI) {
-                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
+                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib);
             } else {
                 result = callManagedFunction(pProc, avalues, ilib);
                 if (mode == BackendMode.INTRINSIC) {
@@ -1201,10 +1238,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * NFI compatible native function calls (temporary replacement)
          */
         Object callNativeFunction(NativeFunction pProc, Object[] avalues, FFIType[] atypes, FFIType restype,
-                        InteropLibrary ilib, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+                        InteropLibrary ilib) {
             Object function;
-            if (pProc.function == null) {
-                TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
+            if (pProc.function != null && equals(atypes, pProc.atypes) && restype == pProc.rtype) {
+                function = pProc.function;
+            } else {
+                TruffleString signature = FFIType.buildNFISignature(atypes, restype);
                 try {
                     function = getFunction(pProc, signature.toJavaStringUncached());
                 } catch (Exception e) {
@@ -1214,17 +1253,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pProc.rtype = restype;
                 pProc.function = function;
                 pProc.signature = signature;
-            } else {
-                if (equals(atypes, pProc.atypes) && restype == pProc.rtype) {
-                    function = pProc.function;
-                } else {
-                    TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
-                    try {
-                        function = getFunction(pProc, signature.toJavaStringUncached());
-                    } catch (Exception e) {
-                        throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
-                    }
-                }
             }
             try {
                 return ilib.execute(function, avalues);
@@ -1268,13 +1296,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-        
+
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-        
+
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;

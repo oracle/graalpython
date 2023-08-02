@@ -115,6 +115,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -147,7 +148,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
-public class PosixModuleBuiltins extends PythonBuiltins {
+public final class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,
@@ -667,6 +668,40 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getsid(getPosixSupport(), pid);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "setsid")
+    @GenerateNodeFactory
+    public abstract static class SetSidNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object setsid(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.setsid(getPosixSupport());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "openpty")
+    @GenerateNodeFactory
+    public abstract static class OpenPtyNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object openpty(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                OpenPtyResult result = posixLib.openpty(getPosixSupport());
+                posixLib.setInheritable(getPosixSupport(), result.masterFd(), false);
+                posixLib.setInheritable(getPosixSupport(), result.slaveFd(), false);
+                return factory().createTuple(new int[]{result.masterFd(), result.slaveFd()});
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -2922,7 +2957,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"})
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
@@ -2932,7 +2967,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"})
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,

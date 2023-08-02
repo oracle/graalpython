@@ -5,7 +5,7 @@ index 0000000..9175509
 +++ b/pyproject.toml
 @@ -0,0 +1,3 @@
 +[build-system]
-+requires = ["setuptools >= 40.6.0", "wheel", "Cython"]
++requires = ["setuptools >= 40.6.0", "wheel", "Cython < 3"]
 +build-backend = "setuptools.build_meta:__legacy__"
 diff --git a/setup.py b/setup.py
 index 8da207b..6d5a38b 100644

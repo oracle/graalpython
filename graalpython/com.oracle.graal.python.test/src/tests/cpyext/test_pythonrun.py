@@ -38,26 +38,30 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
-__dir__ = __file__.rpartition("/")[0]
-   
-#python_run_test_result = None
 
-def _reference_run_string(args): 
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
+__dir__ = __file__.rpartition("/")[0]
+
+
+# python_run_test_result = None
+
+def _reference_run_string(args):
     if not isinstance(args[2], dict):
         if sys.version_info.minor >= 6:
             raise SystemError
         else:
             raise TypeError
-    if not isinstance(args[3], dict):        
+    if not isinstance(args[3], dict):
         raise TypeError
     return None
 
+
 def _run_string_compare(x, y):
     res = unhandled_error_compare(x, y)
-    if(isinstance(x, Exception)):
+    if (isinstance(x, Exception)):
         return res
-    
+
     global python_run_test_result
     pr = python_run_test_result
     res = res and pr == 42
@@ -65,19 +69,20 @@ def _run_string_compare(x, y):
     if not res:
         assert False, "python_run_test_result is %s" % pr
     return res
-    
+
+
 class TestPythonRun(CPyExtTestCase):
-        
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPythonRun, self).compile_module(name)
-        
+
     test_PyRun_StringFlags = CPyExtFunction(
         _reference_run_string,
         lambda: (
             ("globals().update({'python_run_test_result':42})", 256, globals(), locals(), 0),
-            ("globals().update({'python_run_test_result':42})", 256, 'globals()', locals(), 0),            
-            ("globals().update({'python_run_test_result':42})", 256, globals(), 'locals()', 0),            
+            ("globals().update({'python_run_test_result':42})", 256, 'globals()', locals(), 0),
+            ("globals().update({'python_run_test_result':42})", 256, globals(), 'locals()', 0),
         ),
         resultspec="O",
         argspec='siOOk',
@@ -117,17 +122,27 @@ class TestPythonRun(CPyExtTestCase):
                 258: "eval"
             }[args[2]],
             flags=args[3],
-            optimize=args[4],
+            _feature_version=args[4],
+            optimize=args[5],
         ),
         lambda: (
-            ("1 + 2", "foo.py", 256, 0, -1),
-            ("1 + 2", "foo.py", 257, 0, 1),
-            ("1 + 2", "foo.py", 258, 0, 2),
-            ("x = 2", "foo.py", 258, 0, 0),
+            ("1 + 2", "foo.py", 256, 0, 0, -1),
+            ("1 + 2", "foo.py", 257, 0, 0, 1),
+            ("1 + 2", "foo.py", 258, 0, 0, 2),
+            ("x = 2", "foo.py", 258, 0, 0, 0),
         ),
+        code="""
+            PyObject* wrap_Py_CompileStringExFlags(const char *str, const char *filename_str, int start, int cf_flags,
+                    int cf_feature_version, int optimize) {
+                PyCompilerFlags flags = {cf_flags, cf_feature_version};
+                return Py_CompileStringExFlags(str, filename_str, start, &flags, optimize);
+            }
+        """,
+        callfunction='wrap_Py_CompileStringExFlags',
         resultspec="O",
-        argspec='ssiii',
-        arguments=["char* source", "char* filename", "int type", "PyCompilerFlags* flags", "int optimize"],
+        argspec='ssiiii',
+        arguments=["char* source", "char* filename", "int type", "int cf_flags", "int cf_feature_version",
+                   "int optimize"],
         cmpfunc=unhandled_error_compare
     )
 
@@ -141,16 +156,26 @@ class TestPythonRun(CPyExtTestCase):
                 258: "eval"
             }[args[2]],
             flags=args[3],
-            optimize=args[4],
+            _feature_version=args[4],
+            optimize=args[5],
         ),
         lambda: (
-            ("1 + 2", "foo.py", 256, 0, -1),
-            ("1 + 2", "foo.py", 257, 0, 1),
-            ("1 + 2", "foo.py", 258, 0, 2),
-            ("x = 2", "foo.py", 258, 0, 0),
+            ("1 + 2", "foo.py", 256, 0, 0, -1),
+            ("1 + 2", "foo.py", 257, 0, 0, 1),
+            ("1 + 2", "foo.py", 258, 0, 0, 2),
+            ("x = 2", "foo.py", 258, 0, 0, 0),
         ),
+        code="""
+            PyObject* wrap_Py_CompileStringObject(const char *str, PyObject *filename, int start, int cf_flags,
+                    int cf_feature_version, int optimize) {
+                PyCompilerFlags flags = {cf_flags, cf_feature_version};
+                return Py_CompileStringObject(str, filename, start, &flags, optimize);
+            }
+        """,
+        callfunction='wrap_Py_CompileStringObject',
         resultspec="O",
-        argspec='sOiii',
-        arguments=["char* source", "PyObject* filename", "int type", "PyCompilerFlags* flags", "int optimize"],
+        argspec='sOiiii',
+        arguments=["char* source", "PyObject* filename", "int type", "int cf_flags", "int cf_feature_version",
+                   "int optimize"],
         cmpfunc=unhandled_error_compare
     )

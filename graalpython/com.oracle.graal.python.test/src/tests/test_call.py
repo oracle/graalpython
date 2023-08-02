@@ -378,6 +378,15 @@ def test_doesnt_modify_passed_dict():
     assert d1 == {'a': 1}
     assert d2 == {'b': 2}
 
+def test_keyword_validation_order_of_evaluation():
+    # The division by zero is evaluated before the duplicate argument is detected.
+    assert_call_raises(ZeroDivisionError, "f26(**{'a':1}, a=1/0)")
+    assert_call_raises(ZeroDivisionError, "f26(**{'p1':0}, p1=1, p2=2, p3=3, p4=4, p5=5, p6=6, p7=7, p8=8, p9=9, p10=10, p11=11, p12=12, p13=13, p14=14, p15=15/0)")
+    assert_call_raises(ZeroDivisionError, "f26(**{'p1':0}, p1=1, p2=2, p3=3, p4=4, p5=5, p6=6, p7=7, p8=8, p9=9, p10=10, p11=11, p12=12, p13=13, p14=14, p15=15, p16=16/0)")
+
+    # The duplicate argument is detected before the division by zero is evaluated.
+    assert_call_raises(TypeError, "f26(**{'a':1}, **{'a':2}, b=1/0)")
+
 fooo = f26
 def test_multiple_values_with_callable_name():
     def assert_get_message(err, fn, *args, **kwargs):

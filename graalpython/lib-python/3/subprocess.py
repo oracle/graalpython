@@ -1705,6 +1705,38 @@ class Popen:
             else:
                 args = list(args)
 
+            # Truffle change
+            if sys.platform == 'win32':
+                if executable is None and len(args) == 1:
+                    import shlex
+                    executable = next(shlex.shlex(list2cmdline(args)))
+                    if executable.startswith('"') and executable.endswith('"'):
+                        executable = executable[1:-1]
+                if (len(args) == 1 and executable != args[0]) or shell:
+                    if not shell:
+                        warnings.warn(f"Running\n\t{args[0]!r} in a cmd shell", RuntimeWarning)
+                    shell = False
+                    comspec = os.environ.get("COMSPEC", "cmd.exe")
+                    executable = comspec
+                    if len(args) == 1:
+                        args = [comspec, "/u", "/c", *args]
+                    else:
+                        args = [comspec, "/u", "/c", list2cmdline(args)]
+                for idx, arg in enumerate(args):
+                    modified = False
+                    if '\n' in args[idx]:
+                        # newlines are not passed correctly. the common case
+                        # where we have arguments like this is python code, so
+                        # assume that and hope for the best
+                        args[idx] = args[idx].strip().replace('\n', ';')
+                        modified = True
+                    if '"' in args[idx]:
+                        args[idx] = list2cmdline(args[idx:idx + 1])
+                        modified = True
+                    if modified:
+                        warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
+            # End Truffle change
+
             if shell:
                 # On Android the default shell is at '/system/bin/sh'.
                 unix_shell = ('/system/bin/sh' if

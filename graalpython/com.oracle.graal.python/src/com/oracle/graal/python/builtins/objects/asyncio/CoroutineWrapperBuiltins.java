@@ -59,7 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutineWrapper)
-public class CoroutineWrapperBuiltins extends PythonBuiltins {
+public final class CoroutineWrapperBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CoroutineWrapperBuiltinsFactory.getFactories();

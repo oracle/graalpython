@@ -39,9 +39,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
-import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
@@ -98,6 +99,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
@@ -107,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInt
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
@@ -160,6 +161,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
@@ -196,16 +198,23 @@ public final class PythonContext extends Python3Core {
     public final HandleContext nativeContext = new HandleContext();
     private volatile boolean finalizing;
 
-    private static String getJniSoExt() {
-        if (getPythonOS() == PLATFORM_DARWIN) {
-            return ".dylib";
-        } else if (getPythonOS() == PLATFORM_WIN32) {
-            return ".dll";
-        }
-        return ".so";
+    @TruffleBoundary
+    public static String getSupportLibName(PythonOS os, String libName) {
+        // note: this should be aligned with MX's "lib" substitution
+        return switch (os) {
+            case PLATFORM_LINUX, PLATFORM_FREEBSD, PLATFORM_SUNOS -> J_LIB_PREFIX + libName + J_EXT_SO;
+            case PLATFORM_DARWIN -> J_LIB_PREFIX + libName + J_EXT_DYLIB;
+            case PLATFORM_WIN32 -> libName + J_EXT_DLL;
+            default -> libName;
+        };
     }
 
-    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
+    @TruffleBoundary
+    public static String getSupportLibName(String libName) {
+        return getSupportLibName(getPythonOS(), libName);
+    }
+
+    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", getSupportLibName("pythonjni"));
 
     /**
      * An enum of events which can currently be traced using python's tracing
@@ -744,6 +753,11 @@ public final class PythonContext extends Python3Core {
 
     // the actual pointer will be set when the cext is initialized
     private final PythonNativePointer nativeNull = new PythonNativePointer(null);
+
+    public RootCallTarget signatureContainer;
+
+    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    }
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;
@@ -1664,24 +1678,14 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    private TruffleString sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
+    private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
-        sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
-        basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
-        coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
-        stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
-        capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
-        jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
-
-        Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
-                        "\n\tLanguage home: {0}" +
-                        "\n\tSysPrefix: {1}" +
-                        "\n\tBaseSysPrefix: {2}" +
-                        "\n\tCoreHome: {3}" +
-                        "\n\tStdLibHome: {4}" +
-                        "\n\tCAPI: {5}" +
-                        "\n\tJNI library: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome));
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // at buildtime we do not need these paths to be valid, since all boot files are frozen
+            basePrefix = sysPrefix = langHome = coreHome = stdLibHome = capiHome = jniHome = T_DOT;
+            return;
+        }
 
         String pythonHome = newEnv.getOptions().get(PythonOptions.PythonHome);
         if (pythonHome.isEmpty()) {
@@ -1707,25 +1711,65 @@ public final class PythonContext extends Python3Core {
             home = null;
         }
 
-        if (home != null) {
+        Supplier<?>[] homeCandidates = new Supplier<?>[]{
+                        () -> {
+                            return home;
+                        },
+                        () -> {
+                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null && !ImageInfo.inImageCode()) {
+                                try {
+                                    return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
+                                } catch (IOException e) {
+                                    // fall through
+                                }
+                            }
+                            return null;
+                        }
+        };
+        for (Supplier<?> homeCandidateSupplier : homeCandidates) {
+            sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
+            basePrefix = newEnv.getOptions().get(PythonOptions.SysBasePrefix);
+            coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
+            stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
+            capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+            jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
+            final TruffleFile homeCandidate = (TruffleFile) homeCandidateSupplier.get();
+            if (homeCandidate == null) {
+                continue;
+            }
+            boolean homeSeemsValid = !coreHome.isEmpty() && !stdLibHome.isEmpty();
+
+            Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tBaseSysPrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tCAPI: {5}" +
+                            "\n\tJNI library: {6}" +
+                            "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
+
+            langHome = toTruffleStringUncached(homeCandidate.toString());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
+                sysPrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
+                basePrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             }
 
             if (coreHome.isEmpty()) {
                 try {
-                    outer: for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : homeCandidate.list()) {
                         if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
                             coreHome = toTruffleStringUncached(f.getPath());
+                            homeSeemsValid = true;
                             break;
                         } else if (f.getName().equals("lib") && f.isDirectory()) {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR) && f.isDirectory()) {
                                     coreHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1738,7 +1782,7 @@ public final class PythonContext extends Python3Core {
             if (stdLibHome.isEmpty()) {
                 // try stdlib layouts per sysconfig or our sources
                 try {
-                    outer: for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : homeCandidate.list()) {
                         if (getPythonOS() == PLATFORM_WIN32 && (f.getName().equals("Lib") || f.getName().equals("lib")) && f.isDirectory()) {
                             // nt stdlib layout
                             stdLibHome = toTruffleStringUncached(f.getPath());
@@ -1747,6 +1791,7 @@ public final class PythonContext extends Python3Core {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR) && f.isDirectory()) {
                                     stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1755,6 +1800,7 @@ public final class PythonContext extends Python3Core {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("3") && f.isDirectory()) {
                                     stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    homeSeemsValid = true;
                                     break outer;
                                 }
                             }
@@ -1771,21 +1817,10 @@ public final class PythonContext extends Python3Core {
             if (jniHome.isEmpty()) {
                 jniHome = coreHome;
             }
-        }
 
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // use relative paths at buildtime to avoid freezing buildsystem paths
-            TruffleFile base = newEnv.getInternalTruffleFile(basePrefix.toJavaStringUncached()).getAbsoluteFile();
-            newEnv.setCurrentWorkingDirectory(base);
-            basePrefix = T_DOT;
-            sysPrefix = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(sysPrefix.toJavaStringUncached())).getPath());
-            if (sysPrefix.isEmpty()) {
-                sysPrefix = T_DOT;
+            if (homeSeemsValid) {
+                break;
             }
-            coreHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(coreHome.toJavaStringUncached())).getPath());
-            stdLibHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(stdLibHome.toJavaStringUncached())).getPath());
-            capiHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(capiHome.toJavaStringUncached())).getPath());
-            jniHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(jniHome.toJavaStringUncached())).getPath());
         }
 
         Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
@@ -1796,8 +1831,16 @@ public final class PythonContext extends Python3Core {
                         "\n\tStdLibHome: {4}" +
                         "\n\tExecutable: {5}" +
                         "\n\tCAPI: {6}" +
-                        "\n\tJNI library: {7}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
+                        "\n\tJNI library: {7}", langHome, sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
                         jniHome));
+    }
+
+    @TruffleBoundary
+    public TruffleString getLanguageHome() {
+        if (langHome == null || langHome.isEmpty()) {
+            langHome = T_PREFIX;
+        }
+        return langHome;
     }
 
     @TruffleBoundary
@@ -1812,13 +1855,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public TruffleString getSysBasePrefix() {
         if (basePrefix.isEmpty()) {
-            String homePrefix = getLanguage().getHome();
-            if (homePrefix == null || homePrefix.isEmpty()) {
-                basePrefix = T_PREFIX;
-            } else {
-                basePrefix = toTruffleStringUncached(homePrefix);
-            }
-
+            basePrefix = getLanguageHome();
         }
         return basePrefix;
     }
@@ -2280,15 +2317,13 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public boolean isPyFileInLanguageHome(TruffleFile path) {
         assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
-        String languageHome = getLanguage().getHome();
-
         // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
         // allowed.
-        if (languageHome != null) {
+        if (langHome != null) {
             // This deliberately uses 'getAbsoluteFile' and not 'getCanonicalFile' because if, e.g.,
             // 'path' is a symlink outside of the language home, the user should not be able to read
             // the symlink if 'allowIO' is false.
-            TruffleFile coreHomePath = env.getInternalTruffleFile(languageHome).getAbsoluteFile();
+            TruffleFile coreHomePath = getEnv().getInternalTruffleFile(langHome.toJavaStringUncached()).getAbsoluteFile();
             TruffleFile absolutePath = path.getAbsoluteFile();
             return absolutePath.startsWith(coreHomePath);
         }
@@ -2404,12 +2439,12 @@ public final class PythonContext extends Python3Core {
         return cApiContext;
     }
 
-    public void setCapiWasLoaded(CApiContext capiContext) {
+    public void setCApiContext(CApiContext capiContext) {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
+    }
 
-        PyDateTimeCAPIWrapper.initWrapper(capiContext);
-
+    public void runCApiHooks() {
         for (Runnable capiHook : capiHooks) {
             capiHook.run();
         }
@@ -2481,23 +2516,15 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public static String getSupportExt() {
-        return switch (getPythonOS()) {
-            case PLATFORM_DARWIN -> J_EXT_DYLIB;
-            case PLATFORM_WIN32 -> J_EXT_PYD;
-            default -> J_EXT_SO;
-        };
-    }
-
-    @TruffleBoundary
     public String getLLVMSupportExt(String libName) {
         LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         String toolchainIdentifier = toolchain.getIdentifier();
         if (J_NATIVE.equals(toolchainIdentifier)) {
-            return libName + '-' + J_NATIVE + PythonContext.getSupportExt();
+            return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
         }
-        return libName + '-' + toolchainIdentifier + J_EXT_SO;
+        // if not native, we always assume a Linux-like system
+        return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
     }
 
     @TruffleBoundary

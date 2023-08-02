@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.castToString;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.classNameNoDot;
@@ -74,6 +75,7 @@ import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttr;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttrAsString;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectRepr;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectStr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.setExceptionTraceback;
 import static com.oracle.graal.python.lib.PyTraceBackPrintNode.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DISPLAYHOOK;
@@ -163,12 +165,12 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.Tex
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -184,12 +186,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyImportImport;
@@ -220,7 +221,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -251,7 +251,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
-public class SysModuleBuiltins extends PythonBuiltins {
+public final class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
     private static final String COMPILE_TIME;
@@ -789,19 +789,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached GetTracebackNode getTracebackNode) {
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                PBaseException exception = currentException.getEscapedException();
-                LazyTraceback lazyTraceback = currentException.getTraceback();
-                PTraceback traceback = null;
-                if (lazyTraceback != null) {
-                    traceback = getTracebackNode.execute(lazyTraceback);
-                }
-                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback == null ? PNone.NONE : traceback});
+                Object exception = currentException.getEscapedException();
+                Object traceback = getTracebackNode.execute(inliningTarget, exception);
+                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
             }
         }
 
@@ -939,13 +935,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         protected long doGeneric(PythonAbstractObject object,
-                        @Cached PCallCapiFunction callGetObRefCntNode,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            if (object instanceof PythonAbstractNativeObject) {
-                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ((PythonAbstractNativeObject) object).getPtr()));
+                        @Cached CStructAccess.ReadI64Node read) {
+            if (object instanceof PythonAbstractNativeObject nativeKlass) {
+                return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
             }
 
-            DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+            PythonNativeWrapper wrapper = object.getNativeWrapper();
             if (wrapper == null) {
                 return -1;
             } else {
@@ -1445,17 +1440,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
-                if (PGuards.isPBaseException(value)) {
-                    final PBaseException exc = (PBaseException) value;
-                    final PBaseException cause = exc.getCause();
-                    final PBaseException context = exc.getContext();
+                if (PyExceptionInstanceCheckNode.executeUncached(value)) {
+                    Object cause = ExceptionNodes.GetCauseNode.executeUncached(value);
+                    Object context = ExceptionNodes.GetContextNode.executeUncached(value);
 
-                    if (cause != null) {
+                    if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
                             printExceptionRecursive(frame, sys, out, cause, seen);
                             fileWriteString(frame, out, T_CAUSE_MESSAGE);
                         }
-                    } else if (context != null && !exc.getSuppressContext()) {
+                    } else if (context != PNone.NONE && !ExceptionNodes.GetSuppressContextNode.executeUncached(value)) {
                         if (notSeen(seen, context)) {
                             printExceptionRecursive(frame, sys, out, context, seen);
                             fileWriteString(frame, out, T_CONTEXT_MESSAGE);
@@ -1574,14 +1568,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHookWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
-            if (PGuards.isPBaseException(value)) {
-                final PBaseException exc = (PBaseException) value;
-                final Object currTb = getExceptionTraceback(exc);
-                if (currTb instanceof PTraceback) {
-                    exc.setTraceback(traceBack);
-                }
-            }
-
+            setExceptionTraceback(value, traceBack);
             final MaterializedFrame materializedFrame = frame.materialize();
             Object stdErr = objectLookupAttr(materializedFrame, sys, T_STDERR);
             printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());

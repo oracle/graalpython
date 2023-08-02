@@ -50,9 +50,9 @@ import java.util.Locale;
 
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UCharacterCategory;
-import com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacterCategory;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;

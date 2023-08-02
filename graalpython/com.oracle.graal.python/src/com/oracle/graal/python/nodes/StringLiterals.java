@@ -124,7 +124,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_STRUCT_TIME = tsLiteral("struct_time");
 
     public static final String J_GET_ = "get_";
-    public static final TruffleString T_GET_ = tsLiteral(J_GET_);
+    public static final String J_SET_ = "set_";
 
     public static final TruffleString T_NAME = tsLiteral("name");
 
@@ -162,12 +162,14 @@ public abstract class StringLiterals {
     public static final String J_TYPE_ID = "_typeid";
     public static final TruffleString T_TYPE_ID = tsLiteral(J_TYPE_ID);
 
+    public static final String J_LIB_PREFIX = "lib";
+
     public static final String J_EXT_SO = ".so";
     public static final TruffleString T_EXT_SO = tsLiteral(J_EXT_SO);
     public static final String J_EXT_PYD = ".pyd";
     public static final TruffleString T_EXT_PYD = tsLiteral(J_EXT_PYD);
     public static final String J_EXT_DYLIB = ".dylib";
-    public static final TruffleString T_EXT_DYLIB = tsLiteral(J_EXT_DYLIB);
+    public static final String J_EXT_DLL = ".dll";
 
     public static final String J_NATIVE = "native";
     public static final TruffleString T_NATIVE = tsLiteral(J_NATIVE);
@@ -215,4 +217,6 @@ public abstract class StringLiterals {
     public static final TruffleString T_EVAL = tsLiteral("eval");
 
     public static final TruffleString T_FUNC_TYPE = tsLiteral("func_type");
+
+    public static final String J_OB_REFCNT = "ob_refcnt";
 }

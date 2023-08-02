@@ -57,6 +57,10 @@ final class NativeObjectReferenceArrayWrapper implements TruffleObject {
         this.data = new long[1024];
     }
 
+    long[] getArray() {
+        return data;
+    }
+
     void reset() {
         length = 0;
     }

@@ -47,7 +47,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(defineModule = "_json")
-public class JSONModuleBuiltins extends PythonBuiltins {
+public final class JSONModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JSONModuleBuiltinsFactory.getFactories();

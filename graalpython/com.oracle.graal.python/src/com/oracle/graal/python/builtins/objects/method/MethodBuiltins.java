@@ -77,7 +77,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
-public class MethodBuiltins extends PythonBuiltins {
+public final class MethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -140,7 +140,7 @@ public class MethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPMethod(self)")
         Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETATTRIBUTE__, "method", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
         }
     }
 

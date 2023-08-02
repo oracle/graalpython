@@ -111,7 +111,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.J_ZLIB)
-public class ZLibModuleBuiltins extends PythonBuiltins {
+public final class ZLibModuleBuiltins extends PythonBuiltins {
 
     protected static final String J_ZLIB = "zlib";
     protected static final TruffleString T_ZLIB = tsLiteral(J_ZLIB);

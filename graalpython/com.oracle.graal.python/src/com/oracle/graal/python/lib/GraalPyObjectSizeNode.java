@@ -73,21 +73,21 @@ public abstract class GraalPyObjectSizeNode extends PNodeWithContext {
         return codePointLengthNode.execute(str, TS_ENCODING);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doList(PList object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doTuple(PTuple object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doDict(PDict object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
@@ -95,7 +95,7 @@ public abstract class GraalPyObjectSizeNode extends PNodeWithContext {
         return lenNode.execute(object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doSet(PSet object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
@@ -103,7 +103,7 @@ public abstract class GraalPyObjectSizeNode extends PNodeWithContext {
         return lenNode.execute(object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doPString(PString object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
@@ -111,7 +111,7 @@ public abstract class GraalPyObjectSizeNode extends PNodeWithContext {
         return lenNode.execute(object);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doPBytes(PBytesLike object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {

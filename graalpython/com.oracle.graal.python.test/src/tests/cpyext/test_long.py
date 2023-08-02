@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -330,7 +330,12 @@ class TestPyLong(CPyExtTestCase):
         lambda args: int(args[0], args[1]),
         lambda: (
             ("  12 ", 10),
+            ("  12abg13 ", 22),
             ("12", 0),
+            ("12321321", 0),
+            ("0x132f1", 0),
+            ("0x132132ff213213213231", 0),
+            ("13123441234123423412341234123412341234124312341234213213213213213231", 0),
         ),
         code='''PyObject* wrap_PyLong_FromString(const char* str, int base) {
             char* pend;
@@ -347,21 +352,35 @@ class TestPyLong(CPyExtTestCase):
         lambda: (
             (0, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x00'),
             (4294967299, 8, False, True, b'\x00\x00\x00\x01\x00\x00\x00\x03'),
+            (2147483647, 4, False, True, b'\x7f\xff\xff\xff'),
+            (-2147483648, 4, False, True, b'\x80\x00\x00\x00'),
+            (2147483647, 5, False, True, b'\x00\x7f\xff\xff\xff'),
+            (-2147483648, 5, False, True, b'\xff\x80\x00\x00\x00'),
+            (9223372036854775807, 8, False, True, b'\x7f\xff\xff\xff\xff\xff\xff\xff'),
+            (-9223372036854775808, 8, False, True, b'\x80\x00\x00\x00\x00\x00\x00\x00'),
+            (9223372036854775807, 9, False, True, b'\x00\x7f\xff\xff\xff\xff\xff\xff\xff'),
+            (-9223372036854775808, 9, False, True, b'\xff\x80\x00\x00\x00\x00\x00\x00\x00'),
+            (12, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x0c'),
             (1234, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x04\xd2'),
             (0xdeadbeefdead, 8, False, True, b'\x00\x00\xde\xad\xbe\xef\xde\xad'),
             (0xdeadbeefdead, 8, True, True, b'\xad\xde\xef\xbe\xad\xde\x00\x00'),
+            (0xdeadbeefdead, 7, True, True, b'\xad\xde\xef\xbe\xad\xde\x00'),
             (0xdeadbeefdeadbeefbeefdeadcafebabe, 17, False, True, b'\x00\xde\xad\xbe\xef\xde\xad\xbe\xef\xbe\xef\xde\xad\xca\xfe\xba\xbe'),
         ),
         code='''PyObject* wrap_PyLong_AsByteArray(PyObject* object, Py_ssize_t n, int little_endian, int is_signed, PyObject* unused) {
-            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char));
+            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char) + 1);
+            memset(buf, 0x33, n + 1);
             PyObject* result;
-            
             Py_INCREF(object);
             if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
                 Py_DECREF(object);
                 return NULL;
             }
             Py_DECREF(object);
+            if (buf[n] != 0x33) {
+                PyErr_SetString(PyExc_SystemError, "Sentinel value corrupted.");
+                return NULL;
+            }
             result = PyBytes_FromStringAndSize((const char *) buf, n);
             free(buf);
             return result;

@@ -100,6 +100,7 @@
 *graalpython.lib-python.3.test.test_logging.HandlerTest.test_name
 *graalpython.lib-python.3.test.test_logging.HandlerTest.test_path_objects
 *graalpython.lib-python.3.test.test_logging.HandlerTest.test_post_fork_child_no_deadlock
+*graalpython.lib-python.3.test.test_logging.HandlerTest.test_race
 *graalpython.lib-python.3.test.test_logging.IPv6SysLogHandlerTest.test_output
 *graalpython.lib-python.3.test.test_logging.LastResortTest.test_last_resort
 *graalpython.lib-python.3.test.test_logging.LogRecordFactoryTest.test_logrecord_class

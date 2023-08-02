@@ -1,0 +1,97 @@
+diff --git a/pyspark/cloudpickle/cloudpickle.py b/pyspark/cloudpickle/cloudpickle.py
+index 317be69..4e409e4 100644
+--- a/pyspark/cloudpickle/cloudpickle.py
++++ b/pyspark/cloudpickle/cloudpickle.py
+@@ -512,6 +512,8 @@ def _walk_global_ops(code):
+     """
+     Yield referenced name for all global-referencing instructions in *code*.
+     """
++    # GraalPy change: we don't support dis
++    yield from code.co_names
+     for instr in dis.get_instructions(code):
+         op = instr.opcode
+         if op in GLOBAL_OPS:
+diff --git a/pyspark/cloudpickle/cloudpickle_fast.py b/pyspark/cloudpickle/cloudpickle_fast.py
+index 63aaffa..4ee14fd 100644
+--- a/pyspark/cloudpickle/cloudpickle_fast.py
++++ b/pyspark/cloudpickle/cloudpickle_fast.py
+@@ -663,7 +663,7 @@ class CloudPickler(Pickler):
+             self.globals_ref = {}
+             assert hasattr(self, 'proto')
+ 
+-    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
++    if pickle.HIGHEST_PROTOCOL >= 5 and not hasattr(Pickler, 'dispatch'):
+         # Pickler is the C implementation of the CPython pickler and therefore
+         # we rely on reduce_override method to customize the pickler behavior.
+ 
+diff --git a/pyspark/conf.py b/pyspark/conf.py
+index 1ddc8f5..4f0828f 100644
+--- a/pyspark/conf.py
++++ b/pyspark/conf.py
+@@ -135,6 +135,10 @@ class SparkConf:
+                 self._jconf = None
+                 self._conf = {}
+ 
++        import sys
++        if sys.implementation.name == 'graalpy':
++            self.set('spark.python.use.daemon', False)
++
+     def set(self, key: str, value: str) -> "SparkConf":
+         """Set a configuration property."""
+         # Try to set self._jconf first if JVM is created, set self._conf if JVM is not created yet.
+diff --git a/pyspark/java_gateway.py b/pyspark/java_gateway.py
+index aee206d..b1cc575 100644
+--- a/pyspark/java_gateway.py
++++ b/pyspark/java_gateway.py
+@@ -92,7 +92,8 @@ def launch_gateway(conf=None, popen_kwargs=None):
+                 def preexec_func():
+                     signal.signal(signal.SIGINT, signal.SIG_IGN)
+ 
+-                popen_kwargs["preexec_fn"] = preexec_func
++                # GraalPy change: we don't support preexec_fn
++                # popen_kwargs["preexec_fn"] = preexec_func
+                 proc = Popen(command, **popen_kwargs)
+             else:
+                 # preexec_fn not supported on Windows
+diff --git a/pyspark/worker.py b/pyspark/worker.py
+index cd5bb64..0bd7ac7 100644
+--- a/pyspark/worker.py
++++ b/pyspark/worker.py
+@@ -887,4 +887,7 @@ if __name__ == "__main__":
+     # TODO: Remove thw following two lines and use `Process.pid()` when we drop JDK 8.
+     write_int(os.getpid(), sock_file)
+     sock_file.flush()
+-    main(sock_file, sock_file)
++    try:
++        main(sock_file, sock_file)
++    finally:
++        sock_file.close()
+diff --git a/setup.py b/setup.py
+index ead1139..825f6c9 100755
+--- a/setup.py
++++ b/setup.py
+@@ -222,6 +222,24 @@ try:
+     with open("README.md") as f:
+         long_description = f.read()
+ 
++    graalpy_marker = 'graalpy-repacked-zips'
++    if not os.path.exists(graalpy_marker):
++        import pathlib
++        import shutil
++        import tempfile
++        with tempfile.TemporaryDirectory() as tmp:
++            target = pathlib.Path(tmp)
++            shutil.unpack_archive('lib/pyspark.zip', target)
++            for f in pathlib.Path('pyspark').glob('**/*.py'):
++                dst = target / f
++                if dst.is_file():
++                    shutil.copy(f, dst)
++            shutil.make_archive('lib/pyspark', 'zip', target)
++
++
++        with open(graalpy_marker, 'w'):
++            pass
++
+     setup(
+         name="pyspark",
+         version=VERSION,

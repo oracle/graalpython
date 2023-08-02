@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,31 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNode.InitializeTypeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ToNativeTypeNodeGen.InitializeTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
  * of the corresponding native type {@code struct _typeobject}.
  */
-@ExportLibrary(InteropLibrary.class)
-public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
+public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper {
     private final CStringWrapper nameWrapper;
 
     private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
@@ -79,28 +86,68 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nativeWrapper;
     }
 
-    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, TruffleString name) {
+    /**
+     * Creates a wrapper that uses an existing native object as native replacement object.
+     */
+    public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
+        InitializeTypeNode initializeNode = InitializeTypeNodeGen.getUncached();
         // important: native wrappers are cached
-        PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
-        if (nativeWrapper == null) {
-            nativeWrapper = new PythonClassNativeWrapper(obj, name);
-            obj.setNativeWrapper(nativeWrapper);
-        } else {
-            // it already existed, so we need to increase the reference count
-            CApiTransitions.incRef(nativeWrapper, 1);
-        }
-        return nativeWrapper;
-    }
+        assert clazz.getClassNativeWrapper() == null;
+        PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
+        clazz.setNativeWrapper(wrapper);
 
-    @ExportMessage
-    protected void toNative(
-                    @Cached ToNativeTypeNode toNativeNode) {
-        toNativeNode.execute(this);
+        CStructAccess.ReadI64Node readI64 = CStructAccess.ReadI64Node.getUncached();
+        CStructAccess.ReadPointerNode readPointer = CStructAccess.ReadPointerNode.getUncached();
+        WriteAttributeToObjectNode writeAttr = WriteAttributeToObjectNode.getUncached();
+        InteropLibrary lib = InteropLibrary.getUncached();
+
+        // some values are retained from the native representation
+        long basicsize = readI64.read(pointer, CFields.PyTypeObject__tp_basicsize);
+        if (basicsize != 0) {
+            SetBasicSizeNodeGen.getUncached().execute(null, clazz, basicsize);
+        }
+        long itemsize = readI64.read(pointer, CFields.PyTypeObject__tp_itemsize);
+        if (itemsize != 0) {
+            SetItemSizeNodeGen.getUncached().execute(null, clazz, itemsize);
+        }
+        long vectorcall_offset = readI64.read(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
+        if (vectorcall_offset != 0) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_VECTORCALL_OFFSET, vectorcall_offset);
+        }
+        Object alloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_alloc);
+        if (!PGuards.isNullOrZero(alloc_fun, lib)) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_ALLOC, alloc_fun);
+        }
+        Object dealloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_dealloc);
+        if (!PGuards.isNullOrZero(dealloc_fun, lib)) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_DEALLOC, dealloc_fun);
+        }
+        Object free_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_free);
+        if (!PGuards.isNullOrZero(free_fun, lib)) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_FREE, free_fun);
+        }
+        Object as_buffer = readPointer.read(pointer, CFields.PyTypeObject__tp_as_buffer);
+        if (!PGuards.isNullOrZero(as_buffer, lib)) {
+            writeAttr.execute(clazz, TypeBuiltins.TYPE_AS_BUFFER, as_buffer);
+        }
+
+        // initialize flags:
+        long flags = GetTypeFlagsNode.getUncached().execute(clazz);
+        flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+        SetTypeFlagsNode.getUncached().execute(clazz, flags);
+
+        initializeNode.execute(wrapper, pointer);
+        wrapper.setReplacement(pointer, lib);
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
+    }
+
+    @Override
+    protected Object allocateReplacememtObject() {
+        return ToNativeTypeNodeGen.getUncached().execute(this);
     }
 }

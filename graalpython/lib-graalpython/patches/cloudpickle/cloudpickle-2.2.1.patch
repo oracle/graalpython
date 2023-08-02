@@ -12,18 +12,10 @@ index 317be69..4e409e4 100644
          op = instr.opcode
          if op in GLOBAL_OPS:
 diff --git a/cloudpickle/cloudpickle_fast.py b/cloudpickle/cloudpickle_fast.py
-index 63aaffa..873f462 100644
+index 63aaffa..4ee14fd 100644
 --- a/cloudpickle/cloudpickle_fast.py
 +++ b/cloudpickle/cloudpickle_fast.py
-@@ -21,6 +21,7 @@ import struct
- import types
- import weakref
- import typing
-+import platform
- 
- from enum import Enum
- from collections import ChainMap, OrderedDict
-@@ -663,7 +664,7 @@ class CloudPickler(Pickler):
+@@ -663,7 +663,7 @@ class CloudPickler(Pickler):
              self.globals_ref = {}
              assert hasattr(self, 'proto')
  

@@ -78,7 +78,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multibytecodec")
-public class MultibytecodecModuleBuiltins extends PythonBuiltins {
+public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
     static final TruffleString PyMultibyteCodec_CAPSULE_NAME = tsLiteral("multibytecodec.__map_*");
     /** insufficient output buffer space */

@@ -64,3 +64,19 @@ class TestPySys(CPyExtTestCase):
         arguments=["char* name"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_Interpreters = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            (),
+        ),
+        code="""PyObject* wrap_Interpreters() {
+            return PyLong_FromLong(PyThreadState_Get()->interp == PyInterpreterState_Main());
+        }
+        """,
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap_Interpreters",
+        cmpfunc=unhandled_error_compare,
+    )

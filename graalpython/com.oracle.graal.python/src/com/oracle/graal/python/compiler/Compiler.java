@@ -235,14 +235,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @SuppressWarnings("hiding")
-    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
+    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel, EnumSet<FutureFeature> futureFeatures) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
             parseFuture(((ModTy.Module) mod).body);
         } else if (mod instanceof ModTy.Interactive) {
             parseFuture(((ModTy.Interactive) mod).body);
         }
-        this.env = ScopeEnvironment.analyze(mod, errorCallback, futureFeatures);
+        this.futureFeatures.addAll(futureFeatures);
+        this.env = ScopeEnvironment.analyze(mod, errorCallback, this.futureFeatures);
         this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
@@ -422,7 +423,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getSourceRange());
+                        hasSplat, hasKwSplat, node.getSourceRange(), futureFeatures);
         nestingLevel++;
     }
 
@@ -696,7 +697,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
 
-        protected void doFlushStack() {
+        private void doFlushStack() {
             assert stackItems <= CollectionBits.KIND_MASK;
             if (collectionOnStack) {
                 addOp(COLLECTION_ADD_STACK, typeBits | stackItems);
@@ -729,6 +730,27 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private class KwargsMergingDictCollector extends Collector {
+        /*
+         * Keyword arguments get evaluated in "groups", where a group is a contiguous sequence of
+         * named keyword arguments or a keyword-splat. For example, in
+         *
+         * f(a=2, b=3, **kws, c=4, d=5, **more_kws)
+         *
+         * there are 4 groups. Each group is evaluated and only then merged with the existing
+         * keyword arguments. The merge step is where duplicate keyword arguments are checked.
+         *
+         * A call can have an arbitrarily long sequence of named keyword arguments, so we flush them
+         * from the stack and collect them into an intermediate dict. We cannot eagerly merge them
+         * with the existing keyword arguments since that could trigger a duplication check before
+         * all of the arguments in the group have been evaluated. For example, in
+         *
+         * f(**{'a': 2}, a=3, b=4, ..., z=function_with_side_effects())
+         *
+         * we cannot merge "a=3" with the existing keywords dict (and consequently raise a
+         * TypeError) until we compute "z".
+         */
+        private boolean namedKeywordDictOnStack = false;
+
         public KwargsMergingDictCollector(OpCodes callOp) {
             super(CollectionBits.KIND_DICT);
             /*
@@ -740,24 +762,65 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         @Override
-        protected void doFlushStack() {
-            addOp(COLLECTION_FROM_STACK, typeBits | stackItems);
+        public void appendItem() {
+            stackItems += stackItemsPerItem;
+            if (stackItems + stackItemsPerItem > CollectionBits.KIND_MASK) {
+                collectIntoNamedKeywordDict();
+            }
+        }
+
+        @Override
+        public void flushStackIfNecessary() {
+            if (stackItems == 0 && !namedKeywordDictOnStack) {
+                // Nothing pending to be merged.
+                return;
+            }
+
+            if (stackItems > 0) {
+                collectIntoNamedKeywordDict();
+            }
             if (collectionOnStack) {
+                // If there's already a collection on the stack, merge it with the dict we just
+                // finished creating.
                 addOp(KWARGS_DICT_MERGE);
             }
             collectionOnStack = true;
+            namedKeywordDictOnStack = false;
+        }
+
+        protected void collectIntoNamedKeywordDict() {
+            if (namedKeywordDictOnStack) {
+                // Just add the keywords to the existing dict. Since we statically check for
+                // duplicate named keywords, we don't need to worry about duplicates in this dict.
+                addOp(COLLECTION_ADD_STACK, typeBits | stackItems);
+            } else {
+                // Create a new dict.
+                addOp(COLLECTION_FROM_STACK, typeBits | stackItems);
+                namedKeywordDictOnStack = true;
+            }
             stackItems = 0;
         }
 
         @Override
         public void appendCollection() {
             assert stackItems == 0;
+            assert !namedKeywordDictOnStack;
             if (collectionOnStack) {
                 addOp(KWARGS_DICT_MERGE);
             } else {
                 addOp(COLLECTION_FROM_COLLECTION, typeBits);
             }
             collectionOnStack = true;
+        }
+
+        @Override
+        public void finishCollection() {
+            flushStackIfNecessary();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return stackItems == 0 || !namedKeywordDictOnStack || !collectionOnStack;
         }
     }
 
@@ -2022,17 +2085,21 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(STORE_SUBSCR);
             }
         } else if (node.target instanceof ExprTy.Attribute) {
-            ExprTy.Attribute attr = (ExprTy.Attribute) node.target;
-            checkForbiddenName(attr.attr, ExprContextTy.Store);
-            if (attr.value != null) {
-                checkAnnExpr(attr.value);
+            if (node.value == null) {
+                ExprTy.Attribute attr = (ExprTy.Attribute) node.target;
+                checkForbiddenName(attr.attr, ExprContextTy.Store);
+                if (attr.value != null) {
+                    checkAnnExpr(attr.value);
+                }
             }
         } else if (node.target instanceof ExprTy.Subscript) {
-            ExprTy.Subscript subscript = (ExprTy.Subscript) node.target;
-            if (subscript.value != null) {
-                checkAnnExpr(subscript.value);
+            if (node.value == null) {
+                ExprTy.Subscript subscript = (ExprTy.Subscript) node.target;
+                if (subscript.value != null) {
+                    checkAnnExpr(subscript.value);
+                }
+                checkAnnSubscr(subscript.slice);
             }
-            checkAnnSubscr(subscript.slice);
         } else {
             errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
         }

@@ -100,7 +100,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteIncrementalEncoder)
-public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
+public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
     private static final int MAXENCPENDING = 2;
 

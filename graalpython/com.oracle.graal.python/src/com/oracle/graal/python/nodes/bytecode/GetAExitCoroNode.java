@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,19 +41,21 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -62,9 +64,10 @@ public abstract class GetAExitCoroNode extends PNodeWithContext {
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallQuaternaryMethodNode callExit,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetExceptionTracebackNode getTracebackNode) {
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
         int stackTop = stackTopIn;
         Object exception = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
@@ -82,8 +85,8 @@ public abstract class GetAExitCoroNode extends PNodeWithContext {
                 PArguments.setException(virtualFrame, (PException) exception);
                 pythonException = ((PException) exception).getEscapedException();
             }
-            Object excType = getClassNode.execute(pythonException);
-            Object excTraceback = getTracebackNode.execute(pythonException);
+            Object excType = getClassNode.execute(inliningTarget, pythonException);
+            Object excTraceback = getTracebackNode.execute(inliningTarget, pythonException);
             Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
             virtualFrame.setObject(++stackTop, exception);
             virtualFrame.setObject(++stackTop, result);

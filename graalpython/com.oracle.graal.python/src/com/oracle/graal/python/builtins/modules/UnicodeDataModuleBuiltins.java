@@ -46,8 +46,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.text.Normalizer;
 import java.util.List;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "unicodedata")
-public class UnicodeDataModuleBuiltins extends PythonBuiltins {
+public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeDataModuleBuiltinsFactory.getFactories();

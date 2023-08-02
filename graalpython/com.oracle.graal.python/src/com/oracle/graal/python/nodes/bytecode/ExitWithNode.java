@@ -41,16 +41,16 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -67,11 +68,11 @@ public abstract class ExitWithNode extends PNodeWithContext {
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallQuaternaryMethodNode callExit,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetExceptionTracebackNode getTracebackNode,
-                    @Cached PyObjectIsTrueNode isTrueNode,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
+                    @Cached PyObjectIsTrueNode isTrueNode) {
         int stackTop = stackTopIn;
         Object exception = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
@@ -89,8 +90,8 @@ public abstract class ExitWithNode extends PNodeWithContext {
                     PArguments.setException(virtualFrame, (PException) exception);
                     pythonException = ((PException) exception).getEscapedException();
                 }
-                Object excType = getClassNode.execute(pythonException);
-                Object excTraceback = getTracebackNode.execute(pythonException);
+                Object excType = getClassNode.execute(inliningTarget, pythonException);
+                Object excTraceback = getTracebackNode.execute(inliningTarget, pythonException);
                 Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrueNode.execute(virtualFrame, result)) {
                     if (exception instanceof PException) {

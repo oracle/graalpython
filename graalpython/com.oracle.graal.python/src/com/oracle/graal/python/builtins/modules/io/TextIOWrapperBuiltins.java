@@ -139,6 +139,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -540,11 +541,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object close(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached ClosedNode closedNode,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyErrChainExceptions chainExceptions) {
             Object res = closedNode.execute(frame, self);
             if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
@@ -560,7 +563,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);
                         throw e;
                     } catch (PException ee) {
-                        throw ee.chainException(e);
+                        throw chainExceptions.execute(inliningTarget, ee, e);
                     }
                 }
                 return callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);

@@ -45,13 +45,16 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -81,7 +84,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
-    private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
     public static final TruffleString T_CODE = tsLiteral("code");
 
     private PTuple args; // can be null for lazily generated message
@@ -94,8 +96,8 @@ public final class PBaseException extends PythonObject {
     private PException exception;
     private LazyTraceback traceback;
 
-    private PBaseException context;
-    private PBaseException cause;
+    private Object context;
+    private Object cause;
     private boolean suppressContext = false;
     // the data instance is used to store additional information for some of the builtin exceptions
     // not unlike subclassing
@@ -103,6 +105,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
         super(cls, instanceShape);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
         this.exceptionAttributes = exceptionAttributes;
         this.args = args;
         this.hasMessageFormat = false;
@@ -112,7 +115,8 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
-        assertContainsNoJavaString(exceptionAttributes);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
+        assert !(cls instanceof PythonNativeClass);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = false;
@@ -122,6 +126,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, TruffleString format, Object[] formatArgs) {
         super(cls, instanceShape);
+        assert !TypeNodes.NeedsNativeAllocationNode.executeUncached(cls);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = true;
@@ -144,19 +149,21 @@ public final class PBaseException extends PythonObject {
         this.exceptionAttributes = exceptionAttributes;
     }
 
-    public PBaseException getContext() {
+    public Object getContext() {
         return context;
     }
 
-    public void setContext(PBaseException context) {
+    public void setContext(Object context) {
+        assert context == null || PyExceptionInstanceCheckNode.executeUncached(context);
         this.context = context;
     }
 
-    public PBaseException getCause() {
+    public Object getCause() {
         return cause;
     }
 
-    public void setCause(PBaseException cause) {
+    public void setCause(Object cause) {
+        assert cause == null || PyExceptionInstanceCheckNode.executeUncached(cause);
         this.cause = cause;
         this.suppressContext = true;
     }
@@ -174,10 +181,11 @@ public final class PBaseException extends PythonObject {
     }
 
     public void setException(PException exception) {
+        ensureReified();
         this.exception = exception;
     }
 
-    public void ensureReified() {
+    private void ensureReified() {
         if (exception != null) {
             // If necessary, this will call back to this object to set the traceback
             exception.ensureReified();
@@ -232,7 +240,7 @@ public final class PBaseException extends PythonObject {
         String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(messageFormat.toJavaStringUncached(), getMessageArgs());
+                return typeName + ": " + ErrorMessageFormatter.format(messageFormat.toJavaStringUncached(), getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat.toJavaStringUncached();
             } else {
@@ -257,7 +265,9 @@ public final class PBaseException extends PythonObject {
         if (messageArgs != null && messageArgs.length > 0) {
             sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append("\", args = (");
             for (Object arg : messageArgs) {
-                if (arg instanceof PythonObject) {
+                if (arg instanceof TruffleString) {
+                    sb.append('"').append(arg).append('"');
+                } else if (arg instanceof PythonObject) {
                     sb.append(arg);
                 } else {
                     String fqn = arg.getClass().getName();

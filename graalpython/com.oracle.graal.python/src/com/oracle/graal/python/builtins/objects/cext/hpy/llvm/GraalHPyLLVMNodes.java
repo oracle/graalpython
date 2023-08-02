@@ -42,9 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
@@ -53,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetB
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -96,28 +92,6 @@ abstract class GraalHPyLLVMNodes {
             byte[] byteArray = cByteArrayWrapper.getByteArray();
             int length = n < 0 ? byteArray.length : n;
             return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, length, encoding, copy), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doSequenceArrayWrapper(@SuppressWarnings("unused") GraalHPyContext hpyContext, PySequenceArrayWrapper obj, int n, Encoding encoding, boolean copy,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            CompilerAsserts.partialEvaluationConstant(encoding);
-            CompilerAsserts.partialEvaluationConstant(copy);
-            Object delegate = obj.getDelegate();
-            boolean needs_copy;
-            if (delegate instanceof PBytes) {
-                // 'bytes' objects are immutable, so we can safely avoid a copy of the content
-                needs_copy = false;
-            } else if (delegate instanceof PByteArray) {
-                needs_copy = copy;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-            int length = n < 0 ? bytes.length : n;
-            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, length, encoding, needs_copy), TS_ENCODING);
         }
 
         @Specialization(guards = {"!isCArrayWrapper(charPtr)", "isPointer(lib, charPtr)"})

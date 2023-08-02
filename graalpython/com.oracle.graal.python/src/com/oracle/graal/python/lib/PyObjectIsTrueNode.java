@@ -115,21 +115,21 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return !object.isEmpty();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static boolean doList(PList object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static boolean doTuple(PTuple object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static boolean doDict(PDict object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
@@ -137,7 +137,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return lenNode.execute(object.getDictStorage()) != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static boolean doSet(PSet object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,

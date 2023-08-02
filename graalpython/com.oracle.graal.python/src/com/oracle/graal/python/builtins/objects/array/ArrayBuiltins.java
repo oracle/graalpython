@@ -136,7 +136,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
-public class ArrayBuiltins extends PythonBuiltins {
+public final class ArrayBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_ARRAY_RECONSTRUCTOR = tsLiteral("_array_reconstructor");
 

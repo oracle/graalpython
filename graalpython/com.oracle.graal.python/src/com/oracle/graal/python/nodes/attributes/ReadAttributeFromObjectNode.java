@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -194,9 +195,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
-                        @Cached GetTypeMemberNode getNativeDict,
+                        @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), getItem);
+            return readNative(key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,7 +94,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J_JAVA)
-public class JavaModuleBuiltins extends PythonBuiltins {
+public final class JavaModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_JAR = tsLiteral(".jar");
 
     @Override
@@ -226,7 +226,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"})
         boolean check(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
@@ -242,7 +242,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"})
         boolean checkForeign(Object object, Object klass,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {

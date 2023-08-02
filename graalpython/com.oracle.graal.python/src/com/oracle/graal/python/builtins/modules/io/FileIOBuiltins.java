@@ -128,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -904,16 +905,18 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isCloseFD()", "!self.isFinalizing()"})
-        Object common(VirtualFrame frame, PFileIO self,
+        static Object common(VirtualFrame frame, PFileIO self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Exclusive @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
+                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
+                        @Shared @Cached PyErrChainExceptions chainExceptions) {
             try {
-                callSuperClose.execute(frame, getContext().lookupType(PRawIOBase), T_CLOSE, self);
+                callSuperClose.execute(frame, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 try {
                     internalClose(frame, self, posixClose);
                 } catch (PException ee) {
-                    throw ee.chainException(e);
+                    throw chainExceptions.execute(inliningTarget, ee, e);
                 }
                 throw e;
             }
@@ -922,18 +925,21 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isCloseFD()", "self.isFinalizing()"})
-        Object slow(VirtualFrame frame, PFileIO self,
+        static Object slow(VirtualFrame frame, PFileIO self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
+                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
+                        @Shared @Cached PyErrChainExceptions chainExceptions) {
             PException rawIOException = null;
+            PythonContext context = PythonContext.get(inliningTarget);
             try {
-                callSuperClose.execute(frame, getContext().lookupType(PRawIOBase), T_CLOSE, self);
+                callSuperClose.execute(frame, context.lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 rawIOException = e;
             }
             try {
-                deallocWarn(frame, self, warnNode, getLanguage(), getContext());
+                deallocWarn(frame, self, warnNode, PythonLanguage.get(inliningTarget), context);
             } catch (PException e) {
                 // ignore
             }
@@ -941,7 +947,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 internalClose(frame, self, posixClose);
             } catch (PException ee) {
                 if (rawIOException != null) {
-                    throw ee.chainException(rawIOException);
+                    throw chainExceptions.execute(inliningTarget, ee, rawIOException);
                 } else {
                     throw ee;
                 }

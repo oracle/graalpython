@@ -80,7 +80,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "jarray")
-public class JArrayModuleBuiltins extends PythonBuiltins {
+public final class JArrayModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

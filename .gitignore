@@ -21,9 +21,10 @@ workingsets.xml
 GRAALPYTHON.dist
 GRAALPYTHON_UNIT_TESTS.dist
 mx.graalpython/eclipse-launches
-asv
 *.json
 !**/resources/*.json
+!graalpython/lib-graalpython/modules/standalone/shared/native-image-resources.json
+!graalpython/lib-graalpython/modules/standalone/shared/native-image-proxy-configuration.json
 language
 *.bc
 *.iml

@@ -63,7 +63,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type, PythonBuiltinClassType.HashlibHashXof})
-public class ShakeDigestObjectBuiltins extends PythonBuiltins {
+public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ShakeDigestObjectBuiltinsFactory.getFactories();

@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -331,17 +332,17 @@ public final class PythonCextTypeBuiltins {
         abstract GetSetDescriptor execute(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure);
 
         @Specialization
+        @TruffleBoundary
         GetSetDescriptor createGetSet(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
-            PythonContext context = PythonContext.get(this);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(this));
-                getter = PExternalFunctionWrapper.ensureExecutable(context, getter, PExternalFunctionWrapper.GETTER, interopLibrary);
+                getter = NativeCExtSymbol.ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
@@ -349,7 +350,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(this));
-                setter = PExternalFunctionWrapper.ensureExecutable(context, setter, PExternalFunctionWrapper.SETTER, interopLibrary);
+                setter = NativeCExtSymbol.ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 

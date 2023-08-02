@@ -79,7 +79,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.object.ShapeImpl;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
@@ -124,7 +123,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     protected static Object[] keyArray(Shape shape) {
-        return ((ShapeImpl) shape).getKeyArray();
+        return shape.getKeyList().toArray();
     }
 
     @GenerateUncached
@@ -202,7 +201,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
 
-        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)")
         static Object pstring(Node node, DynamicObjectStorage self, PString key, @SuppressWarnings("unused") long keyHash,
                         @Bind("this") Node inliningTarget,
                         @Cached(inline = false) CastToTruffleStringNode castStr,
@@ -236,7 +235,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             return null;
         }
 
-        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", replaces = "notString", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", replaces = "notString")
         static Object notStringLoop(Frame frame, Node node, DynamicObjectStorage self, Object key, long hashIn,
                         @Bind("this") Node inliningTarget,
                         @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,

@@ -93,6 +93,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -502,7 +503,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             long deadline = (long) timeSeconds() + seconds;
             gil.release(true);
             try {
-                doSleep(seconds, deadline);
+                doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
@@ -525,7 +526,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             double deadline = timeSeconds() + seconds;
             gil.release(true);
             try {
-                doSleep(seconds, deadline);
+                doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
@@ -552,33 +553,32 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void doSleep(long seconds, long deadline) {
+        private static void doSleep(Node node, long seconds, long deadline) {
             long secs = seconds;
             do {
-                try {
-                    Thread.sleep(secs * 1000);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
+                TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> {
+                    Thread.sleep(s * 1000);
+                }, secs);
                 secs = deadline - (long) timeSeconds();
             } while (secs >= 0);
         }
 
         @TruffleBoundary
-        private static void doSleep(double seconds, double deadline) {
+        private static void doSleep(Node node, double seconds, double deadline) {
             double secs = seconds;
             do {
-                double milliseconds = secs * 1000;
-                long millis = Math.round(Math.floor(milliseconds));
-                int nanos = ((Long) Math.round((milliseconds - millis) * 1000)).intValue();
-                nanos = (millis == 0 && nanos == 0) ? DELAY_NANOS : nanos;
-                try {
-                    Thread.sleep(millis, nanos);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
+                TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> {
+                    double milliseconds = s * 1000;
+                    long millis = Math.round(Math.floor(milliseconds));
+                    int nanos = ((Long) Math.round((milliseconds - millis) * 1000)).intValue();
+                    nanos = (millis == 0 && nanos == 0) ? DELAY_NANOS : nanos;
+                    try {
+                        Thread.sleep(millis, nanos);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }, secs);
                 secs = deadline - timeSeconds();
             } while (secs >= 0);
         }

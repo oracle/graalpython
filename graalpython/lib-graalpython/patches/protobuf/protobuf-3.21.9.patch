@@ -1,0 +1,24 @@
+From 770b2382d9718b3d660998aad25b866bcb9769a6 Mon Sep 17 00:00:00 2001
+From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
+Date: Fri, 23 Jun 2023 04:52:08 +0300
+Subject: [PATCH] patch
+
+---
+ python/google/protobuf/internal/well_known_types_test.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/python/google/protobuf/internal/well_known_types_test.py b/python/google/protobuf/internal/well_known_types_test.py
+index a32459a9e..7ebb733d2 100644
+--- a/python/google/protobuf/internal/well_known_types_test.py
++++ b/python/google/protobuf/internal/well_known_types_test.py
+@@ -51,6 +51,7 @@ from google.protobuf import text_format
+ from google.protobuf.internal import _parameterized
+ 
+ try:
++  raise ImportError # not implemented yet in GraalPy
+   # New module in Python 3.9:
+   import zoneinfo  # pylint:disable=g-import-not-at-top
+   _TZ_JAPAN = zoneinfo.ZoneInfo('Japan')
+-- 
+2.25.1
+

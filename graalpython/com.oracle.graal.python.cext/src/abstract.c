@@ -229,6 +229,31 @@ int PyTruffle_PySequence_Check(PyObject *s) {
 }
 
 // downcall for native python objects
+// partially taken from CPython "Objects/abstract.c/PySequence_GetItem"
+PyObject* PyTruffle_PySequence_GetItem(PyObject *s, Py_ssize_t i)
+{
+    PySequenceMethods *m = Py_TYPE(s)->tp_as_sequence;
+    if (m && m->sq_item) {
+        if (i < 0) {
+            if (m->sq_length) {
+                Py_ssize_t l = (*m->sq_length)(s);
+                if (l < 0) {
+                    return NULL;
+                }
+                i += l;
+            }
+        }
+        PyObject *res = m->sq_item(s, i);
+        return res;
+    }
+
+    if (Py_TYPE(s)->tp_as_mapping && Py_TYPE(s)->tp_as_mapping->mp_subscript) {
+        return PyErr_Format(PyExc_TypeError, "%.200s is not a sequence", Py_TYPE(s)->tp_name);
+    }
+    return PyErr_Format(PyExc_TypeError, "'%.200s' object does not support indexing", Py_TYPE(s)->tp_name);
+}
+
+// downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
 Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
     PySequenceMethods *seq;
@@ -270,7 +295,7 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
 }
 
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return GraalPyTruffleObject_GetItemString(o, truffleString(key));
+    return GraalPyTruffleObject_GetItemString(o, key);
 }
 
 // downcall for native python objects
@@ -307,7 +332,7 @@ int PyObject_CheckBuffer(PyObject *obj) {
 
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
-    PyBufferProcs *pb = PyTypeObject_tp_as_buffer(Py_TYPE(obj));
+    PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
 
     if (pb == NULL || pb->bf_getbuffer == NULL) {
         PyErr_Format(PyExc_TypeError,
@@ -474,7 +499,7 @@ PyObject ** _PySequence_Fast_ITEMS(PyObject *o) {
 }
 
 PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index) {
-	PySequenceMethods* methods = PyTypeObject_tp_as_sequence(Py_TYPE(obj));
-	return PySequenceMethods_sq_item(methods)(obj, index);
+	PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
+	return methods->sq_item(obj, index);
 }
 

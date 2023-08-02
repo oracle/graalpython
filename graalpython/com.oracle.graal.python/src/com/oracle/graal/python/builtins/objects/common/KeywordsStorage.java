@@ -130,7 +130,7 @@ public class KeywordsStorage extends HashingStorage {
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
-        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)")
         static Object pstring(Node node, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
@@ -139,7 +139,7 @@ public class KeywordsStorage extends HashingStorage {
             return string(self, castToTruffleStringNode.execute(key), -1, equalNode);
         }
 
-        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)")
         static Object notString(Frame frame, Node node, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,

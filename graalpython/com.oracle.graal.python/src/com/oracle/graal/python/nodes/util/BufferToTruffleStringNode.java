@@ -48,7 +48,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,11 +87,11 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
         return fromByteArrayNode.execute(bytes, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
     }
 
-    @Specialization(guards = "isNativeSequenceStorage(bytes.getSequenceStorage())")
+    @Specialization(guards = "isNativeByteSequenceStorage(bytes.getSequenceStorage())")
     static TruffleString doNativeBytesLike(PBytesLike bytes,
                     int byteOffset,
                     @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
-        NativeSequenceStorage store = (NativeSequenceStorage) bytes.getSequenceStorage();
+        NativeByteSequenceStorage store = (NativeByteSequenceStorage) bytes.getSequenceStorage();
         Object ptr = store.getPtr();
         int bytesLen = store.length();
         return fromNativePointerNode.execute(ptr, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
@@ -135,8 +135,8 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
         return fromByteArrayNode.execute(bytes, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
     }
 
-    protected static boolean isNativeSequenceStorage(SequenceStorage store) {
-        return store.getClass() == NativeSequenceStorage.class;
+    protected static boolean isNativeByteSequenceStorage(SequenceStorage store) {
+        return store instanceof NativeByteSequenceStorage;
     }
 
     @NeverDefault

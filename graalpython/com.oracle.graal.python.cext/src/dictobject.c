@@ -110,7 +110,7 @@ int PyDict_DelItemString(PyObject *d, const char *key) {
 	CALL_WITH_STRING(key, int, -1, GraalPyDict_DelItem, d, string);
 }
 
-PyObject* _PyObject_GenericGetDict(PyObject* obj) {
+PyAPI_FUNC(PyObject*) _PyObject_GenericGetDict(PyObject* obj) {
     PyObject** dictptr = _PyObject_GetDictPtr(obj);
     if (dictptr == NULL) {
         return NULL;

@@ -86,7 +86,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
-public class ReferenceTypeBuiltins extends PythonBuiltins {
+public final class ReferenceTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReferenceTypeBuiltinsFactory.getFactories();
@@ -150,7 +150,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         int hashWrong(@SuppressWarnings("unused") Object self) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__hash__", "weakref", self);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
     }
 

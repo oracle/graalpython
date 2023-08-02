@@ -74,6 +74,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -122,7 +123,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -133,10 +136,12 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtr)
-public class PyCFuncPtrBuiltins extends PythonBuiltins {
+public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -262,46 +267,39 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             return dict.ffi_type_pointer;
         }
 
+        @TruffleBoundary
         CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
                         PyTypeStgDictNode pyTypeStgDictNode) {
             int nArgs = converters.length;
-            CThunkObject p = CThunkObjectNew(nArgs);
+            CThunkObject thunk = CThunkObjectNew(nArgs);
 
-            p.flags = flags;
+            thunk.flags = flags;
             int i;
             for (i = 0; i < nArgs; ++i) {
                 Object cnv = converters[i];
-                p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
+                thunk.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
 
-            p.restype = restype;
+            thunk.restype = restype;
             if (restype == null || restype == PNone.NONE) {
-                p.setfunc = FieldSet.nil;
-                p.ffi_restype = new FFIType();
+                thunk.setfunc = FieldSet.nil;
+                thunk.ffi_restype = new FFIType();
             } else {
                 StgDictObject dict = pyTypeStgDictNode.execute(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
                     throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
-                p.setfunc = dict.setfunc;
-                p.ffi_restype = dict.ffi_type_pointer;
+                thunk.setfunc = dict.setfunc;
+                thunk.ffi_restype = dict.ffi_type_pointer;
             }
-            /*-
-            p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
-            ffi_abi cc = FFI_DEFAULT_ABI;
-            int result = ffi_prep_cif(p.cif, cc, nArgs, _ctypes_get_ffi_type(restype, pyTypeStgDictNode), p.atypes);
-            if (result != FFI_OK) {
-                throw raise(RuntimeError, FFI_PREP_CIF_FAILED_WITH_D, result);
-            }
-            result = ffi_prep_closure_loc(p.pcl_write, p.cif, closure_fcn, p, p.pcl_exec);
-            if (result != FFI_OK) {
-                throw raise(RuntimeError, FFI_PREP_CLOSURE_FAILED_WITH_D, result);
-            }
-            */
-            p.createCallback();
-            p.converters = converters;
-            p.callable = callable;
-            return p;
+            TruffleString signatureStr = FFIType.buildNFISignature(thunk.atypes, thunk.ffi_restype, true);
+            Source source = Source.newBuilder(J_NFI_LANGUAGE, signatureStr.toJavaStringUncached(), "<ctypes callback>").build();
+            Object nfiSignature = PythonContext.get(this).getEnv().parseInternal(source).call();
+            thunk.pcl_exec = SignatureLibrary.getUncached().createClosure(nfiSignature, new CThunkObject.CtypeCallback(thunk));
+            thunk.pcl_write = thunk.pcl_exec;
+            thunk.converters = converters;
+            thunk.callable = callable;
+            return thunk;
         }
     }
 

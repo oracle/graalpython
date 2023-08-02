@@ -60,7 +60,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
-public class HashObjectBuiltins extends PythonBuiltins {
+public final class HashObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return HashObjectBuiltinsFactory.getFactories();

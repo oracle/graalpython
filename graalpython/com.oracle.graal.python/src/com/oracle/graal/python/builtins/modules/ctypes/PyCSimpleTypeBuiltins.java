@@ -104,7 +104,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCSimpleType)
-public class PyCSimpleTypeBuiltins extends PythonBuiltins {
+public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_SIMPLE_TYPE_CHARS = tsLiteral("cbBhHiIlLdfuzZqQPXOv?g");
     private static final int SIMPLE_TYPE_CHARS_LENGTH = T_SIMPLE_TYPE_CHARS.codePointLengthUncached(TS_ENCODING);

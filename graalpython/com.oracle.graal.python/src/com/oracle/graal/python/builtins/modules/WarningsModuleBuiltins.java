@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -90,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -118,7 +118,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -148,7 +147,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WARNINGS)
-public class WarningsModuleBuiltins extends PythonBuiltins {
+public final class WarningsModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
     private static final HiddenKey FILTERS = new HiddenKey("filters");
     private static final HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
@@ -851,11 +850,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         Object category, Object message, Object text, Object key, Object item, TruffleString action) {
 
             if (action.equalsUncached(T_ERROR, TS_ENCODING)) {
-                if (!(message instanceof PBaseException)) {
+                if (!PyExceptionInstanceCheckNode.executeUncached(message)) {
                     throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION,
                                     PyObjectReprAsTruffleStringNode.getUncached().execute(null, message));
                 } else {
-                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
+                    throw PRaiseNode.raiseExceptionObject(node, message);
                 }
             }
 
@@ -1108,7 +1107,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
      * Our replacement for PyErr_WarnFormat, warn_unicode and related functions.
      */
     public abstract static class WarnNode extends Node {
-        private static final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
         private static final WarnNode UNCACHED = new WarnNodeUncached();
 
         @NeverDefault
@@ -1184,7 +1182,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             private static String formatMessage(TruffleString format, Object... formatArgs) {
                 String message;
                 try {
-                    message = formatter.format(format, formatArgs);
+                    message = ErrorMessageFormatter.format(format, formatArgs);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
@@ -1210,7 +1208,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, T_WARN, PNone.NONE);
                 TruffleString message;
                 try {
-                    message = TruffleString.fromJavaStringUncached(formatter.format(format, formatArgs), TS_ENCODING);
+                    message = TruffleString.fromJavaStringUncached(ErrorMessageFormatter.format(format, formatArgs), TS_ENCODING);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }

@@ -43,6 +43,22 @@
 
 #define GRAALVM_PYTHON 1
 
+// The graalpy build always sets MS_WINDOWS, so when this is not set, we are
+// dealing with an extension build. In that case, if we're on Windows, we need
+// to set the appropriate flags to link against our python C API dll.
+#if !defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE) && !defined(MS_WINDOWS)
+# ifdef _MSC_VER
+#  define MS_WINDOWS
+#  define Py_ENABLE_SHARED
+#  define HAVE_DECLSPEC_DLL
+// This pragma is only understood by MSVC, not our LLVM toolchain, so it's only
+// relevant for code that is compiled without bitcode and will run only
+// natively. Since the pythonjni library contains all the trampolines to call
+// into the python-native.dll in this case, we must only depend on that.
+#  pragma comment(lib, "python-native.lib")
+# endif
+#endif
+
 /* If Cython is involved, avoid accesses to internal structures. While we are
  * supporting this in many cases, it still involves overhead. */
 #define CYTHON_USE_TYPE_SLOTS 0
@@ -73,6 +89,22 @@
 
 // required for __UINT32_MAX__ etc.
 #include <limits.h>
+
+#if defined(_MSC_VER) && !defined(__clang__)
+// defines based on MSVC documentation
+#define __SIZEOF_INT__ 4
+#define __SIZEOF_SHORT__ 2
+#define __SIZEOF_LONG__ 4
+#define __SIZEOF_LONG_LONG__ 8
+#define __SIZEOF_INT128__ 16
+#define __SIZEOF_FLOAT__ 4
+#define __SIZEOF_DOUBLE__ 8
+#define __SIZEOF_LONG_DOUBLE__ 8
+#define __SIZEOF_SIZE_T__ 8
+#define __SIZEOF_UINTPTR_T__ 8
+#define __SIZEOF_POINTER__ 8
+#define __SIZEOF_WCHAR_T__ 2
+#endif
 
 // defines based on Clang defines
 #define SIZEOF_DOUBLE __SIZEOF_DOUBLE__
@@ -140,6 +172,9 @@
 #define HAVE_SYS_WAIT_H
 #define TIME_WITH_SYS_TIME 1
 #else
+#define HAVE_COPYSIGN 1
+#define HAVE_ROUND 1
+#define HAVE_HYPOT 1
 #define NT_THREADS 1
 #endif
 

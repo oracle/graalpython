@@ -164,7 +164,7 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     // No explicit branch profiling when we're looking up multiple things
-    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
+    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr")
     static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClass,

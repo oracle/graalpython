@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXEC;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
@@ -80,15 +81,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -124,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIFunctionPointer;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -161,7 +160,6 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -223,7 +221,7 @@ public abstract class GraalHPyNodes {
      * A node interface for calling (native) helper functions. The implementation depends on the HPy
      * backend. This is the reason why this node takes the HPy context as construction parameter.
      * The recommended usage of this node is
-     * 
+     *
      * <pre>
      * &#064;Specialization
      * Object doSomething(GraalHPyContext hpyContext,
@@ -470,7 +468,7 @@ public abstract class GraalHPyNodes {
                     nModuleDefines = 0;
                 } else if (!ptrLib.hasArrayElements(moduleDefinesPtr)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "defines");
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, "defines");
                 } else {
                     nModuleDefines = PInt.intValueExact(ptrLib.getArraySize(moduleDefinesPtr));
                 }
@@ -561,24 +559,17 @@ public abstract class GraalHPyNodes {
             if (!ptrLib.isNull(legacyMethods)) {
                 if (!ptrLib.hasArrayElements(legacyMethods)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_DID_NOT_RETURN_ARRAY, "legacyMethods");
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, "legacyMethods");
                 }
 
-                try {
-                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                    CApiContext capiContext = nLegacyMethods > 0 ? PythonContext.get(ptrLib).getCApiContext() : null;
-                    for (long i = 0; i < nLegacyMethods; i++) {
-                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
-
-                        PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, legacyMethod);
-                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
-                        writeAttrNode.execute(module, fun.getName(), method);
+                for (int i = 0;; i++) {
+                    PBuiltinFunction fun = addLegacyMethodNode.execute(legacyMethods, i);
+                    if (fun == null) {
+                        break;
                     }
-                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    // should not happen since we check if 'legacyMethods' has array
-                    // elements
-                    throw CompilerDirectives.shouldNotReachHere();
+                    PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                    writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
+                    writeAttrNode.execute(module, fun.getName(), method);
                 }
             }
 
@@ -1384,17 +1375,12 @@ public abstract class GraalHPyNodes {
                     break;
                 case Py_tp_methods:
                     Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
-                    try {
-                        int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
-                        CApiContext capiContext = nLegacyMemberDefs > 0 ? PythonContext.get(raiseNode).getCApiContext() : null;
-                        for (int i = 0; i < nLegacyMemberDefs; i++) {
-                            Object legacyMethodDef = resultLib.readArrayElement(methodDefArrayPtr, i);
-                            PBuiltinFunction method = legacyMethodNode.execute(capiContext, legacyMethodDef);
-                            writeAttributeToObjectNode.execute(enclosingType, method.getName(), method);
+                    for (int i = 0;; i++) {
+                        PBuiltinFunction method = legacyMethodNode.execute(methodDefArrayPtr, i);
+                        if (method == null) {
+                            break;
                         }
-                    } catch (InteropException | OverflowException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ERR_WHEN_READING_LEGACY_MEYHOD_FOR_TYPE, enclosingType);
+                        writeAttributeToObjectNode.execute(enclosingType, method.getName(), method);
                     }
                     break;
                 case Py_tp_getset:
@@ -2377,7 +2363,7 @@ public abstract class GraalHPyNodes {
                         @Cached HasSameConstructorNode hasSameConstructorNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PCallHPyFunction callMallocNode,
-                        @Cached GetTypeMemberNode getMetaSizeNode,
+                        @Cached CStructAccess.ReadI64Node getMetaSizeNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
@@ -2447,12 +2433,11 @@ public abstract class GraalHPyNodes {
                     // GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
                     metaBasicSize = metaclass.getBasicSize();
                     destroyFunc = metaclass.getHPyDestroyFunc();
-                } else if (metatype instanceof PythonNativeClass) {
+                } else if (metatype instanceof PythonAbstractNativeObject nativeObject) {
                     // This path is implemented only for completeness,
                     // but is not expected to happen often, hence the
                     // uncached nodes, no profiling and potential leak
-                    Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
-                    metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
+                    metaBasicSize = getMetaSizeNode.readFromObj(nativeObject, PyTypeObject__tp_basicsize);
                 }
                 if (metaBasicSize > 0) {
                     Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);

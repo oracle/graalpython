@@ -182,6 +182,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
             throw td;
         }
         if (t instanceof StackOverflowError soe) {
+            CompilerDirectives.transferToInterpreter();
             PythonContext context = PythonContext.get(null);
             context.reacquireGilAfterStackOverflow();
             PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);

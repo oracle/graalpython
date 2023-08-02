@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +56,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
-import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -99,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -202,6 +201,9 @@ import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -211,6 +213,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
@@ -338,6 +341,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -379,7 +383,6 @@ public abstract class Python3Core {
         List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
-                        toTruffleStringUncached("bytearray"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("function"),
@@ -519,9 +522,12 @@ public abstract class Python3Core {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new TracemallocModuleBuiltins(),
+                        // contextvars
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
                         new TokenBuiltins(),
+                        new ContextIteratorBuiltins(),
+
                         new GenericAliasBuiltins(),
                         new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions
@@ -625,6 +631,8 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_DIGEST ? null : new Blake2bObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Blake2sObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
+
+                        new PyExpatModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
@@ -843,10 +851,7 @@ public abstract class Python3Core {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = null;
-        if (!ImageInfo.inImageBuildtimeCode()) {
-            bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
-        }
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
         PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
@@ -890,10 +895,7 @@ public abstract class Python3Core {
             } else {
                 LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
                 TruffleString t_zipimport = toTruffleStringUncached("zipimport");
-                PythonModule zipimport = null;
-                if (!ImageInfo.inImageBuildtimeCode()) {
-                    zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
-                }
+                PythonModule zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
                 if (zipimport == null) {
                     // true when the frozen module is not available
                     zipimport = createModule(t_zipimport);
@@ -1211,7 +1213,7 @@ public abstract class Python3Core {
         }
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null);
+            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));

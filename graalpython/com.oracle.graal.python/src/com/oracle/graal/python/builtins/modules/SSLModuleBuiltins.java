@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PermissionError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SSL;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANT_OPEN_FILE_S;
@@ -66,6 +67,8 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -92,6 +95,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -106,7 +110,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SSL)
-public class SSLModuleBuiltins extends PythonBuiltins {
+public final class SSLModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleLogger LOGGER = PythonLanguage.getLogger(SSLModuleBuiltins.class);
 
@@ -379,6 +383,23 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             // in case the env variables SSL_CERT_FILE or SSL_CERT_DIR
             // are provided, ssl.py#get_default_verify_paths will take care of it
             return factory().createTuple(new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
+        }
+    }
+
+    @Builtin(name = "enum_certificates", minNumOfPositionalArgs = 1, parameterNames = {"store_name"}, os = PythonOS.PLATFORM_WIN32)
+    @Builtin(name = "enum_crls", minNumOfPositionalArgs = 1, parameterNames = {"store_name"}, os = PythonOS.PLATFORM_WIN32)
+    @ArgumentClinic(name = "store_name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class EnumCertificatesNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLModuleBuiltinsClinicProviders.EnumCertificatesNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object fail(TruffleString argument,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PermissionError);
         }
     }
 

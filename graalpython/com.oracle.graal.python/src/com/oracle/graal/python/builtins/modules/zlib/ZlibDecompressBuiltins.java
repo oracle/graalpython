@@ -90,7 +90,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = ZlibDecompress)
-public class ZlibDecompressBuiltins extends PythonBuiltins {
+public final class ZlibDecompressBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ZlibDecompressBuiltinsFactory.getFactories();

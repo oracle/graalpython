@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -56,11 +55,10 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -75,8 +73,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class PConstructAndRaiseNode extends Node {
-    private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
-
     public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, Object[] arguments) {
         return execute(frame, type, null, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
     }
@@ -85,14 +81,14 @@ public abstract class PConstructAndRaiseNode extends Node {
         return execute(frame, type, null, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
+    public abstract PException execute(Frame frame, PythonBuiltinClassType type, Object cause, TruffleString format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     private static TruffleString getFormattedMessage(TruffleString format, Object[] formatArgs) {
-        return toTruffleStringUncached(FORMATTER.format(format, formatArgs));
+        return toTruffleStringUncached(ErrorMessageFormatter.format(format, formatArgs));
     }
 
-    private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
+    private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, Object cause, Object[] arguments, PKeyword[] keywords,
                     CallVarargsMethodNode callNode, Python3Core core, TruffleString.FromJavaStringNode fromJavaStringNode) {
         if (arguments != null) {
             for (int i = 0; i < arguments.length; ++i) {
@@ -106,11 +102,11 @@ public abstract class PConstructAndRaiseNode extends Node {
             error.setContext(cause);
             error.setCause(cause);
         }
-        return PRaiseNode.raise(this, error, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
+        return PRaiseNode.raiseExceptionObject(this, error);
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})
-    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") TruffleString format,
+    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, Object cause, @SuppressWarnings("unused") TruffleString format,
                     @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
@@ -120,7 +116,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     @Specialization(guards = {"format != null", "arguments == null"})
-    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs,
+    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, Object cause, TruffleString format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
@@ -130,7 +126,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     @Specialization(guards = {"format != null", "arguments != null"})
-    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs,
+    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, Object cause, TruffleString format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
@@ -154,12 +150,12 @@ public abstract class PConstructAndRaiseNode extends Node {
         return execute(frame, PythonBuiltinClassType.ImportError, null, format, formatArgs, null, keywords);
     }
 
-    public final PException raiseImportError(Frame frame, PBaseException cause, Object name, Object path, TruffleString format, Object... formatArgs) {
+    public final PException raiseImportErrorWithCause(Frame frame, Object cause, Object name, Object path, TruffleString format, Object... formatArgs) {
         return execute(frame, PythonBuiltinClassType.ImportError, cause, format, formatArgs, null, new PKeyword[]{new PKeyword(T_NAME, name), new PKeyword(T_PATH, path)});
     }
 
     // OSError helpers
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     private static TruffleString getMessage(Exception exception) {
         return toTruffleStringUncached(exception.getMessage());
     }

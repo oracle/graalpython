@@ -165,7 +165,6 @@ _HPy_HIDDEN void
 ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
-    HPy_ssize_t i;
     upcallBulkClose(ctx, hp->handles, hp->length);
     free(hp->handles);
     free(hp);

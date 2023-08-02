@@ -111,7 +111,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
-public class ModuleBuiltins extends PythonBuiltins {
+public final class ModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleString T__INITIALIZING = tsLiteral("_initializing");
 
@@ -326,7 +326,7 @@ public class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPythonModule(self)")
         Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETATTRIBUTE__, "module", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "module", self);
         }
     }
 

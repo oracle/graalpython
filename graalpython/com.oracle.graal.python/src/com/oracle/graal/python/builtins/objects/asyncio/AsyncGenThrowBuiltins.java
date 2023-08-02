@@ -73,7 +73,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PAsyncGenAThrow)
-public class AsyncGenThrowBuiltins extends PythonBuiltins {
+public final class AsyncGenThrowBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AsyncGenThrowBuiltinsFactory.getFactories();

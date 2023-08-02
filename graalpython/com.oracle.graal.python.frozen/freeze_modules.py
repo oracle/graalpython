@@ -113,8 +113,6 @@ def add_graalpython_core():
         "_sysconfig",
         "_weakref",
         "builtins",
-        "bytearray",
-        "ctypes",
         "function",
         "java",
         "pip_hook",

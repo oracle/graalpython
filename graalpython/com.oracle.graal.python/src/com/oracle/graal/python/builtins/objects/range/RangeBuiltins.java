@@ -102,7 +102,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRange)
-public class RangeBuiltins extends PythonBuiltins {
+public final class RangeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -632,7 +632,7 @@ public class RangeBuiltins extends PythonBuiltins {
             return isBuiltin.execute(value);
         }
 
-        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)", limit = "1")
+        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)")
         boolean containsFastNumPInt(PIntRange self, PInt other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile stepOneProfile,
@@ -668,13 +668,13 @@ public class RangeBuiltins extends PythonBuiltins {
             return containsBigInt(self, (long) other);
         }
 
-        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)", limit = "1")
+        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)")
         boolean containsSlowNum(PBigRange self, PInt other,
                         @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
             return containsBigInt(self, other.getValue());
         }
 
-        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)", limit = "1")
+        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)")
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,

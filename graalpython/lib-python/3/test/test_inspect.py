@@ -8,7 +8,11 @@ import io
 import linecache
 import os
 from os.path import normcase
-import _pickle
+# GraalVM change: don't depend on _pickle
+try:
+    import _pickle
+except ImportError:
+    _pickle = None
 import pickle
 import shutil
 import sys

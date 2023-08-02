@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -867,6 +868,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long setsid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setsid", "");
+        try {
+            return logExit("getsid", "%d", lib.setsid(delegate));
+        } catch (PosixException e) {
+            throw logException("setsid", e);
+        }
+    }
+
+    @ExportMessage
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("mmapReadBytes", "%s, %d, %d", mmap, index, length);
@@ -874,6 +886,16 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("mmapReadBytes", "%s", lib.mmapReadBytes(delegate, mmap, index, bytes, length));
         } catch (PosixException e) {
             throw logException("mmapReadBytes", e);
+        }
+    }
+
+    @ExportMessage
+    final OpenPtyResult openpty(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("openpty", "");
+        try {
+            return logExit("openpty", "%s", lib.openpty(delegate));
+        } catch (PosixException e) {
+            throw logException("openpty", e);
         }
     }
 
@@ -1323,8 +1345,8 @@ public class LoggingPosixSupport extends PosixSupport {
         return retVal;
     }
 
-    private static <T> T logExit(String msg, String argFtm, T retVal) {
-        return logExit(DEFAULT_LEVEL, msg, argFtm, retVal);
+    private static <T> T logExit(String msg, String argFmt, T retVal) {
+        return logExit(DEFAULT_LEVEL, msg, argFmt, retVal);
     }
 
     @TruffleBoundary

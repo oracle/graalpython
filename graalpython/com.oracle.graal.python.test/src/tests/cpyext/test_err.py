@@ -39,7 +39,10 @@
 
 import sys
 import warnings
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtFunctionVoid, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionVoid, unhandled_error_compare, \
+    CPyExtType, is_native_object
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -73,11 +76,11 @@ def _reference_restore(args):
 
 def compare_restore_result(x, y):
     return (
-        isinstance(x, BaseException) and
-        type(x) == type(y) and
-        # Compare str because different exceptions are not equal
-        str(x.args) == str(y.args) and
-        (x.__traceback__ is example_traceback) == (y.__traceback__ is example_traceback)
+            isinstance(x, BaseException) and
+            type(x) == type(y) and
+            # Compare str because different exceptions are not equal
+            str(x.args) == str(y.args) and
+            (x.__traceback__ is example_traceback) == (y.__traceback__ is example_traceback)
     )
 
 
@@ -85,12 +88,14 @@ def _new_ex_result_check(x, y):
     name = y[0]
     base = y[1]
     return name in str(x) and issubclass(x, base)
-   
+
+
 def _new_ex_with_doc_result_check(x, y):
     name = y[0]
     doc = y[1]
     base = y[2]
     return name in str(x) and issubclass(x, base) and x.__doc__ == doc
+
 
 def _reference_setnone(args):
     raise args[0]()
@@ -145,8 +150,10 @@ def _reference_fetch_tb_f_back(args):
 def _raise_exception():
     def inner():
         raise OSError
+
     def reraise(e):
         raise e
+
     try:
         inner()
     except Exception as e:
@@ -193,6 +200,16 @@ else:
 
 assert example_traceback
 
+ExceptionSubclass = CPyExtType(
+    "ExceptionSubclass",
+    '',
+    struct_base='PyBaseExceptionObject base;',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+    ready_code='ExceptionSubclassType.tp_base = (PyTypeObject*)PyExc_Exception;'
+)
+
 
 class TestPyErr(CPyExtTestCase):
 
@@ -206,6 +223,7 @@ class TestPyErr(CPyExtTestCase):
             (ValueError, "hello"),
             (TypeError, "world"),
             (KeyError, "key"),
+            (ExceptionSubclass, "hello")
         ),
         resultspec="O",
         argspec='Os',
@@ -213,7 +231,7 @@ class TestPyErr(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PyErr_NewException = CPyExtFunction(
         lambda args: args,
         lambda: (
@@ -224,7 +242,7 @@ class TestPyErr(CPyExtTestCase):
         arguments=["char* name", "PyObject* base", "PyObject* dict"],
         cmpfunc=_new_ex_result_check
     )
-    
+
     test_PyErr_NewExceptionWithDoc = CPyExtFunction(
         lambda args: args,
         lambda: (
@@ -235,7 +253,7 @@ class TestPyErr(CPyExtTestCase):
         arguments=["char* name", "char* doc", "PyObject* base", "PyObject* dict"],
         cmpfunc=_new_ex_with_doc_result_check
     )
-    
+
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setobject,
         lambda: (
@@ -246,6 +264,9 @@ class TestPyErr(CPyExtTestCase):
             (KeyError, "key"),
             (RuntimeError, ValueError()),
             (OSError, (2, "error")),
+            (ExceptionSubclass, None),
+            (ExceptionSubclass, "hello"),
+            (ExceptionSubclass, (1, 2)),
         ),
         resultspec="O",
         argspec='OO',
@@ -260,6 +281,7 @@ class TestPyErr(CPyExtTestCase):
             (ValueError,),
             (TypeError,),
             (KeyError,),
+            (ExceptionSubclass,),
         ),
         resultspec="O",
         argspec='O',
@@ -275,6 +297,7 @@ class TestPyErr(CPyExtTestCase):
             (TypeError, "world %S %S", "", ""),
             (KeyError, "key %S %S", "", ""),
             (KeyError, "unknown key: %S %S", "some_key", ""),
+            (ExceptionSubclass, "hello %S %S", "beautiful", "world"),
         ),
         resultspec="O",
         argspec='OsOO',
@@ -319,15 +342,17 @@ class TestPyErr(CPyExtTestCase):
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
-            (ValueError(), ValueError),
-            (ValueError(), BaseException),
-            (ValueError(), KeyError),
-            (ValueError(), (KeyError, SystemError, OverflowError)),
-            (ValueError(), Dummy),
-            (ValueError(), Dummy()),
-            (Dummy(), Dummy()),
-            (Dummy(), Dummy),
-            (Dummy(), KeyError),
+            (ValueError, ValueError),
+            (ValueError, BaseException),
+            (ValueError, KeyError),
+            (ValueError, (KeyError, SystemError, OverflowError)),
+            (ValueError, (KeyError, SystemError, ValueError)),
+            (ValueError, Dummy),
+            (ValueError, Dummy()),
+            (ValueError, ExceptionSubclass),
+            (ExceptionSubclass, ExceptionSubclass),
+            (ExceptionSubclass, Exception),
+            (ExceptionSubclass, ValueError),
         ),
         resultspec="i",
         argspec='OO',
@@ -394,8 +419,14 @@ class TestPyErr(CPyExtTestCase):
             (ValueError, BaseException),
             (ValueError, KeyError),
             (ValueError, (KeyError, SystemError, OverflowError)),
+            (ValueError, (KeyError, SystemError, ValueError)),
             (ValueError, Dummy),
             (ValueError, Dummy()),
+            (ValueError, ExceptionSubclass),
+            (ExceptionSubclass, ExceptionSubclass),
+            (ExceptionSubclass, Exception),
+            (ExceptionSubclass, ValueError),
+
         ),
         code="""int wrap_PyErr_ExceptionMatches(PyObject* err, PyObject* exc) {
             int res;
@@ -431,7 +462,8 @@ class TestPyErr(CPyExtTestCase):
         ),
         resultspec="O",
         argspec='OOOiOO',
-        arguments=["PyObject* category", "PyObject* text", "PyObject* filename_str", "int lineno", "PyObject* module_str", "PyObject* registry"],
+        arguments=["PyObject* category", "PyObject* text", "PyObject* filename_str", "int lineno",
+                   "PyObject* module_str", "PyObject* registry"],
         stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
         cmpfunc=unhandled_error_compare
     )
@@ -443,7 +475,8 @@ class TestPyErr(CPyExtTestCase):
         ),
         resultspec="O",
         argspec='OssisO',
-        arguments=["PyObject* category", "const char* text", "const char* filename_str", "int lineno", "const char* module_str", "PyObject* registry"],
+        arguments=["PyObject* category", "const char* text", "const char* filename_str", "int lineno",
+                   "const char* module_str", "PyObject* registry"],
         stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
         cmpfunc=unhandled_error_compare
     )
@@ -496,7 +529,8 @@ class TestPyErr(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* obj"],
         callfunction="wrap_PyErr_WriteUnraisableMsg",
-        stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
+        stderr_validator=lambda args,
+                                stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
     )
 
@@ -511,6 +545,7 @@ class TestPyErr(CPyExtTestCase):
             (RuntimeError, ValueError(), None),
             (OSError, (2, "error"), None),
             (NameError, None, example_traceback),
+            (ExceptionSubclass, "error", None),
         ),
         # Note on CPython all the exception creation happens not in PyErr_Restore, but when leaving the function and
         # normalizing the exception in the caller. So this really test both of these mechanisms together.
@@ -618,3 +653,165 @@ class TestPyErr(CPyExtTestCase):
     #     callfunction="wrap_PyErr_Fetch_tb_f_back",
     #     cmpfunc=compare_frame_f_back_chain,
     # )
+
+
+def raise_native_exception():
+    raise ExceptionSubclass(1)
+
+
+class TestNativeExceptionSubclass:
+    def test_init(self):
+        e = ExceptionSubclass(1, 2, 3)
+        assert is_native_object(e)
+        assert type(e) == ExceptionSubclass
+        assert isinstance(e, Exception)
+
+    def test_managed_subtype(self):
+        class ManagedSubclass(ExceptionSubclass):
+            pass
+
+        assert is_native_object(ManagedSubclass())
+
+    def test_raise_type(self):
+        try:
+            raise ExceptionSubclass
+        except ExceptionSubclass as e:
+            assert is_native_object(e)
+            assert e.args == ()
+        else:
+            assert False
+
+    def test_raise_instance(self):
+        try:
+            raise ExceptionSubclass(1)
+        except ExceptionSubclass as e:
+            assert is_native_object(e)
+            assert e.args == (1,)
+        else:
+            assert False
+
+    def test_traceback(self):
+        try:
+            raise_native_exception()
+        except ExceptionSubclass as e:
+            tb = e.__traceback__
+        else:
+            assert False
+        assert tb
+        assert tb.tb_frame.f_code is TestNativeExceptionSubclass.test_traceback.__code__
+        assert tb.tb_next
+        assert tb.tb_next.tb_frame.f_code is raise_native_exception.__code__
+        assert tb.tb_next.tb_lineno == raise_native_exception.__code__.co_firstlineno + 1
+        e2 = ExceptionSubclass()
+        assert e2.__traceback__ is None
+        e2.__traceback__ = tb
+        assert e2.__traceback__ is tb
+        e2 = ExceptionSubclass()
+        e2 = e2.with_traceback(tb)
+        assert e2.__traceback__ is tb
+
+    def test_traceback_reraise(self):
+        try:
+            try:
+                raise_native_exception()
+            except Exception as e1:
+                e1.__traceback__ = None
+                raise
+        except ExceptionSubclass as e:
+            tb = e.__traceback__
+        else:
+            assert False
+        assert tb
+        assert tb.tb_frame.f_code is TestNativeExceptionSubclass.test_traceback_reraise.__code__
+        assert tb.tb_next
+        assert tb.tb_next.tb_frame.f_code is raise_native_exception.__code__
+
+    def test_chaining(self):
+        inner_e = ExceptionSubclass()
+        outer_e = ExceptionSubclass()
+        try:
+            try:
+                raise inner_e
+            except Exception:
+                raise outer_e
+        except Exception:
+            pass
+        assert outer_e.__context__ is inner_e
+        assert outer_e.__suppress_context__ is False
+
+    def test_raise_from(self):
+        inner_e = ExceptionSubclass()
+        outer_e = ExceptionSubclass()
+        try:
+            raise outer_e from inner_e
+        except Exception:
+            pass
+        assert outer_e.__cause__ is inner_e
+        assert outer_e.__suppress_context__ is True
+
+    def test_cause(self):
+        e = ExceptionSubclass()
+        e2 = ExceptionSubclass()
+        assert e.__suppress_context__ is False
+        e.__cause__ = e2
+        assert e.__cause__ is e2
+        assert e.__suppress_context__ is True
+        e.__suppress_context__ = False
+        assert e.__suppress_context__ is False
+
+    def test_context(self):
+        e = ExceptionSubclass()
+        e2 = ExceptionSubclass()
+        e.__context__ = e2
+        assert e.__context__ is e2
+
+    def test_args(self):
+        e = ExceptionSubclass(1, 2, 3)
+        assert e.args == (1, 2, 3)
+        e.args = ("foo",)
+        assert e.args == ("foo",)
+
+    def test_dict(self):
+        e = ExceptionSubclass()
+        e.asdf = 1
+        assert e.asdf == 1
+        assert e.__dict__ == {'asdf': 1}
+        e.__dict__ = {'foo': 'bar'}
+        assert e.__dict__ == {'foo': 'bar'}
+
+    def test_reduce(self):
+        e = ExceptionSubclass(1)
+        e.asdf = 1
+        assert e.__reduce__() == (ExceptionSubclass, (1,), {'asdf': 1})
+
+    def test_repr_str(self):
+        assert repr(ExceptionSubclass()) == "ExceptionSubclass()"
+        assert repr(ExceptionSubclass(1)) == "ExceptionSubclass(1)"
+        assert repr(ExceptionSubclass(1, 2)) == "ExceptionSubclass(1, 2)"
+        assert str(ExceptionSubclass()) == ""
+        assert str(ExceptionSubclass(1)) == "1"
+        assert str(ExceptionSubclass(1, 2)) == "(1, 2)"
+
+    def test_setstate(self):
+        e = ExceptionSubclass()
+        e.__setstate__({'foo': 'bar'})
+        assert e.foo == 'bar'
+
+    def test_throw(self):
+        def gen():
+            try:
+                yield
+            except Exception as e:
+                yield e
+
+        g = gen()
+        next(g)
+        e = g.throw(ExceptionSubclass)
+        assert is_native_object(e)
+        assert type(e) == ExceptionSubclass
+
+        g = gen()
+        next(g)
+        e = ExceptionSubclass()
+        e1 = g.throw(e)
+        assert e1 is e

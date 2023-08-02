@@ -67,7 +67,7 @@ import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,7 +105,7 @@ public final class PythonCextTupleBuiltins {
         int doNative(PythonAbstractNativeObject tuple, long index, Object element,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Cached SequenceStorageNodes.SetNativeItemScalarNode setItemNode) {
-            NativeSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
+            NativeObjectSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             checkBounds(sequenceStorage, index);
             setItemNode.execute(sequenceStorage, (int) index, element);
             return 0;
@@ -155,7 +155,7 @@ public final class PythonCextTupleBuiltins {
         int doNative(PythonAbstractNativeObject tuple, long index, Object element,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Cached SequenceStorageNodes.InitializeNativeItemScalarNode setItemNode) {
-            NativeSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
+            NativeObjectSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             checkBounds(sequenceStorage, index);
             setItemNode.execute(sequenceStorage, (int) index, element);
             return 0;

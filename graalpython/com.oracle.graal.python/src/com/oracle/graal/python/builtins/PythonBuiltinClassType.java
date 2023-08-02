@@ -461,6 +461,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
     ContextVarsContext("Context", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, CONTEXT_M_FLAGS),
     ContextVar("ContextVar", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    // CPython uses separate keys, values, items python types for the iterators.
+    ContextIterator("context_iterator", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
 
     Capsule("capsule"),
 
@@ -498,7 +500,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TruffleString printName;
     private final boolean basetype;
     private final boolean isBuiltinWithDict;
-    private final boolean isException;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType type;
@@ -543,7 +544,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         }
         this.basetype = flags.isBaseType;
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
-        this.isException = flags == Flags.EXCEPTION;
         this.methodsFlags = methodsFlags;
         this.weaklistoffset = -1;
     }
@@ -887,9 +887,5 @@ public enum PythonBuiltinClassType implements TruffleObject {
     public Object send(Message message, Object[] args,
                     @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
         return lib.send(PythonContext.get(lib).lookupType(this), message, args);
-    }
-
-    public static boolean isExceptionType(PythonBuiltinClassType type) {
-        return type.isException;
     }
 }

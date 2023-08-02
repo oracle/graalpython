@@ -83,7 +83,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
-public class DecoratedMethodBuiltins extends PythonBuiltins {
+public final class DecoratedMethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

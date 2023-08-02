@@ -90,6 +90,7 @@ class TestMethod(object):
             "TestMember",
             '''
             #include <string.h>
+            #include <limits.h>
 
             PyObject* set_string(PyObject *self, PyObject *arg) {
                 TestMemberObject *tmo = (TestMemberObject *)self;
@@ -100,18 +101,32 @@ class TestMethod(object):
                 Py_INCREF(Py_None);
                 return Py_None;
             }
-            
-            PyObject* get_sizes(PyObject *self) {
+
+            PyObject* get_min_values(PyObject *self) {
                 PyObject *result = PyTuple_New(9);
-                PyTuple_SetItem(result, 0, PyLong_FromSize_t(sizeof(char)));
-                PyTuple_SetItem(result, 1, PyLong_FromSize_t(sizeof(unsigned char)));
-                PyTuple_SetItem(result, 2, PyLong_FromSize_t(sizeof(short)));
-                PyTuple_SetItem(result, 3, PyLong_FromSize_t(sizeof(unsigned short)));
-                PyTuple_SetItem(result, 4, PyLong_FromSize_t(sizeof(int)));
-                PyTuple_SetItem(result, 5, PyLong_FromSize_t(sizeof(unsigned int)));
-                PyTuple_SetItem(result, 6, PyLong_FromSize_t(sizeof(long)));
-                PyTuple_SetItem(result, 7, PyLong_FromSize_t(sizeof(unsigned long)));
-                PyTuple_SetItem(result, 8, PyLong_FromSize_t(sizeof(Py_ssize_t)));
+                PyTuple_SetItem(result, 0, PyLong_FromSsize_t(CHAR_MIN));
+                PyTuple_SetItem(result, 1, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 2, PyLong_FromSsize_t(SHRT_MIN));
+                PyTuple_SetItem(result, 3, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 4, PyLong_FromSsize_t(INT_MIN));
+                PyTuple_SetItem(result, 5, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 6, PyLong_FromSsize_t(LONG_MIN));
+                PyTuple_SetItem(result, 7, PyLong_FromLong(0));
+                PyTuple_SetItem(result, 8, PyLong_FromSsize_t(PY_SSIZE_T_MIN));
+                return result;
+            }
+
+            PyObject* get_max_values(PyObject *self) {
+                PyObject *result = PyTuple_New(9);
+                PyTuple_SetItem(result, 0, PyLong_FromSize_t(CHAR_MAX));
+                PyTuple_SetItem(result, 1, PyLong_FromSize_t(UCHAR_MAX));
+                PyTuple_SetItem(result, 2, PyLong_FromSize_t(SHRT_MAX));
+                PyTuple_SetItem(result, 3, PyLong_FromSize_t(USHRT_MAX));
+                PyTuple_SetItem(result, 4, PyLong_FromSize_t(INT_MAX));
+                PyTuple_SetItem(result, 5, PyLong_FromSize_t(UINT_MAX));
+                PyTuple_SetItem(result, 6, PyLong_FromSize_t(LONG_MAX));
+                PyTuple_SetItem(result, 7, PyLong_FromSize_t(ULONG_MAX));
+                PyTuple_SetItem(result, 8, PyLong_FromSize_t(PY_SSIZE_T_MAX));
                 return result;
             }
             ''',
@@ -158,7 +173,8 @@ class TestMethod(object):
             """,
             tp_methods='''
             {"set_string", (PyCFunction)set_string, METH_O, ""},
-            {"get_sizes", (PyCFunction)get_sizes, METH_NOARGS, ""}
+            {"get_min_values", (PyCFunction)get_min_values, METH_NOARGS, ""},
+            {"get_max_values", (PyCFunction)get_max_values, METH_NOARGS, ""}
             ''',
         )
 
@@ -167,13 +183,13 @@ class TestMethod(object):
         dummy = object()
 
         # T_OBJECT
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
         del obj.member_o
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
         obj.member_o = dummy
-        assert obj.member_o is dummy
+        assert obj.member_o is dummy, f"member is {obj.member_o}"
         del obj.member_o
-        assert obj.member_o is None
+        assert obj.member_o is None, f"member is {obj.member_o}"
 
         # T_OBJECT_EX
         assert_raises(AttributeError, lambda x: x.member_o_ex, obj)
@@ -198,13 +214,8 @@ class TestMethod(object):
         warnings.simplefilter("ignore")
 
         # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
-        sizes = obj.get_sizes()
-        max_values = [0] * len(sizes)
-        for i, size in enumerate(sizes):
-            if i % 2 == 0:
-                max_values[i] = (1 << (size * 8 - 1)) - 1
-            else:
-                max_values[i] = (1 << (size * 8)) - 1
+        max_values = obj.get_max_values()
+        min_values = obj.get_min_values()
 
         # all int-like members smaller than C long
         for i, m in enumerate(("member_byte", "member_ubyte", "member_short", "member_ushort", "member_int",
@@ -218,12 +229,20 @@ class TestMethod(object):
             setattr(obj, m, max_values[i] + 1)
             val = getattr(obj, m)
             assert val != max_values[i], "was: %r" % getattr(obj, m)
+            setattr(obj, m, min_values[i])
+            assert getattr(obj, m) == min_values[i], "member %s; was: %r" % (m, getattr(obj, m))
+            # min_value - 1 will be truncated but must not throw an error
+            setattr(obj, m, min_values[i] - 1)
+            val = getattr(obj, m)
+            assert val != min_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
+            assert_raises(OverflowError, setattr, obj, m, int(-1e40))
+            assert_raises(OverflowError, setattr, obj, m, int(1e40))
 
         # T_LONG, T_ULONG, T_PYSSIZET
-        max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF)
-        err_values = (-1, -1 & 0xFFFFFFFFFFFFFFFF, -1)
-        for i, m in enumerate(("member_long", "member_ulong", "member_pyssizet")):
+        max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF)
+        err_values = (-1, 0xFFFFFFFFFFFFFFFF, -1, -1, 0xFFFFFFFFFFFFFFFF)
+        for i, m in enumerate(("member_long", "member_ulong", "member_pyssizet", "member_longlong", "member_ulonglong")):
             assert type(getattr(obj, m)) is int
             assert getattr(obj, m) == 0
             assert_raises(TypeError, delattr, obj, m)

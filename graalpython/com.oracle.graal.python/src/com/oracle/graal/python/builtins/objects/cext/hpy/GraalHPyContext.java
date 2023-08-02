@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -424,12 +425,12 @@ public final class GraalHPyContext extends CExtContext {
     private final ScheduledExecutorService scheduler;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) throws Exception {
-        super(context, hpyLibrary);
+        super(context, hpyLibrary, false /* TODO: provide proper value */);
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
-        HPyBackendMode backendMode = context.getOption(PythonOptions.HPyBackend);
+        HPyBackendMode backendMode = language.getEngineOption(PythonOptions.HPyBackend);
 
         nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
         hpyHandleTable = new Object[IMMUTABLE_HANDLE_COUNT * 2];
@@ -582,7 +583,9 @@ public final class GraalHPyContext extends CExtContext {
                              * never receive a Python exception. If it happens, consider that to be
                              * a problem (however, it is not fatal problem).
                              */
-                            e.setMessage(e.getUnreifiedException().getFormattedMessage());
+                            if (e.getUnreifiedException() instanceof PBaseException managedException) {
+                                e.setMessage(managedException.getFormattedMessage());
+                            }
                             LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                         }
                     }

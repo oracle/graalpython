@@ -1,0 +1,11 @@
+[
+{
+  "name":"java.util.Locale",
+  "fields":[{"name":"US"}],
+  "methods":[{"name":"setDefault","parameterTypes":["java.util.Locale"]}]
+},
+{
+  "name":"java.lang.System",
+  "methods":[{"name":"getProperty","parameterTypes":["java.lang.String"]}]
+}
+]

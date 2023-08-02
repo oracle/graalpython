@@ -27,7 +27,6 @@ from __future__ import print_function
 import contextlib
 import datetime
 import fnmatch
-import getpass
 import glob
 import itertools
 import json
@@ -85,10 +84,10 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
-GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
-GRAAL_VERSION_NODOT = GRAAL_VERSION.replace('.', '')
-PYTHON_VERSION = "3.10"
-PYTHON_VERSION_NODOT = "3.10".replace('.', '')
+GRAAL_VERSION = SUITE.suiteDict['version']
+GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
+PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
+PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -100,7 +99,8 @@ DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 _COLLECTING_COVERAGE = False
 
 CI = os.environ.get("CI") == "true"
-BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and sys.platform != "win32" # disable assertions on win32 until we properly support that platform
+WIN32 = sys.platform == "win32"
+BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = CI and WIN32 # disable assertions on win32 until we properly support that platform
 
 if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
@@ -115,7 +115,35 @@ def wants_debug_build(flags=os.environ.get("CFLAGS", "")):
 
 
 if wants_debug_build():
-    mx_native.DefaultNativeProject.cflags = property(lambda self: self._cflags + ["-fPIC", "-ggdb3"])
+    mx_native.DefaultNativeProject._original_cflags = mx_native.DefaultNativeProject.cflags
+    mx_native.DefaultNativeProject.cflags = property(
+        lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
+    )
+
+
+if WIN32:
+    # we need the .lib for pythonjni
+    original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
+    def getArchivableResultsWithLib(self, *args, **kwargs):
+        for result in original_DefaultNativeProject_getArchivableResults(self, *args, **kwargs):
+            if any(r.endswith("pythonjni.dll") for r in result):
+                yield tuple(r.replace(".dll", ".lib") for r in result)
+            yield result
+    mx_native.DefaultNativeProject.getArchivableResults = getArchivableResultsWithLib
+
+    # let's check if VS compilers are on the PATH
+    if not os.environ.get("LIB"):
+        mx.log("LIB not in environment, not a VS shell")
+    elif not os.environ.get("INCLUDE"):
+        mx.log("INCLUDE not in environment, not a VS shell")
+    else:
+        for p in os.environ.get("PATH", "").split(os.pathsep):
+            if os.path.isfile(os.path.join(os.path.abspath(p), "cl.exe")):
+                mx.log("LIB and INCLUDE set, cl.exe on PATH, assuming this is a VS shell")
+                os.environ["DISTUTILS_USE_SDK"] = "1"
+                break
+        else:
+            mx.log("cl.exe not on PATH, not a VS shell")
 
 
 def _sibling(filename):
@@ -245,7 +273,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
     else:
         dists = ['GRAALPYTHON']
-    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE']
+    dists += ['TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON-LAUNCHER']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     if minimal:
@@ -273,7 +301,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         jdk = get_jdk()
 
     # default: assertion checking is enabled
-    if extra_vm_args is None or '-da' not in extra_vm_args:
+    if not WIN32 and (extra_vm_args is None or '-da' not in extra_vm_args):
         vm_args += ['-ea', '-esa']
 
     if extra_vm_args:
@@ -572,6 +600,7 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_parent_process'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import'),
@@ -586,8 +615,64 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
+        ('test_plistlib.txt', '*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_deep_nesting'),
         # Transient, GR-41056
-        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed')
+        ('test_subprocess.txt', '*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed'),
+        # Transient, at least on M1
+        ('test_ctypes.txt', '*ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf'),
+        # Transient hash mismatch
+        ('test_lib2to3.txt', '*lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess'),
+        # Connects to internet, sometimes can't reach
+        ('test_ssl.txt', '*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex'),
+        # Transiently fails because it's dependent on timings
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
+        # The whole suite sometimes transiently crashes because of hanging thread at the end, not sure which test causes this
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods'),
+        ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response'),
+        # Transiently hang
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_command'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_error_content_length'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_handler'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_head_via_send_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_close'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_header_keep_alive'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_internal_key_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_latin1_header'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_request_line_trimming'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_custom_status'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_explain_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_header_keep_alive'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_blank'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_send_error'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_bogus'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_digits'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_invalid'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_authorization'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_invaliduri'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_issue19435'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_post'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_continuous_slashes'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_query_with_multiple_question_mark'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check'),
+        ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.RequestHandlerLoggingTestCase.test_err'),
+        # Disabled because of fatal error in Sulong (GR-47592)
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores'),
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers'),
+        ('test_compileall.txt', '*graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores')
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -629,6 +714,7 @@ class GraalPythonTags(object):
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
+    unittest_standalone = 'python-unittest-standalone'
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
@@ -726,7 +812,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
-    elif sys.platform == "win32":
+    elif WIN32:
         return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
@@ -870,8 +956,13 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     paths = paths or [_graalpytest_root()]
     def is_included(path):
         if path.endswith(".py"):
+            path = path.replace("\\", "/")
             basename = os.path.basename(path)
-            return basename.startswith("test_") and basename not in exclude
+            return (
+                basename.startswith("test_")
+                and basename not in exclude
+                and not any(fnmatch.fnmatch(path, pat) for pat in exclude)
+            )
         return False
 
     testfiles = []
@@ -884,10 +975,10 @@ def _list_graalpython_unittests(paths=None, exclude=None):
         else:
             for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
             for testfile in glob.glob(os.path.join(path, "test_*.py")):
                 if is_included(testfile):
-                    testfiles.append(testfile)
+                    testfiles.append(testfile.replace("\\", "/"))
     return testfiles
 
 
@@ -928,13 +1019,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
-    if report:
-        reportfile = None
-        t0 = time.time()
-        if not use_pytest:
-            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-            args += ["--report", reportfile]
-
     result = 0
     if is_collecting_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
@@ -947,24 +1031,43 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         for testfile in testfiles:
             mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     else:
-        if javaAsserts:
-            args += ['-ea']
+        if WIN32:
+            size = 5
+            # Windows has problems with long commandlines and with file locks
+            # when running multiple cpyext tests in the same process
+            pytests = [t for t in testfiles if "cpyext" not in t]
+            testfiles = [pytests[i:i + size] for i in range(0, len(pytests), size)] + [[t] for t in testfiles if "cpyext" in t]
+        else:
+            testfiles = [testfiles]
 
-        args += testfiles
-        mx.logv(" ".join([python_binary] + args))
+        for testset in testfiles:
+            next_args = args[:]
+            if report:
+                reportfile = None
+                t0 = time.time()
+                if not use_pytest:
+                    reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+                    next_args += ["--report", reportfile]
+
+            next_args += testset
+            mx.logv(" ".join([python_binary] + next_args))
+            if lock:
+                lock.release()
+            result = result or mx.run([python_binary] + next_args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+            if lock:
+                lock.acquire()
+
+            if report:
+                if reportfile:
+                    mx_gate.make_test_report(reportfile, report.title)
+                else:
+                    mx_gate.make_test_report([{
+                        "name": report.title,
+                        "status": "PASSED" if result == 0 else "FAILED",
+                        "duration": int((time.time() - t0) * 1000)
+                    }], report.title)
         if lock:
             lock.release()
-        result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
-
-    if report:
-        if reportfile:
-            mx_gate.make_test_report(reportfile, report.title)
-        else:
-            mx_gate.make_test_report([{
-                "name": report.title,
-                "status": "PASSED" if result == 0 else "FAILED",
-                "duration": int((time.time() - t0) * 1000)
-            }], report.title)
     return result
 
 
@@ -1135,17 +1238,91 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
+    if WIN32:
+        # Windows support is still experimental, so we exclude some unittests
+        # on Windows for now. If you add unittests and cannot get them to work
+        # on Windows, yet, add their files here.
+        excluded_tests = [
+            "test_code.py", # forward slash in path problem
+            "test_csv.py",
+            "test_imports.py", # import posix
+            "test_locale.py",
+            "test_math.py",
+            "test_memoryview.py",
+            "test_mmap.py", # sys.getwindowsversion
+            "test_multiprocessing.py", # import _winapi
+            "test_patched_pip.py",
+            "test_pathlib.py",
+            "test_posix.py", # import posix
+            "test_pyio.py",
+            "test_signal.py",
+            "test_struct.py",
+            "test_structseq.py", # import posix
+            "test_subprocess.py",
+            "test_thread.py", # sys.getwindowsversion
+            "test_traceback.py",
+            "test_zipimport.py", # sys.getwindowsversion
+            "test_ssl_java_integration.py",
+            "*/cpyext/test_abstract.py",
+            "*/cpyext/test_bytes.py",
+            "*/cpyext/test_cpython_sre.py",
+            "*/cpyext/test_datetime.py",
+            "*/cpyext/test_descr.py",
+            "*/cpyext/test_err.py",
+            "*/cpyext/test_exceptionobject.py",
+            "*/cpyext/test_float.py",
+            "*/cpyext/test_functions.py",
+            "*/cpyext/test_gc.py",
+            "*/cpyext/test_long.py",
+            "*/cpyext/test_member.py",
+            "*/cpyext/test_memoryview.py",
+            "*/cpyext/test_method.py",
+            "*/cpyext/test_misc.py",
+            "*/cpyext/test_mixed_inheritance.py",
+            "*/cpyext/test_mmap.py",
+            "*/cpyext/test_modsupport.py",
+            "*/cpyext/test_module.py",
+            "*/cpyext/test_object.py",
+            "*/cpyext/test_simple.py",
+            "*/cpyext/test_slice.py",
+            "*/cpyext/test_structseq.py",
+            "*/cpyext/test_thread.py",
+            "*/cpyext/test_traceback.py",
+            "*/cpyext/test_tuple.py",
+            "*/cpyext/test_unicode.py",
+            "*/cpyext/test_wiki.py",
+        ]
+    else:
+        excluded_tests = []
 
     # JUnit tests
-    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
+    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
         if task:
-            punittest(['--verbose'], report=report())
+            if WIN32:
+                punittest(
+                    [
+                        "--verbose",
+                        "--no-leak-tests",
+                        "--regex",
+                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|advance\.ResourcesTest|basic|builtin|decorator|generator|interop|util))'
+                    ],
+                    report=True
+                )
+            else:
+                punittest(['--verbose'], report=report())
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            if not WIN32:
+                mx.run(["env"])
+            run_python_unittests(
+                python_gvm(),
+                javaAsserts=True,
+                exclude=excluded_tests,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report()
+            )
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -1161,11 +1338,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm(), javaAsserts=True, report=report())
+            run_python_unittests(python_managed_gvm(), javaAsserts=True, exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1188,6 +1365,14 @@ def graalpython_gate_runner(args, tasks):
             run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
             run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
 
+    with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
+        if task:
+            os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            try:
+                run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
+            finally:
+                del os.environ['ENABLE_STANDALONE_UNITTESTS']
+
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
@@ -1198,9 +1383,9 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
-    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
+    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
-            run_python_unittests(python_svm(), aot_compatible=True, report=report())
+            run_python_unittests(python_svm(), exclude=excluded_tests, aot_compatible=True, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
@@ -1211,7 +1396,7 @@ def graalpython_gate_runner(args, tasks):
             python_checkcopyrights([])
 
     with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
-        if task:
+        if task and not WIN32:
             run_shared_lib_test(python_so())
 
     with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
@@ -1229,62 +1414,8 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            assert "Using preinitialized context." in out.data
-
-    with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
-        if task:
-            svm_image = python_svm()
-            with tempfile.TemporaryDirectory() as tmpdir:
-                tmpstandalone = os.path.join(tmpdir, "target")
-                tmpmain = os.path.join(tmpdir, "main.py")
-                with open(tmpmain, "w") as f:
-                    f.write("print('hello standalone')")
-                mx.run([svm_image, "-m", "standalone", "java", "-o", tmpstandalone, "-m", tmpmain])
-                mx.run_maven(["-Pjar", "package"], cwd=tmpstandalone) # should compile without GraalVM
-                mx.run_maven(
-                    ["-Pnative", "package"],
-                    cwd=tmpstandalone,
-                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
-                )
-                out = mx.OutputCapture()
-                mx.run(
-                    [os.path.join(tmpstandalone, "target", "py2binlauncher")],
-                    nonZeroIsFatal=True,
-                    env={"PYTHONVERBOSE": "1"},
-                    out=mx.TeeOutputCapture(out),
-                    err=mx.TeeOutputCapture(out),
-                )
-                if "hello standalone" not in out.data:
-                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-                mx.run(
-                    [svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain],
-                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
-                )
-                out = mx.OutputCapture()
-                mx.run(
-                    [os.path.join(tmpdir, "directlauncher")],
-                    nonZeroIsFatal=True,
-                    env={"PYTHONVERBOSE": "1"},
-                    out=mx.TeeOutputCapture(out),
-                    err=mx.TeeOutputCapture(out),
-                )
-                if "hello standalone" not in out.data:
-                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
-        if task:
-            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'], report=True)
-            svm_image = python_svm()
-            out = mx.OutputCapture()
-            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "\n".join(["win32"])
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
-            mx.run([svm_image, "--experimental-options", "--python.NativeModules=", "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
-            success = "b'abcd'"
-            if success not in out.data:
-                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
+            if not WIN32:
+                assert "Using preinitialized context." in out.data
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
@@ -1435,7 +1566,8 @@ def run_shared_lib_test(home, args=()):
             }
 
             poly_engine_builder engine_builder;
-            status = poly_create_engine_builder(isolate_thread, &engine_builder);
+            const char* permitted_languages[] = {"python"};
+            status = poly_create_engine_builder(isolate_thread, permitted_languages, 1, &engine_builder);
             if (status != poly_ok) {
                 return status;
             }
@@ -1522,8 +1654,10 @@ def run_shared_lib_test(home, args=()):
         """ % (b"1" if "sandboxed" in args else b"0"))
         os.close(fd)
         progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
-        mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))
-        mx.run(["clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        cc = "clang" if shutil.which("clang") else "gcc"
+        cmdline = [cc, "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"]
+        mx.log(" ".join(["Running"] + cmdline))
+        mx.run(cmdline, nonZeroIsFatal=True)
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
@@ -1560,6 +1694,10 @@ class ArchiveProject(mx.ArchivableProject):
 
     def archive_prefix(self):
         return mx_subst.path_substitutions.substitute(getattr(self, "prefix", ""))
+
+    def getArchivableResults(self, use_relpath=True, single=False):
+        for f, arcname in super().getArchivableResults(use_relpath=use_relpath, single=single):
+            yield f, arcname.replace(os.sep, "/")
 
     def getResults(self):
         if hasattr(self, "outputFile"):
@@ -1614,14 +1752,21 @@ def _get_output_root(projectname):
 
 def py_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return PYTHON_VERSION_NODOT
-    return PYTHON_VERSION
+        return PYTHON_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p) + ord(' ')) for p in PYTHON_VERSION.split(".")])
+    else:
+        return PYTHON_VERSION_MAJ_MIN
 
 
 def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
-        return GRAAL_VERSION_NODOT
-    return GRAAL_VERSION
+        return GRAAL_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'binary':
+        return "".join([chr(int(p) + ord(' ')) for p in GRAAL_VERSION.split(".")])
+    else:
+        return GRAAL_VERSION_MAJ_MIN
+
 
 def graalpy_ext(llvm_mode, **kwargs):
     if not llvm_mode:
@@ -1633,14 +1778,16 @@ def graalpy_ext(llvm_mode, **kwargs):
         # (see also: 'PythonUtils.getPythonArch')
         arch = 'x86_64'
 
-    # not ".dylib", similar to CPython:
-    # https://github.com/python/cpython/issues/37510
-    if os == 'windows':
-        ext = 'pyd'
-    else:
-        ext = 'so'
+    # 'pyos' also needs to be compatible with CPython's designation.
+    # See class 'com.oracle.graal.python.builtins.PythonOS'
+    # In this case, we can just use 'sys.platform' of the Python running MX.
+    pyos = sys.platform
 
-    return f'.graalpy{GRAAL_VERSION_NODOT}-{PYTHON_VERSION_NODOT}-{llvm_mode}-{arch}-{os}.{ext}'
+    # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
+    # https://github.com/python/cpython/issues/37510
+    ext = 'pyd' if os == 'windows' else 'so'
+
+    return f'.graalpy{GRAAL_VERSION_MAJ_MIN.replace(".", "")}-{PYTHON_VERSION_MAJ_MIN.replace(".", "")}-{llvm_mode}-{arch}-{pyos}.{ext}'
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
@@ -1684,7 +1831,8 @@ def update_import(name, suite_py, args):
     else:
         vc.pull(dep_dir)
         rev = "origin/master"
-    vc.update(dep_dir, rev=rev, mayPull=True)
+    if rev != "HEAD":
+        vc.update(dep_dir, rev=rev, mayPull=True)
     tip = str(vc.tip(dep_dir)).strip()
     contents = None
     with open(suite_py, 'r') as f:
@@ -1778,9 +1926,10 @@ def update_import_cmd(args):
     shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal", "common.json"))
-    shutil.copy(
-        join(mx.suite("truffle").dir, "..", "ci", "common.jsonnet"),
-        join(overlaydir, "python", "graal", "ci", "common.jsonnet"))
+    shutil.copytree(
+        join(mx.suite("truffle").dir, "..", "ci"),
+        join(overlaydir, "python", "graal", "ci"),
+        dirs_exist_ok=True)
 
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
@@ -1825,24 +1974,6 @@ def update_import_cmd(args):
                 vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
             finally:
                 mx._opts.very_verbose = prev_verbosity
-
-        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "n":
-            username = input('Username: ')
-            password = getpass.getpass('Password: ')
-            cmds = []
-            for repo in repos_updated:
-                reponame = os.path.basename(repo)
-                cmd = [
-                    "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
-                    "create-pr", "--project=G", "--repo=%s" % reponame,
-                    "--title=[GR-21590] Update Python imports",
-                    "--from-branch=%s" % current_branch, "--to-branch=master"
-                ]
-                cmds.append(cmd)
-                print(" ".join(cmd))
-            for cmd in cmds:
-                cmd[3].replace("${SSO_PASSWORD}", password)
-                mx.run(cmd, nonZeroIsFatal=False)
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
@@ -1931,13 +2062,19 @@ def _python_checkpatchfiles():
             # Empty license field. It's MIT
             'urllib3-2.patch',
             # Empty license field. It's MIT
+            'wheel-0.40.patch',
+            'wheel-0.38.patch',
+            'wheel-0.37.patch',
+            'wheel-0.35.patch',
             'wheel-pre-0.35.patch',
         }
         allowed_licenses = [
             "MIT",
             "BSD",
             "BSD-3-Clause",
+            "3-Clause BSD License",
             "Apache License, Version 2.0",
+            "http://www.apache.org/licenses/LICENSE-2.0",
             "PSF",
             "Apache",
             "new BSD",
@@ -2034,7 +2171,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     short_name='pyn',
     installable_id='python',
     dir_name='python',
-    standalone_dir_name='graalpy-<version>-<graalvm_os>-<arch>',
+    standalone_dir_name='graalpy-community-<version>-<graalvm_os>-<arch>',
+    standalone_dir_name_enterprise='graalpy-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
     dependencies=[
@@ -2049,16 +2187,20 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'GraalVM Python license files': ('', []),
     }},
     standalone_dependencies_enterprise={**standalone_dependencies_common, **{
-        'LLVM Runtime Enterprise': ('lib/sulong', []),
-        'LLVM Runtime Native Enterprise': ('lib/sulong', []),
+        **({} if mx.is_windows() else {
+            'LLVM Runtime Enterprise': ('lib/sulong', []),
+            'LLVM Runtime Native Enterprise': ('lib/sulong', []),
+        }),
         'GraalVM Python EE': ('', []),
         'GraalVM Python license files EE': ('', []),
         'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
     }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:GRAALPYTHON_RESOURCES',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
+        'graalpython:BOUNCYCASTLE-UTIL',
         'graalpython:XZ-1.8',
     ],
     support_distributions=[
@@ -2074,7 +2216,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
-                '-Dpolyglot.python.PosixModuleBackend=native'
+                '-H:-CopyLanguageResources',
+                '-Dpolyglot.python.PosixModuleBackend=native',
             ],
             language='python',
             default_vm_args=[

@@ -110,28 +110,30 @@ class TestObject(object):
         assert int(tester) == 42
 
     def test_inherit_slots_with_managed_class(self):
-        TestTpAllocWithManaged = CPyExtType("TestTpAllocWithManaged",
-                             """
-                             static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
-                                 PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
-                                 return NULL;
-                             }
-                             """,
-                             tp_alloc="test_alloc"
+        ClassWithTpAlloc = CPyExtType(
+            "ClassWithTpAlloc",
+            """
+            static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
+                PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
+                return NULL;
+            }
+            static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
+                return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
+            }
+            """,
+            tp_alloc="test_alloc",
+            tp_methods='{"call_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_O | METH_STATIC, ""}',
+            tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC',
+            tp_free='PyObject_GC_Del',
+            ready_code="ClassWithTpAllocType.tp_new = PyBaseObject_Type.tp_new;"
         )
-        TestTpAllocCall = CPyExtType("TestTpAllocCall",
-                                '''
-                                static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
-                                    return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
-                                }
-                                ''',
-                                tp_methods='{"createObj", (PyCFunction)testslots_tp_alloc, METH_O, ""}'
-                                )
-        class managed(TestTpAllocWithManaged):
-            pass
-        t = TestTpAllocCall()
 
-        assert t.createObj(managed) != None
+        class ManagedSubclass(ClassWithTpAlloc):
+            pass
+
+        assert ClassWithTpAlloc.call_tp_alloc(ManagedSubclass)
+        assert type(ManagedSubclass()) is ManagedSubclass
+        assert type(object.__new__(ManagedSubclass)) is ManagedSubclass
         
 
     def test_float_binops(self):
@@ -303,6 +305,34 @@ class TestObject(object):
         assert X.B_has_add_slot()
         assert Y.E_has_add_slot()
 
+    def test_managed_class_with_native_base(self):
+        NativeModule = CPyExtType("NativeModule_", 
+                            '''
+                            PyTypeObject NativeBase_Type = {
+                                PyVarObject_HEAD_INIT(&PyType_Type, 0)
+                                .tp_name = "NativeModule_.NativeBase",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_base = &PyModule_Type,
+                            };
+
+                            static PyObject* get_NativeBase_type(PyObject* cls) {
+                                return (PyObject*) &NativeBase_Type;
+                            }
+
+                            ''',
+                            tp_methods='''{"get_NativeBase_type", (PyCFunction)get_NativeBase_type, METH_NOARGS | METH_CLASS, ""}''',
+                            ready_code='''
+                               /* testing lazy type initialization */
+                               // if (PyType_Ready(&NativeBase_Type) < 0)
+                               //     return NULL;
+                               ''',
+                            )
+        NativeBase = NativeModule.get_NativeBase_type()
+        assert NativeBase
+        class ManagedType(NativeBase):
+            def __init__(self):
+                super(ManagedType, self).__init__("DummyModuleName")
+        assert ManagedType()
 
     def test_index(self):
         TestIndex = CPyExtType("TestIndex",
@@ -524,7 +554,7 @@ class TestObject(object):
         TestSlots = CPyExtType("TestSlots", 
                                '''
                                static PyObject* testslots_bincomp(PyObject* cls) {
-                                   return ((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False;
+                                   return Py_NewRef(((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False);
                                }
                                ''',
                               includes='#include "datetime.h"',
@@ -563,9 +593,7 @@ class TestObject(object):
                               static PyTypeObject* datetime_type = NULL;
                                 
                               PyObject* TestSlotsInitialized_new(PyTypeObject* self, PyObject* args, PyObject* kwargs) {
-                                  PyObject* result =  datetime_type->tp_new(self, args, kwargs);
-                                  Py_XINCREF(result);
-                                  return result;
+                                  return Py_XNewRef(datetime_type->tp_new(self, args, kwargs));
                               }
                               ''',
                               includes='#include "datetime.h"',
@@ -658,7 +686,7 @@ class TestObject(object):
                 return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
             }
             """,
-            struct_base="PyFloatObject base",
+            struct_base="PyFloatObject base;",
             cmembers="double myobval;",
             tp_base="&PyFloat_Type",
             tp_new="fp_tp_new",

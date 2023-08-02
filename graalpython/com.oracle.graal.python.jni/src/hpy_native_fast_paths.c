@@ -92,15 +92,15 @@ static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
 static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
-    long bitsA = toBits(a);
-    long bitsB = toBits(b);
+    uint64_t bitsA = toBits(a);
+    uint64_t bitsB = toBits(b);
     if (bitsA == bitsB) {
         return 1;
     } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
         // This code assumes that objects pointed by a handle <= SINGLETON_HANDLES_MAX
         // always get that same handle
-        long unboxedA = unboxHandle(bitsA);
-        long unboxedB = unboxHandle(bitsB);
+        uint64_t unboxedA = unboxHandle(bitsA);
+        uint64_t unboxedB = unboxHandle(bitsB);
         if (unboxedA <= SINGLETON_HANDLES_MAX) {
             return 0;
         } else if (unboxedB <= SINGLETON_HANDLES_MAX) {
@@ -314,7 +314,7 @@ void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_fi
 }
 
 HPy augment_Type(HPyContext *ctx, HPy obj) {
-    long bits = toBits(obj);
+    uint64_t bits = toBits(obj);
     if (isBoxedInt(bits)) {
         return augment_Dup(ctx, ctx->h_LongType);
     } else if (isBoxedDouble(bits))

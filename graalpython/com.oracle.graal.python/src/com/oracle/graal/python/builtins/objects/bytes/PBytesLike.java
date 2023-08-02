@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -75,12 +75,8 @@ public abstract class PBytesLike extends PSequence {
 
     @Override
     public void setSequenceStorage(SequenceStorage store) {
-        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && isNativeByte((NativeSequenceStorage) store);
+        assert store instanceof ByteSequenceStorage || store instanceof NativeByteSequenceStorage;
         this.store = store;
-    }
-
-    private static boolean isNativeByte(NativeSequenceStorage store) {
-        return store.getElementType() == SequenceStorage.ListStorageType.Byte;
     }
 
     @ExportMessage

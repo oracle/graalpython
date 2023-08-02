@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,12 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -57,10 +59,22 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "winreg", isEager = true, os = PythonOS.PLATFORM_WIN32)
-public class WinregModuleBuiltins extends PythonBuiltins {
+public final class WinregModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return WinregModuleBuiltinsFactory.getFactories();
+    }
+
+    private static final int HKEY_CURRENT_USER = 1;
+    private static final int HKEY_LOCAL_MACHINE = 2;
+    private static final int HKEY_CLASSES_ROOT = 3;
+
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        addBuiltinConstant("HKEY_CURRENT_USER", HKEY_CURRENT_USER);
+        addBuiltinConstant("HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE);
+        addBuiltinConstant("HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT);
     }
 
     @Builtin(name = "OpenKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "sub_key", "reserved", "access"})
@@ -76,6 +90,21 @@ public class WinregModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access) {
+            if (key instanceof Integer intKey) {
+                if (intKey == HKEY_CLASSES_ROOT) {
+                    return factory().createLock();
+                }
+            }
+            throw raiseOSError(frame, OSErrorEnum.ENOENT);
+        }
+    }
+
+    @Builtin(name = "EnumKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "index"})
+    @GenerateNodeFactory
+    public abstract static class EnumKeyNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        Object enumKey(VirtualFrame frame, Object key, Object index) {
             throw raiseOSError(frame, OSErrorEnum.ENOENT);
         }
     }

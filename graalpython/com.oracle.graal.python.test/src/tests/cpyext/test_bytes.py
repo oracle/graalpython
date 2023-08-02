@@ -38,7 +38,8 @@
 # SOFTWARE.
 import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
+    is_native_object
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -85,7 +86,7 @@ class CIter:
 BytesSubclass = CPyExtType(
     "BytesSubclass",
     '',
-    struct_base='PyBytesObject bytes',
+    struct_base='PyBytesObject bytes;',
     tp_itemsize='sizeof(char)',
     tp_base='&PyBytes_Type',
     tp_new='0',
@@ -96,7 +97,7 @@ BytesSubclass = CPyExtType(
 ByteArraySubclass = CPyExtType(
     "ByteArraySubclass",
     '',
-    struct_base='PyByteArrayObject bytes',
+    struct_base='PyByteArrayObject bytes;',
     tp_itemsize='sizeof(char)',
     tp_base='&PyByteArray_Type',
     tp_new='0',
@@ -589,6 +590,7 @@ class ObjectTests(unittest.TestCase):
 class TestNativeSubclass(unittest.TestCase):
     def test_builtins(self):
         b = BytesSubclass(b"hello")
+        assert is_native_object(b)
         assert type(b) == BytesSubclass
         assert b
         assert not BytesSubclass(b'')
@@ -617,3 +619,9 @@ class TestNativeSubclass(unittest.TestCase):
         assert b.replace(b'e', b'a') == b'hallo'
         assert b.upper() == b'HELLO'
         assert BytesSubclass(b'a,b').split(BytesSubclass(b',')) == [b'a', b'b']
+
+    def test_managed_subclass(self):
+        class ManagedSubclass(BytesSubclass):
+            pass
+
+        assert is_native_object(ManagedSubclass(b"hello"))

@@ -59,7 +59,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
-public class CoroutineBuiltins extends PythonBuiltins {
+public final class CoroutineBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CoroutineBuiltinsFactory.getFactories();

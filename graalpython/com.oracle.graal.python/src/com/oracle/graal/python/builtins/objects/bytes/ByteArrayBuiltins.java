@@ -126,7 +126,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PByteArray)
-public class ByteArrayBuiltins extends PythonBuiltins {
+public final class ByteArrayBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_LATIN_1 = tsLiteral("latin-1");
 
@@ -182,7 +182,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(self)")
         public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___INIT__, "bytearray", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
         }
     }
 
@@ -534,7 +534,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__delitem__", "bytearray", idx);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__delitem__", "bytearray", idx);
         }
     }
 
@@ -667,7 +667,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)")
         PByteArray doBytes(Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
@@ -675,7 +675,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return factory().createByteArray(cls, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
+        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)")
         Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
@@ -841,7 +841,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         Object error(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyByteArrayCheckNode check) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, J___EQ__, J_BYTEARRAY, self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, J___EQ__, J_BYTEARRAY, self);
         }
     }
 

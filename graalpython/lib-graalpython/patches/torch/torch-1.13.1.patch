@@ -536,7 +536,7 @@ index 8c9ed1d7..5183a325 100644
  static inline void recordSliceTrace(PyObject* obj) {
 -  PySliceObject* sliceobj = (PySliceObject*)obj;
 -  if (THPVariable_Check(sliceobj->start)) {
-+  PyObject* slicestart = PySlice_Start(obj);
++  PyObject* slicestart = PySlice_Start(sliceobj);
 +  if (THPVariable_Check(slicestart)) {
      torch::jit::tracer::ArgumentStash::stashValue(
          std::string("start"),
@@ -546,7 +546,7 @@ index 8c9ed1d7..5183a325 100644
          torch::jit::IntType::get());
    }
 -  if (THPVariable_Check(sliceobj->stop)) {
-+  PyObject* slicestop = PySlice_Stop(obj);
++  PyObject* slicestop = PySlice_Stop(sliceobj);
 +  if (THPVariable_Check(slicestop)) {
      torch::jit::tracer::ArgumentStash::stashValue(
          std::string("end"),
@@ -556,7 +556,7 @@ index 8c9ed1d7..5183a325 100644
          torch::jit::IntType::get());
    }
 -  if (THPVariable_Check(sliceobj->step)) {
-+  PyObject* slicestep = PySlice_Step(obj);
++  PyObject* slicestep = PySlice_Step(sliceobj);
 +  if (THPVariable_Check(slicestep)) {
      torch::jit::tracer::ArgumentStash::stashValue(
          std::string("step"),

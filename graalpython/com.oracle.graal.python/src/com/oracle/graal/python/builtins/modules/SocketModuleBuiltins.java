@@ -136,7 +136,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SOCKET)
-public class SocketModuleBuiltins extends PythonBuiltins {
+public final class SocketModuleBuiltins extends PythonBuiltins {
 
     public static HiddenKey DEFAULT_TIMEOUT_KEY = new HiddenKey("default_timeout");
 

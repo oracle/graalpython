@@ -68,7 +68,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_blake2")
-public class Blake2ModuleBuiltins extends PythonBuiltins {
+public final class Blake2ModuleBuiltins extends PythonBuiltins {
     // constants taken from CPython's blake2.h
     static final int BLAKE2B_SALTBYTES = 16;
     static final int BLAKE2B_PERSONALBYTES = 16;

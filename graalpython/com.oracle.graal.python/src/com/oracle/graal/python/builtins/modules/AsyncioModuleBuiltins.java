@@ -80,7 +80,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__ASYNCIO)
-public class AsyncioModuleBuiltins extends PythonBuiltins {
+public final class AsyncioModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AsyncioModuleBuiltinsFactory.getFactories();

@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -54,13 +54,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Emulates {@code _PyErr_StackItem}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyErrStackItem extends PythonNativeWrapper {
 
     public static final String J_EXC_TYPE = "exc_type";
@@ -68,9 +66,9 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     public static final String J_EXC_TRACEBACK = "exc_traceback";
     public static final String J_PREVIOUS_ITEM = "previous_item";
 
-    private final PBaseException exception;
+    private final Object exception;
 
-    public PyErrStackItem(PBaseException exception) {
+    public PyErrStackItem(Object exception) {
         this.exception = exception;
     }
 
@@ -94,23 +92,21 @@ public final class PyErrStackItem extends PythonNativeWrapper {
 
     @ExportMessage
     Object readMember(String key,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetTracebackNode getTracebackNode,
-                    @Cached ToSulongNode toSulongNode) {
+                    @Bind("$node") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
+                    @Cached PythonToNativeNode toSulongNode) {
         Object result = null;
         if (exception != null) {
             switch (key) {
-                case J_EXC_TYPE:
-                    result = getClassNode.execute(exception);
-                    break;
-                case J_EXC_VALUE:
-                    result = exception;
-                    break;
-                case J_EXC_TRACEBACK:
-                    if (exception.getTraceback() != null) {
-                        result = getTracebackNode.execute(exception.getTraceback());
+                case J_EXC_TYPE -> result = getClassNode.execute(inliningTarget, exception);
+                case J_EXC_VALUE -> result = exception;
+                case J_EXC_TRACEBACK -> {
+                    result = getTracebackNode.execute(inliningTarget, exception);
+                    if (result == PNone.NONE) {
+                        result = null;
                     }
-                    break;
+                }
             }
         }
         if (result == null) {
@@ -138,19 +134,5 @@ public final class PyErrStackItem extends PythonNativeWrapper {
         if (!isNative(inliningTarget, isNativeProfile)) {
             CApiTransitions.firstToNative(this);
         }
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getNativeType() {
-        // TODO implement native type
-        return null;
     }
 }

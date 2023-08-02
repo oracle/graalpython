@@ -1,0 +1,2 @@
+[[rules]]
+patch = 'h2o.patch'

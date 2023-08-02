@@ -88,9 +88,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -100,7 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyBinaryArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyInplaceArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyTernaryArithmeticNode;
@@ -280,6 +278,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyReadCa
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -293,10 +293,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -313,6 +311,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictKeys;
+import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
@@ -1520,6 +1519,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
@@ -1532,8 +1532,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1550,14 +1550,15 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
             Object exception = callExceptionConstructorNode.execute(errTypeObj, fromCharPointerNode.execute(charPtr));
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(isSubtypeNode, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1571,11 +1572,13 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object errMessagePtr,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperFunctionNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object i = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
             Object message = fromCharPointerNode.execute(callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
@@ -1592,8 +1595,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1607,10 +1610,12 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object filenameObject1, Object filenameObject2,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
+                        @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object i = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
             Object message = fromCharPointerNode.execute(callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
@@ -1630,8 +1635,8 @@ public abstract class GraalHPyContextFunctions {
                 exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
             }
 
-            if (PGuards.isPBaseException(exception)) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception);
+            if (exceptionCheckNode.execute(inliningTarget, exception)) {
+                throw raiseNode.raiseExceptionObject(exception);
             }
             // This should really not happen since we did a type check above but in theory,
             // the constructor could be broken.
@@ -1789,18 +1794,12 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object unicodeObject, Object sizePtr,
-                        @Cached PCallHPyFunction callFromTyped,
-                        @Cached GetLLVMType getLLVMType,
+                        @Cached CStructAccess.WriteLongNode writeNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib) {
             byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, T_STRICT);
             if (!ptrLib.isNull(sizePtr)) {
-                sizePtr = callFromTyped.call(hpyContext, GraalHPyNativeSymbol.POLYGLOT_FROM_TYPED, sizePtr, getLLVMType.execute(LLVMType.Py_ssize_ptr_t));
-                try {
-                    ptrLib.writeArrayElement(sizePtr, 0, (long) result.length);
-                } catch (InteropException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
+                writeNode.write(sizePtr, result.length);
             }
             return new CByteArrayWrapper(result);
         }
@@ -1822,16 +1821,13 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeFromWchar extends HPyTernaryContextFunction {
 
         @Specialization
-        static Object doGeneric(GraalHPyContext hpyContext, Object wcharPtr, long len,
-                        @Cached PCallHPyFunction callFromWcharArrayNode,
-                        @Cached UnicodeFromWcharNode unicodeFromWcharNode) {
-            // Note: 'len' may be -1; in this case, function GRAAL_HPY_I8_FROM_WCHAR_ARRAY will
-            // use 'wcslen' to determine the C array's length.
-            Object dataArray = callFromWcharArrayNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_WCHAR_ARRAY, wcharPtr, len);
+        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object wcharPtr, long len,
+                        @Cached ReadUnicodeArrayNode readArray,
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
             try {
-                return unicodeFromWcharNode.execute(dataArray, PInt.intValueExact(hpyContext.getWcharSize()));
+                return fromArray.execute(readArray.execute(wcharPtr, PInt.intValueExact(len), CStructs.wchar_t.size()));
             } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }
@@ -1964,8 +1960,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Cached PRaiseNode raiseNode) {
-            if (object instanceof PBytes) {
-                return new PySequenceArrayWrapper(object, 1);
+            if (object instanceof PBytes bytes) {
+                return PySequenceArrayWrapper.ensureNativeSequence(bytes);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, object);
         }
@@ -3449,9 +3445,10 @@ public abstract class GraalHPyContextFunctions {
                     pyCapsule.setPointer(valuePtr);
                 }
                 case CapsuleKey.Context -> pyCapsule.setContext(valuePtr);
-                case CapsuleKey.Name ->
+                case CapsuleKey.Name -> {
                     // we may assume that the pointer is owned
                     pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
+                }
                 case CapsuleKey.Destructor -> pyCapsule.setDestructor(valuePtr);
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
@@ -3650,12 +3647,10 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, PCode code, Object globals, Object locals,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
-                        @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
                         @Cached GenericInvokeNode invokeNode) {
 
             // prepare Python frame arguments
-            Signature signature = getSignatureNode.execute(inliningTarget, code);
             Object[] pArguments = PArguments.create();
 
             if (locals == PNone.NO_VALUE) {

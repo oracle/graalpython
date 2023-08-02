@@ -34,9 +34,12 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.InvalidPathException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -74,6 +77,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
@@ -82,6 +86,7 @@ import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.resources.PythonResource;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -132,14 +137,18 @@ import com.oracle.truffle.api.strings.TruffleString;
                 implementationName = PythonLanguage.IMPLEMENTATION_NAME, //
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
-                                PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
-                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
+                                "text/x-python-\0\u0000-eval", "text/x-python-\0\u0000-compile", "text/x-python-\1\u0000-eval", "text/x-python-\1\u0000-compile", "text/x-python-\2\u0000-eval",
+                                "text/x-python-\2\u0000-compile", "text/x-python-\0\u0100-eval", "text/x-python-\0\u0100-compile", "text/x-python-\1\u0100-eval", "text/x-python-\1\u0100-compile",
+                                "text/x-python-\2\u0100-eval", "text/x-python-\2\u0100-compile", "text/x-python-\0\u0040-eval", "text/x-python-\0\u0040-compile", "text/x-python-\1\u0040-eval",
+                                "text/x-python-\1\u0040-compile", "text/x-python-\2\u0040-eval", "text/x-python-\2\u0040-compile", "text/x-python-\0\u0140-eval", "text/x-python-\0\u0140-compile",
+                                "text/x-python-\1\u0140-eval", "text/x-python-\1\u0140-compile", "text/x-python-\2\u0140-eval", "text/x-python-\2\u0140-compile"}, //
                 byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //
+                internalResources = PythonResource.class, //
                 website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,
@@ -172,12 +181,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /**
      * GraalVM version. Unfortunately, we cannot just use {@link Version#getCurrent} as it relies on
-     * a GraalVM build, but we may run from Jar files directly during development. So we hardcode
-     * the version here. It will fail at runtime if it doesn't match the distribution layout that is
-     * derived from the actual version.
+     * a GraalVM build, but we may run from Jar files directly during development. We generate the
+     * version during the build that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR = 23;
     public static final int GRAALVM_MINOR = 1;
+
+    public static final Class<PythonResource> PYTHON_RESOURCE_CLASS;
+
+    @SuppressWarnings("unchecked")
+    private static Class<PythonResource> getPythonResourceClass() {
+        try {
+            return (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
 
     static {
         switch (RELEASE_LEVEL) {
@@ -194,6 +213,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             default:
                 RELEASE_LEVEL_STRING = tsLiteral("final");
         }
+
+        PYTHON_RESOURCE_CLASS = getPythonResourceClass();
+        try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
+            int ch;
+            if (MAJOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MAJOR: " + ch);
+            }
+            if (MINOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MINOR: " + ch);
+            }
+            if (MICRO != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
+            }
+            if (GRAALVM_MAJOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
+            }
+            if (GRAALVM_MINOR != (ch = is.read() - ' ')) {
+                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     public static final int RELEASE_SERIAL = 0;
     public static final int VERSION_HEX = MAJOR << 24 |
@@ -206,14 +247,49 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
-    static final String MIME_TYPE_COMPILE0 = "text/x-python-compile0";
-    static final String MIME_TYPE_COMPILE1 = "text/x-python-compile1";
-    static final String MIME_TYPE_COMPILE2 = "text/x-python-compile2";
-    static final String[] MIME_TYPE_COMPILE = {PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2};
-    static final String[] MIME_TYPE_EVAL = {PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2};
-    static final String MIME_TYPE_EVAL0 = "text/x-python-eval0";
-    static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
-    static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
+
+    // the syntax for mime types is as follows
+    // <mime> ::= "text/x-python-" <optlevel> <flags> "-" kind
+    // <kind> ::= "compile" | "eval"
+    // <optlevel> ::= "\0" | "\1" | "\2"
+    // <flags> ::= "\u0040" | "\u0100" | "\u0140" | "\u0000"
+    // where 0100 implies annotations, and 0040 implies barry_as_flufl
+    static final String MIME_PREFIX = MIME_TYPE + "-";
+    static final int OPT_FLAGS_LEN = 2; // 1 char is optlevel, 1 char is flags
+    static final String MIME_KIND_COMPILE = "compile";
+    static final String MIME_KIND_EVAL = "eval";
+    // Since flags are greater than the highest unicode codepoint, we shift them into more
+    // reasonable values in the mime type. 4 hex digits
+    static final int MIME_FLAG_SHIFTBY = 4 * 4;
+    // a dash follows after the opt flag pair
+    static final int MIME_KIND_START = MIME_PREFIX.length() + OPT_FLAGS_LEN + 1;
+
+    private static boolean mimeTypesComplete(ArrayList<String> mimeJavaStrings) {
+        ArrayList<String> mimeTypes = new ArrayList<>();
+        FutureFeature[] all = FutureFeature.values();
+        for (int flagset = 0; flagset < (1 << all.length); ++flagset) {
+            int flags = 0;
+            for (int i = 0; i < all.length; ++i) {
+                if ((flagset & (1 << i)) != 0) {
+                    flags |= all[i].flagValue;
+                }
+            }
+            for (int opt = 0; opt <= 2; opt++) {
+                for (String typ : new String[]{MIME_KIND_EVAL, MIME_KIND_COMPILE}) {
+                    mimeTypes.add(MIME_PREFIX + optFlagsToMime(opt, flags) + "-" + typ);
+                    mimeJavaStrings.add(String.format("\"%s\\%d\\u%04x-%s\"", MIME_PREFIX, opt, flags >> MIME_FLAG_SHIFTBY, typ));
+                }
+            }
+        }
+        HashSet<String> currentMimeTypes = new HashSet<>(List.of(PythonLanguage.class.getAnnotation(Registration.class).characterMimeTypes()));
+        return currentMimeTypes.containsAll(mimeTypes);
+    }
+
+    static {
+        ArrayList<String> mimeJavaStrings = new ArrayList<>();
+        assert mimeTypesComplete(mimeJavaStrings) : "Expected all of {" + String.join(", ", mimeJavaStrings) + "} in the PythonLanguage characterMimeTypes";
+    }
+
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
@@ -283,11 +359,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
 
-    /** Strong reference to the C API library call target (workaround until GR-32297 is fixed). */
-    public CallTarget capiLibraryCallTarget;
-
     /** For fast access to the PythonThreadState object by the owning thread. */
-    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+    private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
@@ -388,24 +461,26 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.initialize();
     }
 
-    public static String getCompileMimeType(int optimize) {
-        if (optimize <= 0) {
-            return MIME_TYPE_COMPILE0;
-        } else if (optimize == 1) {
-            return MIME_TYPE_COMPILE1;
-        } else {
-            return MIME_TYPE_COMPILE2;
+    private static String optFlagsToMime(int optimize, int flags) {
+        if (optimize < 0) {
+            optimize = 0;
+        } else if (optimize > 2) {
+            optimize = 2;
         }
+        String optField = new String(new byte[]{(byte) optimize});
+        String flagField = new String(new int[]{(flags & FutureFeature.ALL_FLAGS) >> MIME_FLAG_SHIFTBY}, 0, 1);
+        assert flagField.length() == 1 : "flags in mime type ended up a surrogate";
+        return optField + flagField;
     }
 
-    public static String getEvalMimeType(int optimize) {
-        if (optimize <= 0) {
-            return MIME_TYPE_EVAL0;
-        } else if (optimize == 1) {
-            return MIME_TYPE_EVAL1;
-        } else {
-            return MIME_TYPE_EVAL2;
-        }
+    public static String getCompileMimeType(int optimize, int flags) {
+        String optFlags = optFlagsToMime(optimize, flags);
+        return MIME_PREFIX + optFlags + "-compile";
+    }
+
+    public static String getEvalMimeType(int optimize, int flags) {
+        String optFlags = optFlagsToMime(optimize, flags);
+        return MIME_PREFIX + optFlags + "-eval";
     }
 
     @Override
@@ -417,7 +492,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 throw new IllegalStateException("parse with arguments not allowed for interactive sources");
             }
             InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
-            return parse(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames());
+            return parse(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames(), EnumSet.noneOf(FutureFeature.class));
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
@@ -452,19 +527,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             PBytecodeRootNode rootNode = PBytecodeRootNode.create(this, code, source);
             return PythonUtils.getOrCreateCallTarget(rootNode);
         }
-        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
-            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
-                assert !source.isInteractive();
-                return parse(context, source, InputType.EVAL, false, optimize, false, null);
-            }
+
+        String mime = source.getMimeType();
+        String prefix = mime.substring(0, MIME_PREFIX.length());
+        if (!prefix.equals(MIME_PREFIX)) {
+            throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + mime);
         }
-        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
-            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
-                assert !source.isInteractive();
-                return parse(context, source, InputType.FILE, false, optimize, false, null);
-            }
+        String kind = mime.substring(MIME_KIND_START);
+        InputType type;
+        if (kind.equals(MIME_KIND_COMPILE)) {
+            type = InputType.FILE;
+        } else if (kind.equals(MIME_KIND_EVAL)) {
+            type = InputType.EVAL;
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("unknown compilation kind: " + kind + " from mime type: " + mime);
         }
-        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+        int optimize = mime.codePointAt(MIME_PREFIX.length());
+        int flags = mime.codePointAt(MIME_PREFIX.length() + 1) << MIME_FLAG_SHIFTBY;
+        if (0 > optimize || optimize > 2 || (flags & ~FutureFeature.ALL_FLAGS) != 0) {
+            throw CompilerDirectives.shouldNotReachHere("Invalid value for optlevel or flags: " + optimize + "," + flags + " from mime type: " + mime);
+        }
+        assert !source.isInteractive();
+        return parse(context, source, type, false, optimize, false, null, FutureFeature.fromFlags(flags));
     }
 
     private static Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
@@ -475,13 +559,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
+    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames,
+                    EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
-            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCb);
+            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
         } catch (PException e) {
             if (topLevel) {
                 PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -492,7 +577,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
-                    RaisePythonExceptionErrorCallback errorCallback) {
+                    RaisePythonExceptionErrorCallback errorCallback, int flags) {
+        return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCallback, FutureFeature.fromFlags(flags));
+    }
+
+    @TruffleBoundary
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+                    RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = errorCallback;
         if (errorCb == null) {
             errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
@@ -500,10 +591,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
+            final ModTy mod;
             if (hasArguments) {
-                mod = transformASTForExecutionWithArguments(argumentNames, mod);
+                mod = transformASTForExecutionWithArguments(argumentNames, modIn);
+            } else {
+                mod = modIn;
             }
-            CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
+            CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
             CodeUnit co = cu.assemble();
             RootNode rootNode = PBytecodeRootNode.create(this, co, source, errorCb);
             if (topLevel) {
@@ -588,7 +682,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     public ExecutableNode parse(InlineParsingRequest request) {
         PythonContext context = PythonContext.get(null);
-        RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, false, null);
+        RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
             @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
@@ -600,8 +694,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
-                Object locals = getFrameLocalsNode.execute(pFrame);
-                PArguments.setSpecialArgument(arguments, locals);
+                Object pLocals = getFrameLocalsNode.execute(pFrame);
+                PArguments.setSpecialArgument(arguments, pLocals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {

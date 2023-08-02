@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -145,7 +145,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
     // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
     // cast the key here and used DynamicObjectLibrary directly
-    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, getDict)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, getDict)"})
     static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Cached WriteAttributeToDynamicObjectNode writeNode) {
@@ -155,7 +155,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"})
     boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -171,7 +171,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"})
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -204,7 +204,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     // write to the dict: the basic specialization for non-classes
-    @Specialization(guards = {"!isHiddenKey(key)", "dict != null", "!isManagedClass(object)"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null", "!isManagedClass(object)"})
     static boolean writeToDictNoType(@SuppressWarnings("unused") PythonObject object, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -215,7 +215,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"})
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -233,7 +233,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"})
     static boolean writeToDictClass(PythonClass klass, Object key, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -324,7 +324,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
-        @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
+        @Specialization(guards = "isErrorCase(getDict, object, key)")
         static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -340,10 +340,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
          * Simplest case: the key object is a String (so it cannot be a hidden key) and it's not a
          * special method slot.
          */
-        @Specialization(guards = "!canBeSpecial(keyObj, codePointLengthNode, codePointAtIndexNode)", limit = "1")
+        @Specialization(guards = "!canBeSpecial(keyObj, codePointLengthNode, codePointAtIndexNode)")
         static boolean writeNativeClassSimple(PythonAbstractNativeObject object, TruffleString keyObj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
@@ -356,7 +356,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
              * we need to load the dict differently. We must not use 'PythonObjectLibrary.getDict'
              * here but read member 'tp_dict'.
              */
-            Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+            Object dict = getNativeDict.readFromObj(object, PyTypeObject__tp_dict);
             if (dict instanceof PDict) {
                 return writeToDict((PDict) dict, keyObj, value, inliningTarget, updateStorage, setHashingStorageItem);
             }
@@ -366,7 +366,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!isHiddenKey(keyObj)", replaces = "writeNativeClassSimple")
         static boolean writeNativeClassGeneric(PythonAbstractNativeObject object, Object keyObj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                         @Cached InlinedBranchProfile canBeSpecialSlot,
@@ -383,7 +383,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                  * and we need to load the dict differently. We must not use
                  * 'PythonObjectLibrary.getDict' here but read member 'tp_dict'.
                  */
-                Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+                Object dict = getNativeDict.readFromObj(object, PyTypeObject__tp_dict);
                 if (dict instanceof PDict) {
                     return writeToDict((PDict) dict, keyObj, value, inliningTarget, updateStorage, setHashingStorageItem);
                 }
@@ -404,7 +404,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             }
         }
 
-        @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
+        @Specialization(guards = "isErrorCase(getDict, object, key)")
         static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {

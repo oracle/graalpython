@@ -89,7 +89,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(defineModule = "select")
-public class SelectModuleBuiltins extends PythonBuiltins {
+public final class SelectModuleBuiltins extends PythonBuiltins {
 
     /*
      * ATTENTION: if we ever add "poll" support, update the code in

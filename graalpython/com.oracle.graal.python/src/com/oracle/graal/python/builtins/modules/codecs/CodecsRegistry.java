@@ -122,7 +122,7 @@ public final class CodecsRegistry {
 
         public abstract void execute(Node inliningTarget, TruffleString name, Object handler);
 
-        @Specialization(guards = "callableCheckNode.execute(handler)", limit = "1")
+        @Specialization(guards = "callableCheckNode.execute(handler)")
         static void register(Node inliningTarget, TruffleString name, Object handler,
                         @SuppressWarnings("unused") @Cached(inline = false) @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
             PythonContext context = PythonContext.get(inliningTarget);
@@ -130,7 +130,7 @@ public final class CodecsRegistry {
             putErrorHandler(context, name, handler);
         }
 
-        @Specialization(guards = "!callableCheckNode.execute(handler)", limit = "1")
+        @Specialization(guards = "!callableCheckNode.execute(handler)")
         static void registerNoCallable(@SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object handler,
                         @SuppressWarnings("unused") @Cached(inline = false) @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
                         @Cached(inline = false) PRaiseNode raiseNode) {

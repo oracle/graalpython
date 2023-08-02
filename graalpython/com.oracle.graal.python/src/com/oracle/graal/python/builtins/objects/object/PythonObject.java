@@ -77,6 +77,7 @@ public class PythonObject extends PythonAbstractObject {
 
     private Object[] hpyData;
 
+    @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
         assert pythonClass != null;

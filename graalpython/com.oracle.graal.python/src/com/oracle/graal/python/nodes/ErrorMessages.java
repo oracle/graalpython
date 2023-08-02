@@ -257,8 +257,10 @@ public abstract class ErrorMessages {
     public static final TruffleString DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE = tsLiteral("decoding error handler must return (str, int) tuple");
     public static final TruffleString DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P = tsLiteral("descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object");
     public static final TruffleString DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P = tsLiteral("descriptor for index '%d' for %s doesn't apply to '%p' object");
-    public static final TruffleString DESC_S_FOR_S_DOESNT_APPLY_TO_S = tsLiteral("descriptor '%s' for '%s' objects doesn't apply to '%s' object");
-    public static final TruffleString DESCRIPTOR_REQUIRES_OBJ = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
+    public static final TruffleString DESC_S_FOR_N_DOESNT_APPLY_TO_N = tsLiteral("descriptor '%s' for '%N' objects doesn't apply to '%N' object");
+    public static final TruffleString GET_NONE_NONE_IS_INVALID = tsLiteral("__get__(None, None) is invalid");
+    public static final TruffleString DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
+    public static final TruffleString DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_NEED_OBJ = tsLiteral("descriptor '%s' of '%s' object needs an argument");
     public static final TruffleString DICT_CHANGED_DURING_COMPARISON = tsLiteral("dictionary changed during comparison operation");
     public static final TruffleString CHANGED_SIZE_DURING_ITERATION = tsLiteral("%s changed size during iteration");
@@ -285,6 +287,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D = tsLiteral("Exceeds the limit (%d) for integer string conversion: value has %d digits");
     public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral("Exceeds the limit (%d) for integer string conversion");
     public static final TruffleString EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception cause must be None or derive from BaseException");
+    public static final TruffleString EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception context must be None or derive from BaseException");
     public static final TruffleString EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = tsLiteral("exception causes must derive from BaseException");
     public static final TruffleString EXCEPTION_NOT_BASEEXCEPTION = tsLiteral("exception %s not a BaseException subclass");
     public static final TruffleString EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = tsLiteral("exceptions must be classes or instances deriving from BaseException, not %p");
@@ -392,6 +395,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INTEGER_REQUIRED = tsLiteral("an integer is required");
     public static final TruffleString INTEGER_REQUIRED_GOT = tsLiteral("an integer is required (got type %p)");
     public static final TruffleString INTERMEDIATE_OVERFLOW_IN = tsLiteral("intermediate overflow in %s");
+    public static final TruffleString CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION = tsLiteral("Cannot set property on interop exception");
     public static final TruffleString INVALD_OR_UNREADABLE_CLASSPATH = tsLiteral("invalid or unreadable classpath: '%s' - %m");
     public static final TruffleString INVALID_ARGS = tsLiteral("%s: invalid arguments");
     public static final TruffleString INVALID_ARGS_FOR_ALLOCFUNC = tsLiteral("invalid arguments for allocfunc (expected 2 but got %s)");
@@ -989,7 +993,6 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_CTRL_CHARACTER_AT = tsLiteral("Invalid control character at");
     public static final TruffleString UNTERMINATED_STR_STARTING_AT = tsLiteral("Unterminated string starting at");
     public static final TruffleString DEFLATED_SET_DICT = tsLiteral("deflateSetDictionary()");
-    public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES = tsLiteral("Expecting property name enclosed in double quotes");
     public static final TruffleString EXPECTING_COLON_DELIMITER = tsLiteral("Expecting ':' delimiter");
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
@@ -998,6 +1001,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
     public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
+    public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1360,6 +1364,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNHANDLED_ERROR = tsLiteral("Unhandled Error!");
 
     // cext
+    public static final TruffleString NO_BITCODE_FOUND = tsLiteral("no bitcode found for %s");
     public static final TruffleString CANNOT_MULTICONTEXT = tsLiteral("cannot execute multi-context code with native extensions");
     public static final TruffleString CREATION_FAILD_WITHOUT_EXCEPTION = tsLiteral("creation of module %s failed without setting an exception");
     public static final TruffleString CREATION_RAISED_EXCEPTION = tsLiteral("creation of module %s raised unreported exception");
@@ -1378,7 +1383,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ML_FLAGS_IS_NOT_INTEGER = tsLiteral("ml_flags of %s is not an integer");
     public static final TruffleString INVALID_STRUCT_MEMBER = tsLiteral("Invalid struct member '%s'");
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
-    public static final TruffleString FIELD_DID_NOT_RETURN_ARRAY = tsLiteral("field '%s' did not return an array");
+    public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
     public static final TruffleString CANNOT_READ_FIELD_NAME_FROM_MEMBER_DEF = tsLiteral("Cannot read field 'name' from member definition");
     public static final TruffleString FIELD_SLOT_S_ISNT_INT = tsLiteral("field 'slot' of %s is not an integer");

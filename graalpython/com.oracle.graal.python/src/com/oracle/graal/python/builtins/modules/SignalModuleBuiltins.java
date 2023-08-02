@@ -94,7 +94,7 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 @CoreFunctions(defineModule = "_signal")
-public class SignalModuleBuiltins extends PythonBuiltins {
+public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
 
@@ -118,8 +118,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ITIMER_REAL", ITIMER_REAL);
         addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
         addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
-        for (int i = 0; i < Signals.signalNames.length; i++) {
-            String name = Signals.signalNames[i];
+        for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+            String name = Signals.SIGNAL_NAMES[i];
             if (name != null) {
                 addBuiltinConstant("SIG" + name, i);
             }
@@ -171,6 +171,30 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @Override
         public int frameIndex() {
             return 1;
+        }
+    }
+
+    @Builtin(name = "valid_signals")
+    @GenerateNodeFactory
+    abstract static class ValidSignalsNode extends PythonBuiltinNode {
+        @Specialization
+        static Object validSignals(
+                        @Cached PythonObjectFactory factory) {
+            int signalCount = 0;
+            for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+                if (Signals.SIGNAL_NAMES[i] != null) {
+                    signalCount++;
+                }
+            }
+            int[] validSignals = new int[signalCount];
+            int j = 0;
+            for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
+                if (Signals.SIGNAL_NAMES[i] != null) {
+                    validSignals[j++] = i;
+                }
+            }
+
+            return factory.createTuple(validSignals);
         }
     }
 
@@ -254,7 +278,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(idNum)", limit = "1")
+        @Specialization(guards = "!callableCheck.execute(idNum)")
         Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
@@ -288,7 +312,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "callableCheck.execute(handler)", limit = "1")
+        @Specialization(guards = "callableCheck.execute(handler)")
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
@@ -477,7 +501,7 @@ final class Signals {
     static final int SIG_DFL = 0;
     static final int SIG_IGN = 1;
     private static final int SIGMAX = 31;
-    static final String[] signalNames = new String[SIGMAX + 1];
+    static final String[] SIGNAL_NAMES = new String[SIGMAX + 1];
 
     static {
         for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
@@ -488,7 +512,7 @@ final class Signals {
                 if (number > SIGMAX) {
                     continue;
                 }
-                signalNames[number] = signal;
+                SIGNAL_NAMES[number] = signal;
             } catch (IllegalArgumentException e) {
             }
         }
@@ -548,7 +572,7 @@ final class Signals {
     }
 
     static String signalNumberToName(int signum) {
-        return signum > SIGMAX ? "INVALID SIGNAL" : signalNames[signum];
+        return signum > SIGMAX ? "INVALID SIGNAL" : SIGNAL_NAMES[signum];
     }
 
     @TruffleBoundary

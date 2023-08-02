@@ -74,8 +74,8 @@ import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictNodesFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -236,7 +236,6 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -564,9 +563,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private MaterializeFrameNode traceMaterializeFrameNode = null;
-
-    private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.create();
-    private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.create();
+    @Child private ChainExceptionsNode chainExceptionsNode;
 
     @CompilationFinal private Object osrMetadata;
 
@@ -2835,9 +2832,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
             pe.setCatchingFrameReference(virtualFrame, this, bci);
-            PBaseException peForPython = pe.getEscapedException();
+            Object peForPython = pe.getEscapedException();
             Object peType = GetClassNode.getUncached().execute(peForPython);
-            Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
+            Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
             invokeTraceFunction(virtualFrame,
                             factory.createTuple(new Object[]{peType, peForPython, traceback}), mutableData.getThreadState(this),
                             mutableData,
@@ -3166,7 +3163,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void chainPythonExceptions(VirtualFrame virtualFrame, MutableLoopData mutableData, PException pe) {
         if (pe != null) {
             if (mutableData.localException != null) {
-                ExceptionUtils.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
+                chainPythonExceptions(pe, mutableData.localException);
             } else {
                 if (getCaughtExceptionNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -3174,10 +3171,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
                 if (exceptionState != null) {
-                    ExceptionUtils.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                    chainPythonExceptions(pe, exceptionState);
                 }
             }
         }
+    }
+
+    private void chainPythonExceptions(PException current, PException context) {
+        if (chainExceptionsNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            chainExceptionsNode = insert(ChainExceptionsNode.create());
+        }
+        chainExceptionsNode.execute(current, context);
     }
 
     private PException raiseUnknownBytecodeError(byte bc) {

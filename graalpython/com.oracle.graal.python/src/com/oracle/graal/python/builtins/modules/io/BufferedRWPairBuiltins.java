@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -101,7 +102,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PBufferedRWPair)
-public class BufferedRWPairBuiltins extends PythonBuiltins {
+public final class BufferedRWPairBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -287,7 +288,8 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached PyObjectCallMethodObjArgs callMethodWriter,
                         @Cached InlinedConditionProfile gotException,
-                        @Cached InlinedBranchProfile hasException) {
+                        @Cached InlinedBranchProfile hasException,
+                        @Cached PyErrChainExceptions chainExceptions) {
             PException writeEx = null;
             if (self.getWriter() != null) {
                 try {
@@ -316,12 +318,12 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
             }
 
             hasException.enter(inliningTarget);
-            return chainedError(writeEx, readEx, inliningTarget, gotException);
+            return chainedError(writeEx, readEx, inliningTarget, gotException, chainExceptions);
         }
 
-        static Object chainedError(PException first, PException second, Node inliningTarget, InlinedConditionProfile gotFirst) {
+        static Object chainedError(PException first, PException second, Node inliningTarget, InlinedConditionProfile gotFirst, PyErrChainExceptions chainExceptions) {
             if (gotFirst.profile(inliningTarget, first != null)) {
-                throw second.chainException(first);
+                throw chainExceptions.execute(inliningTarget, second, first);
             } else {
                 throw second;
             }

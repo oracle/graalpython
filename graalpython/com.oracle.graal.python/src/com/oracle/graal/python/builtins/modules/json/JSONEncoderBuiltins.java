@@ -72,7 +72,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONEncoder)
-public class JSONEncoderBuiltins extends PythonBuiltins {
+public final class JSONEncoderBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_NULL = tsLiteral("null");
     private static final TruffleString T_TRUE = tsLiteral("true");

@@ -117,7 +117,7 @@ public abstract class DictNodes {
             self.setDictStorage(selfStorage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
+        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"})
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
@@ -133,7 +133,7 @@ public abstract class DictNodes {
             self.setDictStorage(storage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
+        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, other, lookupKeys)"})
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,

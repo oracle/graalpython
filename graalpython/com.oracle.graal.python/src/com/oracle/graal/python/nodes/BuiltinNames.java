@@ -167,6 +167,8 @@ public abstract class BuiltinNames {
     public static final String J_ASCII = "ascii";
     public static final TruffleString T_ASCII = tsLiteral(J_ASCII);
 
+    public static final TruffleString T_CP437 = tsLiteral("cp437");
+
     public static final String J_ENUMERATE = "enumerate";
 
     public static final String J_OCT = "oct";

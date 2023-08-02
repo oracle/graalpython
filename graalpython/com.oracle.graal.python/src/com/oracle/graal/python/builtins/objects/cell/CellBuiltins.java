@@ -88,7 +88,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
-public class CellBuiltins extends PythonBuiltins {
+public final class CellBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CellBuiltinsFactory.getFactories();
@@ -118,7 +118,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___EQ__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___EQ__, "cell", self);
         }
     }
 
@@ -146,7 +146,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___NE__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___NE__, "cell", self);
         }
     }
 
@@ -174,7 +174,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___LT__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LT__, "cell", self);
         }
     }
 
@@ -202,7 +202,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___LE__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___LE__, "cell", self);
         }
     }
 
@@ -230,7 +230,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GT__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GT__, "cell", self);
         }
     }
 
@@ -258,7 +258,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GE__, "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GE__, "cell", self);
         }
     }
 
@@ -286,7 +286,7 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__repr__", "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__repr__", "cell", self);
         }
     }
 

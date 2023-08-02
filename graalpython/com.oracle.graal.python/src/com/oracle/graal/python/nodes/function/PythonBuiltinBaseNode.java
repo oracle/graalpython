@@ -65,7 +65,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             if (isAdoptable()) {
                 objectFactory = insert(PythonObjectFactory.create());
             } else {
-                objectFactory = factory();
+                objectFactory = getCore().factory();
             }
         }
         return objectFactory;

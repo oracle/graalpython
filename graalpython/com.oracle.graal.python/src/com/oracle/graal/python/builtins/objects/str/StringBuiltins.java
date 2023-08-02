@@ -78,9 +78,9 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
-import com.ibm.icu.text.CaseMap;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
+import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -292,7 +292,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(self)")
         @SuppressWarnings("unused")
         TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_FORMAT, "str", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
         }
     }
 
@@ -569,7 +569,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 return recurse.execute(frame, cast.execute(self), cast.execute(other));
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___ADD__, "str", self);
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
             }
         }
 
@@ -580,7 +580,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(self)", "!isNativeObject(self)", "!isNativeObject(other)"})
         Object doNoString(Object self, @SuppressWarnings("unused") Object other) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___ADD__, "str", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
         }
     }
 
@@ -871,7 +871,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LowerNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString lowerAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -893,7 +893,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(self, getCodeRangeNode)")
         static TruffleString lower(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -926,7 +926,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UpperNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString upperAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -948,7 +948,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isAscii(self, getCodeRangeNode)", limit = "1")
+        @Specialization(guards = "!isAscii(self, getCodeRangeNode)")
         static TruffleString upper(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -2359,7 +2359,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return make(self, width, ' ', codePointLengthNode, appendCodePointNode, appendStringNode, toStringNode);
         }
 
-        @Specialization(guards = "isSingleCodePoint(fill, codePointLengthNode)", limit = "1")
+        @Specialization(guards = "isSingleCodePoint(fill, codePointLengthNode)")
         TruffleString doStringIntString(TruffleString self, int width, TruffleString fill,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -2532,7 +2532,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETITEM__, "str", self);
+            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
             SliceInfo info = compute.execute(frame, sliceCast.execute(slice), codePointLengthNode.execute(str, TS_ENCODING));
             return getItemNodeWithSlice.execute(str, info);
         }
@@ -2543,7 +2543,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETITEM__, "str", self);
+            TruffleString str = castToString.cast(self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
             int len = codePointLengthNode.execute(str, TS_ENCODING);
             int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {

@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -77,7 +76,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(defineModule = "atexit")
-public class AtexitModuleBuiltins extends PythonBuiltins {
+public final class AtexitModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AtexitModuleBuiltinsFactory.getFactories();
@@ -119,7 +118,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
-                PBaseException pythonException = e.getEscapedException();
+                Object pythonException = e.getEscapedException();
                 if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
                     callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));

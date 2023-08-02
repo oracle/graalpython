@@ -115,7 +115,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAlias)
-public class GenericAliasBuiltins extends PythonBuiltins {
+public final class GenericAliasBuiltins extends PythonBuiltins {
     private static final TruffleString[] ATTR_EXCEPTIONS = {T___ORIGIN__, T___ARGS__, T___PARAMETERS__, T___MRO_ENTRIES__, T___REDUCE_EX__, T___REDUCE__, T___COPY__, T___DEEPCOPY__};
 
     @Override

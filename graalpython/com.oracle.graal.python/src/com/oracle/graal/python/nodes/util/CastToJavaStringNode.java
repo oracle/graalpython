@@ -42,15 +42,13 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode.ReadNativeStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,14 +88,10 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     static String doNativeObject(PythonNativeObject x,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @Cached TruffleString.ToJavaStringNode toJavaString,
+                    @Cached ReadNativeStringNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
-            // read the native data
-            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
-            assert result instanceof TruffleString;
-            return toJavaStringNode.execute((TruffleString) result);
+            return toJavaString.execute(read.execute(x.getPtr()));
         }
         // the object's type is not a subclass of 'str'
         throw CannotCastException.INSTANCE;

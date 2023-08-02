@@ -90,7 +90,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteIncrementalDecoder)
-public class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
+public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

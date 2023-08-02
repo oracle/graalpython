@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -117,14 +117,14 @@ Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_
     return 0;
 }
 
-PyObject* PySlice_Start(PyObject *slice) {
+PyObject* PySlice_Start(PySliceObject *slice) {
     return PySliceObject_start(slice);
 }
 
-PyObject* PySlice_Stop(PyObject *slice) {
+PyObject* PySlice_Stop(PySliceObject *slice) {
     return PySliceObject_stop(slice);
 }
 
-PyObject* PySlice_Step(PyObject *slice) {
+PyObject* PySlice_Step(PySliceObject *slice) {
     return PySliceObject_step(slice);
 }
