@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBC
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DISALLOW_INSTANTIATION;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
@@ -375,7 +376,11 @@ public abstract class TypeNodes {
                 case PFunction:
                 case PBuiltinFunction:
                 case WrapperDescriptor:
+                case PLruCacheWrapper:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
+                    break;
+                case PLruListElem:
+                    result = DEFAULT | HAVE_GC | DISALLOW_INSTANTIATION;
                     break;
                 case PBytesIOBuf:
                 case PMethod:

@@ -57,6 +57,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheObject;
+import com.oracle.graal.python.builtins.modules.functools.LruListElemObject;
 import com.oracle.graal.python.builtins.modules.functools.PKeyWrapper;
 import com.oracle.graal.python.builtins.modules.functools.PPartial;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
@@ -831,6 +833,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
         return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
+    }
+
+    public LruListElemObject createLruListElemObject() {
+        return trace(new LruListElemObject(PythonBuiltinClassType.PLruListElem, getShape(PythonBuiltinClassType.PLruListElem)));
+    }
+
+    public LruCacheObject createLruCacheObject(Object cls) {
+        return trace(new LruCacheObject(cls, getShape(cls)));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

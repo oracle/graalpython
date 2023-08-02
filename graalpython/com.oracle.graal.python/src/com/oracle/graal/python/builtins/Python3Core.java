@@ -159,6 +159,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2bObjectBuiltins;
@@ -581,6 +582,7 @@ public abstract class Python3Core {
                         // _functools
                         new KeyWrapperBuiltins(),
                         new PartialBuiltins(),
+                        new LruCacheWrapperBuiltins(),
                         new FunctoolsModuleBuiltins(),
 
                         new ErrnoModuleBuiltins(),
