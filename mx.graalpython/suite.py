@@ -422,6 +422,25 @@ suite = {
             "testProject": True,
             "javaProperties" : {
                 "test.graalpython.home" : "<suite:graalpython>/graalpython"
+            },
+        },
+
+        "com.oracle.graal.python.hpy.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                #"com.oracle.graal.python.shell",
+                #"com.oracle.graal.python",
+                "GRAALPYTHON",
+                "GRAALPYTHON_NATIVE_LIBS",
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
+            "workingSets": "Truffle,Python",
+            "testProject": True,
+            "javaProperties" : {
+                "test.graalpython.home" : "<suite:graalpython>/graalpython"
              },
         },
 

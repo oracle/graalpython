@@ -827,7 +827,9 @@ def _graalpytest_root():
 
 
 def _hpy_test_root():
-    return os.path.join(_get_core_home(), "modules", "hpy", "test")
+    # we should just have one source dir
+    for src_dir in mx.dependency("com.oracle.graal.python.hpy.test").source_dirs():
+        return os.path.join(src_dir, "test")
 
 
 def graalpytest(args):
@@ -2697,7 +2699,7 @@ def update_hpy_import_cmd(args):
     tracker_file_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "ctx_tracker.c")
     import_file(tracker_file_src, tracker_file_dest)
 
-    # tests go to 'lib-graalpython/module/hpy/tests'
+    # tests go to 'com.oracle.graal.python.hpy.test/src/test'
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
