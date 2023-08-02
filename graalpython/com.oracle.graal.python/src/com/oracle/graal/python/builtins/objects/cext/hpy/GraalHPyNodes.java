@@ -138,7 +138,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -150,7 +149,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -2327,6 +2325,13 @@ public abstract class GraalHPyNodes {
     }
 
     /**
+     * Represents {@code HPyType_SpecParam}.
+     */
+    @ValueType
+    record HPyTypeSpecParam(int kind, Object object) {
+    };
+
+    /**
      * <pre>
      *     typedef struct {
      *         const char* name;
@@ -2371,9 +2376,7 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetSuperClassNode getSuperClassNode,
-                        @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
-                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -2399,17 +2402,19 @@ public abstract class GraalHPyNodes {
                     namespace = factory.createDict();
                 }
 
-                // extract bases from type spec params
-
-                PTuple bases;
+                HPyTypeSpecParam[] typeSpecParams;
                 try {
-                    bases = extractBases(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode, factory);
-                } catch (CannotCastException | InteropException e) {
+                    typeSpecParams = extractTypeSpecParams(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                } catch (InteropException | OverflowException e) {
                     throw raiseNode.raise(SystemError, ErrorMessages.FAILED_TO_EXTRACT_BASES_FROM_TYPE_SPEC_PARAMS, specName);
                 }
 
+                // extract bases from type spec params
+                PTuple bases = extractBases(typeSpecParams, factory);
+                // extract metaclass from type spec params
+                Object metatype = getMetatype(typeSpecParams, raiseNode);
+
                 // create the type object
-                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode, raiseNode);
                 PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(BuiltinNames.T___GRAALPYTHON__);
                 PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
@@ -2561,7 +2566,8 @@ public abstract class GraalHPyNodes {
         }
 
         /**
-         * Extract bases from an array consisting of elements with the following C struct.
+         * Read the array of {@code HPyType_SpecParam} and convert to a Java array of
+         * {@link HPyTypeSpecParam}.
          *
          * <pre>
          *     typedef struct {
@@ -2569,46 +2575,60 @@ public abstract class GraalHPyNodes {
          *         HPy object;
          *     } HPyType_SpecParam;
          * </pre>
-         *
-         * Reference implementation can be found in {@code ctx_type.c:build_bases_from_params}.
+         */
+        @TruffleBoundary
+        private static HPyTypeSpecParam[] extractTypeSpecParams(GraalHPyContext context, Object typeSpecParamArray,
+                        InteropLibrary ptrLib,
+                        CastToJavaIntLossyNode castToJavaIntNode,
+                        PCallHPyFunction callHelperFunctionNode,
+                        HPyAsPythonObjectNode asPythonObjectNode) throws InteropException, OverflowException {
+
+            // if the pointer is NULL, no bases have been explicitly specified
+            if (ptrLib.isNull(typeSpecParamArray)) {
+                return null;
+            }
+
+            int nSpecParam = PInt.intValueExact(ptrLib.getArraySize(typeSpecParamArray));
+            HPyTypeSpecParam[] result = new HPyTypeSpecParam[nSpecParam];
+            for (int i = 0; i < nSpecParam; i++) {
+                Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
+                int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
+                Object specParamObject = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+
+                result[i] = new HPyTypeSpecParam(specParamKind, specParamObject);
+            }
+            return result;
+        }
+
+        /**
+         * Extract bases from the array of type spec params. Reference implementation can be found
+         * in {@code ctx_type.c:build_bases_from_params}.
          *
          * @return The bases tuple or {@code null} in case of an error.
          */
         @TruffleBoundary
-        private static PTuple extractBases(GraalHPyContext context, Object typeSpecParamArray,
-                        InteropLibrary ptrLib,
-                        CastToJavaIntLossyNode castToJavaIntNode,
-                        PCallHPyFunction callHelperFunctionNode,
-                        HPyAsPythonObjectNode asPythonObjectNode,
-                        PythonObjectFactory factory) throws InteropException {
+        private static PTuple extractBases(HPyTypeSpecParam[] typeSpecParams, PythonObjectFactory factory) {
 
-            // if the pointer is NULL, no bases have been explicitly specified
-            if (ptrLib.isNull(typeSpecParamArray)) {
-                return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            // if there are no type spec params, no bases have been explicitly specified
+            if (typeSpecParams == null) {
+                return factory.createEmptyTuple();
             }
 
-            long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
             ArrayList<Object> basesList = new ArrayList<>();
-            for (long i = 0; i < nSpecParam; i++) {
-                Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
-                // TODO(fa): directly read member as soon as this is supported by Sulong.
-                // Currently, we cannot pass struct-by-value via interop.
-                int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
-                Object specParamObject = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
-
-                switch (specParamKind) {
+            for (HPyTypeSpecParam typeSpecParam : typeSpecParams) {
+                switch (typeSpecParam.kind()) {
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASE:
                         // In this case, the 'specParamObject' is a single handle. We add it to
                         // the list of bases.
-                        assert PGuards.isClass(specParamObject, IsTypeNode.getUncached()) : "base object is not a Python class";
-                        basesList.add(specParamObject);
+                        assert PGuards.isClass(typeSpecParam.object(), IsTypeNode.getUncached()) : "base object is not a Python class";
+                        basesList.add(typeSpecParam.object());
                         break;
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASES_TUPLE:
                         // In this case, the 'specParamObject' is tuple. According to the
                         // reference implementation, we immediately use this tuple and throw
                         // away any other single base classes or subsequent params.
-                        assert PGuards.isPTuple(specParamObject) : "type spec param claims to be a tuple but isn't";
-                        return (PTuple) specParamObject;
+                        assert PGuards.isPTuple(typeSpecParam.object()) : "type spec param claims to be a tuple but isn't";
+                        return (PTuple) typeSpecParam.object();
                     case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
                         // intentionally ignored
                         break;
@@ -2623,34 +2643,22 @@ public abstract class GraalHPyNodes {
          * Reference implementation can be found in {@code ctx_type.c:get_metatype}
          */
         @TruffleBoundary
-        private static Object getMetatype(GraalHPyContext context, Object typeSpecParamArray,
-                        InteropLibrary ptrLib,
-                        CastToJavaIntLossyNode castToJavaIntNode,
-                        PCallHPyFunction callHelperFunctionNode,
-                        HPyAsPythonObjectNode asPythonObjectNode,
-                        PRaiseNode raiseNode) throws InteropException {
-            if (!ptrLib.isNull(typeSpecParamArray)) {
-                long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
-                for (long i = 0; i < nSpecParam; i++) {
-                    Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
-                    // TODO(fa): directly read member as soon as this is supported by Sulong.
-                    // Currently, we cannot pass struct-by-value via interop.
-                    int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
-
-                    switch (specParamKind) {
-                        case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
-                            Object object = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
-                            if (!IsTypeNode.getUncached().execute(object)) {
-                                throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, object);
-                            }
-                            return object;
-                        default:
-                            // intentionally ignored
-                            break;
+        private static Object getMetatype(HPyTypeSpecParam[] typeSpecParams, PRaiseNode raiseNode) {
+            Object result = null;
+            if (typeSpecParams != null) {
+                for (HPyTypeSpecParam typeSpecParam : typeSpecParams) {
+                    if (typeSpecParam.kind() == GraalHPyDef.HPyType_SPEC_PARAM_METACLASS) {
+                        if (result != null) {
+                            throw raiseNode.raise(ValueError, ErrorMessages.HPY_METACLASS_SPECIFIED_MULTIPLE_TIMES);
+                        }
+                        result = typeSpecParam.object();
+                        if (!IsTypeNode.getUncached().execute(result)) {
+                            throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, result);
+                        }
                     }
                 }
             }
-            return null;
+            return result;
         }
 
         private static void checkInheritanceConstraints(long flags, long baseFlags, int builtinShape, boolean baseIsPure, PRaiseNode raiseNode) {
