@@ -114,12 +114,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -512,7 +515,16 @@ public abstract class GraalHPyDef {
         return -2; // error
     }
 
-    public static boolean isPureHPyType(int i) {
-        return false;
+    static PythonBuiltinClassType getBuiltinClassType(int builtinShape) {
+        return switch (builtinShape) {
+            case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> PythonBuiltinClassType.PythonObject;
+            case HPyType_BUILTIN_SHAPE_TYPE -> PythonBuiltinClassType.PythonClass;
+            case HPyType_BUILTIN_SHAPE_LONG -> PythonBuiltinClassType.PInt;
+            case HPyType_BUILTIN_SHAPE_FLOAT -> PythonBuiltinClassType.PFloat;
+            case HPyType_BUILTIN_SHAPE_UNICODE -> PythonBuiltinClassType.PString;
+            case HPyType_BUILTIN_SHAPE_TUPLE -> PythonBuiltinClassType.PTuple;
+            case HPyType_BUILTIN_SHAPE_LIST -> PythonBuiltinClassType.PList;
+            default -> throw CompilerDirectives.shouldNotReachHere(GraalHPyNew.INVALID_BUILT_IN_SHAPE);
+        };
     }
 }

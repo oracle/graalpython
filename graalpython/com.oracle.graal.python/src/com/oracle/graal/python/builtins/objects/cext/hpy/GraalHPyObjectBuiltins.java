@@ -40,14 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_FLOAT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LIST;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LONG;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_TUPLE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_TYPE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_UNICODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
 import java.util.List;
@@ -57,7 +49,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -96,7 +87,7 @@ public abstract class GraalHPyObjectBuiltins {
         private final PythonBuiltinClassType builtinClassType;
 
         protected HPyObjectNewNode(int builtinShape) {
-            this.builtinClassType = getBuiltinClassType(builtinShape);
+            this.builtinClassType = GraalHPyDef.getBuiltinClassType(builtinShape);
         }
 
         @Override
@@ -169,19 +160,6 @@ public abstract class GraalHPyObjectBuiltins {
             return result;
         }
 
-        private static PythonBuiltinClassType getBuiltinClassType(int builtinShape) {
-            return switch (builtinShape) {
-                case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> PythonBuiltinClassType.PythonObject;
-                case HPyType_BUILTIN_SHAPE_TYPE -> PythonBuiltinClassType.PythonClass;
-                case HPyType_BUILTIN_SHAPE_LONG -> PythonBuiltinClassType.PInt;
-                case HPyType_BUILTIN_SHAPE_FLOAT -> PythonBuiltinClassType.PFloat;
-                case HPyType_BUILTIN_SHAPE_UNICODE -> PythonBuiltinClassType.PString;
-                case HPyType_BUILTIN_SHAPE_TUPLE -> PythonBuiltinClassType.PTuple;
-                case HPyType_BUILTIN_SHAPE_LIST -> PythonBuiltinClassType.PList;
-                default -> throw CompilerDirectives.shouldNotReachHere(GraalHPyNew.INVALID_BUILT_IN_SHAPE);
-            };
-        }
-
         private static Object extractInheritedConstructor(PythonContext context, PythonBuiltinClassType builtinClassType) {
             PythonBuiltinClass pythonBuiltinClass = context.lookupType(builtinClassType);
             Object builtinConstructor = SpecialMethodSlot.New.getValue(pythonBuiltinClass);
@@ -216,7 +194,7 @@ public abstract class GraalHPyObjectBuiltins {
         public static Object getDecoratedSuperConstructor(PBuiltinFunction builtinFunction) {
             if (builtinFunction.getFunctionRootNode() instanceof BuiltinFunctionRootNode rootNode && rootNode.getBuiltin() == BUILTIN) {
                 HPyObjectNewNodeFactory nodeFactory = (HPyObjectNewNodeFactory) rootNode.getFactory();
-                return extractInheritedConstructor(PythonContext.get(null), getBuiltinClassType(nodeFactory.builtinShape));
+                return extractInheritedConstructor(PythonContext.get(null), GraalHPyDef.getBuiltinClassType(nodeFactory.builtinShape));
             }
             return null;
         }

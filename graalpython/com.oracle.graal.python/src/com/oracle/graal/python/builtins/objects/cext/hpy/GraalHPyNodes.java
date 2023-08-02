@@ -2465,6 +2465,9 @@ public abstract class GraalHPyNodes {
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
                 int builtinShape = castToInt(valueLib, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE, typeSpec));
+                if (!GraalHPyDef.isValidBuiltinShape(builtinShape)) {
+                    throw raiseNode.raise(ValueError, ErrorMessages.HPY_INVALID_BUILTIN_SHAPE, builtinShape);
+                }
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
