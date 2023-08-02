@@ -237,13 +237,16 @@ public final class GraalHPyContext extends CExtContext {
     }
 
     private static void validateABITag(Node location, String shortname, String soname, HPyABIVersion abiVersion) {
-        // assumes format: "blah.hpy123.so"
+        // assumes format: "blah.hpy123[-310].so"
         int hpyExtIdx = soname.lastIndexOf(HPY_EXT);
         int start = hpyExtIdx + HPY_EXT.length();
-        int lastDotIdx = soname.indexOf('.', start);
-        if (hpyExtIdx != -1 && lastDotIdx != -1) {
+        int end = start;
+        while (Character.isDigit(soname.charAt(end))) {
+            end++;
+        }
+        if (hpyExtIdx != -1 && end > start) {
             try {
-                String abiTagVersion = soname.substring(start, lastDotIdx);
+                String abiTagVersion = soname.substring(start, end);
                 int abiTag = Integer.parseInt(abiTagVersion);
                 if (abiTag != abiVersion.major) {
                     throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
