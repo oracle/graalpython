@@ -1045,7 +1045,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         return factory.createInt(big);
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException("foreign value claims to be a boolean but isn't");
+                        throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
                 throw raiseNode.raiseIntegerInterpretationError(object);
