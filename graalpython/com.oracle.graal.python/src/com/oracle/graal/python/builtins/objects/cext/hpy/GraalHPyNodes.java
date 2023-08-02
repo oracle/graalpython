@@ -1304,6 +1304,9 @@ public abstract class GraalHPyNodes {
              * instance of this type.
              */
             if (HPY_TP_CALL.equals(slot)) {
+                if (enclosingType.getItemSize() > 0) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS);
+                }
                 enclosingType.setHPyDefaultCallFunc(slotData.impl());
             }
             return property;

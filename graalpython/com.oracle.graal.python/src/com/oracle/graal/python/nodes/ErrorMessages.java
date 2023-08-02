@@ -1476,6 +1476,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_TYPE_DOES_NOT_IMPLEMENT_CALL_PROTOCOL = tsLiteral("type '%p' does not implement the HPy call protocol");
     public static final TruffleString HPY_METACLASS_SPECIFIED_MULTIPLE_TIMES = tsLiteral("metaclass was specified multiple times");
     public static final TruffleString HPY_INVALID_BUILTIN_SHAPE = tsLiteral("invalid shape: %d");
+    public static final TruffleString HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS = tsLiteral("Cannot use HPy call protocol with var objects");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

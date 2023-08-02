@@ -381,6 +381,10 @@ public final class PythonClass extends PythonManagedClass {
         return hPyTypeExtra != null ? hPyTypeExtra.basicSize : -1;
     }
 
+    public long getItemSize() {
+        return hPyTypeExtra != null ? hPyTypeExtra.itemSize : -1;
+    }
+
     public Object getHPyDestroyFunc() {
         if (hPyTypeExtra != null) {
             return hPyTypeExtra.hpyDestroyFunc;
