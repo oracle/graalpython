@@ -2142,7 +2142,11 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key, Object value,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(receiver, key, value);
+            if (value == NULL_HANDLE_DELEGATE) {
+                setAttrNode.delete(null, receiver, key);
+            } else {
+                setAttrNode.execute(receiver, key, value);
+            }
             return 0;
         }
     }
@@ -2155,7 +2159,12 @@ public abstract class GraalHPyContextFunctions {
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr, Object value,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(receiver, fromCharPointerNode.execute(charPtr), value);
+            TruffleString key = fromCharPointerNode.execute(charPtr);
+            if (value == NULL_HANDLE_DELEGATE) {
+                setAttrNode.delete(null, receiver, key);
+            } else {
+                setAttrNode.execute(receiver, key, value);
+            }
             return 0;
         }
     }
