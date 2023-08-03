@@ -59,21 +59,37 @@ public class Main {
     public static void main(String[] args) throws IOException {
         VirtualFileSystem vfs = new VirtualFileSystem();
         Builder builder = Context.newBuilder()
+            // set true to allow experimental options
             .allowExperimentalOptions(true)
+            // allow all privileges
             .allowAllAccess(true)
+            // alow access to host IO
             .allowIO(true)
+            // install a truffle FileSystem
             .fileSystem(vfs)
+            // choose the backend for the POSIX module
             .option("python.PosixModuleBackend", "java")
+            // equivalent to the Python -B flag
             .option("python.DontWriteBytecodeFlag", "true")
+            // equivalent to the Python -v flag
             .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
+            // log level
             .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
+            // equivalent to setting the PYTHONWARNINGS environment variable
             .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-            .option("python.AlwaysRunExcepthook", "false")
+            // print exceptions directly
+            .option("python.AlwaysRunExcepthook", "true")
+            // Force to automatically import site.py module
             .option("python.ForceImportSite", "true")
-            .option("python.RunViaLauncher", "false")
+            // The sys.executable path
             .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))            
+            // Used by the launcher to pass the path to be executed. 
+            // VirtualFilesystem will take care, that at runtime this will be 
+            // the python sources stored in src/main/resources/{vfs-proj-prefix}
+            .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
+            // Value of the --check-hash-based-pycs command line option
             .option("python.CheckHashPycsMode", "never")
+            // Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable
             .option("engine.WarnInterpreterOnly", "false");
         if(ImageInfo.inImageRuntimeCode()) {
             builder.option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX));
@@ -87,11 +103,16 @@ public class Main {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            // eval the snipet __graalpython__.run_path() which executes what the option python.InputFilePath points to
             context.eval(source);
+            
+            // retrieve the python PyHello class
             Value pyHelloClass = context.getPolyglotBindings().getMember("PyHello");
             Value pyHello = pyHelloClass.newInstance();
+            // and cast it to the Hello interface which matches PyHello
             Hello hello = pyHello.as(Hello.class);
             hello.hello("java");
+            
         } catch (PolyglotException e) {
             if (e.isExit()) {
                 System.exit(e.getExitStatus());
