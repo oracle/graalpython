@@ -72,6 +72,9 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!-- The __graalpython.list_files() builtin creates an index of all files and directories 
+                    available in the resources at runtime. It is used by VirtualFilesystem.java to determine 
+                    directory entries, if an entry is a file or a directory, etc. -->
                 <artifactId>exec-maven-plugin</artifactId>
                 <groupId>org.codehaus.mojo</groupId>
                 <executions>
@@ -97,6 +100,8 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
+                    <!-- Exclude all resources from src/main/resources 
+                        which aren't needed at runtime -->
                     <exclude>**/{vfs-home-prefix}/lib-graalpython/include/**</exclude>
                     <exclude>**/{vfs-home-prefix}/lib-graalpython/patches/**</exclude>
                     <exclude>**/{vfs-venv-prefix}/bin/**</exclude>
@@ -109,6 +114,7 @@
 
     <profiles>
         <profile>
+            <!-- Creates a self contained jar from this project -->
             <id>jar</id>
             <dependencies>
                 <dependency>
@@ -131,8 +137,8 @@
                                 </manifest>
                             </archive>
                             <excludes>
-                                <!-- the created jar has to be executed with graalpy, 
-                                so it is safe to exclude the whole python home -->
+                                <!-- The created jar has to be executed with graalpy, 
+                                    so it is safe to exclude the whole python home -->
                                 <exclude>**/{vfs-home-prefix}/**</exclude>
                             </excludes>
                         </configuration>
@@ -141,6 +147,7 @@
             </build>
         </profile>
         <profile>
+            <!-- Creates a self contained native executable from this project -->
             <id>native</id>
             <build>
                 <plugins>
@@ -166,15 +173,20 @@
                             </execution>
                         </executions>
                         <configuration>
-                             <!--Default arguments--> 
+                             <!-- Default arguments --> 
                             <buildArgs>
+                                <!-- Build a standalone image or report a failure -->
                                 <buildArg>--no-fallback</buildArg>
+                                <!-- Make Python available as a language for the image -->
                                 <buildArg>--language:python</buildArg>
+                                <!-- Do not automatically copy the necessary language resources 
+                                     to the resources/languages directory next to the produced image. -->
                                 <buildArg>-H:-CopyLanguageResources</buildArg>
-                                <!-- native-image-resources.json specifies what resources will be added to the native executable
+                                <!-- Native-image-resources.json specifies what resources will be added to the native executable
                                  see also https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/-->
                                 <buildArg>-H:ResourceConfigurationFiles=native-image-resources.json</buildArg>
-                                <!-- Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement.  -->
+                                <!-- Proxy classes need to be defined at image build time 
+                                    by specifying the list of interfaces they implement. -->
                                 <buildArg>-H:DynamicProxyConfigurationFiles=native-image-proxy-configuration.json</buildArg>
                             </buildArgs>
                             <!-- Remove the properties below to include the Python JIT compiler -->
@@ -192,6 +204,7 @@
         </profile>
         <profile>
             <properties>
+                <!-- Overrides the graalpy and python executables in case we are running on windows --> 
                 <graalpy.executable>${env.JAVA_HOME}/bin/graalpy.cmd</graalpy.executable>
                 <graalpy.venv.executable>/Scripts/python.cmd</graalpy.venv.executable>
             </properties>
@@ -203,11 +216,14 @@
         </profile>
         <profile>
    	    <id>prepare-venv</id>
-            <!-- create a python venv in resources/vfs if it does not exist yet -->
+            <!-- Create a python venv in src/main/resources/{vfs-venv-prefix} if it does not exist yet.
+                NOTE: all modules from src/main/resources/{vfs-venv-prefix} will be included
+                into the standalone file and adding more modules can be done also manually
+                via src/main/resources/{vfs-venv-prefix}/bin/pip install [some_module] -->
             <build>
                 <plugins>
                     <plugin>
-                        <!-- create a python venv -->
+                        <!-- 1.) create a python venv -->
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
@@ -227,7 +243,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <!-- install required python packages -->
+                                <!-- 2.) initial install of required python packages -->
                                 <id>install-python-packages</id>
                                 <phase>generate-resources</phase>
                                 <goals>
