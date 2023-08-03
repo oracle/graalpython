@@ -1391,7 +1391,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ERR_WHEN_READING_LEGACY_MEYHOD_FOR_TYPE = tsLiteral("error when reading legacy method definition for type %s");
     public static final TruffleString FAILED_TO_EXTRACT_BASES_FROM_TYPE_SPEC_PARAMS = tsLiteral("failed to extract bases from type spec params for type %s");
     public static final TruffleString FIELD_DEFINES_DID_NOT_RETURN_ARRAY = tsLiteral("field 'defines' did not return an array for type %s");
-    public static final TruffleString CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .legacy=true");
     public static final TruffleString COULD_NOT_CREATE_TYPE_FROM_SPEC_BECAUSE = tsLiteral("Could not create type from spec because: %m");
     public static final TruffleString COULD_NOT_CREATE_TYPE_FROM_SPEC_TOO_MANY = tsLiteral("Could not create type from spec: too many members");
     public static final TruffleString LEG_TYPE_SHOULDNT_INHERIT_MEM_LAYOUT_FROM_PURE_TYPE = tsLiteral("A legacy type should not inherit its memory layout from a pure type");
@@ -1483,6 +1482,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_INVALID_BUILTIN_SHAPE = tsLiteral("invalid shape: %d");
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS = tsLiteral("Cannot use HPy call protocol with var objects");
     public static final TruffleString HPY_CANNOT_HAVE_CALL_AND_VECTORCALLOFFSET = tsLiteral("Cannot have HPy_tp_call and explicit member '__vectorcalloffset__'. Specify just one of them.");
+    public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

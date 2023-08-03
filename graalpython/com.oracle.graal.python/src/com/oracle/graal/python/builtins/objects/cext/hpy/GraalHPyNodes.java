@@ -2531,7 +2531,7 @@ public abstract class GraalHPyNodes {
                 Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
                 if (!ptrLib.isNull(legacySlots)) {
                     if (builtinShape != GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY) {
-                        throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG);
+                        throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG);
                     }
                     int nLegacySlots = PInt.intValueExact(ptrLib.getArraySize(legacySlots));
                     for (int i = 0; i < nLegacySlots; i++) {
