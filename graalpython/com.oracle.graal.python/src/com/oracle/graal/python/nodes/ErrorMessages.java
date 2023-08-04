@@ -1483,6 +1483,8 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS = tsLiteral("Cannot use HPy call protocol with var objects");
     public static final TruffleString HPY_CANNOT_HAVE_CALL_AND_VECTORCALLOFFSET = tsLiteral("Cannot have HPy_tp_call and explicit member '__vectorcalloffset__'. Specify just one of them.");
     public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
+    public static final TruffleString HPY_CANNOT_USE_CALL_WITH_LEGACY = tsLiteral("Cannot use HPy call protocol with legacy types that inherit the struct. " +
+                    "Either set the basicsize to a non-zero value or use legacy slot 'Py_tp_call'.");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

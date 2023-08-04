@@ -1299,6 +1299,9 @@ public abstract class GraalHPyNodes {
                 if (enclosingType.getItemSize() > 0) {
                     throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_USE_CALL_WITH_VAR_OBJECTS);
                 }
+                if (enclosingType.getBuiltinShape() == GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY && enclosingType.getBasicSize() == 0) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_USE_CALL_WITH_LEGACY);
+                }
                 enclosingType.setHPyDefaultCallFunc(slotData.impl());
             }
             return property;
