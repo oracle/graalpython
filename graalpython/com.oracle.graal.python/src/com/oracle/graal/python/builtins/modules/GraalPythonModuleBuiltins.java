@@ -179,6 +179,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
+import org.graalvm.home.Version;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public final class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -1064,6 +1065,46 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             } catch (IOException ioException) {
                 // Ignore
             }
+        }
+    }
+
+    @Builtin(name = "get_graalvm_version", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetGraalVmVersion extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            Version current = Version.getCurrent();
+            // TODO according to Version java doc, the output of toString is not standardized and may change without notice.
+            // Unfortunately, we have no way to tell what is the minimum count of version components and the snapshot suffix
+            // and have to guess is. For now, we can either do the same as version.toString does, or simply call it.
+//            String snapshotSuffix = "-dev";
+//            int min_version_components = 3;
+//
+//            int i = 1;
+//            String format = "";
+//            while (true) {
+//                if (current.format("%[" + i + "XX]").isEmpty() && i > min_version_components) {
+//                    break;
+//                }
+//                format += (format.isEmpty() ? "%d" : ".%d");
+//                i++;
+//            }
+//            String ret = current.format(format);
+//            if(current.isSnapshot()) {
+//                ret += snapshotSuffix;
+//            }
+            return TruffleString.fromJavaStringUncached(current.toString(), TS_ENCODING);
+        }
+    }
+
+    @Builtin(name = "get_jdk_version", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetJdkVersion extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        TruffleString get() {
+            return TruffleString.fromJavaStringUncached(System.getProperty("java.version"), TS_ENCODING);
         }
     }
 }
