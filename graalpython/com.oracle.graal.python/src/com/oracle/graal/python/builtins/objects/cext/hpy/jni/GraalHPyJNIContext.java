@@ -59,7 +59,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -86,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyBinaryContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyTernaryContextFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
@@ -137,7 +137,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -837,6 +836,31 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return 0;
     }
 
+    /**
+     * Transforms the given {@link TruffleString} to a string with native buffer and returns the
+     * internal pointer object (which is guaranteed to answer
+     * {@link InteropLibrary#isPointer(Object)} with {@code true}).
+     */
+    private static Object truffleStringToNative(TruffleString value) {
+        TruffleString nativeTName = TruffleString.AsNativeNode.getUncached().execute(value, (size) -> {
+            // over-allocate by 1 byte and write a zero terminator
+            long ptr = UNSAFE.allocateMemory(size + 1);
+            UNSAFE.putByte(ptr + size, (byte) 0);
+            return new NativePointer(ptr);
+        }, TS_ENCODING, true, true);
+        Object result = TruffleString.GetInternalNativePointerNode.getUncached().execute(nativeTName, TS_ENCODING);
+        assert InteropLibrary.getUncached().isPointer(result);
+        return result;
+    }
+
+    private static Object capsuleNameToNative(Object name) {
+        if (name instanceof TruffleString tname) {
+            // The capsule's name may either be a native pointer or a TruffleString.
+            return truffleStringToNative(tname);
+        }
+        return name;
+    }
+
     // {{start ctx funcs}}
     public int ctxTypeCheck(long bits, long typeBits) {
         increment(HPyJNIUpcall.HPyTypeCheck);
@@ -1099,13 +1123,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             Object result;
             switch (key) {
                 case CapsuleKey.Pointer -> {
-                    if (!capsuleNameMatches(namePtr, coerceToPointer(pyCapsule.getName()))) {
+                    if (!capsuleNameMatches(namePtr, coerceToPointer(capsuleNameToNative(pyCapsule.getName())))) {
                         return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.INCORRECT_NAME);
                     }
                     result = pyCapsule.getPointer();
                 }
                 case CapsuleKey.Context -> result = pyCapsule.getContext();
-                case CapsuleKey.Name -> result = pyCapsule.getName();
+                // The capsule's name may either be a native pointer or a TruffleString.
+                case CapsuleKey.Name -> result = capsuleNameToNative(pyCapsule.getName());
                 case CapsuleKey.Destructor -> result = pyCapsule.getDestructor();
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
