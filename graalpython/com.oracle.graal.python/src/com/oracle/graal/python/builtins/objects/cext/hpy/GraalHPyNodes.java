@@ -149,6 +149,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -2369,6 +2370,7 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -2553,13 +2555,20 @@ public abstract class GraalHPyNodes {
                  * it determines which Java object we need to allocate (e.g. PInt, PythonObject,
                  * PFloat, etc.).
                  */
+                Object baseClass = getSuperClassNode.execute(newType);
                 if (!seenNew && (basicSize > 0 || newType.getHPyDefaultCallFunc() != null)) {
-                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), builtinShape);
+                    Object inheritedConstructor = null;
+
+                    // TODO(fa): we could do some shortcut if 'baseClass == PythonObject' and use
+                    // 'inheritedConstruct = null' but that needs to be considered in the decorating
+                    // new as well
+                    // Lookup the inherited constructor and pass it to the HPy decorator.
+                    inheritedConstructor = lookupNewNode.execute(baseClass);
+                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), inheritedConstructor, builtinShape);
                     writeAttributeToObjectNode.execute(newType, SpecialMethodNames.T___NEW__, constructorDecorator);
                 }
 
                 long baseFlags;
-                Object baseClass = getSuperClassNode.execute(newType);
                 if (baseClass instanceof PythonClass pythonBaseClass) {
                     baseFlags = pythonBaseClass.getFlags();
                 } else {
