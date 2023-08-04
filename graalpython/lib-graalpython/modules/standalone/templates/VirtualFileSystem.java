@@ -200,6 +200,13 @@ public final class VirtualFileSystem implements FileSystem {
                 if(line.endsWith(RESOURCE_SEPARATOR)) {                        
                     line = line.substring(0, line.length() - 1);
                     dirsList.add(line);
+                    int idx;
+                    while((idx = line.lastIndexOf(RESOURCE_SEPARATOR)) != -1) {                        
+                        line = line.substring(0, idx);                        
+                        if(!line.isEmpty()) {
+                            dirsList.add(line);
+                        }
+                    }
                 } else {
                     filesList.add(line);                            
                 }
@@ -275,6 +282,10 @@ public final class VirtualFileSystem implements FileSystem {
                     e = readFileEntry(pathString);
                 }
                 VFS_ENTRIES.put(entryKey, e);
+            } else {
+                if(getDirsList().contains(pathString)) {
+                    e = readDirEntry(pathString);
+                }
             }
         }
         return e;

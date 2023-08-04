@@ -18,20 +18,22 @@ They can also be used to generate a standalone binary from those JAR files later
 
 Set `JAVA_HOME` to use a GraalVM distribution.
 
-## Creating GraalPy Binaries
+## Creating GraalPy Native Binaries
 
 Suppose there is a simple Python script, _my_script.py_, that does some useful work when run directly.
 To distribute it as a standalone native binary, run the following command:
 
 ```bash
-graalpy -m standalone binary \
+graalpy -m standalone native \
       --module my_script.py \
       --output my_binary
 ```
 
 It generates a standalone _my_binary_ file which includes the Python code, the GraalPy runtime, and the Python standard library in a single, self-contained executable.
-Use `graalpy -m standalone binary --help` for further options.
+Use `graalpy -m standalone native --help` for further options.
 
+XXX add polyglot app if implemented
+ 
 ## Embedding GraalPy in a Java Application
 
 You can distribute the Python script as a JAR file that runs on GraalVM and includes GraalPy.
