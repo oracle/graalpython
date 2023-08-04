@@ -199,6 +199,7 @@ typedef struct {
     BUILTIN(PyLong_FromLongLong, PyObject*, long long) \
     BUILTIN(PyLong_FromSize_t, PyObject*, size_t) \
     BUILTIN(PyLong_FromSsize_t, PyObject*, Py_ssize_t) \
+    BUILTIN(PyLong_FromUnicodeObject, PyObject*, PyObject*, int) \
     BUILTIN(PyLong_FromUnsignedLong, PyObject*, unsigned long) \
     BUILTIN(PyLong_FromUnsignedLongLong, PyObject*, unsigned long long) \
     BUILTIN(PyMapping_Check, int, PyObject*) \
