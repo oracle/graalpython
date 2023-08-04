@@ -429,7 +429,6 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
                         @Cached HPyReadSlotNode readSlotNode,
-                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached HPyCheckHandleResultNode checkFunctionResultNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "1") InteropLibrary createLib,
@@ -441,6 +440,7 @@ public abstract class GraalHPyNodes {
             assert checkLayout(moduleDef);
 
             TruffleString mDoc;
+            long size;
             try {
                 Object docPtr = ptrLib.readMember(moduleDef, "doc");
                 if (!ptrLib.isNull(docPtr)) {
@@ -450,7 +450,7 @@ public abstract class GraalHPyNodes {
                 }
 
                 Object sizeObj = ptrLib.readMember(moduleDef, "size");
-                long size = valueLib.asLong(sizeObj);
+                size = valueLib.asLong(sizeObj);
                 if (size < 0) {
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, tsLiteral("HPy does not permit HPyModuleDef.size < 0"));
                 } else if (size > 0) {
@@ -483,7 +483,6 @@ public abstract class GraalHPyNodes {
             int nMethodDefs = 0;
             Object[] methodDefs = new Object[nModuleDefines];
 
-            boolean hasExecutionSlots = false;
             List<Object> executeSlots = new LinkedList<>();
             Object createFunction = null;
 
@@ -507,6 +506,9 @@ public abstract class GraalHPyNodes {
                                     assert createLib.isExecutable(createFunction);
                                 }
                                 case HPY_MOD_EXEC -> {
+                                    if (createFunction != null) {
+                                        throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.HPY_DEFINES_CREATE_AND_OTHER_SLOTS, mName);
+                                    }
                                     /*
                                      * In contrast to CPython, we already parse and store the
                                      * HPy_mod_exec slots here since parsing is a bit more expensive
@@ -532,9 +534,33 @@ public abstract class GraalHPyNodes {
                 // should not happen since we check if 'moduleDefines' has array elements
                 throw CompilerDirectives.shouldNotReachHere();
             }
+
+            // determine of 'legacy_methods' is NULL upfront (required for a consistency check)
+            Object legacyMethods = callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
+            // the field 'legacy_methods' may be 'NULL'
+            boolean hasLegacyMethods = !ptrLib.isNull(legacyMethods);
+
+            // allocate module's HPyGlobals
+            int nModuleGlobals;
+            try {
+                int globalStartIdx = hpyContext.getEndIndexOfGlobalTable();
+                nModuleGlobals = ptrLib.asInt(callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_INIT_GLOBALS, moduleDef, globalStartIdx));
+                hpyContext.initBatchGlobals(globalStartIdx, nModuleGlobals);
+            } catch (UnsupportedMessageException e) {
+                // should not happen unless the number of module global is larger than an `int`
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
             // create the module object
             Object module;
             if (createFunction != null) {
+                /*
+                 * TODO(fa): this check should be before any other check (and the also test for
+                 * 'size > 0')
+                 */
+                if (hasLegacyMethods || mDoc != null || nModuleGlobals != 0) {
+                    throw raiseNode.raise(SystemError, ErrorMessages.HPY_DEFINES_CREATE_AND_NON_DEFAULT);
+                }
                 module = callCreate(inliningTarget, createFunction, hpyContext, spec, checkFunctionResultNode, asHandleNode, createLib);
                 if (module instanceof PythonModule) {
                     throw raiseNode.raise(SystemError, ErrorMessages.HPY_MOD_CREATE_RETURNED_BUILTIN_MOD);
@@ -555,9 +581,7 @@ public abstract class GraalHPyNodes {
             }
 
             // process legacy methods
-            Object legacyMethods = callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
-            // the field 'legacy_methods' may be 'NULL'
-            if (!ptrLib.isNull(legacyMethods)) {
+            if (hasLegacyMethods) {
                 if (!ptrLib.hasArrayElements(legacyMethods)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, "legacyMethods");
@@ -572,16 +596,6 @@ public abstract class GraalHPyNodes {
                     writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
                     writeAttrNode.execute(module, fun.getName(), method);
                 }
-            }
-
-            // allocate module's HPyGlobals
-            try {
-                int globalStartIdx = hpyContext.getEndIndexOfGlobalTable();
-                int nModuleGlobals = ptrLib.asInt(callGetterNode.call(hpyContext, GRAAL_HPY_MODULE_INIT_GLOBALS, moduleDef, globalStartIdx));
-                hpyContext.initBatchGlobals(globalStartIdx, nModuleGlobals);
-            } catch (UnsupportedMessageException e) {
-                // should not happen unless the number of module global is larger than an `int`
-                throw CompilerDirectives.shouldNotReachHere();
             }
 
             if (mDoc != null) {

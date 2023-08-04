@@ -1485,6 +1485,13 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_LEGACY = tsLiteral("Cannot use HPy call protocol with legacy types that inherit the struct. " +
                     "Either set the basicsize to a non-zero value or use legacy slot 'Py_tp_call'.");
+    private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
+                    "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
+                    "define anything else but the HPy_mod_create slot.";
+    public static final TruffleString HPY_DEFINES_CREATE_AND_NON_DEFAULT = tsLiteral("HPyModuleDef defines a HPy_mod_create slot and some of the other fields are not set to their default value. " +
+                    HPY_NON_DEFAULT_MESSAGE);
+    public static final TruffleString HPY_DEFINES_CREATE_AND_OTHER_SLOTS = tsLiteral("HPyModuleDef defines a HPy_mod_create slot and some other slots or methods. " +
+                    HPY_NON_DEFAULT_MESSAGE);
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");
