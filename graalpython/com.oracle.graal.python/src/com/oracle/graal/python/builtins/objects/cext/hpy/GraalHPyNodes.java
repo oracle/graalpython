@@ -2575,7 +2575,7 @@ public abstract class GraalHPyNodes {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
                 }
-                int baseBuiltinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(baseClass, readHPyTypeFlagsNode);
+                int baseBuiltinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(baseClass);
                 checkInheritanceConstraints(flags, baseFlags, builtinShape, baseBuiltinShape > GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, raiseNode);
                 return newType;
             } catch (CannotCastException | InteropException e) {

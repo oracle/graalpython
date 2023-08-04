@@ -2265,7 +2265,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         increment(HPyJNIUpcall.HPyTypeGetBuiltinShape);
         assert GraalHPyBoxing.isBoxedHandle(h_type);
         Object typeObject = context.bitsAsPythonObject(h_type);
-        int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(typeObject, ReadAttributeFromObjectNode.getUncachedForceType());
+        int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(typeObject);
         if (result == -2) {
             return HPyRaiseNode.raiseIntUncached(context, -2, TypeError, ErrorMessages.S_MUST_BE_S, "arg", "type");
         }

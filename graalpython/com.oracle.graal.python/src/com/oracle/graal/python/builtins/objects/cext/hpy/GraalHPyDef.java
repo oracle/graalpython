@@ -115,13 +115,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -508,9 +508,12 @@ public abstract class GraalHPyDef {
         return HPyType_BUILTIN_SHAPE_LEGACY <= i && i <= HPyType_BUILTIN_SHAPE_LIST;
     }
 
-    public static int getBuiltinShapeFromHiddenAttribute(Object object, ReadAttributeFromObjectNode readNode) {
+    public static int getBuiltinShapeFromHiddenAttribute(Object object) {
         if (object instanceof PythonClass pythonClass) {
             return pythonClass.getBuiltinShape();
+        } else if (object instanceof PythonAbstractNativeObject) {
+            assert IsTypeNode.getUncached().execute(object);
+            return HPyType_BUILTIN_SHAPE_LEGACY;
         }
         return -2; // error
     }

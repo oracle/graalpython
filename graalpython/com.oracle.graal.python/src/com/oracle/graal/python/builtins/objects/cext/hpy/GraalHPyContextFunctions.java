@@ -2246,8 +2246,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode,
-                        @Cached InlinedExactClassProfile classProfile,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+                        @Cached InlinedExactClassProfile classProfile) {
 
             Object profiledTypeObject = classProfile.profile(inliningTarget, type);
 
@@ -2278,7 +2277,7 @@ public abstract class GraalHPyContextFunctions {
                 defaultCallFunc = clazz.getHPyDefaultCallFunc();
             }
 
-            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject);
             PythonObject pythonObject = createFromBuiltinShape(builtinShape, profiledTypeObject, dataPtr, factory);
 
             if (destroyFunc != null) {
@@ -2340,8 +2339,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callMallocNode,
-                        @Cached InlinedExactClassProfile classProfile,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+                        @Cached InlinedExactClassProfile classProfile) {
 
             Object profiledTypeObject = classProfile.profile(inliningTarget, type);
             Object dataPtr = null;
@@ -2361,7 +2359,7 @@ public abstract class GraalHPyContextFunctions {
                 }
             }
 
-            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject);
             PythonObject pythonObject = GraalHPyNew.createFromBuiltinShape(builtinShape, type, dataPtr, factory);
 
             if (destroyFunc != null) {
@@ -3618,10 +3616,9 @@ public abstract class GraalHPyContextFunctions {
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object typeObject,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedExactClassProfile classProfile,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached PRaiseNode raiseNode) {
             Object profiledTypeObject = classProfile.profile(inliningTarget, typeObject);
-            int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject, readAttributeFromObjectNode);
+            int result = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject);
             if (result == -2) {
                 throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S, "arg", "type");
             }
