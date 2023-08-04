@@ -406,3 +406,19 @@ class TestPyLong(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyLong_FromUnicodeObject = CPyExtFunction(
+        lambda args: int(args[0], args[1]),
+        lambda: (
+            ("10", 10),
+            ("-12341451234123512345", 8),
+            ("aa", 16),
+            ("asdf", 10),
+            ("", 10),
+            ("0", 0),
+        ),
+        resultspec="O",
+        argspec="Oi",
+        arguments=["PyObject* n", "int base"],
+        cmpfunc=unhandled_error_compare,
+    )
