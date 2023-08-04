@@ -1169,7 +1169,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyLineTable_InitAddressRange", ret = Void, args = {ConstCharPtr, Py_ssize_t, Int, PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_NextAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "PyLineTable_PreviousAddressRange", ret = Int, args = {PyCodeAddressRange}, call = NotImplemented)
-    @CApiBuiltin(name = "PyLong_FromUnicodeObject", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_HasKey", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_HasKeyString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
