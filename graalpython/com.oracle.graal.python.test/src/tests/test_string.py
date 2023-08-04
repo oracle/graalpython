@@ -104,6 +104,7 @@ def test_format():
     assert "{0}.{1}".format("part1", "part2") == "part1.part2"
     assert "{1}.{0}".format("part1", "part2") == "part2.part1"
     assert "{}".format("part1") == "part1"
+    assert "{0[-1]}".format({'-1': 'asdf'}) == 'asdf'
 
 
 class FormattingTestClass:

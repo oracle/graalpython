@@ -75,7 +75,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -262,11 +261,7 @@ public final class TemplateFormatter {
         if (isEmpty) {
             index = -1;
         } else {
-            try {
-                index = toInt(node, intString);
-            } catch (NumberFormatException | ArrayIndexOutOfBoundsException nfe1) {
-                index = -1;
-            }
+            index = toInt(node, intString);
         }
         boolean useNumeric = isEmpty || index != -1;
         if (this.autoNumberingState == ANS_INIT && useNumeric) {
@@ -348,19 +343,12 @@ public final class TemplateFormatter {
                 if (!gotBracket) {
                     throw PRaiseNode.raiseUncached(node, ValueError, MISSING_S, "']'");
                 }
-                Object item = null;
-                int index = -1;
-                try {
-                    index = toInt(node, name.substring(start, i));
-                } catch (NumberFormatException | ArrayIndexOutOfBoundsException nfe1) {
-                    item = toTruffleStringUncached(name.substring(start, i));
+                String s = name.substring(start, i);
+                if (s.isEmpty()) {
+                    throw PRaiseNode.raiseUncached(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
                 }
-                if (index > -1) {
-                    if (index > SysModuleBuiltins.MAXSIZE) {
-                        throw PRaiseNode.raiseUncached(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
-                    }
-                    item = index;
-                }
+                int index = toInt(node, s);
+                Object item = index != -1 ? index : toTruffleStringUncached(s);
                 i += 1; // # Skip "]"
                 if (result != null) {
                     result = getItemNode.execute(null, result, item);
@@ -374,12 +362,18 @@ public final class TemplateFormatter {
         return result;
     }
 
-    private static int toInt(Node node, String s) throws PException {
-        BigInteger bigInt = new BigInteger(s);
-        if (bigInt.compareTo(MAXSIZE) > 0) {
+    private static int toInt(Node node, String s) {
+        try {
+            BigInteger bigInt = new BigInteger(s);
+            if (bigInt.signum() >= 0) {
+                return bigInt.intValueExact();
+            }
+            return -1;
+        } catch (NumberFormatException e) {
+            return -1;
+        } catch (ArithmeticException e) {
             throw PRaiseNode.raiseUncached(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
         }
-        return bigInt.intValue();
     }
 
     private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
