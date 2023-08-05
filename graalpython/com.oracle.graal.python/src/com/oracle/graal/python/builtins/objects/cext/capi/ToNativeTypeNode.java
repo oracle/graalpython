@@ -321,7 +321,7 @@ public abstract class ToNativeTypeNode extends Node {
             writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, getTypeFlagsNode.execute(clazz));
 
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            Object docObj = getAttrNode.execute(clazz, SpecialAttributeNames.T___DOC__);
+            Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
             if (docObj instanceof TruffleString) {
                 docObj = new CStringWrapper((TruffleString) docObj);
             } else if (docObj instanceof PString) {
