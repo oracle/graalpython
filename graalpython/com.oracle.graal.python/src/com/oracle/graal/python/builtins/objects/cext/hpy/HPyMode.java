@@ -67,8 +67,9 @@ public enum HPyMode {
     @TruffleBoundary
     public static HPyMode fromValue(int i) {
         for (HPyMode mode : values()) {
-            if (mode.value == i)
+            if (mode.value == i) {
                 return mode;
+            }
         }
         return MODE_INVALID;
     }

@@ -99,9 +99,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHandlerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;

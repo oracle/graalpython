@@ -74,15 +74,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyDummyToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNITrampolines;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
