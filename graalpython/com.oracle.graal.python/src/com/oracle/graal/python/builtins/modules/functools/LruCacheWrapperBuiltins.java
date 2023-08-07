@@ -172,8 +172,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
             LruCacheObject obj = factory().createLruCacheObject(type);
 
-            obj.prev = obj;
-            obj.next = obj;
+            obj.root.prev = obj.root;
+            obj.root.next = obj.root;
             obj.wrapper = wrapper;
             obj.typed = typed;
             // obj.cache = new ObjectHashMap();
@@ -183,8 +183,6 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.maxsize = maxsize;
 
             obj.kwdMark = getKwdMark(readAttr);
-
-            // obj.lru_list_elem_type = state.lru_list_elem_type;
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;
@@ -370,7 +368,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         // lru_cache_append_link
         static void lruCacheAppendLink(LruCacheObject self, LruListElemObject link) {
-            LruListElemObject root = self;
+            LruListElemObject root = self.root;
             LruListElemObject last = root.prev;
             last.next = root.prev = link;
             link.prev = last;
@@ -434,10 +432,6 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                 self.hits++;
                 return link.result;
             }
-            // mq: this might be needed if self.cache is a dict
-            // if (PyErr_Occurred()) {
-            // return NULL;
-            // }
             self.misses++;
             Object result = callNode.execute(frame, self.func, args, kwds);
             Object testresult = getItem.get(frame, self.cache, key, hash);
@@ -449,23 +443,15 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                  */
                 return result;
             }
-            // mq: this will only occur if the cache is a dict.
-            // if (PyErr_Occurred()) {
-            // /* This is an unusual case since this same lookup
-            // did not previously trigger an error during lookup.
-            // Treat it the same as an error in user function
-            // and return with the error set. */
-            // return NULL;
-            // }
             /*
              * This is the normal case. The new key wasn't found before user function call and it is
              * still not there. So we proceed normally and update the cache with the new result.
              */
 
             assert (self.maxsize > 0);
-            if (self.cache.size() < self.maxsize || self.next == self) {
+            if (self.cache.size() < self.maxsize || self.root.next == self.root) {
                 /* Cache is not full, so put the result in a new link */
-                link = factory().createLruListElemObject();
+                link = new LruListElemObject();
 
                 link.hash = hash;
                 link.key = key;
@@ -494,7 +480,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
             /* Extract the oldest item. */
             // assert (self.next != self);
-            link = self.next;
+            link = self.root.next;
             lruCacheExtractLink(link);
             /*
              * Remove it from the cache. The cache dict holds one reference to the link. We created
@@ -544,7 +530,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         // lru_cache_unlink_list
         static LruListElemObject lruCacheUnlinkList(LruCacheObject self) {
-            LruListElemObject root = self;
+            LruListElemObject root = self.root;
             LruListElemObject link = root.next;
             if (link == root) {
                 return null;

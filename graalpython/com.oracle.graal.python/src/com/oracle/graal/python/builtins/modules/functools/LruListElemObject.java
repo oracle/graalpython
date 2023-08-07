@@ -40,17 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.functools;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
-
-public class LruListElemObject extends PythonBuiltinObject {
+final class LruListElemObject {
 
     LruListElemObject prev, next; /* borrowed links */
     long hash;
     Object key, result;
-
-    public LruListElemObject(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-    }
 
 }

@@ -41,9 +41,10 @@
 package com.oracle.graal.python.builtins.modules.functools;
 
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class LruCacheObject extends LruListElemObject {
+public class LruCacheObject extends PythonBuiltinObject {
 
     enum WrapperType {
         INFINITE,
@@ -51,6 +52,7 @@ public class LruCacheObject extends LruListElemObject {
         BOUNDED,
     }
 
+    LruListElemObject root;
     WrapperType wrapper;
     int typed;
     final ObjectHashMap cache;
@@ -67,6 +69,7 @@ public class LruCacheObject extends LruListElemObject {
 
     public LruCacheObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+        this.root = new LruListElemObject();
         this.cache = new ObjectHashMap();
     }
 
