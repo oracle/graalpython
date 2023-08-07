@@ -73,10 +73,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
@@ -1518,6 +1520,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RLSHIFT__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LShiftNode extends PythonBinaryBuiltinNode {
@@ -1721,6 +1724,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RRSHIFT__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class RShiftNode extends PythonBinaryBuiltinNode {

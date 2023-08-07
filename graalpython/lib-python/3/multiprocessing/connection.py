@@ -20,6 +20,7 @@ import itertools
 
 import _multiprocessing
 
+import threading
 from . import util
 
 from . import AuthenticationError, BufferTooShort
@@ -77,11 +78,13 @@ def arbitrary_address(family):
         # size.  When coding portable applications, some implementations have
         # sun_path as short as 92 bytes in the sockaddr_un struct.
         if util.abstract_sockets_supported:
-            return f"\0listener-{os.getpid()}-{next(_mmap_counter)}"
+            # GraalVM change: add thread ID, we may be in the same process
+            return f"\0listener-{os.getpid()}-{threading.current_thread().native_id}-{next(_mmap_counter)}"
         return tempfile.mktemp(prefix='listener-', dir=util.get_temp_dir())
     elif family == 'AF_PIPE':
-        return tempfile.mktemp(prefix=r'\\.\pipe\pyc-%d-%d-' %
-                               (os.getpid(), next(_mmap_counter)), dir="")
+        # GraalVM change: add thread ID, we may be in the same process
+        return tempfile.mktemp(prefix=r'\\.\pipe\pyc-%d-%d-%d-' %
+                               (os.getpid(), threading.current_thread().native_id, next(_mmap_counter)), dir="")
     else:
         raise ValueError('unrecognized family')
 

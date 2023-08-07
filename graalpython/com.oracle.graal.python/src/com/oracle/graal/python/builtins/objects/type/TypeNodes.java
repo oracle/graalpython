@@ -223,7 +223,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -1431,25 +1430,14 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib1,
-                        @CachedLibrary(limit = "3") InteropLibrary lib2) {
-            if (lib1.isPointer(left.getPtr())) {
-                if (lib2.isPointer(right.getPtr())) {
-                    try {
-                        return lib1.asPointer(left.getPtr()) == lib2.asPointer(right.getPtr());
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else {
-                    return false;
-                }
-            } else {
-                if (lib2.isPointer(right.getPtr())) {
-                    return false;
-                } else {
-                    return lib1.isIdentical(left.getPtr(), right.getPtr(), lib2);
-                }
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (left == right) {
+                return true;
             }
+            if (left.getPtr() instanceof Long && right.getPtr() instanceof Long) {
+                return (long) left.getPtr() == (long) right.getPtr();
+            }
+            return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
         }
 
         @Fallback

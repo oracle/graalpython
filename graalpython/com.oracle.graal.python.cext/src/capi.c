@@ -1833,7 +1833,7 @@ PyAPI_FUNC(PyObject*) PyLong_FromSsize_t(Py_ssize_t a) {
 }
 #undef PyLong_FromUnicodeObject
 PyAPI_FUNC(PyObject*) PyLong_FromUnicodeObject(PyObject* a, int b) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyLong_FromUnicodeObject(a, b);
 }
 #undef PyLong_FromUnsignedLong
 PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLong(unsigned long a) {
