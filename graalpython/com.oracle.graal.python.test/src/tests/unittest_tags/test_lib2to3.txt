@@ -607,6 +607,7 @@
 *lib2to3.tests.test_pytree.TestPatterns.test_generate_matches
 *lib2to3.tests.test_pytree.TestPatterns.test_has_key_example
 *lib2to3.tests.test_pytree.TestPatterns.test_wildcard
+*lib2to3.tests.test_refactor.TestRefactoringTool.test_bom
 *lib2to3.tests.test_refactor.TestRefactoringTool.test_detect_future_features
 *lib2to3.tests.test_refactor.TestRefactoringTool.test_fixer_loading_helpers
 *lib2to3.tests.test_refactor.TestRefactoringTool.test_naughty_fixers

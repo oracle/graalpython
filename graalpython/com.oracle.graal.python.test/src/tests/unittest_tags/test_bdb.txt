@@ -19,6 +19,7 @@
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_next_over_import
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_return
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_return_in_caller_frame
+*graalpython.lib-python.3.test.test_bdb.StateTestCase.test_skip
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_skip_with_no_name_module
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_step
 *graalpython.lib-python.3.test.test_bdb.StateTestCase.test_step_next_on_last_statement
