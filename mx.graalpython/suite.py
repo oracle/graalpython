@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.36.0",
+    "mxversion": "6.37.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -837,6 +837,10 @@ suite = {
             ],
             "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
+            "maven" : {
+                "groupId": "org.graalvm.python",
+                "artifactId" : "python-launcher",
+            },
         },
 
         "GRAALPYTHON_NATIVE_LIBS": {
@@ -913,6 +917,7 @@ suite = {
             "requires": [
                 "java.base",
             ],
+            "description": "GraalPython runtime resources",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
@@ -973,11 +978,28 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "description": "GraalPython engine",
+            "description": "GraalPython language",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
             },
+            "allowsJavadocWarnings": True,
+        },
+
+        "GRAALPYTHON_COMMUNITY" : {
+            "type":"pom",
+            "runtimeDependencies" : [
+                "GRAALPYTHON",
+                "truffle:TRUFFLE_RUNTIME",
+            ],
+            "description" : "GraalPython engine.",
+            "maven" : {
+                "groupId": "org.graalvm.python",
+                "artifactId" : "python-community",
+            },
+            "license": [
+                "UPL",
+            ],
         },
 
         "GRAALPYTHON_PROCESSOR": {
