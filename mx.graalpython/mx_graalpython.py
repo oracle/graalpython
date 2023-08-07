@@ -912,9 +912,12 @@ def _graalpytest_root():
     return os.path.join(mx.dependency("com.oracle.graal.python.test").get_output_root(), "bin", "tests")
 
 
+# name of the project containing the HPy tests
+HPY_TEST_PROJECT = "com.oracle.graal.python.hpy.test"
+
 def _hpy_test_root():
     # we should just have one source dir
-    for src_dir in mx.dependency("com.oracle.graal.python.hpy.test").source_dirs():
+    for src_dir in mx.dependency(HPY_TEST_PROJECT).source_dirs():
         return os.path.join(src_dir, "test")
 
 
@@ -1130,6 +1133,7 @@ def patch_batch_launcher(launcher_path, jvm_args):
 
 def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
     args = [] if args is None else args
+    mx.command_function("build")(["--dep", HPY_TEST_PROJECT])
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = env or os.environ.copy()
         prefix = str(d)
