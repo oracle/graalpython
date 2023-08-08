@@ -42,11 +42,6 @@ int hpy_trace_ctx_free(HPyContext *tctx)
     return 0;
 }
 
-void hpy_trace_set_ctx(HPyContext *tctx)
-{
-    g_trace_ctx = *tctx;
-}
-
 static HPy create_trace_func_args(HPyContext *uctx, int id)
 {
     HPy h_name = HPyUnicode_FromString(uctx, hpy_trace_get_func_name(id));
