@@ -22,7 +22,7 @@
 # SOFTWARE.
 
 import pytest
-from hpytest.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION
+from hpytest.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, HPyTest
 
 @pytest.fixture
 def hpy_abi():
@@ -86,6 +86,7 @@ def test_typecheck(compiler, python_subprocess):
 @pytest.mark.skipif(not SUPPORTS_MEM_PROTECTION, reason=
                     "Could be implemented by checking the contents on close.")
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
+@pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 def test_type_getname(compiler, python_subprocess):
     mod = compiler.compile_module("""
         #define MODE_READ_ONLY 0

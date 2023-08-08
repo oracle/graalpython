@@ -22,6 +22,9 @@
 # SOFTWARE.
 
 import pytest
+from hpytest.support import HPyTest
+
+pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 
 @pytest.fixture
 def hpy_abi():
