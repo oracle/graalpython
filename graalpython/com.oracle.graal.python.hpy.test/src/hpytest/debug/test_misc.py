@@ -22,7 +22,7 @@
 # SOFTWARE.
 
 import pytest
-from test.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION
+from hpytest.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION
 
 @pytest.fixture
 def hpy_abi():

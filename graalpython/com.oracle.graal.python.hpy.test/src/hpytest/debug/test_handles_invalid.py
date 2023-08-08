@@ -39,8 +39,8 @@
 
 import pytest
 from hpy.debug.leakdetector import LeakDetector
-from hpy.test.support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD, GRAALPYTHON, HPyTest
-from hpy.test.conftest import IS_VALGRIND_RUN
+from hpytest.support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD, GRAALPYTHON, HPyTest
+from hpytest.conftest import IS_VALGRIND_RUN
 
 pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 

@@ -39,7 +39,7 @@
 
 import os
 import pytest
-from hpy.test.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, HPyTest
+from hpytest.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, HPyTest
 
 pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 

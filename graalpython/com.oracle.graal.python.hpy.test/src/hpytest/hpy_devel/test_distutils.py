@@ -39,7 +39,7 @@ import venv
 import py
 import pytest
 
-from test.support import atomic_run, HPY_ROOT
+from hpytest.support import atomic_run, HPY_ROOT
 
 # ====== IMPORTANT DEVELOPMENT TIP =====
 # You can use py.test --reuse-venv to speed up local testing.
