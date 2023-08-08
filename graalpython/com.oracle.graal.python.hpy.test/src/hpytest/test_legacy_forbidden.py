@@ -53,6 +53,7 @@ class TestLegacyForbidden(HPyTest):
         """
         self.expect_make_error(src, "this is a compile time error")
 
+    @pytest.mark.skip("different include dir order on GraalPy")
     def test_Python_h_forbidden(self, capfd):
         src = """
                 #include <Python.h>

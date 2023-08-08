@@ -41,6 +41,8 @@ import pytest
 
 from hpytest.support import atomic_run, HPY_ROOT
 
+pytestmark = pytest.mark.skip("not supported on GraalPy because of legacy distutils")
+
 # ====== IMPORTANT DEVELOPMENT TIP =====
 # You can use py.test --reuse-venv to speed up local testing.
 #
