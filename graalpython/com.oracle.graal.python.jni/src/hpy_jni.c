@@ -97,6 +97,7 @@ CUSTOM_UPCALLS
 #undef UPCALL
 
 static jmethodID jniMethod_hpy_debug_get_context;
+static jmethodID jniMethod_hpy_trace_get_context;
 
 
 #define MAX_UNCLOSED_HANDLES 32
@@ -408,6 +409,12 @@ CUSTOM_UPCALLS
         return PTR_UP(NULL);
     }
 
+    jniMethod_hpy_trace_get_context = (*env)->GetMethodID(env, clazz, "getHPyTraceContext", "()" SIG_PTR);
+    if (jniMethod_hpy_trace_get_context == NULL) {
+        LOGS("ERROR: jni method getHPyTraceContext not found found !\n");
+        return PTR_UP(NULL);
+    }
+
     return PTR_UP(ctx);
 }
 
@@ -478,4 +485,14 @@ HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
         HPy_FatalError(uctx, "hpy_debug_get_ctx: expected an universal ctx, got a debug ctx");
     }
     return dctx;
+}
+
+HPyContext * hpy_trace_get_ctx(HPyContext *uctx)
+{
+    HPyContext *tctx = (HPyContext *) DO_UPCALL_PTR_NOARGS(CONTEXT_INSTANCE(uctx), hpy_trace_get_context);
+    if (uctx == tctx) {
+        HPy_FatalError(uctx, "hpy_trace_get_ctx: expected an universal ctx, "
+                             "got a trace ctx");
+    }
+    return tctx;
 }

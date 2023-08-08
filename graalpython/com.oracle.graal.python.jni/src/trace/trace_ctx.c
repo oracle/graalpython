@@ -42,18 +42,6 @@ int hpy_trace_ctx_free(HPyContext *tctx)
     return 0;
 }
 
-HPyContext * hpy_trace_get_ctx(HPyContext *uctx)
-{
-    HPyContext *tctx = &g_trace_ctx;
-    if (uctx == tctx) {
-        HPy_FatalError(uctx, "hpy_trace_get_ctx: expected an universal ctx, "
-                             "got a trace ctx");
-    }
-    if (hpy_trace_ctx_init(tctx, uctx) < 0)
-        return NULL;
-    return tctx;
-}
-
 void hpy_trace_set_ctx(HPyContext *tctx)
 {
     g_trace_ctx = *tctx;
