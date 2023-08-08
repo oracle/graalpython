@@ -1616,7 +1616,10 @@ class TestPureHPyType(HPyTest):
 
     ExtensionTemplate = PointTemplate
 
-    def test_builtin_shape(self):
+    def test_builtin_shape(self, hpy_abi):
+        import pytest
+        if hpy_abi == 'cpython':
+            pytest.skip('native int subclasses are not supported on GraalPy')
         mod = self.make_module("""
             @DEFINE_PointObject(HPyType_BuiltinShape_Long)
             @DEFINE_Point_xy
