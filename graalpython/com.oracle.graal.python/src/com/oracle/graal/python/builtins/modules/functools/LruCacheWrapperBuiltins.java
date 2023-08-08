@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLruCacheWrapper)
 public final class LruCacheWrapperBuiltins extends PythonBuiltins {
@@ -332,20 +333,13 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
 
         // infinite_lru_cache_wrapper
-        @Specialization(guards = "self.isInfinite()")
         Object infiniteLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectHashNode hashNode,
-                        @Shared @Cached ObjectHashMap.GetNode getItem,
-                        @Shared @Cached ObjectHashMap.PutNode setItem,
-                        @Shared @Cached InlinedGetClassNode getClassNode,
-                        @Shared @Cached PyUnicodeCheckExactNode unicodeCheckExact,
-                        @Shared @Cached PyLongCheckExactNode longCheckExact,
-                        @Shared @Cached CallVarargsMethodNode callNode) {
-            Object key = lruCacheMakeKey(self.kwdMark, args, kwds, self.typed,
-                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact);
-            long hash = hashNode.execute(frame, key);
-            Object result = getItem.get(frame, self.cache, key, hash);
+                        Object key,
+                        long hash,
+                        Object cachedItem,
+                        ObjectHashMap.PutNode setItem,
+                        CallVarargsMethodNode callNode) {
+            Object result = cachedItem;
             if (result != null) {
                 self.hits++;
                 return result;
@@ -411,22 +405,17 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
          */
 
         // bounded_lru_cache_wrapper
-        @Specialization(guards = "self.isBounded()")
         Object boundedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyObjectHashNode hashNode,
-                        @Shared @Cached ObjectHashMap.GetNode getItem,
-                        @Shared @Cached ObjectHashMap.PutNode setItem,
-                        @Shared @Cached InlinedGetClassNode getClassNode,
-                        @Shared @Cached PyUnicodeCheckExactNode unicodeCheckExact,
-                        @Shared @Cached PyLongCheckExactNode longCheckExact,
-                        @Cached ObjectHashMap.RemoveNode popItem,
-                        @Shared @Cached CallVarargsMethodNode callNode) {
-            Object key = lruCacheMakeKey(self.kwdMark, args, kwds, self.typed,
-                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact);
-            long hash = hashNode.execute(frame, key);
-            LruListElemObject link = (LruListElemObject) getItem.get(frame, self.cache, key, hash);
-            if (link != null) {
+                        Object key,
+                        long hash,
+                        Object cachedItem,
+                        ObjectHashMap.GetNode getItem,
+                        ObjectHashMap.PutNode setItem,
+                        ObjectHashMap.RemoveNode popItem,
+                        CallVarargsMethodNode callNode) {
+            if (cachedItem != null) {
+                assert cachedItem instanceof LruListElemObject : "cachedItem should be an LruListElemObject";
+                LruListElemObject link = (LruListElemObject) cachedItem;
                 lruCacheExtractLink(link);
                 lruCacheAppendLink(self, link);
                 self.hits++;
@@ -451,7 +440,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             assert (self.maxsize > 0);
             if (self.cache.size() < self.maxsize || self.root.next == self.root) {
                 /* Cache is not full, so put the result in a new link */
-                link = new LruListElemObject();
+                LruListElemObject link = new LruListElemObject();
 
                 link.hash = hash;
                 link.key = key;
@@ -464,7 +453,6 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                  */
                 setItem.put(frame, self.cache, key, hash, link);
                 lruCacheAppendLink(self, link);
-
                 return result;
             }
             /*
@@ -480,7 +468,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
             /* Extract the oldest item. */
             // assert (self.next != self);
-            link = self.root.next;
+            LruListElemObject link = self.root.next;
             lruCacheExtractLink(link);
             /*
              * Remove it from the cache. The cache dict holds one reference to the link. We created
@@ -522,6 +510,27 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             return result;
         }
 
+        @Specialization(guards = "!self.isUncached()")
+        Object cachedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.GetNode getItem,
+                        @Cached ObjectHashMap.PutNode setItem,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached PyUnicodeCheckExactNode unicodeCheckExact,
+                        @Cached PyLongCheckExactNode longCheckExact,
+                        @Cached ObjectHashMap.RemoveNode popItem,
+                        @Cached ConditionProfile profile) {
+            Object key = lruCacheMakeKey(self.kwdMark, args, kwds, self.typed,
+                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact);
+            long hash = hashNode.execute(frame, key);
+            Object cached = getItem.get(frame, self.cache, key, hash);
+            if (profile.profile(self.isInfinite())) {
+                return infiniteLruCacheWrapper(frame, self, args, kwds, key, hash, cached, setItem, callNode);
+            }
+            return boundedLruCacheWrapper(frame, self, args, kwds, key, hash, cached, getItem, setItem, popItem, callNode);
+        }
     }
 
     @Builtin(name = J___CLEAR__, minNumOfPositionalArgs = 1)
