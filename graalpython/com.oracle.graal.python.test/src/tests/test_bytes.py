@@ -184,6 +184,9 @@ def test_setitem():
     except TypeError:
         pass
 
+def test_unsignedByte():
+    assert b'\x80' > b'\x00'
+    assert not b'\x80' < b'\x00'
 
 class BaseGetSlice:
     def assertEqualWithType(self, a, b):
