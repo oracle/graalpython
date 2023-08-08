@@ -133,6 +133,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarGetNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarNewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarSetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDelItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDelItemSNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
@@ -316,6 +318,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -522,6 +525,8 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_GETITEM_S -> GraalHPyGetItemSNodeGen.create();
                 case CTX_SETITEM, CTX_SETITEM_I -> GraalHPySetItemNodeGen.create();
                 case CTX_SETITEM_S -> GraalHPySetItemSNodeGen.create();
+                case CTX_DELITEM, CTX_DELITEM_I -> GraalHPyDelItemNodeGen.create();
+                case CTX_DELITEM_S -> GraalHPyDelItemSNodeGen.create();
                 case CTX_FROMPYOBJECT -> GraalHPyFromPyObjectNodeGen.create();
                 case CTX_NEW -> GraalHPyNewNodeGen.create();
                 case CTX_ASSTRUCT_OBJECT, CTX_ASSTRUCT_LEGACY, CTX_ASSTRUCT_TYPE, CTX_ASSTRUCT_LONG, CTX_ASSTRUCT_FLOAT, CTX_ASSTRUCT_UNICODE, CTX_ASSTRUCT_TUPLE, CTX_ASSTRUCT_LIST -> GraalHPyCastNodeGen.create();
@@ -686,6 +691,8 @@ public abstract class GraalHPyContextFunctions {
                 case CTX_GETITEM_S -> GraalHPyGetItemSNodeGen.getUncached();
                 case CTX_SETITEM, CTX_SETITEM_I -> GraalHPySetItemNodeGen.getUncached();
                 case CTX_SETITEM_S -> GraalHPySetItemSNodeGen.getUncached();
+                case CTX_DELITEM, CTX_DELITEM_I -> GraalHPyDelItemNodeGen.getUncached();
+                case CTX_DELITEM_S -> GraalHPyDelItemSNodeGen.getUncached();
                 case CTX_FROMPYOBJECT -> GraalHPyFromPyObjectNodeGen.getUncached();
                 case CTX_NEW -> GraalHPyNewNodeGen.getUncached();
                 case CTX_ASSTRUCT_OBJECT, CTX_ASSTRUCT_LEGACY, CTX_ASSTRUCT_TYPE, CTX_ASSTRUCT_LONG, CTX_ASSTRUCT_FLOAT, CTX_ASSTRUCT_UNICODE, CTX_ASSTRUCT_TUPLE, CTX_ASSTRUCT_LIST -> GraalHPyCastNodeGen.getUncached();
@@ -2215,6 +2222,32 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(null, receiver, fromCharPointerNode.execute(charPtr), value);
+            return 0;
+        }
+    }
+
+    @HPyContextFunction("ctx_DelItem")
+    @HPyContextFunction("ctx_DelItem_i")
+    @GenerateUncached
+    public abstract static class GraalHPyDelItem extends HPyTernaryContextFunction {
+
+        @Specialization
+        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
+                        @Cached PyObjectDelItem delItemNode) {
+            delItemNode.execute(null, receiver, key);
+            return 0;
+        }
+    }
+
+    @HPyContextFunction("ctx_DelItem_s")
+    @GenerateUncached
+    public abstract static class GraalHPyDelItemS extends HPyTernaryContextFunction {
+
+        @Specialization
+        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PyObjectDelItem delItemNode) {
+            delItemNode.execute(null, receiver, fromCharPointerNode.execute(charPtr));
             return 0;
         }
     }
