@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -267,3 +267,15 @@ def test_function_no_module():
     @wrapper_2
     def test_func():
         pass
+
+def test_functools_lru_cache():
+    import sys
+    from functools import lru_cache
+
+    @lru_cache()
+    def cached_func():
+        pass
+
+    type_entity = getattr(sys.modules['functools'], '_lru_cache_wrapper')
+    assert isinstance(cached_func, type_entity), "lru_cache should not be using the python-based version"
+    
