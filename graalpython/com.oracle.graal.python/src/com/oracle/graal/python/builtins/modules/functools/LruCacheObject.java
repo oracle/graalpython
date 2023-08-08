@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-limit", "deprecated", "truffle-static-method"})
-package com.oracle.graal.python.builtins.objects.keywrapper;
+package com.oracle.graal.python.builtins.modules.functools;
 
-import com.oracle.truffle.api.dsl.SuppressPackageWarnings;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
+
+public class LruCacheObject extends PythonBuiltinObject {
+
+    enum WrapperType {
+        INFINITE,
+        UNCACHED,
+        BOUNDED,
+    }
+
+    LruListElemObject root;
+    WrapperType wrapper;
+    int typed;
+    final ObjectHashMap cache;
+    int hits;
+    Object func;
+    int maxsize;
+    int misses;
+    /* the kwd_mark is used delimit args and keywords in the cache keys */
+    Object kwdMark;
+    // Object lru_list_elem_type; PyTypeObject * /* not needed */
+    Object cacheInfoType; // cache_info_type
+    // Object dict; /* mq: enable when needed */
+    // Object weakreflist; /* mq: enable when needed */
+
+    public LruCacheObject(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+        this.root = new LruListElemObject();
+        this.cache = new ObjectHashMap();
+    }
+
+    public boolean isInfinite() {
+        return wrapper == WrapperType.INFINITE;
+    }
+
+    public boolean isUncached() {
+        return wrapper == WrapperType.UNCACHED;
+    }
+
+    public boolean isBounded() {
+        return wrapper == WrapperType.BOUNDED;
+    }
+}

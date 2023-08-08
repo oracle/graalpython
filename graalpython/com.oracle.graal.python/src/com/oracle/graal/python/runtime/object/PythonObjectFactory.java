@@ -57,6 +57,9 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheObject;
+import com.oracle.graal.python.builtins.modules.functools.PKeyWrapper;
+import com.oracle.graal.python.builtins.modules.functools.PPartial;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
@@ -152,7 +155,6 @@ import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
-import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.builtins.objects.map.PMap;
@@ -166,7 +168,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -831,6 +832,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
         return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
+    }
+
+    public LruCacheObject createLruCacheObject(Object cls) {
+        return trace(new LruCacheObject(cls, getShape(cls)));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

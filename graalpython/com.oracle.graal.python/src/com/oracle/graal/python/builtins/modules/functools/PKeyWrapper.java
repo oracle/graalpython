@@ -38,77 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.partial;
+package com.oracle.graal.python.builtins.modules.functools;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
-public final class PPartial extends PythonBuiltinObject {
-    private Object fn;
-    private Object[] args;
-    private PTuple argsTuple;
-    private PDict kw;
+public final class PKeyWrapper extends PythonBuiltinObject {
+    private Object object;
+    private final Object cmp;
 
-    public PPartial(Object cls, Shape instanceShape, Object fn, Object[] args, PDict kw) {
+    public PKeyWrapper(Object cls, Shape instanceShape, Object cmp) {
         super(cls, instanceShape);
-        this.fn = fn;
-        this.args = args;
-        this.kw = kw;
+        this.cmp = cmp;
+        this.object = PNone.NONE;
     }
 
-    public Object getFn() {
-        return fn;
+    public Object getObject() {
+        return object;
     }
 
-    public void setFn(Object fn) {
-        this.fn = fn;
+    public void setObject(Object object) {
+        this.object = object;
     }
 
-    public Object[] getArgs() {
-        return args;
-    }
-
-    public PTuple getArgsTuple(PythonObjectFactory factory) {
-        if (argsTuple == null) {
-            this.argsTuple = factory.createTuple(args);
-        }
-        return argsTuple;
-    }
-
-    public void setArgs(Node inliningTarget, PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.ToArrayNode arrayNode) {
-        this.argsTuple = args;
-        this.args = arrayNode.execute(inliningTarget, storageNode.execute(args));
-    }
-
-    public PDict getKw() {
-        return kw;
-    }
-
-    public PDict getOrCreateKw(PythonObjectFactory factory) {
-        if (kw == null) {
-            kw = factory.createDict();
-        }
-        return kw;
-    }
-
-    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageCopy copyNode) {
-        assert kw != null;
-        return factory.createDict(copyNode.execute(kw.getDictStorage()));
-    }
-
-    public boolean hasKw(HashingStorageLen lenNode) {
-        return lenNode.execute(kw.getDictStorage()) > 0;
-    }
-
-    public void setKw(PDict kwArgs) {
-        this.kw = kwArgs;
+    public Object getCmp() {
+        return cmp;
     }
 }

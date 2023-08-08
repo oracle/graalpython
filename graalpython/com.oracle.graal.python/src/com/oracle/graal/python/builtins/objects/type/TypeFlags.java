@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ public abstract class TypeFlags {
     public static final long MAPPING = (1L << 6);
     public static final long HEAPTYPE = (1L << 9);
     public static final long IMMUTABLETYPE = (1L << 8);
+    public static final long DISALLOW_INSTANTIATION = (1L << 7);
     public static final long BASETYPE = (1L << 10);
     public static final long HAVE_VECTORCALL = (1L << 11);
     public static final long READY = (1L << 12);

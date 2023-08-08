@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.keywrapper;
+package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OTHER_ARG_MUST_BE_KEY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;

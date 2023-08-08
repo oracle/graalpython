@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,31 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.keywrapper;
+package com.oracle.graal.python.builtins.modules.functools;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
+final class LruListElemObject {
 
-public final class PKeyWrapper extends PythonBuiltinObject {
-    private Object object;
-    private final Object cmp;
+    LruListElemObject prev, next; /* borrowed links */
+    long hash;
+    Object key, result;
 
-    public PKeyWrapper(Object cls, Shape instanceShape, Object cmp) {
-        super(cls, instanceShape);
-        this.cmp = cmp;
-        this.object = PNone.NONE;
-    }
-
-    public Object getObject() {
-        return object;
-    }
-
-    public void setObject(Object object) {
-        this.object = object;
-    }
-
-    public Object getCmp() {
-        return cmp;
-    }
 }

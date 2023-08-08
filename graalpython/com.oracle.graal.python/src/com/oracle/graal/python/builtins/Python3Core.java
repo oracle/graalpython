@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
@@ -158,6 +157,10 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2bObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2sObjectBuiltins;
@@ -280,7 +283,6 @@ import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
-import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -302,7 +304,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.partial.PartialBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
@@ -455,8 +456,6 @@ public abstract class Python3Core {
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
-                        new KeyWrapperBuiltins(),
-                        new PartialBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),
@@ -579,7 +578,13 @@ public abstract class Python3Core {
 
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
+
+                        // _functools
+                        new KeyWrapperBuiltins(),
+                        new PartialBuiltins(),
+                        new LruCacheWrapperBuiltins(),
                         new FunctoolsModuleBuiltins(),
+
                         new ErrnoModuleBuiltins(),
                         new CodecsModuleBuiltins(),
                         new CodecsTruffleModuleBuiltins(),
@@ -976,6 +981,7 @@ public abstract class Python3Core {
             if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
                 if (getContext().getEnv().isPolyglotBindingsAccessAllowed()) {
                     getContext().getEnv().exportSymbol("PollPythonAsyncActions", getContext().getEnv().asGuestValue(new Runnable() {
+                        @Override
                         public void run() {
                             getContext().pollAsyncActions();
                         }

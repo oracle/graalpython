@@ -293,7 +293,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PStringIO -> 112; // _io.StringIO
             case PBufferedReader, // _io.BufferedReader
                     PBufferedWriter, // _io.BufferedWriter
-                    PBufferedRandom // _io.BufferedRandom
+                    PBufferedRandom, // _io.BufferedRandom
+                    PLruCacheWrapper
                     -> 144;
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
 

@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -126,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -244,7 +244,14 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object moduleNameObj = readModuleNode.executeObject(frame, self);
             Object qualNameObj = readQualNameNode.executeObject(frame, self);
-            TruffleString moduleName = moduleNameObj != PNone.NO_VALUE ? castToStringNode.execute(moduleNameObj) : null;
+            TruffleString moduleName = null;
+            if (moduleNameObj != PNone.NO_VALUE) {
+                try {
+                    moduleName = castToStringNode.execute(moduleNameObj);
+                } catch (CannotCastException e) {
+                    // ignore
+                }
+            }
             if (moduleName == null || equalNode.execute(moduleName, T_BUILTINS, TS_ENCODING)) {
                 return simpleTruffleStringFormatNode.format("<class '%s'>", castToStringNode.execute(qualNameObj));
             }
