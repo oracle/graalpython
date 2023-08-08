@@ -923,15 +923,7 @@ suite = {
             "moduleInfo": {
                 "name": "org.graalvm.py",
                 "exports": [
-                    "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.* to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.lib to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes.function to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes.function.builtins to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.runtime.exception to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.util to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.* to org.graalvm.py.enterprise",
                 ],
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
