@@ -2730,6 +2730,7 @@ def update_hpy_import_cmd(args):
     hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
     hpy_repo_src_dir = join(hpy_repo_path, "hpy", "devel", "src")
     hpy_repo_debug_dir = join(hpy_repo_path, "hpy", "debug")
+    hpy_repo_trace_dir = join(hpy_repo_path, "hpy", "trace")
     hpy_repo_test_dir = join(hpy_repo_path, "test")
     for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_src_dir, hpy_repo_test_dir]:
         if not os.path.isdir(d):
@@ -2843,7 +2844,8 @@ def update_hpy_import_cmd(args):
     tracker_file_src = join(hpy_repo_src_dir, "runtime", "ctx_tracker.c")
     if not os.path.exists(tracker_file_src):
         mx.abort("File '{}' is missing but required.".format(tracker_file_src))
-    tracker_file_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "ctx_tracker.c")
+    jni_project_dir = mx.project("com.oracle.graal.python.jni").dir
+    tracker_file_dest = join(jni_project_dir, "src", "ctx_tracker.c")
     import_file(tracker_file_src, tracker_file_dest)
 
     # tests go to 'com.oracle.graal.python.hpy.test/src/test'
@@ -2858,11 +2860,23 @@ def update_hpy_import_cmd(args):
 
     # debug mode goes into 'com.oracle.graal.python.jni/src/debug'
     debugctx_src = join(hpy_repo_debug_dir, "src")
-    debugctx_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "debug")
+    debugctx_dest = join(jni_project_dir, "src", "debug")
     debugctx_hdr = join(debugctx_src, "include", "hpy_debug.h")
     import_files(debugctx_src, debugctx_dest, exclude_files(
         "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", debugctx_hdr))
     import_file(debugctx_hdr, join(debugctx_dest, "hpy_debug.h"))
+
+    # trace Python sources go into 'lib-graalpython/module/hpy/trace'
+    trace_files_dest = join(_get_core_home(), "modules", "hpy", "trace")
+    import_files(hpy_repo_debug_dir, trace_files_dest, exclude_subdir("src"))
+    remove_inexistent_files(hpy_repo_trace_dir, trace_files_dest)
+
+    # trace mode goes into 'com.oracle.graal.python.jni/src/trace'
+    tracectx_src = join(hpy_repo_trace_dir, "src")
+    tracectx_dest = join(jni_project_dir, "src", "trace")
+    tracectx_hdr = join(tracectx_src, "include", "hpy_trace.h")
+    import_files(tracectx_src, tracectx_dest, exclude_files(tracectx_hdr))
+    import_file(tracectx_hdr, join(tracectx_dest, "hpy_trace.h"))
 
     # import 'version.py' by path and read '__version__'
     from importlib import util
