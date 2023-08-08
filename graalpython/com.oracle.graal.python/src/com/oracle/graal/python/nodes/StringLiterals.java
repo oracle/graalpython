@@ -219,4 +219,6 @@ public abstract class StringLiterals {
     public static final TruffleString T_FUNC_TYPE = tsLiteral("func_type");
 
     public static final String J_OB_REFCNT = "ob_refcnt";
+    public static final String J_DEBUG = "debug";
+    public static final String J_TRACE = "trace";
 }

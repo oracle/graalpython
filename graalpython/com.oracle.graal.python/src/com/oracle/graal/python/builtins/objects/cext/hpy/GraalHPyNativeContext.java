@@ -106,11 +106,11 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
      * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
      * @param name The HPy extension's name as requested by the user.
      * @param path The HPy extension's shared library path.
-     * @param debug Flags indicating if the HPy extension should be initialized in debug mode.
+     * @param mode An enum indicating which mode should be used to initialize the HPy extension.
      * @return The bare (unconverted) result of the HPy extension's init function. This will be a
      *         handle that was created with the given {@code hpyContext}.
      */
-    protected abstract Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected abstract Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, HPyMode mode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException;
 
     protected abstract HPyUpcall[] getUpcalls();
@@ -119,7 +119,11 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     public abstract void initHPyDebugContext() throws ApiInitException;
 
+    public abstract void initHPyTraceContext() throws ApiInitException;
+
     public abstract PythonModule getHPyDebugModule() throws ImportException;
+
+    public abstract PythonModule getHPyTraceModule() throws ImportException;
 
     protected abstract void setNativeCache(long cachePtr);
 

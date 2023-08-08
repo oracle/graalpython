@@ -1,11 +1,29 @@
-from .leakdetector import HPyDebugError, HPyLeakError, LeakDetector
+# MIT License
+#
+# Copyright (c) 2023, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2019 pyhandle
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
+import hpy.universal
 
-def set_handle_stack_trace_limit(limit):
-    from hpy.universal import _debug
-    _debug.set_handle_stack_trace_limit(limit)
-
-
-def disable_handle_stack_traces():
-    from hpy.universal import _debug
-    _debug.set_handle_stack_trace_limit(None)
+get_call_counts = hpy.universal._trace.get_call_counts
+get_durations = hpy.universal._trace.get_durations
+set_trace_functions = hpy.universal._trace.set_trace_functions
+get_frequency = hpy.universal._trace.get_frequency

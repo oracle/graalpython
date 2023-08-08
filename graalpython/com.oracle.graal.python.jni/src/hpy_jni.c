@@ -42,6 +42,7 @@
 #include "hpy_jni.h"
 #include "hpy_log.h"
 #include "hpy_native_cache.h"
+#include "hpy_trace.h"
 
 #include <wchar.h>
 #include <assert.h>
@@ -452,6 +453,32 @@ JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIDebugContext)(JNIEnv *env, jclass c
 JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNIDebugModule\n");
     return PTR_UP(HPyInit__debug());
+}
+
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceContext)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNITraceContext\n");
+    HPyContext *uctx = (HPyContext *) uctxPointer;
+
+    HPyContext *tctx = (HPyContext *) malloc(sizeof(HPyContext));
+    tctx->name = "HPy Trace Mode ABI";
+    tctx->_private = NULL;
+    tctx->abi_version = HPY_ABI_VERSION;
+
+    hpy_trace_ctx_init(tctx, uctx);
+    return PTR_UP(tctx);
+}
+
+JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNITraceContext)(JNIEnv *env, jclass clazz, jlong tctxPointer) {
+    LOG("%s", "hpy_jni.c:finalizeJNITraceContext\n");
+    HPyContext *tctx = (HPyContext *) tctxPointer;
+    hpy_trace_ctx_free(tctx);
+    free(tctx);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNITraceModule\n");
+    return PTR_UP(HPyInit__trace());
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {

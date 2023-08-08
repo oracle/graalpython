@@ -171,6 +171,7 @@
     {"name":"ctxContextVarSet","parameterTypes":["long","long"]},
     {"name":"ctxSetCallFunction","parameterTypes":["long","long"]},
     {"name":"getHPyDebugContext","parameterTypes":[] },
+    {"name":"getHPyTraceContext","parameterTypes":[] },
     {"name":"ctxGetItems","parameterTypes":["long","java.lang.String"]},
     {"name":"ctxSetItems","parameterTypes":["long","java.lang.String","long"]},
     {"name":"ctxGetAttrs","parameterTypes":["long","java.lang.String"]},

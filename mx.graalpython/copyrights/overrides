@@ -344,10 +344,10 @@ graalpython/com.oracle.graal.python.jni/src/debug/memprotect.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/debug/stacktrace.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/trace/_tracemod.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/trace/autogen_trace_ctx_init.h,hpy.copyright
+graalpython/com.oracle.graal.python.jni/src/trace/autogen_trace_func_table.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/trace/autogen_trace_wrappers.c,hpy.copyright
-graalpython/com.oracle.graal.python.jni/src/trace/debug_handles.c,hpy.copyright
-graalpython/com.oracle.graal.python.jni/src/trace/hpy_debug.h,hpy.copyright
-graalpython/com.oracle.graal.python.jni/src/trace/include/hpy_debug.h,hpy.copyright
+graalpython/com.oracle.graal.python.jni/src/trace/hpy_trace.h,hpy.copyright
+graalpython/com.oracle.graal.python.jni/src/trace/include/hpy_trace.h,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/trace/trace_ctx.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/trace/trace_internal.h,hpy.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py,python.copyright
@@ -664,6 +664,7 @@ graalpython/lib-graalpython/modules/hpy/devel/src/runtime/format.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/helpers.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/structseq.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/version.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/trace/__init__.py,hpy.copyright
 graalpython/python-libposix/src/fork_exec.c,python.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright

@@ -213,11 +213,10 @@ public final class GraalHPyContext extends CExtContext {
         // Sanity check of the tag in the shared object filename
         validateABITag(location, basename, path.toJavaStringUncached(), abiVersion);
 
-        boolean debug = mode == HPyMode.MODE_DEBUG;
-        boolean saved = hpyUniversalContext.debugMode;
-        hpyUniversalContext.debugMode = debug;
+        HPyMode saved = hpyUniversalContext.currentMode;
+        hpyUniversalContext.currentMode = mode;
         try {
-            Object hpyModuleDefPtr = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
+            Object hpyModuleDefPtr = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, mode);
             // HPy only supports multi-phase extension module initialization.
             assert !(hpyModuleDefPtr instanceof PythonModule);
             if (InteropLibrary.getUncached().isNull(hpyModuleDefPtr)) {
@@ -232,7 +231,7 @@ public final class GraalHPyContext extends CExtContext {
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         } finally {
-            hpyUniversalContext.debugMode = saved;
+            hpyUniversalContext.currentMode = saved;
         }
     }
 
@@ -377,12 +376,12 @@ public final class GraalHPyContext extends CExtContext {
     final boolean useNativeFastPaths;
 
     /**
-     * This is set to {@code true} if an HPy extension is initialized (i.e. {@code HPyInit_*} is
-     * called) in debug mode. The value is then used to create the right closures for down calls
-     * during module ({@code HPyModule_Create}) and type creation ({@code HPyType_FromSpec}). We
-     * need this because the debug context is just a wrapper around the universal context, so the
-     * module and type creation will look as normal. For reference on how other implementations do
-     * it:
+     * This is set to the appropriate mode if an HPy extension is initialized (i.e.
+     * {@code HPyInit_*} is called) in, e.g., debug mode. The value is then used to create the right
+     * closures for down calls during module ({@code HPyModule_Create}) and type creation
+     * ({@code HPyType_FromSpec}). We need this because the debug context is just a wrapper around
+     * the universal context, so the module and type creation will look as normal. For reference on
+     * how other implementations do it:
      * <p>
      * CPython stores the HPy context into global C variable {@code _ctx_for_trampolines} defined by
      * {@code HPy_MODINIT}. This variable belongs to the HPy extension and the context is loaded
@@ -395,7 +394,7 @@ public final class GraalHPyContext extends CExtContext {
      * trampolines pick the appropriate context.
      * </p>
      */
-    private boolean debugMode;
+    private HPyMode currentMode = HPyMode.MODE_UNIVERSAL;
 
     /**
      * Few well known Python objects that are also HPyContext constants are guaranteed to always get
@@ -730,8 +729,12 @@ public final class GraalHPyContext extends CExtContext {
         return backend.getHPyDebugModule();
     }
 
-    boolean isDebugMode() {
-        return debugMode;
+    public PythonModule getHPyTraceModule() throws ImportException {
+        return backend.getHPyTraceModule();
+    }
+
+    HPyMode getCurrentMode() {
+        return currentMode;
     }
 
     public GraalHPyNativeContext getBackend() {

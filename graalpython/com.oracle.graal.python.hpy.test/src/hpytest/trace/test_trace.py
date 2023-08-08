@@ -24,8 +24,6 @@
 import pytest
 from hpy.trace import get_call_counts, get_durations, set_trace_functions
 
-pytestmark = pytest.mark.skip("not yet implemented")
-
 @pytest.fixture
 def hpy_abi():
     return "trace"

@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_BUILTIN_SHAPE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode.MODE_UNIVERSAL;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_basicsize;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXEC;
@@ -754,7 +755,7 @@ public abstract class GraalHPyNodes {
                 }
 
                 methodFunctionPointer = interopLibrary.readMember(methodDef, "impl");
-                if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
+                if (context.getCurrentMode() != MODE_UNIVERSAL || !resultLib.isExecutable(methodFunctionPointer)) {
                     methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, signature.getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
@@ -1141,14 +1142,14 @@ public abstract class GraalHPyNodes {
                 // signature: self, closure
                 Object getterFunctionPtr = memberDefLib.readMember(memberDef, "getter_impl");
                 boolean hasGetter = !valueLib.isNull(getterFunctionPtr);
-                if (hasGetter && (context.isDebugMode() || !valueLib.isExecutable(getterFunctionPtr))) {
+                if (hasGetter && (context.getCurrentMode() != MODE_UNIVERSAL || !valueLib.isExecutable(getterFunctionPtr))) {
                     getterFunctionPtr = attachFunctionTypeNode.execute(context, getterFunctionPtr, LLVMType.HPyFunc_getter);
                 }
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = memberDefLib.readMember(memberDef, "setter_impl");
                 boolean hasSetter = !valueLib.isNull(setterFunctionPtr);
-                if (hasSetter && (context.isDebugMode() || !valueLib.isExecutable(setterFunctionPtr))) {
+                if (hasSetter && (context.getCurrentMode() != MODE_UNIVERSAL || !valueLib.isExecutable(setterFunctionPtr))) {
                     setterFunctionPtr = attachFunctionTypeNode.execute(context, setterFunctionPtr, LLVMType.HPyFunc_setter);
                 }
 
@@ -1226,7 +1227,7 @@ public abstract class GraalHPyNodes {
             Object methodFunctionPointer;
             try {
                 methodFunctionPointer = interopLibrary.readMember(slotDef, "impl");
-                if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
+                if (context.getCurrentMode() != MODE_UNIVERSAL || !resultLib.isExecutable(methodFunctionPointer)) {
                     methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, slot.getSignatures()[0].getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
@@ -2976,7 +2977,7 @@ public abstract class GraalHPyNodes {
                 interopLibrary.toNative(pointerObject);
             }
             try {
-                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), llvmFunctionType, hpyContext.isDebugMode());
+                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), llvmFunctionType, hpyContext.getCurrentMode());
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -3239,7 +3240,7 @@ public abstract class GraalHPyNodes {
             if (resultLib.isNull(methodFunctionPointer)) {
                 return null;
             }
-            if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
+            if (context.getCurrentMode() != MODE_UNIVERSAL || !resultLib.isExecutable(methodFunctionPointer)) {
                 HPySlotWrapper slotWrapper = HPY_TP_CALL.getSignatures()[0];
                 methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, slotWrapper.getLLVMFunctionType());
             }

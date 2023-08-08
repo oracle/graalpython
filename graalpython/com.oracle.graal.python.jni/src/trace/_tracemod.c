@@ -170,6 +170,49 @@ static int check_and_set_func(HPyContext *uctx, HPy arg, HPy *out)
     return 0;
 }
 
+static const char *set_trace_funcs_kwlist[] = { "on_enter", "on_exit", NULL };
+
+static int
+get_optional_arg(HPyContext *ctx, const HPy *args, size_t nargs, HPy kwnames,
+        HPy_ssize_t i, const char *kwname, HPy *out)
+{
+    HPy_ssize_t nkw, j;
+    HPy h_kwname, h_item;
+    // if given as positional arg
+    if (i < nargs) {
+        *out = args[i];
+        return 0;
+    }
+
+    if (HPy_IsNull(kwnames)) {
+        return 0;
+    }
+
+    nkw = HPy_Length(ctx, kwnames);
+    if (nkw < 0) {
+        return -1;
+    }
+    h_kwname = HPyUnicode_FromString(ctx, kwname);
+    if (HPy_IsNull(h_kwname)) {
+        return -1;
+    }
+    for (j=0; j < nkw; j++) {
+        h_item = HPy_GetItem_i(ctx, kwnames, j);
+        if (HPy_IsNull(h_item)) {
+            HPy_Close(ctx, h_kwname);
+            return -1;
+        }
+        if (HPy_RichCompareBool(ctx, h_kwname, h_item, HPy_EQ)) {
+            HPy_Close(ctx, h_kwname);
+            HPy_Close(ctx, h_item);
+            *out = args[nargs + j];
+            return 0;
+        }
+        HPy_Close(ctx, h_item);
+    }
+    return 0;
+}
+
 HPyDef_METH(set_trace_functions, "set_trace_functions", HPyFunc_KEYWORDS,
         .doc="Set the functions to call if an HPy API is entered/exited.")
 static HPy set_trace_functions_impl(HPyContext *uctx, HPy self, const HPy *args,
@@ -179,17 +222,18 @@ static HPy set_trace_functions_impl(HPyContext *uctx, HPy self, const HPy *args,
     HPy h_on_exit = HPy_NULL;
     HPyContext *dctx = hpy_trace_get_ctx(uctx);
     HPyTraceInfo *info = get_info(dctx);
-    HPyTracker ht;
 
-    static const char *kwlist[] = { "on_enter", "on_exit", NULL };
-    if (!HPyArg_ParseKeywords(uctx, &ht, args, nargs, kwnames, "|OO", kwlist,
-            &h_on_enter, &h_on_exit)) {
+    // GraalPy change: avoid usage of HPyArg_ParseKeywords
+    if (get_optional_arg(uctx, args, nargs, kwnames, 0,
+                         set_trace_funcs_kwlist[0], &h_on_enter) < 0
+            || get_optional_arg(uctx, args, nargs, kwnames, 1,
+                    set_trace_funcs_kwlist[1], &h_on_exit) < 0)
+    {
         return HPy_NULL;
     }
 
     int r = check_and_set_func(uctx, h_on_enter, &info->on_enter_func) < 0 ||
             check_and_set_func(uctx, h_on_exit, &info->on_exit_func) < 0;
-    HPyTracker_Close(uctx, ht);
     if (r) {
         return HPy_NULL;
     }

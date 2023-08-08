@@ -82,11 +82,13 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -278,9 +280,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected Object initHPyModule(Object llvmLibrary, String initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected Object initHPyModule(Object llvmLibrary, String initFuncName, TruffleString name, TruffleString path, HPyMode mode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         CompilerAsserts.neverPartOfCompilation();
+        assert mode == HPyMode.MODE_UNIVERSAL;
         Object initFunction;
         InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
         if (lib.isMemberReadable(llvmLibrary, initFuncName)) {
@@ -333,13 +336,25 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public void initHPyDebugContext() throws ApiInitException {
         // debug mode is currently not available with the LLVM backend
-        throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
     }
 
     @Override
     public PythonModule getHPyDebugModule() throws ImportException {
         // debug mode is currently not available with the LLVM backend
-        throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+        throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
+    }
+
+    @Override
+    public void initHPyTraceContext() throws ApiInitException {
+        // debug mode is currently not available with the LLVM backend
+        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
+    }
+
+    @Override
+    public PythonModule getHPyTraceModule() throws ImportException {
+        // trace mode is currently not available with the LLVM backend
+        throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
     }
 
     @Override

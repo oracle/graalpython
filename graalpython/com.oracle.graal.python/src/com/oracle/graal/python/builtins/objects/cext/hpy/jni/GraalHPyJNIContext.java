@@ -49,7 +49,9 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SIZEOF_LONG;
+import static com.oracle.graal.python.nodes.StringLiterals.J_DEBUG;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_TRACE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -58,7 +60,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -193,6 +197,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private final int[] counts;
 
     private long hPyDebugContext;
+    private long hPyTraceContext;
     private long nativePointer;
 
     /**
@@ -256,15 +261,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, HPyMode mode)
                     throws ImportException, ApiInitException {
         CompilerAsserts.neverPartOfCompilation();
         /*
          * We eagerly initialize the debug mode here to be able to produce an error message now if
          * we cannot use it.
          */
-        if (debug) {
+        if (Objects.requireNonNull(mode) == HPyMode.MODE_DEBUG) {
             initHPyDebugContext();
+        } else if (mode == HPyMode.MODE_TRACE) {
+            initHPyTraceContext();
         }
 
         Object initFunction;
@@ -382,6 +389,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             finalizeJNIDebugContext(hPyDebugContext);
             hPyDebugContext = 0;
         }
+        if (hPyTraceContext != 0) {
+            finalizeJNITraceContext(hPyTraceContext);
+            hPyTraceContext = 0;
+        }
         loadedExtensions.clear();
     }
 
@@ -390,7 +401,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (hPyDebugContext == 0) {
             CompilerDirectives.transferToInterpreter();
             if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
-                throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
             }
             try {
                 toNativeInternal();
@@ -401,7 +412,28 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 hPyDebugContext = debugCtxPtr;
             } catch (CannotCastException e) {
                 // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
-                throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
+            }
+        }
+    }
+
+    @Override
+    public void initHPyTraceContext() throws ApiInitException {
+        if (hPyTraceContext == 0) {
+            CompilerDirectives.transferToInterpreter();
+            if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
+                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_TRACE);
+            }
+            try {
+                toNativeInternal();
+                long traceCtxPtr = initJNITraceContext(nativePointer);
+                if (traceCtxPtr == 0) {
+                    throw new RuntimeException("Could not initialize HPy trace context");
+                }
+                hPyTraceContext = traceCtxPtr;
+            } catch (CannotCastException e) {
+                // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
+                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, "trace");
             }
         }
     }
@@ -444,32 +476,74 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @Override
     @TruffleBoundary
     public PythonModule getHPyDebugModule() throws ImportException {
-        assert getContext().getEnv().isNativeAccessAllowed();
-        assert getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI;
-
         // force the universal context to native; we need a real pointer for JNI
         toNativeInternal();
 
         // initialize the debug module via JNI
         long debugModuleDef = initJNIDebugModule(nativePointer);
         if (debugModuleDef == 0) {
-            throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+            throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, "debug");
         }
+        return loadInternalModule(debugModuleDef, tsLiteral("_debug"));
+    }
+
+    /**
+     * Equivalent of {@code hpy_trace_get_ctx}. In fact, this method is called from the native
+     * {@code hpy_jni.c: hpy_trace_get_ctx} function to get the debug context's pointer via JNI. So,
+     * if you change the name of this function, also modify {@code hpy_jni.c} appropriately.
+     */
+    long getHPyTraceContext() {
+        /*
+         * It is a valid path that this method is called but the debug context has not yet been
+         * initialized. In particular, this can happen if the leak detector is used which calls
+         * methods of the native debug module. The native methods may call function
+         * 'hpy_debug_get_ctx' which upcalls to this method. All this may happen before any HPy
+         * extension was loaded with debug mode enabled.
+         */
+        if (hPyTraceContext == 0) {
+            try {
+                initHPyTraceContext();
+            } catch (ApiInitException e) {
+                throw CompilerDirectives.shouldNotReachHere(e.getMessage());
+            }
+        }
+        return hPyTraceContext;
+    }
+
+    @Override
+    @TruffleBoundary
+    public PythonModule getHPyTraceModule() throws ImportException {
+        // force the universal context to native; we need a real pointer for JNI
+        toNativeInternal();
+
+        // initialize the debug module via JNI
+        long debugModuleDef = initJNITraceModule(nativePointer);
+        if (debugModuleDef == 0) {
+            throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, "trace");
+        }
+        return loadInternalModule(debugModuleDef, tsLiteral("_trace"));
+    }
+
+    private PythonModule loadInternalModule(long debugModuleDef, TruffleString name) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert getContext().getEnv().isNativeAccessAllowed();
+        assert getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI;
+
         /*
          * Note: we don't need a 'spec' object since that's only required if the module has slot
          * HPy_mod_create which is guaranteed to be missing in this case.
          */
-        TruffleString name = tsLiteral("_debug");
-        Object debugModuleDefPtrObj = convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, debugModuleDef);
-        Object nativeDebugModule = GraalHPyModuleCreateNodeGen.getUncached().execute(context, name, null, debugModuleDefPtrObj);
-        if (nativeDebugModule instanceof PythonModule pythonDebugModule) {
-            GraalHPyModuleExecNodeGen.getUncached().execute(null, context, pythonDebugModule);
-            return (PythonModule) nativeDebugModule;
+        Object moduleDefPtrObj = convertLongArg(HPyContextSignatureType.HPyModuleDefPtr, debugModuleDef);
+        Object nativeModule = GraalHPyModuleCreateNodeGen.getUncached().execute(context, name, null, moduleDefPtrObj);
+        if (nativeModule instanceof PythonModule pythonModule) {
+            GraalHPyModuleExecNodeGen.getUncached().execute(null, context, pythonModule);
+            return (PythonModule) nativeModule;
         }
         /*
-         * Since we have the debug module fully under control, this is clearly an internal error.
+         * Since we have the internal modules fully under control, this is clearly an internal
+         * error.
          */
-        throw CompilerDirectives.shouldNotReachHere("Debug module is expected to be a Python module object");
+        throw new RuntimeException(name.toJavaStringUncached() + " module is expected to be a Python module object");
     }
 
     @Override
@@ -531,6 +605,15 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @TruffleBoundary
     private static native long initJNIDebugModule(long uctxPointer);
+
+    @TruffleBoundary
+    private static native long initJNITraceContext(long uctxPointer);
+
+    @TruffleBoundary
+    private static native int finalizeJNITraceContext(long dctxPointer);
+
+    @TruffleBoundary
+    private static native long initJNITraceModule(long uctxPointer);
 
     enum HPyJNIUpcall implements HPyUpcall {
         HPyUnicodeFromJCharArray,

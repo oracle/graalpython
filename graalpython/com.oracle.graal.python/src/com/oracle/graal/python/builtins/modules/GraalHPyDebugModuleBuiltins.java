@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_DEBUG;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -59,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -121,11 +121,9 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J_NOT_AVAILABLE, takesVarArgs = true, takesVarKeywordArgs = true)
     static final class NotAvailable extends PythonBuiltinNode {
-        private static final ReadArgumentNode[] EMPTY_ARGS = new ReadArgumentNode[0];
-
         @Override
         public Object execute(VirtualFrame frame) {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
         }
     }
 

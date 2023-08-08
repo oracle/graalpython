@@ -80,14 +80,14 @@ public final class GraalHPyTraceModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void postInitialize(Python3Core core) {
-        PythonModule hpyDebugModule = core.lookupBuiltinModule(PythonUtils.tsLiteral(J_HPY_TRACE));
+        PythonModule hpyTraceModule = core.lookupBuiltinModule(PythonUtils.tsLiteral(J_HPY_TRACE));
         TruffleString[] keys = new TruffleString[]{T_GET_DURATIONS, T_GET_CALL_COUNTS, T_SET_TRACE_FUNCTIONS, T_GET_FREQUENCY};
         try {
             GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(null, core.getContext(), null, null);
-            PythonModule nativeDebugModule = hpyContext.getHPyDebugModule();
-            PDict nativeDebugDict = GetDictIfExistsNode.getUncached().execute(nativeDebugModule);
+            PythonModule nativeTraceModule = hpyContext.getHPyTraceModule();
+            PDict nativeTraceDict = GetDictIfExistsNode.getUncached().execute(nativeTraceModule);
             for (TruffleString tkey : keys) {
-                hpyDebugModule.setAttribute(tkey, nativeDebugDict.getItem(tkey));
+                hpyTraceModule.setAttribute(tkey, nativeTraceDict.getItem(tkey));
             }
         } catch (IOException | ApiInitException | ImportException e) {
             /*
@@ -96,7 +96,7 @@ public final class GraalHPyTraceModuleBuiltins extends PythonBuiltins {
              */
             PBuiltinFunction notAvailableObj = GraalHPyDebugModuleBuiltins.createFunction(core);
             for (TruffleString tkey : keys) {
-                hpyDebugModule.setAttribute(tkey, notAvailableObj);
+                hpyTraceModule.setAttribute(tkey, notAvailableObj);
             }
         }
     }

@@ -1459,7 +1459,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL = tsLiteral("HPy_CallTupleDict requires args to be a tuple or null handle");
     public static final TruffleString HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL = tsLiteral("HPy_CallTupleDict requires kw to be a dict or null handle");
     public static final TruffleString CANNOT_INITIALIZE_EXT_NO_ENTRY = tsLiteral("cannot initialize extension '%s' at path '%s', entry point '%s' not found");
-    public static final TruffleString HPY_DEBUG_MODE_NOT_AVAILABLE = tsLiteral("HPy debug mode is not available");
+    public static final TruffleString HPY_S_MODE_NOT_AVAILABLE = tsLiteral("HPy %s mode is not available");
     public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
     public static final TruffleString HPY_MOD_CREATE_RETURNED_BUILTIN_MOD = tsLiteral("HPy_mod_create slot returned a builtin module object. This is currently not supported.");
     public static final TruffleString HPYCAPSULE_NEW_NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
