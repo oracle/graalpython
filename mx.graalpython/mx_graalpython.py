@@ -2819,15 +2819,16 @@ def update_hpy_import_cmd(args):
         SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
         SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
         mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
+    import_file(src_version_file, dest_version_file)
 
     # 'abitag.py' goes to 'lib-graalpython/module/hpy/devel/'
-    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "abitag.py")
-    src_version_file = join(hpy_repo_path, "hpy", "devel", "abitag.py")
-    if not os.path.exists(src_version_file):
+    dest_abitag_file = join(_get_core_home(), "modules", "hpy", "devel", "abitag.py")
+    src_abitag_file = join(hpy_repo_path, "hpy", "devel", "abitag.py")
+    if not os.path.exists(src_abitag_file):
         SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
         SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
         mx.abort("File 'abitag.py' is not available. Did you forget to run 'setup.py build' ?")
-    import_file(src_version_file, dest_version_file)
+    import_file(src_abitag_file, dest_abitag_file)
 
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
