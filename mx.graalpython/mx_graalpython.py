@@ -916,9 +916,7 @@ def _graalpytest_root():
 HPY_TEST_PROJECT = "com.oracle.graal.python.hpy.test"
 
 def _hpy_test_root():
-    # we should just have one source dir
-    for src_dir in mx.dependency(HPY_TEST_PROJECT).source_dirs():
-        return os.path.join(src_dir, "test")
+    return os.path.join(mx.dependency(HPY_TEST_PROJECT).get_output_root(), "bin", "hpytest")
 
 
 def graalpytest(args):
@@ -1147,6 +1145,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         mx.run([python_binary] + args + ["-m", "pip", "install", "--user", "pytest<=6.2.3", "pytest-xdist", "filelock"],
                nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         if not is_collecting_coverage():
+            global DISABLE_REBUILD
+            DISABLE_REBUILD = True
             # parallelize
             import threading
             threads = []
