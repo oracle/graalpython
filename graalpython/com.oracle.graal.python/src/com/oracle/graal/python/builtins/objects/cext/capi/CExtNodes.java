@@ -1921,6 +1921,7 @@ public abstract class CExtNodes {
 
             writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
             writeAttrNode.execute(module, SpecialAttributeNames.T___LIBRARY__, library);
+            capiContext.addLoadedExtensionLibrary(library);
             return module;
         }
     }
