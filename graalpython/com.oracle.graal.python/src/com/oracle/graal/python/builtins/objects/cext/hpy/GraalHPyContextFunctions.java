@@ -1833,6 +1833,9 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static TruffleString doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr,
                         @Cached FromCharPointerNode fromCharPointerNode) {
+            if (charPtr instanceof TruffleString ts) {
+                return ts;
+            }
             return fromCharPointerNode.execute(charPtr);
         }
     }
