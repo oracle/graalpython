@@ -290,7 +290,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             try {
                 PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, self,
-                                () -> posixLib.accept(getPosixSupport(), self.getFd()),
+                                (p, s) -> p.accept(s, self.getFd()),
                                 false, false);
                 try {
                     Object pythonAddr = makeSockAddrNode.execute(frame, acceptResult.sockAddr);
@@ -415,12 +415,12 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
                 if (waitConnect) {
                     SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
-                                    () -> {
+                                    (p, s) -> {
                                         byte[] tmp = new byte[4];
-                                        posixLib.getsockopt(posixSupport, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
+                                        p.getsockopt(s, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixException(err, posixLib.strerror(posixSupport, err));
+                                            throw new PosixException(err, p.strerror(s, err));
                                         }
                                         return null;
                                     },
@@ -597,7 +597,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             try {
                 int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
+                                (p, s) -> p.recv(s, socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false);
                 if (outlen == 0) {
                     return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -643,7 +643,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             try {
                 RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
+                                (p, s) -> p.recvfrom(s, socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false);
                 PBytes resultBytes;
                 if (result.readBytes == 0) {
@@ -710,7 +710,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 final int len = recvlen;
                 try {
                     int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
+                                    (p, s) -> p.recv(s, socket.getFd(), bytes, 0, len, flags),
                                     false, false);
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, outlen);
@@ -777,7 +777,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
                 try {
                     RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
+                                    (p, s) -> p.recvfrom(s, socket.getFd(), bytes, 0, bytes.length, flags),
                                     false, false);
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, result.readBytes);
@@ -820,7 +820,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
                 try {
                     return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
+                                    (p, s) -> p.send(s, socket.getFd(), bytes, 0, len, flags),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -869,7 +869,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         final int offset1 = offset;
                         final int len1 = len;
                         int outlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                        () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, offset1, len1, flags),
+                                        (p, s) -> p.send(s, socket.getFd(), bytes, offset1, len1, flags),
                                         true, false, timeoutHelper);
                         offset += outlen;
                         len -= outlen;
@@ -933,7 +933,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
                 try {
                     return SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.sendto(getPosixSupport(), socket.getFd(), bytes, 0, len, flags, addr),
+                                    (p, s) -> p.sendto(s, socket.getFd(), bytes, 0, len, flags, addr),
                                     true, false);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

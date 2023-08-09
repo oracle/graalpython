@@ -221,9 +221,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         byte[] bytes1 = networkInboundBIO.getInternalBytes();
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
-                            Object posixSupport = context.getPosixSupport();
-                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
-                                            () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket.getSocket(),
+                                            (p, s) -> p.recv(s, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
                             if (recvlen == 0) {
                                 // This means EOF
@@ -249,9 +248,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int offset2 = networkOutboundBIO.getReadPosition();
                         int len2 = networkOutboundBIO.getPending();
                         try {
-                            Object posixSupport = context.getPosixSupport();
-                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
-                                            () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, socket.getSocket(),
+                                            (p, s) -> p.send(s, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);
                         } catch (PosixException e) {
