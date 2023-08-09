@@ -41,9 +41,14 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PosixSupport {
     public void setEnv(@SuppressWarnings("unused") Env env) {
         // nop
+    }
+
+    public static PosixSupport get(Node node) {
+        return PythonContext.get(node).getPosixSupport();
     }
 }

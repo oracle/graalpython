@@ -40,15 +40,10 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
     @Child private PythonObjectFactory objectFactory;
@@ -72,37 +67,5 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
         }
         return constructAndRaiseNode;
-    }
-
-    public final Object getPosixSupport() {
-        return getContext().getPosixSupport();
-    }
-
-    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
-    }
-
-    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, null);
-    }
-
-    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, int code, TruffleString message) {
-        return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
-        return getConstructAndRaiseNode().raiseOSError(frame, num);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, oserror, e);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e, TruffleString.EqualNode eqNode) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
     }
 }

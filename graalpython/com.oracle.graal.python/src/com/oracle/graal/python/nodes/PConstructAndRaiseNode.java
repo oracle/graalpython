@@ -53,7 +53,9 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNodeGen.LazyNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -61,6 +63,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -206,6 +210,22 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
     }
 
+    public final PException raiseOSError(VirtualFrame frame, int code, TruffleString message) {
+        return raiseOSError(frame, code, message, null, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
+        return raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
+        return raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
+        return raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
+    }
+
     public final PException raiseSSLError(Frame frame, TruffleString message) {
         return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
@@ -278,5 +298,25 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public static PConstructAndRaiseNode getUncached() {
         return PConstructAndRaiseNodeGen.getUncached();
+    }
+
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class Lazy extends Node {
+        public static Lazy getUncached() {
+            return LazyNodeGen.getUncached();
+        }
+
+        public final PConstructAndRaiseNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract PConstructAndRaiseNode execute(Node inliningTarget);
+
+        @Specialization
+        static PConstructAndRaiseNode doIt(@Cached(inline = false) PConstructAndRaiseNode node) {
+            return node;
+        }
     }
 }

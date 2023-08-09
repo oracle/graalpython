@@ -407,10 +407,6 @@ public final class PythonCextBuiltins {
             throw raise(SystemError, INDEX_OUT_OF_RANGE);
         }
 
-        public final Object getPosixSupport() {
-            return getContext().getPosixSupport();
-        }
-
         protected void checkNonNullArg(Object obj) {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);

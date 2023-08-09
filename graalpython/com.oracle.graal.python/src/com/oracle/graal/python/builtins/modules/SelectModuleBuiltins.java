@@ -59,6 +59,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -127,7 +128,8 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
                         @Cached InlinedBranchProfile notSelectableBranch,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
             ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
             ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
@@ -150,7 +152,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (ChannelNotSelectableException e) {
                 // GraalPython hack: if one of the channels is not selectable (can happen only in
                 // the emulated mode), we just return everything.

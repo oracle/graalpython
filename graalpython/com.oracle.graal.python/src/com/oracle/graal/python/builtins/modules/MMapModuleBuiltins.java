@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -160,7 +161,8 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
                         @Bind("this") Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             checkLength(lengthIn);
             checkOffset(offset);
             int flags = flagsIn;
@@ -229,7 +231,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                 try {
                     dupFd = posixSupport.dup(getPosixSupport(), fd);
                 } catch (PosixException e) {
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
 
@@ -237,7 +239,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
             try {
                 mmapHandle = posixSupport.mmap(getPosixSupport(), length, prot, flags, dupFd, offset);
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return factory().createMMap(getContext(), clazz, mmapHandle, dupFd, length, access);
         }

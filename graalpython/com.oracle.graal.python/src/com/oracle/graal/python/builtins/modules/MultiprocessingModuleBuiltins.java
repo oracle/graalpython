@@ -396,7 +396,8 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached CastToJavaDoubleNode castToDouble,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             PythonContext context = getContext();
             SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
 
@@ -438,7 +439,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
                 return factory().createList(result.toArray(new Object[0]));
             } catch (PosixSupportLibrary.PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
                 gil.acquire();
             }

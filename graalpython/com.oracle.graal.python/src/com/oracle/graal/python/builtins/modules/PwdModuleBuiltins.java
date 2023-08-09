@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.Getpwui
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -146,7 +147,8 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile classProfile,
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached InlinedConditionProfile unsignedConversionProfile) {
+                        @Cached InlinedConditionProfile unsignedConversionProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long uid;
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
@@ -165,7 +167,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                     gil.acquire(getContext());
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
                 throw raiseUidNotFound();
@@ -194,7 +196,8 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached InlinedConditionProfile unsignedConversionProfile) {
+                        @Cached InlinedConditionProfile unsignedConversionProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object nameEncoded = encodeFSDefault.execute(name);
@@ -207,7 +210,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                     gil.acquire(getContext());
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
                 throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
@@ -223,13 +226,14 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
         Object doGetpall(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached InlinedConditionProfile unsignedConversionProfile) {
+                        @Cached InlinedConditionProfile unsignedConversionProfile,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // We cannot release the GIL, because the underlying POSIX calls are not thread safe
             PwdResult[] entries;
             try {
                 entries = posixLib.getpwentries(getPosixSupport());
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             Object[] result = new Object[entries.length];
             for (int i = 0; i < result.length; i++) {

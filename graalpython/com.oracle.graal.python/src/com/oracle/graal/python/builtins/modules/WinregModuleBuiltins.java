@@ -49,14 +49,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "winreg", isEager = true, os = PythonOS.PLATFORM_WIN32)
 public final class WinregModuleBuiltins extends PythonBuiltins {
@@ -89,13 +93,15 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access) {
+        Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
+                       @Bind("this") Node inliningTarget,
+                       @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (key instanceof Integer intKey) {
                 if (intKey == HKEY_CLASSES_ROOT) {
                     return factory().createLock();
                 }
             }
-            throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
         }
     }
 
@@ -104,8 +110,9 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
     public abstract static class EnumKeyNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object enumKey(VirtualFrame frame, Object key, Object index) {
-            throw raiseOSError(frame, OSErrorEnum.ENOENT);
+        static Object enumKey(VirtualFrame frame, Object key, Object index,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            throw constructAndRaiseNode.raiseOSError(frame, OSErrorEnum.ENOENT);
         }
     }
 }

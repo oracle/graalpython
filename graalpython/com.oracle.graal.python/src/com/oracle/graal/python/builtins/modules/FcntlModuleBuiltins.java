@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltinsClinicProviders.FlockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -104,12 +105,13 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         synchronized PNone flock(VirtualFrame frame, int fd, int operation,
                         @Bind("this") Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(inliningTarget, "fcntl.flock", fd, operation);
             try {
                 posix.flock(getPosixSupport(), fd, operation);
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
