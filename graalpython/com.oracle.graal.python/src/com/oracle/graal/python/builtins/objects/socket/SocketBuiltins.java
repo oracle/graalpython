@@ -680,7 +680,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                     () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
                                     false, false);
                     if (!directWrite) {
-                        bufferLib.readIntoByteArray(buffer, 0, bytes, 0, outlen);
+                        bufferLib.writeFromByteArray(buffer, 0, bytes, 0, outlen);
                     }
                     return outlen;
                 } catch (PosixException e) {
@@ -743,7 +743,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                     () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
                                     false, false);
                     if (!directWrite) {
-                        bufferLib.readIntoByteArray(buffer, 0, bytes, 0, result.readBytes);
+                        bufferLib.writeFromByteArray(buffer, 0, bytes, 0, result.readBytes);
                     }
                     return factory().createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
                 } catch (PosixException e) {

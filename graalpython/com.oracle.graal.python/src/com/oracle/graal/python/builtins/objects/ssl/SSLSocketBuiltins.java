@@ -135,7 +135,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 PythonUtils.flipBuffer(output);
                 int readBytes = PythonUtils.getBufferRemaining(output);
                 if (!directWrite) {
-                    bufferLib.readIntoByteArray(buffer, 0, bytes, 0, readBytes);
+                    bufferLib.writeFromByteArray(buffer, 0, bytes, 0, readBytes);
                 }
                 return readBytes;
             } finally {
