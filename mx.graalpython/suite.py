@@ -983,7 +983,7 @@ suite = {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
             },
-            "allowsJavadocWarnings": True,
+            "noMavenJavadoc": True,
         },
 
         "GRAALPYTHON_COMMUNITY" : {
