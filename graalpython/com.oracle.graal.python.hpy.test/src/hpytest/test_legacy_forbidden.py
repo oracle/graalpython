@@ -40,6 +40,7 @@ from .support import HPyTest, make_hpy_abi_fixture, ONLY_LINUX
 # also for other compilers
 ONLY_GCC = ONLY_LINUX
 
+pytestmark = pytest.mark.skip("capfd not working properly on GraalPy")
 
 class TestLegacyForbidden(HPyTest):
 
