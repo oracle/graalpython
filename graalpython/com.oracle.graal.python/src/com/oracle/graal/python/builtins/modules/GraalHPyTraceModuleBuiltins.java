@@ -53,8 +53,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -94,7 +94,7 @@ public final class GraalHPyTraceModuleBuiltins extends PythonBuiltins {
              * Error case: install "not_available" for everything. So, loading still works, but you
              * cannot use it.
              */
-            PBuiltinFunction notAvailableObj = GraalHPyDebugModuleBuiltins.createFunction(core);
+            PythonBuiltinObject notAvailableObj = GraalHPyDebugModuleBuiltins.createFunction(core, hpyTraceModule);
             for (TruffleString tkey : keys) {
                 hpyTraceModule.setAttribute(tkey, notAvailableObj);
             }

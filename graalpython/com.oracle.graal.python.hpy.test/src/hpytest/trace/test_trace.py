@@ -22,7 +22,10 @@
 # SOFTWARE.
 
 import pytest
+from hpytest.support import HPyTest
 from hpy.trace import get_call_counts, get_durations, set_trace_functions
+
+pytestmark = pytest.mark.skipif(not HPyTest.supports_trace_mode(), reason="trace mode not supported")
 
 @pytest.fixture
 def hpy_abi():

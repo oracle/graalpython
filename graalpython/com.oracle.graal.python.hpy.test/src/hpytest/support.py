@@ -541,6 +541,17 @@ class HPyTest:
         except:
             return False
 
+    @staticmethod
+    def supports_trace_mode():
+        """ Returns True if the underlying Python implementation supports
+            the trace mode.
+        """
+        from hpy.universal import _trace
+        try:
+            return _trace.get_call_counts() is not None
+        except:
+            return False
+
 
 class HPyDebugCapture:
     """
