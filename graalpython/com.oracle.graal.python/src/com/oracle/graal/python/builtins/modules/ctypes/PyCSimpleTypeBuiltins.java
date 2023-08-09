@@ -208,7 +208,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
              * Install from_param class methods in ctypes base classes. Overrides the
              * PyCSimpleType_from_param generic method.
              */
-            Python3Core core = getCore();
+            Python3Core core = getContext();
             PythonObjectSlowPathFactory factory = core.factory();
             if (getBaseClassNode.execute(inliningTarget, result) == core.lookupType(SimpleCData)) {
                 if (eqNode.execute(T_LOWER_Z, proto_str, TS_ENCODING)) { /* c_char_p */

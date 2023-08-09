@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
@@ -61,7 +60,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             if (isAdoptable()) {
                 objectFactory = insert(PythonObjectFactory.create());
             } else {
-                objectFactory = getCore().factory();
+                objectFactory = getContext().factory();
             }
         }
         return objectFactory;
@@ -73,10 +72,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
         }
         return constructAndRaiseNode;
-    }
-
-    public final Python3Core getCore() {
-        return getContext();
     }
 
     public final Object getPosixSupport() {

@@ -501,7 +501,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinModule = (PythonModule) globals;
             } else {
                 TruffleString moduleName = (TruffleString) getItem.execute(frame, inliningTarget, globals, T___NAME__);
-                builtinModule = getCore().lookupBuiltinModule(moduleName);
+                builtinModule = getContext().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
             return factory().createBuiltinMethod(builtinModule, builtinFunc);

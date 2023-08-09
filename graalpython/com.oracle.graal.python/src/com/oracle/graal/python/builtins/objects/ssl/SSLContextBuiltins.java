@@ -605,9 +605,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
             PythonModule posix;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                posix = getCore().lookupBuiltinModule(T_NT);
+                posix = getContext().lookupBuiltinModule(T_NT);
             } else {
-                posix = getCore().lookupBuiltinModule(T_POSIX);
+                posix = getContext().lookupBuiltinModule(T_POSIX);
             }
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
             HashingStorage storage = environ.getDictStorage();

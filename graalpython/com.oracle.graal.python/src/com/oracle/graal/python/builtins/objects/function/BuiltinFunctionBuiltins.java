@@ -116,7 +116,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            PythonModule builtins = getCore().getBuiltins();
+            PythonModule builtins = getContext().getBuiltins();
             Object getattr = getAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
             PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
             return factory().createTuple(new Object[]{getattr, args});

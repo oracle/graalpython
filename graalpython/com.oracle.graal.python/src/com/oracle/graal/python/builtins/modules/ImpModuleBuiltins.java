@@ -394,7 +394,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public int run(TruffleString name) {
-            if (getCore().lookupBuiltinModule(name) != null) {
+            if (getContext().lookupBuiltinModule(name) != null) {
                 // TODO: missing "1" case when the builtin module can be re-initialized
                 return -1;
             } else {
@@ -433,7 +433,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___LOADER__)") SetAttributeNode setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
             Object name = lookup.execute(frame, inliningTarget, moduleSpec, T_NAME);
-            PythonModule builtinModule = getCore().lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
+            PythonModule builtinModule = getContext().lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
@@ -455,7 +455,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object exec(PythonModule pythonModule) {
-            final Python3Core core = getCore();
+            final Python3Core core = getContext();
             if (!ImageInfo.inImageBuildtimeCode()) {
                 final PythonBuiltins builtins = pythonModule.getBuiltins();
                 assert builtins != null; // this is a builtin, therefore its builtins must have been
@@ -652,7 +652,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PythonModule run(TruffleString name) {
-            return importFrozenModuleObject(getCore(), name, true);
+            return importFrozenModuleObject(getContext(), name, true);
         }
     }
 

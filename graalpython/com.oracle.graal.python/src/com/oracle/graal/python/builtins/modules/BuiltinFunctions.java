@@ -1145,10 +1145,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null, FutureFeature.fromFlags(flags));
                 }
             };
-            if (getCore().isCoreInitialized()) {
+            if (getContext().isCoreInitialized()) {
                 ct = createCode.get();
             } else {
-                ct = getCore().getLanguage().cacheCode(filename, createCode);
+                ct = getContext().getLanguage().cacheCode(filename, createCode);
             }
             return wrapRootCallTarget((RootCallTarget) ct);
         }

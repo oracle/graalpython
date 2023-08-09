@@ -270,7 +270,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
-            return getDoc(getCore().lookupType(self), value);
+            return getDoc(getContext().lookupType(self), value);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -846,7 +846,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
                     if (a[i] instanceof PythonBuiltinClassType) {
-                        baseClasses[i] = getCore().lookupType((PythonBuiltinClassType) a[i]);
+                        baseClasses[i] = getContext().lookupType((PythonBuiltinClassType) a[i]);
                     } else {
                         baseClasses[i] = (PythonAbstractClass) a[i];
                     }
@@ -916,7 +916,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object doType(PythonBuiltinClassType self,
                         @Shared @Cached GetDictIfExistsNode getDict) {
-            return doManaged(getCore().lookupType(self), getDict);
+            return doManaged(getContext().lookupType(self), getDict);
         }
 
         @Specialization
