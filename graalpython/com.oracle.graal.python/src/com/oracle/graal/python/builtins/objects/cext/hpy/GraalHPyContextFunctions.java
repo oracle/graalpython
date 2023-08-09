@@ -2894,7 +2894,7 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyCall extends HPy5ContextFunction {
 
         @Specialization
-        static Object doGeneric(GraalHPyContext hpyContext, Object callable, Object args, long lnargs, PTuple kwnames,
+        static Object doGeneric(GraalHPyContext hpyContext, Object callable, Object args, long lnargs, Object kwnamesObj,
                         @Bind("this") Node inliningTarget,
                         @Cached PCallHPyFunction callHelperNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
@@ -2908,7 +2908,15 @@ public abstract class GraalHPyContextFunctions {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             int nargs = (int) lnargs;
-            int nkw = tupleSizeNode.execute(kwnames);
+            PTuple kwnames;
+            int nkw;
+            if (kwnamesObj instanceof PTuple) {
+                kwnames = (PTuple) kwnamesObj;
+                nkw = tupleSizeNode.execute(kwnames);
+            } else {
+                nkw = 0;
+                kwnames = null;
+            }
 
             Object typedArgsPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, args, nargs + nkw);
             if (!lib.hasArrayElements(typedArgsPtr)) {
