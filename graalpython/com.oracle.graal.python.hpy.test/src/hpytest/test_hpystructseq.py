@@ -33,8 +33,10 @@ from .support import HPyTest
 
 
 class TestHPyStructSequence(HPyTest):
-    def test_structseq(self):
+    def test_structseq(self, hpy_abi):
         import pytest
+        if hpy_abi == "cpython":
+            pytest.skip("structseq not supported on GraalPy")
         mod = self.make_module("""
             static HPyStructSequence_Field structseq_fields[] = {
                 { "field0", "doc0" },

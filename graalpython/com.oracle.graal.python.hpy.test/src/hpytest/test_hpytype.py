@@ -1507,7 +1507,10 @@ class TestType(HPyTest):
         with pytest.raises(TypeError):
             mod.create_type("mytest.DummyIntMeta", int)
 
-    def test_get_name(self):
+    def test_get_name(self, hpy_abi):
+        import pytest
+        if "debug" in hpy_abi:
+            pytest.skip("unsupported on GraalPy")
         import array
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {
