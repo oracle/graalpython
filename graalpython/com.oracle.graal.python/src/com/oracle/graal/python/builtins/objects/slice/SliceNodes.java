@@ -466,7 +466,7 @@ public abstract class SliceNodes {
         public abstract long execute(Node inliningTarget, Object x);
 
         @Specialization(guards = "!isPNone(i)")
-        static long doGeneric(Node inliningTarget, Object i,
+        static long doGeneric(Object i,
                         @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyLongSign signNode,
@@ -475,7 +475,7 @@ public abstract class SliceNodes {
                 try {
                     return asSizeNode.execute(null, i);
                 } catch (OverflowException e) {
-                    if (signNode.execute(inliningTarget, i) < 0) {
+                    if (signNode.execute(i) < 0) {
                         return Long.MIN_VALUE;
                     }
                     return Long.MAX_VALUE;
