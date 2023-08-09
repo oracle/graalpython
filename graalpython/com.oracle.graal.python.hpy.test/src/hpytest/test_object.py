@@ -319,8 +319,10 @@ class TestObject(HPyTest):
         mod.f(b)
         assert b.foo is True
 
-    def test_delattr(self):
+    def test_delattr(self, hpy_abi):
         import pytest
+        if hpy_abi == "cpython":
+            pytest.skip("delattr not supported on GraalPy")
         mod = self.make_module("""
             HPyDef_METH(del_foo, "del_foo", HPyFunc_O)
             static HPy del_foo_impl(HPyContext *ctx, HPy self, HPy arg)
@@ -401,8 +403,10 @@ class TestObject(HPyTest):
         with pytest.raises(AttributeError):
             c.foo
 
-    def test_delattr_s(self):
+    def test_delattr_s(self, hpy_abi):
         import pytest
+        if hpy_abi == "cpython":
+            pytest.skip("delattr not supported on GraalPy")
         mod = self.make_module("""
             HPyDef_METH(del_foo, "del_foo", HPyFunc_O)
             static HPy del_foo_impl(HPyContext *ctx, HPy self, HPy arg)
