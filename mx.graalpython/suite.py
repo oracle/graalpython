@@ -86,11 +86,11 @@ suite = {
     "repositories": {
         "python-public-snapshots": {
             "url": "https://curio.ssw.jku.at/nexus/content/repositories/snapshots",
-            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT"]
+            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT", "PSF-License"]
         },
         "python-local-snapshots": {
             "url": "http://localhost",
-            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT"]
+            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT", "PSF-License"]
         },
     },
 
@@ -837,9 +837,9 @@ suite = {
             ],
             "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
-            "maven" : {
+            "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId" : "python-launcher",
+                "artifactId": "python-launcher",
             },
         },
 
@@ -922,6 +922,11 @@ suite = {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
             },
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
         },
 
         "GRAALPYTHON": {
@@ -984,21 +989,28 @@ suite = {
                 "groupId": "org.graalvm.python",
             },
             "noMavenJavadoc": True,
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
         },
 
-        "GRAALPYTHON_COMMUNITY" : {
-            "type":"pom",
-            "runtimeDependencies" : [
+        "GRAALPYTHON_COMMUNITY": {
+            "type": "pom",
+            "runtimeDependencies": [
                 "GRAALPYTHON",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description" : "GraalPython engine.",
-            "maven" : {
+            "description": "GraalPython engine.",
+            "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId" : "python-community",
+                "artifactId": "python-community",
             },
             "license": [
                 "UPL",
+                "MIT",
+                "PSF-License",
             ],
         },
 
