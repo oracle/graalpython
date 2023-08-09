@@ -87,7 +87,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 public enum HPyContextMember implements HPyUpcall {
     NAME("name"),
     PRIVATE("_private"),
-    CTX_VERSION("ctx_version"),
+    ABI_VERSION("abi_version"),
 
     // {{start ctx members}}
     // @formatter:off

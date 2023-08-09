@@ -466,7 +466,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
-        members[HPyContextMember.CTX_VERSION.ordinal()] = 1;
+        // TODO(fa): we should use the value of macro HPY_ABI_VERSION here
+        members[HPyContextMember.ABI_VERSION.ordinal()] = 0;
 
         // {{start llvm ctx init}}
         // @formatter:off
