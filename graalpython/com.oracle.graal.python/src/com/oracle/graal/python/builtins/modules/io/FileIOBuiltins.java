@@ -638,7 +638,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
                     buffer = getBytes.execute(inliningTarget, b.getSequenceStorage());
-                    n = buffer.length;
+                    n = b.getSequenceStorage().length();
                     if (n == 0) {
                         break;
                     }

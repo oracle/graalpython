@@ -737,7 +737,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             int len = storage.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return dispatchNode.execute(frame, inliningTarget, this, bytes, substrs, begin, last);
+            return dispatchNode.execute(frame, inliningTarget, this, bytes, len, substrs, begin, last);
         }
 
         @Fallback
@@ -746,15 +746,15 @@ public final class BytesBuiltins extends PythonBuiltins {
             throw raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
-        protected abstract boolean doIt(byte[] bytes, byte[] prefix, int start, int end);
+        protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
 
-        private boolean doIt(VirtualFrame frame, byte[] self, PTuple substrs, int start, int stop,
+        private boolean doIt(VirtualFrame frame, byte[] self, int len, PTuple substrs, int start, int stop,
                         Node inliningTarget,
                         BytesNodes.ToBytesNode tobytes,
                         SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
             for (Object element : getObjectArrayNode.execute(inliningTarget, substrs)) {
                 byte[] bytes = tobytes.execute(frame, element);
-                if (doIt(self, bytes, start, stop)) {
+                if (doIt(self, len, bytes, start, stop)) {
                     return true;
                 }
             }
@@ -765,20 +765,20 @@ public final class BytesBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class PrefixSuffixDispatchNode extends Node {
-        abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last);
 
         @Specialization
-        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, PTuple substrs, int begin, int last,
+        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, PTuple substrs, int begin, int last,
                         @Cached(value = "createToBytesFromTuple()", inline = false) BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
-            return parent.doIt(frame, bytes, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
+            return parent.doIt(frame, bytes, len, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
         }
 
         @Fallback
-        static boolean doOthers(VirtualFrame frame, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last,
+        static boolean doOthers(VirtualFrame frame, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last,
                         @Cached(value = "createToBytes()", inline = false) BytesNodes.ToBytesNode tobytes) {
             byte[] substrBytes = tobytes.execute(frame, substrs);
-            return parent.doIt(bytes, substrBytes, begin, last);
+            return parent.doIt(bytes, len, substrBytes, begin, last);
         }
 
         @NeverDefault
@@ -806,10 +806,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
+        protected boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end) {
             // start and end must be normalized indices for 'bytes'
             assert start >= 0;
-            assert end >= 0 && end <= bytes.length;
+            assert end >= 0 && end <= len;
 
             if (end - start < prefix.length) {
                 return false;
@@ -837,10 +837,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected boolean doIt(byte[] bytes, byte[] suffix, int start, int end) {
+        protected boolean doIt(byte[] bytes, int len, byte[] suffix, int start, int end) {
             // start and end must be normalized indices for 'bytes'
             assert start >= 0;
-            assert end >= 0 && end <= bytes.length;
+            assert end >= 0 && end <= len;
 
             int suffixLen = suffix.length;
             if (end - start < suffixLen) {
@@ -1550,13 +1550,13 @@ public final class BytesBuiltins extends PythonBuiltins {
                 return self;
             }
 
-            byte[] u = new byte[left + self.length + right];
+            byte[] u = new byte[left + l + right];
             if (left > 0) {
                 Arrays.fill(u, 0, left, fill);
             }
-            System.arraycopy(self, 0, u, left, self.length);
+            System.arraycopy(self, 0, u, left, l);
             if (right > 0) {
-                Arrays.fill(u, left + self.length, u.length, fill);
+                Arrays.fill(u, left + l, u.length, fill);
             }
             return u;
         }
@@ -2590,7 +2590,8 @@ public final class BytesBuiltins extends PythonBuiltins {
             int max = SysModuleBuiltins.MAXSIZE;
             byte[] b = getInternalByteArrayNode.execute(inliningTarget, storage);
             int i = 0, j = 0;
-            for (byte p : b) {
+            for (int k = 0; k < len; k++) {
+                byte p = b[k];
                 if (p == T) {
                     if (tabsize > 0) {
                         int incr = tabsize - (j % tabsize);
