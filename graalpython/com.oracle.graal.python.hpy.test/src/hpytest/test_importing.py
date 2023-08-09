@@ -25,7 +25,7 @@ import pytest
 from .support import HPyTest
 from hpy.devel.abitag import get_hpy_ext_suffix
 
-@pytest.fixture(params=['cpython', 'universal', 'hybrid', 'debug'])
+@pytest.fixture(params=['cpython', 'universal', 'hybrid'] + (['debug'] if HPyTest.supports_debug_mode() else []))
 def hpy_abi(request):
     abi = request.param
     yield abi

@@ -24,6 +24,8 @@
 import pytest
 from hpytest.support import SUPPORTS_SYS_EXECUTABLE, SUPPORTS_MEM_PROTECTION, HPyTest
 
+pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
+
 @pytest.fixture
 def hpy_abi():
     return "debug"
