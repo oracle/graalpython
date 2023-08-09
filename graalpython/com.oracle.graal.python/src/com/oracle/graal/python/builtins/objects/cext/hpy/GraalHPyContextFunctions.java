@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_FLOAT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_OBJECT;
@@ -2325,7 +2326,7 @@ public abstract class GraalHPyContextFunctions {
 
         static PythonObject createFromBuiltinShape(int builtinShape, Object type, Object dataPtr, PythonObjectFactory factory) {
             PythonObject result = switch (builtinShape) {
-                case HPyType_BUILTIN_SHAPE_OBJECT -> factory.createPythonHPyObject(type, dataPtr);
+                case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> factory.createPythonHPyObject(type, dataPtr);
                 case HPyType_BUILTIN_SHAPE_TYPE -> throw CompilerDirectives.shouldNotReachHere("built-in shape type not yet implemented");
                 case HPyType_BUILTIN_SHAPE_LONG -> factory.createInt(type, BigInteger.ZERO);
                 case HPyType_BUILTIN_SHAPE_FLOAT -> factory.createFloat(type, 0.0);
@@ -2334,7 +2335,7 @@ public abstract class GraalHPyContextFunctions {
                 case HPyType_BUILTIN_SHAPE_LIST -> factory.createList(type);
                 default -> throw CompilerDirectives.shouldNotReachHere(INVALID_BUILT_IN_SHAPE);
             };
-            if (builtinShape != HPyType_BUILTIN_SHAPE_OBJECT) {
+            if (builtinShape != HPyType_BUILTIN_SHAPE_LEGACY && builtinShape != HPyType_BUILTIN_SHAPE_OBJECT) {
                 GraalHPyData.setHPyNativeSpace(result, dataPtr);
             }
             return result;
