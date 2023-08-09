@@ -458,8 +458,6 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
-                #"com.oracle.graal.python.shell",
-                #"com.oracle.graal.python",
                 "GRAALPYTHON",
                 "GRAALPYTHON_NATIVE_LIBS",
             ],
