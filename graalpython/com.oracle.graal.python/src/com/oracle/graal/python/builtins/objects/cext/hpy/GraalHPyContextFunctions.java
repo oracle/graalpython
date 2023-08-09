@@ -1196,9 +1196,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyBoolFromBool extends HPyBinaryContextFunction {
 
         @Specialization
-        static PInt doGeneric(GraalHPyContext hpyContext, byte value) {
+        static PInt doBoolean(GraalHPyContext hpyContext, boolean value) {
             Python3Core core = hpyContext.getContext();
-            return value != 0 ? core.getTrue() : core.getFalse();
+            return value ? core.getTrue() : core.getFalse();
+        }
+
+        @Specialization
+        static PInt doByte(GraalHPyContext hpyContext, byte value) {
+            return doBoolean(hpyContext, value != 0);
         }
     }
 
