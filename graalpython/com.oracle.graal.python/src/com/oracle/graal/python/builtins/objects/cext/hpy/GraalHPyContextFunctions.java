@@ -3424,7 +3424,7 @@ public abstract class GraalHPyContextFunctions {
             }
             Object hpyDestructor = null;
             if (!interopLib.isNull(dtorPtr)) {
-                Object typedDtorPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF);
+                Object typedDtorPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_CAPSULE_DESTRUCTOR, dtorPtr);
                 Object cpyTrampoline;
                 boolean invalid;
                 try {
