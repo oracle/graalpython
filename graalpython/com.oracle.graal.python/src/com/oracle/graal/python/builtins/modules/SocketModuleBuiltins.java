@@ -611,7 +611,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @Cached TruffleString.FromLongNode fromLongNode) {
+                        @Cached TruffleString.FromLongNode fromLongNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object host = null;
             if (hostObject != PNone.NONE) {
                 host = posixLib.createPathFromString(getPosixSupport(), idna.execute(frame, hostObject));
@@ -643,7 +644,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
-                throw getConstructAndRaiseNode().executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
             }
             try {
                 SequenceStorage storage = new ObjectSequenceStorage(5);

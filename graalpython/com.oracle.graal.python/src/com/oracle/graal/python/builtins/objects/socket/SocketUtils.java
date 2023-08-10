@@ -56,6 +56,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 
 public class SocketUtils {
     @FunctionalInterface
@@ -67,19 +68,17 @@ public class SocketUtils {
      * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
      * with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket,
-                    SocketFunction<T> function,
-                    boolean writing, boolean connect) throws PosixException {
-        return callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket, function, writing, connect, null);
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil,
+                    PSocket socket, SocketFunction<T> function, boolean writing, boolean connect) throws PosixException {
+        return callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket, function, writing, connect, null);
     }
 
     /**
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
-    public static <T> T callSocketFunctionWithRetry(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket,
-                    SocketFunction<T> function,
-                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
+    public static <T> T callSocketFunctionWithRetry(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil,
+                    PSocket socket, SocketFunction<T> function, boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
         TimeoutHelper timeoutHelper = timeoutHelperIn;
         if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
             timeoutHelper = new TimeoutHelper(socket.getTimeoutNs());
@@ -91,7 +90,7 @@ public class SocketUtils {
         outer: while (true) {
             Timeval selectTimeout = null;
             if (timeoutHelper != null) {
-                selectTimeout = timeoutHelper.checkAndGetRemainingTimeval(frame, constructAndRaiseNode);
+                selectTimeout = timeoutHelper.checkAndGetRemainingTimeval(frame, inliningTarget, constructAndRaiseNode);
             }
             // For connect(), poll even for blocking socket. The connection runs asynchronously.
             if ((timeoutHelper != null || connect) && socket.getFd() != INVALID_FD) {
@@ -104,7 +103,7 @@ public class SocketUtils {
                         SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, EMPTY_INT_ARRAY, selectTimeout);
                         boolean[] resultFds = writing ? selectResult.getWriteFds() : selectResult.getReadFds();
                         if (resultFds.length == 0 || !resultFds[0]) {
-                            throw constructAndRaiseNode.raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                         }
                     } finally {
                         gil.acquire();
@@ -154,21 +153,21 @@ public class SocketUtils {
             this.initialTimeoutNs = initialTimeoutNs;
         }
 
-        public long checkAndGetRemainingTimeoutNs(Frame frame, PConstructAndRaiseNode constructAndRaiseNode) {
+        public long checkAndGetRemainingTimeoutNs(Frame frame, Node inliningTaget, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (startNano == 0) {
                 startNano = System.nanoTime();
                 return initialTimeoutNs;
             } else {
                 long remainingNs = initialTimeoutNs - (System.nanoTime() - startNano);
                 if (remainingNs <= 0) {
-                    throw constructAndRaiseNode.raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
+                    throw constructAndRaiseNode.get(inliningTaget).raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                 }
                 return remainingNs;
             }
         }
 
-        public Timeval checkAndGetRemainingTimeval(Frame frame, PConstructAndRaiseNode constructAndRaiseNode) {
-            return TimeUtils.pyTimeAsTimeval(checkAndGetRemainingTimeoutNs(frame, constructAndRaiseNode));
+        public Timeval checkAndGetRemainingTimeval(Frame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            return TimeUtils.pyTimeAsTimeval(checkAndGetRemainingTimeoutNs(frame, inliningTarget, constructAndRaiseNode));
         }
     }
 }

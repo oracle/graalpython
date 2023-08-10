@@ -40,14 +40,12 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
     @Child private PythonObjectFactory objectFactory;
-    @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
     protected final PythonObjectFactory factory() {
         if (objectFactory == null) {
@@ -59,13 +57,5 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
             }
         }
         return objectFactory;
-    }
-
-    public final PConstructAndRaiseNode getConstructAndRaiseNode() {
-        if (constructAndRaiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-        }
-        return constructAndRaiseNode;
     }
 }

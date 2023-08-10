@@ -288,9 +288,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
                 setCtypeLLVMHelpers(this, handle);
             } catch (ApiInitException e) {
-                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
             } catch (ImportException e) {
-                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
             } catch (IOException e) {
                 throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, EqualNode.getUncached());
             }

@@ -100,6 +100,7 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
@@ -289,7 +290,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             TruffleString name = castToTruffleStringNode.execute(inliningTarget, readNameNode.execute(moduleSpec, T_NAME));
             TruffleString path = castToTruffleStringNode.execute(inliningTarget, readOriginNode.execute(moduleSpec, T_ORIGIN));
 
@@ -299,11 +301,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 return run(context, new ModuleSpec(name, path, moduleSpec));
             } catch (ApiInitException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
+                throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
+                throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (IOException e) {
-                throw getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
