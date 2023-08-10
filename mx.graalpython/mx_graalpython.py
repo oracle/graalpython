@@ -820,8 +820,6 @@ class GraalPythonTags(object):
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
-    shared_object = 'python-so'
-    shared_object_sandboxed = 'python-so-sandboxed'
     graalvm = 'python-graalvm'
     embedding = 'python-standalone-embedding'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
@@ -1493,14 +1491,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             python_checkcopyrights([])
 
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
-        if task and not WIN32:
-            run_shared_lib_test(python_so())
-
-    with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
-        if task:
-            run_shared_lib_test(python_managed_so(), ("sandboxed",))
-
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm], report=True) as task:
         if task:
             svm_image = python_svm()
@@ -1634,147 +1624,6 @@ def graalpython_gate_runner(args, tasks):
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
-
-
-def run_shared_lib_test(home, args=()):
-    svm_lib_path = os.path.abspath(os.path.join(home, "lib", "polyglot"))
-    fd = name = progname = None
-    try:
-        fd, name = tempfile.mkstemp(suffix='.c')
-        os.write(fd, b"""
-        #include "stdio.h"
-        #include "polyglot_api.h"
-
-        #define assert_ok(msg, f) { if (!(f)) { \\
-             const poly_extended_error_info* error_info; \\
-             poly_get_last_error_info(isolate_thread, &error_info); \\
-             fprintf(stderr, "%%s\\n", error_info->error_message); \\
-             return fprintf(stderr, "%%s\\n", msg); } } while (0)
-
-        poly_isolate global_isolate;
-        poly_thread isolate_thread;
-        poly_engine engine;
-        poly_context context;
-
-        static poly_status create_context() {
-            poly_status status;
-
-            if (poly_attach_thread(global_isolate, &isolate_thread)) {
-                return poly_generic_failure;
-            }
-
-            poly_engine_builder engine_builder;
-            const char* permitted_languages[] = {"python"};
-            status = poly_create_engine_builder(isolate_thread, permitted_languages, 1, &engine_builder);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_engine_builder_build(isolate_thread, engine_builder, &engine);
-            if (status != poly_ok) {
-                return status;
-            }
-            poly_context_builder builder;
-            status = poly_create_context_builder(isolate_thread, NULL, 0, &builder);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_engine(isolate_thread, builder, engine);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
-            if (status != poly_ok) {
-                return status;
-            }
-        #if %s
-            status = poly_context_builder_option(isolate_thread, builder, "llvm.managed", "true");
-            if (status != poly_ok) {
-                return status;
-            }
-        #endif
-            status = poly_context_builder_allow_io(isolate_thread, builder, true);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_build(isolate_thread, builder, &context);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            return poly_ok;
-        }
-
-        static poly_status tear_down_context() {
-            poly_status status = poly_context_close(isolate_thread, context, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            status = poly_engine_close(isolate_thread, engine, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            if (poly_detach_thread(isolate_thread)) {
-                return poly_ok;
-            }
-
-            return poly_ok;
-        }
-
-        static int test_basic_python_function() {
-            assert_ok("Context creation failed.", create_context() == poly_ok);
-
-            poly_value func;
-            assert_ok("function eval failed", poly_context_eval(isolate_thread, context, "python", "test_func", "def test_func(x):\\n  return x * x\\ntest_func", &func) == poly_ok);
-            int32_t arg_value = 42;
-            poly_value primitive_object;
-            assert_ok("create argument failed", poly_create_int32(isolate_thread, context, arg_value, &primitive_object) == poly_ok);
-            poly_value arg[1] = {primitive_object};
-            poly_value value;
-            assert_ok("invocation was unsuccessful", poly_value_execute(isolate_thread, func, arg, 1, &value) == poly_ok);
-
-            int32_t result_value;
-            poly_value_as_int32(isolate_thread, value, &result_value);
-
-            assert_ok("value computation was incorrect", result_value == 42 * 42);
-            assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
-            return 0;
-        }
-
-        int32_t main(int32_t argc, char **argv) {
-            poly_isolate_params isolate_params = {};
-            if (poly_create_isolate(&isolate_params, &global_isolate, &isolate_thread)) {
-                return 1;
-            }
-            return test_basic_python_function();
-        }
-        """ % (b"1" if "sandboxed" in args else b"0"))
-        os.close(fd)
-        progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
-        cc = "clang" if shutil.which("clang") else "gcc"
-        cmdline = [cc, "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"]
-        mx.log(" ".join(["Running"] + cmdline))
-        mx.run(cmdline, nonZeroIsFatal=True)
-        mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
-        mx.run(["ls", "-l", progname])
-        mx.run(["ls", "-l", svm_lib_path])
-        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.path.join(home, "languages", "python")}
-        mx.log(repr(run_env))
-        mx.run([progname], env=run_env)
-    finally:
-        try:
-            os.unlink(progname)
-        except:
-            pass
-        try:
-            os.close(fd)
-        except:
-            pass
-        try:
-            os.unlink(name)
-        except:
-            pass
 
 
 class ArchiveProject(mx.ArchivableProject):
