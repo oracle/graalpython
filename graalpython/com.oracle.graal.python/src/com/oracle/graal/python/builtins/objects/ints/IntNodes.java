@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -49,9 +51,9 @@ import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import java.math.BigInteger;
 
 /**
  * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
@@ -64,6 +66,7 @@ public final class IntNodes {
     /**
      * Equivalent of CPython's {@code _PyLong_Sign}. Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
      */
+    @GenerateInline(false)
     public abstract static class PyLongSign extends Node {
         public abstract int execute(Object value);
 
@@ -87,6 +90,7 @@ public final class IntNodes {
      * Equivalent to CPython's {@code _PyLong_NumBits}. Return the number of bits needed to
      * represent the absolute value of a long.
      */
+    @GenerateInline(false)
     public abstract static class PyLongNumBits extends Node {
         public abstract int execute(Object value);
 
@@ -110,8 +114,13 @@ public final class IntNodes {
      * Equivalent to CPython's {@code _PyLong_AsByteArray}. Convert the least-significant 8*n bits
      * of long v to a base-256 integer, stored in array bytes.
      */
+    @GenerateInline(inlineByDefault = true)
     public abstract static class PyLongAsByteArray extends Node {
-        public abstract byte[] execute(Object value, int size, boolean bigEndian);
+        public abstract byte[] execute(Node inliningTarget, Object value, int size, boolean bigEndian);
+
+        public final byte[] executeCached(Object value, int size, boolean bigEndian) {
+            return execute(this, value, size, bigEndian);
+        }
 
         protected static int asWellSizedData(int len) {
             switch (len) {
@@ -135,27 +144,27 @@ public final class IntNodes {
         }
 
         @Specialization
-        static byte[] doArbitraryBytesLong(long value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static byte[] doArbitraryBytesLong(Node inliningTarget, long value, int size, boolean bigEndian,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, PInt.longToBigInteger(value), size);
             } catch (OverflowException oe) {
-                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
 
         @Specialization
-        static byte[] doPInt(PInt value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static byte[] doPInt(Node inliningTarget, PInt value, int size, boolean bigEndian,
+                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, value.getValue(), size);
             } catch (OverflowException oe) {
-                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
@@ -165,8 +174,13 @@ public final class IntNodes {
      * Equivalent to CPython's {@code _PyLong_FromByteArray}. View the n unsigned bytes as a binary
      * integer in base 256, and return a Python int with the same numeric value.
      */
+    @GenerateInline(inlineByDefault = true)
     public abstract static class PyLongFromByteArray extends Node {
-        public abstract Object execute(byte[] data, boolean bigEndian);
+        public abstract Object execute(Node inliningTarget, byte[] data, boolean bigEndian);
+
+        public final Object executeCached(byte[] data, boolean bigEndian) {
+            return execute(this, data, bigEndian);
+        }
 
         protected static boolean fitsInLong(byte[] data) {
             return data.length <= Long.BYTES;
@@ -200,7 +214,7 @@ public final class IntNodes {
 
         @Specialization(guards = "!fitsInLong(data)")
         static Object doPInt(byte[] data, boolean bigEndian,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return factory.createInt(support.getBigInteger(data, 0));
         }

@@ -41,7 +41,7 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -91,7 +91,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         public Object reduce(PEnumerate self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             Object iterator = self.getDecoratedIterator();
             Object index = self.getIndex(inliningTarget, bigIntIndexProfile);
             PTuple contents = factory().createTuple(new Object[]{iterator, index});

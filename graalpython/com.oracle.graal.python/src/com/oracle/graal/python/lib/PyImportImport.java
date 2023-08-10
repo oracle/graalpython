@@ -49,12 +49,14 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -64,50 +66,52 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Equivalent of CPython's {@code PyImport_Import}.
  */
-public abstract class PyImportImport extends PNodeWithState {
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyImportImport extends Node {
 
     public static final TruffleString T_LEVEL = tsLiteral("level");
     public static final TruffleString T_FROMLIST = tsLiteral("fromlist");
 
-    public abstract Object execute(VirtualFrame frame, TruffleString name);
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, TruffleString name);
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, TruffleString moduleName,
-                    @Bind("this") Node inliningTarget,
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, TruffleString moduleName,
                     @Cached InlinedConditionProfile noGlobalsProfile,
                     @Cached InlinedConditionProfile dictBuiltinsProfile,
                     @Cached PyImportGetModule importGetModule,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached PyObjectGetAttr getAttrNode,
-                    @Cached CallNode callNode,
-                    @Cached AbstractImportNode.PyImportImportModuleLevelObject importModuleLevelObject,
+                    @Cached(inline = false) CallNode callNode,
+                    @Cached(inline = false) AbstractImportNode.PyImportImportModuleLevelObject importModuleLevelObject,
                     @Cached PyEvalGetGlobals getGlobals,
-                    @Cached GetDictFromGlobalsNode getDictFromGlobals) {
+                    @Cached(inline = false) GetDictFromGlobalsNode getDictFromGlobals,
+                    @Cached(inline = false) PythonObjectFactory factory) {
         // Get the builtins from current globals
-        Object globals = getGlobals.execute(frame);
+        Object globals = getGlobals.execute(frame, inliningTarget);
         Object builtins;
         if (noGlobalsProfile.profile(inliningTarget, globals != null)) {
-            builtins = getItemNode.execute(frame, getDictFromGlobals.execute(globals), T___BUILTINS__);
+            builtins = getItemNode.execute(frame, inliningTarget, getDictFromGlobals.execute(inliningTarget, globals), T___BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
-            builtins = importModuleLevelObject.execute(frame, getContext(), T_BUILTINS, null, null, 0);
-            globals = factory().createDict(new PKeyword[]{new PKeyword(T___BUILTINS__, builtins)});
+            builtins = importModuleLevelObject.execute(frame, PythonContext.get(inliningTarget), T_BUILTINS, null, null, 0);
+            globals = factory.createDict(new PKeyword[]{new PKeyword(T___BUILTINS__, builtins)});
         }
 
         // Get the __import__ function from the builtins
         Object importFunc;
         if (dictBuiltinsProfile.profile(inliningTarget, builtins instanceof PDict)) {
-            importFunc = getItemNode.execute(frame, builtins, T___IMPORT__);
+            importFunc = getItemNode.execute(frame, inliningTarget, builtins, T___IMPORT__);
         } else {
-            importFunc = getAttrNode.execute(frame, builtins, T___IMPORT__);
+            importFunc = getAttrNode.execute(frame, inliningTarget, builtins, T___IMPORT__);
         }
 
         // Call the __import__ function with the proper argument list Always use absolute import
         // here. Calling for side-effect of import.
         callNode.execute(importFunc, new Object[]{moduleName}, new PKeyword[]{
                         new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, globals),
-                        new PKeyword(T_FROMLIST, factory().createList()), new PKeyword(T_LEVEL, 0)
+                        new PKeyword(T_FROMLIST, factory.createList()), new PKeyword(T_LEVEL, 0)
         });
-        return importGetModule.execute(frame, moduleName);
+        return importGetModule.execute(frame, inliningTarget, moduleName);
     }
 }

@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -68,6 +68,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 84 -> 68
 public abstract class WriteUnraisableNode extends Node {
 
     private static final TruffleString T_IGNORED = tsLiteral("Exception ignored ");
@@ -87,15 +88,15 @@ public abstract class WriteUnraisableNode extends Node {
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookup,
                     @Cached CallNode callNode,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached TruffleString.ConcatNode concatNode,
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        PythonContext context = PythonContext.get(getClassNode);
+        PythonContext context = PythonContext.get(inliningTarget);
         try {
             PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
-            Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
+            Object unraisablehook = lookup.execute(frame, inliningTarget, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(inliningTarget, exception);
             Object traceback = getTracebackNode.execute(inliningTarget, exception);
             Object messageObj = PNone.NONE;

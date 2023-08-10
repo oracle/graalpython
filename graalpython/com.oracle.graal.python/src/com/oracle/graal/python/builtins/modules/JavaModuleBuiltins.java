@@ -77,6 +77,7 @@ import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J_JAVA)
@@ -144,9 +146,10 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object type(PString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return get(castToStringNode.execute(name), toJavaStringNode);
+            return get(castToStringNode.execute(inliningTarget, name), toJavaStringNode);
         }
 
         @Fallback
@@ -160,6 +163,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
         PNone add(Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
@@ -169,7 +173,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                 Object arg = args[i];
                 TruffleString entry = null;
                 try {
-                    entry = castToString.execute(arg);
+                    entry = castToString.execute(inliningTarget, arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
                     env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, T_JAR));
@@ -226,8 +230,9 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"})
+        @Specialization(guards = {"!isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
         boolean check(Object object, Object klass,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
@@ -242,8 +247,9 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"})
+        @Specialization(guards = {"isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
         boolean checkForeign(Object object, Object klass,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
@@ -279,8 +285,10 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         private Object getAttr(VirtualFrame frame, PythonModule mod) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, T_JAVA_PKG_LOADER);
-                getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, T_MAKE_GETATTR, T_JAVA);
+                // Note: passing VirtualFrame to TruffleBoundary methods (uncached execute) is fine,
+                // because this branch will never be compiled
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, null, mod, T_JAVA_PKG_LOADER);
+                getAttr = PyObjectCallMethodObjArgs.executeUncached(frame, javaLoader, T_MAKE_GETATTR, T_JAVA);
             }
             return getAttr;
         }

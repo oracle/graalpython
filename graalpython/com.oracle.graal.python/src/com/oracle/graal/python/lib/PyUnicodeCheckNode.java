@@ -44,10 +44,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -58,29 +59,30 @@ import com.oracle.truffle.api.strings.TruffleString;
  * object or an instance of a Unicode subtype.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyUnicodeCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object object) {
+        return PyUnicodeCheckNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
-    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
+    static boolean doString(Node inliningTarget, @SuppressWarnings("unused") TruffleString object) {
         return true;
     }
 
     @Specialization
-    static boolean doPString(@SuppressWarnings("unused") PString object) {
+    static boolean doPString(Node inliningTarget, @SuppressWarnings("unused") PString object) {
         return true;
     }
 
     @Fallback
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClass,
-                    @Cached IsSubtypeNode isSubtype) {
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached GetClassNode getClass,
+                    @Cached(inline = false) IsSubtypeNode isSubtype) {
         Object type = getClass.execute(inliningTarget, object);
         return isSubtype.execute(type, PythonBuiltinClassType.PString);
-    }
-
-    public static PyUnicodeCheckNode getUncached() {
-        return PyUnicodeCheckNodeGen.getUncached();
     }
 }

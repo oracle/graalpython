@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class GetDictIfExistsNode extends PNodeWithContext {
     public abstract PDict execute(Object object);
 
@@ -105,12 +107,14 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "getConstant")
+    @InliningCutoff
     static PDict doPythonObject(PythonObject object,
                     @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         return (PDict) dylib.getOrDefault(object, PythonObject.DICT, null);
     }
 
     @Specialization
+    @InliningCutoff
     PDict doNativeObject(PythonAbstractNativeObject object,
                     @Cached PythonToNativeNode toSulong,
                     @Cached NativeToPythonNode toJava,

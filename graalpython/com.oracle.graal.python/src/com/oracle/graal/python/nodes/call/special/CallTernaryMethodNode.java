@@ -52,15 +52,19 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
@@ -83,6 +87,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     }
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
+    @InliningCutoff
     static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
                     @Cached GenericInvokeNode invokeNode) {
         RootCallTarget callTarget = PythonLanguage.get(invokeNode).getDescriptorCallTarget(info);
@@ -137,7 +142,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object doBuiltinMethodCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 3)") PythonBuiltinBaseNode builtinNode) {
@@ -154,7 +159,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 4)") PythonBuiltinBaseNode builtinNode) {
@@ -164,10 +169,12 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     @Specialization(guards = "!isTernaryBuiltinDescriptor(func)", replaces = {"doBuiltinFunctionCached", "doBuiltinFunctionCtCached", "doBuiltinFunctionCachedReverse",
                     "doBuiltinFunctionCtCachedReverse", "doBuiltinMethodCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext", "callSelfMethod"})
     @Megamorphic
+    @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallNode callNode,
-                    @Cached ConditionProfile isBoundProfile) {
-        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+                    @Cached InlinedConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {
             return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[]{arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);

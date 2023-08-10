@@ -229,8 +229,10 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -263,10 +265,13 @@ import com.oracle.truffle.api.strings.TruffleString;
  * </li>
  * </ul>
  */
-
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
+@GenerateInline(false) // Footprint reduction 28 -> 9
 public abstract class PythonObjectFactory extends Node {
+    // Note: we're keeping this not inlined for now because:
+    // - overwhelming number of usages of non-execute entry points to refactor
+    // - often used lazily and as a @Child, most notably in all the builtins
 
     @NeverDefault
     public static PythonObjectFactory create() {
@@ -291,10 +296,15 @@ public abstract class PythonObjectFactory extends Node {
     static AllocationReporter doTrace(Object o, long size,
                     @Cached(value = "getAllocationReporter()", allowUncached = true) AllocationReporter reporter) {
         if (reporter.isActive()) {
-            reporter.onEnter(null, 0, size);
-            reporter.onReturnValue(o, 0, size);
+            doTraceImpl(o, size, reporter);
         }
         return null;
+    }
+
+    @InliningCutoff
+    private static void doTraceImpl(Object o, long size, AllocationReporter reporter) {
+        reporter.onEnter(null, 0, size);
+        reporter.onReturnValue(o, 0, size);
     }
 
     @NeverDefault
@@ -545,7 +555,7 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, PythonAbstractClass[] bases) {
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
+        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.executeUncached(result), language);
         result.initializeMroShape(language);
         return result;
     }

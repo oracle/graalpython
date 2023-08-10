@@ -59,6 +59,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -100,8 +103,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -235,8 +237,12 @@ public abstract class PGuards {
         return BuiltinMethodDescriptor.isInstance(value);
     }
 
-    public static boolean isClass(Object obj, TypeNodes.IsTypeNode isTypeNode) {
-        return isTypeNode.execute(obj);
+    public static boolean isClass(Node inliningTarget, Object obj, TypeNodes.IsTypeNode isTypeNode) {
+        return isTypeNode.execute(inliningTarget, obj);
+    }
+
+    public static boolean isClassUncached(Object obj) {
+        return TypeNodes.IsTypeNode.executeUncached(obj);
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -289,6 +295,10 @@ public abstract class PGuards {
 
     public static boolean isList(Object o) {
         return o instanceof PList;
+    }
+
+    public static boolean isEconomicMapOrEmpty(HashingStorage self) {
+        return self instanceof EconomicMapStorage || self instanceof EmptyStorage;
     }
 
     public static boolean isObjectStorageIterator(PSequenceIterator iterator) {
@@ -605,13 +615,7 @@ public abstract class PGuards {
     }
 
     @InliningCutoff
-    public static boolean cannotBeOverridden(Object object, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(object);
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    @InliningCutoff
-    public static boolean cannotBeOverridden(Object object, Node inliningTarget, InlinedGetClassNode getClassNode) {
+    public static boolean cannotBeOverridden(Object object, Node inliningTarget, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(inliningTarget, object);
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
@@ -666,8 +670,8 @@ public abstract class PGuards {
     }
 
     @InliningCutoff
-    public static boolean isIndexOrSlice(PyIndexCheckNode indexCheckNode, Object key) {
-        return indexCheckNode.execute(key) || isPSlice(key);
+    public static boolean isIndexOrSlice(Node inliningTarget, PyIndexCheckNode indexCheckNode, Object key) {
+        return indexCheckNode.execute(inliningTarget, key) || isPSlice(key);
     }
 
     @InliningCutoff

@@ -85,7 +85,7 @@ public final class PPartial extends PythonBuiltinObject {
 
     public void setArgs(Node inliningTarget, PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.ToArrayNode arrayNode) {
         this.argsTuple = args;
-        this.args = arrayNode.execute(inliningTarget, storageNode.execute(args));
+        this.args = arrayNode.execute(inliningTarget, storageNode.execute(inliningTarget, args));
     }
 
     public PDict getKw() {
@@ -99,13 +99,13 @@ public final class PPartial extends PythonBuiltinObject {
         return kw;
     }
 
-    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageCopy copyNode) {
+    public PDict getKwCopy(Node inliningTarget, PythonObjectFactory factory, HashingStorageCopy copyNode) {
         assert kw != null;
-        return factory.createDict(copyNode.execute(kw.getDictStorage()));
+        return factory.createDict(copyNode.execute(inliningTarget, kw.getDictStorage()));
     }
 
-    public boolean hasKw(HashingStorageLen lenNode) {
-        return lenNode.execute(kw.getDictStorage()) > 0;
+    public boolean hasKw(Node inliningTarget, HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, kw.getDictStorage()) > 0;
     }
 
     public void setKw(PDict kwArgs) {

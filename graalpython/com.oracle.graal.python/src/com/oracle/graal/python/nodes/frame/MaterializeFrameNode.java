@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -58,7 +59,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  **/
 @ReportPolymorphism
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class MaterializeFrameNode extends Node {
 
     @NeverDefault
@@ -142,10 +144,11 @@ public abstract class MaterializeFrameNode extends Node {
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
     static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+                    @Bind("this") Node inliningTarget,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
-                    @Cached ConditionProfile syncProfile) {
+                    @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (syncProfile.profile(forceSync && !hasGeneratorFrame(frameToMaterialize))) {
+        if (syncProfile.profile(inliningTarget, forceSync && !hasGeneratorFrame(frameToMaterialize))) {
             syncValuesNode.execute(pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {

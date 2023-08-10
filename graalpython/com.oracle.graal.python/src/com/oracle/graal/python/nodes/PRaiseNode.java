@@ -69,6 +69,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 32 -> 13
 public abstract class PRaiseNode extends Node {
 
     public final PException execute(Node raisingNode, PythonBuiltinClassType type, Object cause, Object format, Object[] arguments) {
@@ -184,7 +185,7 @@ public abstract class PRaiseNode extends Node {
                     @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClassType cachedType,
-                    @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         throw raiseExceptionObject(raisingNode, factory.createBaseException(cachedType, data));
     }
 

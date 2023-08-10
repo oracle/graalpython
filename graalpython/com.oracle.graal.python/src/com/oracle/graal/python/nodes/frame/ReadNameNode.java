@@ -46,16 +46,20 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
     public final Object execute(VirtualFrame frame, TruffleString attributeId) {
         CompilerAsserts.partialEvaluationConstant(attributeId);
@@ -68,8 +72,9 @@ public abstract class ReadNameNode extends PNodeWithContext implements AccessNam
         return ReadNameNodeGen.create();
     }
 
-    private Object readGlobalsIfKeyError(VirtualFrame frame, TruffleString attributeId, ReadGlobalOrBuiltinNode readGlobalNode, PException e, IsBuiltinClassProfile keyError) {
-        e.expect(PythonBuiltinClassType.KeyError, keyError);
+    private static Object readGlobalsIfKeyError(VirtualFrame frame, Node inliningTarget, TruffleString attributeId, ReadGlobalOrBuiltinNode readGlobalNode, PException e,
+                    IsBuiltinObjectProfile keyError) {
+        e.expect(inliningTarget, PythonBuiltinClassType.KeyError, keyError);
         return readGlobalNode.execute(frame, attributeId);
     }
 
@@ -78,18 +83,19 @@ public abstract class ReadNameNode extends PNodeWithContext implements AccessNam
     }
 
     @Specialization(guards = "!hasLocals(frame)")
-    protected Object readFromLocals(VirtualFrame frame, TruffleString attributeId,
-                    @Cached ReadGlobalOrBuiltinNode readGlobalNode) {
+    protected static Object readFromLocals(VirtualFrame frame, TruffleString attributeId,
+                    @Exclusive @Cached ReadGlobalOrBuiltinNode readGlobalNode) {
         return readGlobalNode.execute(frame, attributeId);
     }
 
     @Specialization(guards = "hasLocals(frame)")
-    protected Object readFromLocalsDict(VirtualFrame frame, TruffleString attributeId,
-                    @Cached ReadGlobalOrBuiltinNode readGlobalOrBuiltinNode,
+    protected static Object readFromLocalsDict(VirtualFrame frame, TruffleString attributeId,
+                    @Bind("this") Node inliningTarget,
+                    @Cached ReadGlobalOrBuiltinNode.Lazy readGlobalOrBuiltinNode,
                     @Cached ReadFromLocalsNode readFromLocals) {
-        Object result = readFromLocals.execute(frame, PArguments.getSpecialArgument(frame), attributeId);
+        Object result = readFromLocals.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), attributeId);
         if (result == PNone.NO_VALUE) {
-            return readGlobalOrBuiltinNode.execute(frame, attributeId);
+            return readGlobalOrBuiltinNode.get(inliningTarget).execute(frame, attributeId);
         } else {
             return result;
         }

@@ -101,7 +101,7 @@ public final class WrapTpNew extends SlotWrapper {
                 reportPolymorphicSpecialize();
                 isType = insert(IsTypeNode.create());
             }
-            if (!isType.execute(cls)) {
+            if (!isType.executeCached(cls)) {
                 if ((state & NOT_CLASS_STATE) == 0) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     reportPolymorphicSpecialize();

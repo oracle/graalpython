@@ -62,8 +62,11 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
@@ -83,7 +86,12 @@ public final class PythonCextComplexBuiltins {
         }
     }
 
+    static boolean isComplexSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PComplex);
+    }
+
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
+    @ImportStatic(PythonCextComplexBuiltins.class)
     abstract static class PyComplex_RealAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_REAL = tsLiteral("real");
@@ -93,38 +101,37 @@ public final class PythonCextComplexBuiltins {
             return d.getReal();
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         Object asDouble(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             try {
-                return callNode.execute(getAttr.execute(null, obj, T_REAL));
+                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_REAL));
             } catch (PException e) {
                 throw raise(TypeError);
             }
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         Object asDoubleFloat(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             try {
-                return callNode.execute(getAttr.execute(null, obj, T___FLOAT__));
+                return callNode.execute(getAttr.execute(null, inliningTarget, obj, T___FLOAT__));
             } catch (PException e) {
                 throw raise(TypeError);
             }
-        }
-
-        protected boolean isComplexSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
         }
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
+    @ImportStatic(PythonCextComplexBuiltins.class)
     abstract static class PyComplex_ImagAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_IMAG = tsLiteral("imag");
@@ -134,25 +141,23 @@ public final class PythonCextComplexBuiltins {
             return d.getImag();
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object asDouble(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return callNode.execute(getAttr.execute(null, obj, T_IMAG));
+            return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_IMAG));
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         Object asDouble(Object obj,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return 0.0;
-        }
-
-        protected boolean isComplexSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
         }
     }
 

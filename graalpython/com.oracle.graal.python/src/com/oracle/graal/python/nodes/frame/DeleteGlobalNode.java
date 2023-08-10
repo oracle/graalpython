@@ -46,14 +46,17 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 36
 public abstract class DeleteGlobalNode extends PNodeWithContext {
     public static DeleteGlobalNode create() {
         return DeleteGlobalNodeGen.create();
@@ -67,28 +70,32 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
     public abstract void executeWithGlobalsImpl(VirtualFrame frame, Object globals, TruffleString attributeId);
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+    static void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
-        deleteNode.execute(frame, cachedGlobals, attributeId);
+        deleteNode.execute(frame, inliningTarget, cachedGlobals, attributeId);
     }
 
     @Specialization(replaces = "deleteDictCached")
-    void deleteDict(VirtualFrame frame, PDict globals, TruffleString attributeId,
+    static void deleteDict(VirtualFrame frame, PDict globals, TruffleString attributeId,
+                    @Bind("this") Node inliningTarget,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
-        deleteNode.execute(frame, globals, attributeId);
+        deleteNode.execute(frame, inliningTarget, globals, attributeId);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
+    static void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
-                    @Cached DeleteAttributeNode storeNode) {
-        storeNode.execute(frame, cachedGlobals, attributeId);
+                    @Shared @Cached DeleteAttributeNode storeNode) {
+        storeNode.execute(frame, inliningTarget, cachedGlobals, attributeId);
     }
 
     @Specialization(replaces = "deleteModuleCached")
-    void deleteModule(VirtualFrame frame, PythonModule globals, TruffleString attributeId,
-                    @Cached DeleteAttributeNode storeNode) {
-        storeNode.execute(frame, globals, attributeId);
+    static void deleteModule(VirtualFrame frame, PythonModule globals, TruffleString attributeId,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached DeleteAttributeNode storeNode) {
+        storeNode.execute(frame, inliningTarget, globals, attributeId);
     }
 }

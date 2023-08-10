@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,10 +43,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesView)
 public final class DictValuesBuiltins extends PythonBuiltins {
@@ -70,8 +72,9 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
         static Object run(PDictView self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(self.getWrappedDict().getDictStorage());
+            return lenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
         }
     }
 
@@ -80,10 +83,11 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doPDictValuesView(PDictValuesView self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictValueIterator(getIterator.execute(storage), storage, lenNode.execute(storage));
+            return factory().createDictValueIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -92,10 +96,11 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doPDictValuesView(PDictValuesView self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetReverseIterator getReverseIter) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictValueIterator(getReverseIter.execute(storage), storage, lenNode.execute(storage));
+            return factory().createDictValueIterator(getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 }

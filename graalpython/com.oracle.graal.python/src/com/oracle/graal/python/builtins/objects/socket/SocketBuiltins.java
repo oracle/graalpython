@@ -102,6 +102,7 @@ import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -141,11 +142,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, @SuppressWarnings("unused") PNone fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached GilNode gil) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
+            auditNode.audit(inliningTarget, "socket.__new__", self, familyIn, typeIn, protoIn);
             int family = familyIn;
             if (family == -1) {
                 family = PosixConstants.AF_INET.value;
@@ -187,16 +189,18 @@ public final class SocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(fileno)")
+        @SuppressWarnings("truffle-static-method")
         Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, Object fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyLongAsIntNode asIntNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
+            auditNode.audit(inliningTarget, "socket.__new__", self, familyIn, typeIn, protoIn);
 
-            int fd = asIntNode.execute(frame, fileno);
+            int fd = asIntNode.execute(frame, inliningTarget, fileno);
             if (fd < 0) {
                 throw raise(ValueError, ErrorMessages.NEG_FILE_DESC);
             }
@@ -309,11 +313,12 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object bind(VirtualFrame frame, PSocket self, Object address,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLibrary,
+                        @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil) {
             UniversalSockAddr addr = getSockAddrArgNode.execute(frame, self, address, "bind");
-            auditNode.audit("socket.bind", self, address);
+            auditNode.audit(inliningTarget, "socket.bind", self, address);
 
             try {
                 gil.release(true);
@@ -365,12 +370,13 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object connect(VirtualFrame frame, PSocket self, Object address,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect");
 
-            auditNode.audit("socket.connect", self, address);
+            auditNode.audit(inliningTarget, "socket.connect", self, address);
 
             try {
                 doConnect(frame, getConstructAndRaiseNode(), posixLib, getPosixSupport(), gil, self, connectAddr);
@@ -423,12 +429,13 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object connectEx(VirtualFrame frame, PSocket self, Object address,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect_ex");
 
-            auditNode.audit("socket.connect", self, address); // sic! connect
+            auditNode.audit(inliningTarget, "socket.connect", self, address); // sic! connect
 
             try {
                 ConnectNode.doConnect(frame, getConstructAndRaiseNode(), posixLib, getPosixSupport(), gil, self, connectAddr);
@@ -856,6 +863,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -873,7 +881,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 flags = 0;
             } else {
                 address = maybeAddress;
-                flags = asIntNode.execute(frame, flagsOrAddress);
+                flags = asIntNode.execute(frame, inliningTarget, flagsOrAddress);
             }
 
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
@@ -881,7 +889,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 checkSelectable(this, socket);
 
                 UniversalSockAddr addr = getSockAddrArgNode.execute(frame, socket, address, "sendto");
-                auditNode.audit("socket.sendto", socket, address);
+                auditNode.audit(inliningTarget, "socket.sendto", socket, address);
 
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -1024,11 +1032,12 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyLongAsIntNode asIntNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongAsIntNode asIntNode) {
             byte[] bytes;
             int len;
             try {
-                int flag = asIntNode.execute(frame, value);
+                int flag = asIntNode.execute(frame, inliningTarget, value);
                 bytes = new byte[4];
                 len = bytes.length;
                 PythonUtils.ARRAY_ACCESSOR.putInt(bytes, 0, flag);
@@ -1053,8 +1062,9 @@ public final class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNone(none)")
         Object setNull(VirtualFrame frame, PSocket socket, int level, int option, @SuppressWarnings("unused") PNone none, Object buflenObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PyLongAsIntNode asIntNode) {
-            int buflen = asIntNode.execute(frame, buflenObj);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongAsIntNode asIntNode) {
+            int buflen = asIntNode.execute(frame, inliningTarget, buflenObj);
             if (buflen < 0) {
                 // GraalPython-specific because we don't have unsigned integers
                 throw raise(OSError, ErrorMessages.SETSECKOPT_BUFF_OUT_OFRANGE);

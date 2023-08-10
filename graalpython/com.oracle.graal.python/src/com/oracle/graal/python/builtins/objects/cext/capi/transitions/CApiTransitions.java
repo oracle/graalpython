@@ -85,7 +85,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -856,7 +856,7 @@ public class CApiTransitions {
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
                         @Bind("$node") Node inliningTarget,
-                        @Shared("primitive") @Cached InlinedConditionProfile isPrimitiveProfile) {
+                        @Exclusive @Cached InlinedConditionProfile isPrimitiveProfile) {
             return handleWrapper(inliningTarget, isPrimitiveProfile, false, value);
         }
 
@@ -871,7 +871,7 @@ public class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Shared("primitive") @Cached InlinedConditionProfile isPrimitiveProfile) {
+                        @Exclusive @Cached InlinedConditionProfile isPrimitiveProfile) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);

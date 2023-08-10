@@ -43,14 +43,16 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PySequenceIterSearchNode.LazyPySequenceIterSeachNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,22 +63,19 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PySequence_Contains}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PySequenceContainsNode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object container, Object key);
-
-    public final boolean execute(Object container, Object key) {
-        return execute(null, container, key);
-    }
+    public abstract boolean execute(Frame frame, Node inlining, Object container, Object key);
 
     @Specialization
-    boolean contains(Frame frame, Object container, Object key,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getReceiverClass,
-                    @Cached(parameters = "Contains") LookupSpecialMethodSlotNode lookupContains,
+    static boolean contains(Frame frame, Node inliningTarget, Object container, Object key,
+                    @Cached GetClassNode getReceiverClass,
+                    @Cached(parameters = "Contains", inline = false) LookupSpecialMethodSlotNode lookupContains,
                     @Cached IsBuiltinObjectProfile noContainsProfile,
-                    @Cached CallBinaryMethodNode callContains,
-                    @Cached PySequenceIterSearchNode iterSearch,
+                    @Cached(inline = false) CallBinaryMethodNode callContains,
+                    @Cached LazyPySequenceIterSeachNode iterSearch,
                     @Cached PyObjectIsTrueNode isTrue) {
         Object type = getReceiverClass.execute(inliningTarget, container);
         Object contains = PNone.NO_VALUE;
@@ -90,9 +89,9 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
             result = callContains.executeObject(frame, contains, container, key);
         }
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return iterSearch.execute(frame, container, key, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
+            return iterSearch.get(inliningTarget).executeCached(frame, container, key, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
         } else {
-            return isTrue.execute(frame, result);
+            return isTrue.execute(frame, inliningTarget, result);
         }
     }
 }

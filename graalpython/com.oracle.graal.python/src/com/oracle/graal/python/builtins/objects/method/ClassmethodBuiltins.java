@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltinsFactory.MakeMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -64,12 +63,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -93,7 +94,6 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
         /**
          * N.b.: cachedCallable.notNull is sufficient here, because
@@ -101,81 +101,84 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
          * {@code null}. So if it ever was not null and we cached that, it is being held alive by
          * the {@code self} argument now and there cannot be a race.
          */
-        @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self"})
-        Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+        @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self"}, limit = "3")
+        static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
-                        @Cached @Shared InlinedGetClassNode getClass) {
-            return makeMethod.execute(getClass.execute(inliningTarget, obj), cachedCallable);
+                        @Shared @Cached GetClassNode getClass,
+                        @Shared @Cached MakeMethodNode makeMethod) {
+            return makeMethod.execute(inliningTarget, getClass.execute(inliningTarget, obj), cachedCallable);
         }
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
         Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClass,
-                        @Cached @Shared InlinedBranchProfile uninitialized) {
-            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), uninitialized);
+                        @Cached @Shared GetClassNode getClass,
+                        @Cached @Shared InlinedBranchProfile uninitialized,
+                        @Shared @Cached MakeMethodNode makeMethod) {
+            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), uninitialized, makeMethod);
         }
 
         /**
          * @see #getCached
          */
-        @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self"})
-        Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+        @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self"}, limit = "3")
+        static Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
-                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
-            return makeMethod.execute(type, cachedCallable);
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
+                        @Shared @Cached MakeMethodNode makeMethod) {
+            return makeMethod.execute(inliningTarget, type, cachedCallable);
         }
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
         Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedBranchProfile uninitialized) {
-            return doGet(inliningTarget, self, type, uninitialized);
+                        @Cached @Shared InlinedBranchProfile uninitialized,
+                        @Shared @Cached MakeMethodNode makeMethod) {
+            return doGet(inliningTarget, self, type, uninitialized, makeMethod);
         }
 
-        private Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, InlinedBranchProfile uninitialized) {
+        private Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, InlinedBranchProfile uninitialized, MakeMethodNode makeMethod) {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter(inliningTarget);
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
-            return makeMethod.execute(type, callable);
+            return makeMethod.execute(inliningTarget, type, callable);
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     @ReportPolymorphism
     abstract static class MakeMethodNode extends PNodeWithContext {
-        abstract Object execute(Object self, Object func);
+        abstract Object execute(Node inliningTarget, Object self, Object func);
 
         @Specialization
         Object method(Object self, PFunction func,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createMethod(self, func);
         }
 
         @Specialization(guards = "!func.needsDeclaringType()")
         Object methodBuiltin(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createBuiltinMethod(self, func);
         }
 
         @Specialization(guards = "func.needsDeclaringType()")
         Object methodBuiltinWithDeclaringType(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createBuiltinMethod(self, func, func.getEnclosingType());
         }
 
         @Specialization(guards = "!isFunction(func)")
         Object generic(Object self, Object func,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createMethod(self, func);
-        }
-
-        static MakeMethodNode create() {
-            return MakeMethodNodeGen.create();
         }
     }
 
@@ -207,10 +210,11 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TruffleStringBuilder.AppendStringNode append,
                         @Cached TruffleStringBuilder.ToStringNode toString) {
-            TruffleString callableRepr = repr.execute(frame, self.getCallable());
+            TruffleString callableRepr = repr.execute(frame, inliningTarget, self.getCallable());
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, PREFIX_LEN + callableRepr.byteLength(TS_ENCODING) + SUFFIX_LEN);
             append.execute(sb, PREFIX);
             append.execute(sb, callableRepr);

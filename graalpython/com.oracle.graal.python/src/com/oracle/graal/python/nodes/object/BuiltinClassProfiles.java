@@ -115,9 +115,8 @@ public abstract class BuiltinClassProfiles {
         }
     }
 
-    @GenerateCached(false)
     @GenerateUncached
-    @GenerateInline
+    @GenerateInline(inlineByDefault = true)
     // TODO: DSL inlining - remove the Inline prefix
     public abstract static class InlineIsBuiltinClassProfile extends Node {
         public static InlineIsBuiltinClassProfile getUncached() {
@@ -135,6 +134,10 @@ public abstract class BuiltinClassProfiles {
             }
         }
 
+        public static InlineIsBuiltinClassProfile create() {
+            return InlineIsBuiltinClassProfileNodeGen.create();
+        }
+
         public final boolean profileIsBuiltinClass(Node inliningTarget, Object clazz, PythonBuiltinClassType type) {
             return execute(inliningTarget, clazz, type);
         }
@@ -144,6 +147,10 @@ public abstract class BuiltinClassProfiles {
         }
 
         abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass);
+
+        public final boolean profileClassCached(Object clazz, PythonBuiltinClassType pythonClass) {
+            return execute(this, clazz, pythonClass);
+        }
 
         @Specialization
         static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType pythonClass) {
@@ -174,16 +181,15 @@ public abstract class BuiltinClassProfiles {
 
         @Specialization
         static boolean doIt(Node inliningTarget, Object obj,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsAnyBuiltinClassProfile isAnyBuiltinClass) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             return isAnyBuiltinClass.execute(inliningTarget, clazz);
         }
     }
 
-    @GenerateCached(false)
     @GenerateUncached
-    @GenerateInline
+    @GenerateInline(inlineByDefault = true)
     public abstract static class IsBuiltinObjectProfile extends Node {
         public static boolean profileObjectUncached(Object obj, PythonBuiltinClassType type) {
             return IsBuiltinObjectProfileNodeGen.getUncached().profileObject(null, obj, type);
@@ -191,6 +197,10 @@ public abstract class BuiltinClassProfiles {
 
         public static IsBuiltinObjectProfile getUncached() {
             return IsBuiltinObjectProfileNodeGen.getUncached();
+        }
+
+        public static IsBuiltinObjectProfile create() {
+            return IsBuiltinObjectProfileNodeGen.create();
         }
 
         public final boolean profileException(Node inliningTarget, PException obj, PythonBuiltinClassType type) {
@@ -205,7 +215,7 @@ public abstract class BuiltinClassProfiles {
 
         @Specialization
         static boolean doIt(Node inliningTarget, Object obj, PythonBuiltinClassType type,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached InlineIsBuiltinClassProfile isBuiltinClass) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             return isBuiltinClass.profileIsBuiltinClass(inliningTarget, clazz, type);
@@ -224,7 +234,7 @@ public abstract class BuiltinClassProfiles {
 
         @Specialization
         static boolean doIt(Node inliningTarget, Object obj, PythonBuiltinClassType forbiddenType,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsOtherBuiltinClassProfile isOtherBuiltinClass) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             return isOtherBuiltinClass.execute(inliningTarget, clazz, forbiddenType);
@@ -255,8 +265,8 @@ public abstract class BuiltinClassProfiles {
 
         @Specialization
         static boolean doIt(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
             Object clazz = getClassNode.execute(inliningTarget, obj);
             return isSubtypeNode.execute(frame, clazz, type);
         }

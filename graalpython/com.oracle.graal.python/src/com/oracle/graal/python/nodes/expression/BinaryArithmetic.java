@@ -72,6 +72,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@SuppressWarnings("truffle-inlining")
 public enum BinaryArithmetic {
     Add(BinaryArithmeticFactory.AddNodeGen::create),
     Sub(BinaryArithmeticFactory.SubNodeGen::create),

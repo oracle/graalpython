@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,18 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
+@GenerateInline
+@GenerateCached(false)
 abstract class CastToJavaLongNode extends PNodeWithContext {
 
-    public abstract long execute(Object x) throws CannotCastException;
+    public abstract long execute(Node inliningTarget, Object x) throws CannotCastException;
 
     @Specialization
     static long doLong(byte x) {
@@ -78,10 +83,10 @@ abstract class CastToJavaLongNode extends PNodeWithContext {
     }
 
     @Specialization
-    static long doNativeObject(PythonNativeObject x,
+    static long doNativeObject(Node inliningTarget, PythonNativeObject x,
                     @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PInt)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }

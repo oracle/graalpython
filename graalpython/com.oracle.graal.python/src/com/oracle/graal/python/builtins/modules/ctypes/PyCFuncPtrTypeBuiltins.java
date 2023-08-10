@@ -77,12 +77,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
@@ -112,6 +114,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCFuncPtrType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CastToJavaIntExactNode asNumber,
@@ -142,47 +145,47 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute(result, stgdict);
+            addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
+            setDict.execute(inliningTarget, result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
             stgdict.size = FFIType.ffi_type_pointer.size;
             stgdict.setfunc = FieldSet.nil;
             stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
-            Object ob = getItem.execute(stgdict.getDictStorage(), T_FLAGS_);
+            Object ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
                 throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
-            stgdict.flags = asNumber.execute(ob) | TYPEFLAG_ISPOINTER;
+            stgdict.flags = asNumber.execute(inliningTarget, ob) | TYPEFLAG_ISPOINTER;
 
             /* _argtypes_ is optional... */
-            ob = getItem.execute(stgdict.getDictStorage(), T_ARGTYPES_);
+            ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
-                Object[] obtuple = getArray.execute(((PTuple) ob).getSequenceStorage());
-                Object[] converters = converters_from_argtypes(frame, obtuple, getRaiseNode(), lookupAttr);
+                Object[] obtuple = getArray.execute(inliningTarget, ((PTuple) ob).getSequenceStorage());
+                Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, getRaiseNode(), lookupAttr);
                 stgdict.argtypes = obtuple;
                 stgdict.converters = converters;
             }
 
-            ob = getItem.execute(stgdict.getDictStorage(), T_RESTYPE_);
+            ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_RESTYPE_);
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
-                if (dict == null && !callableCheck.execute(ob)) {
+                if (dict == null && !callableCheck.execute(inliningTarget, ob)) {
                     throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
-                Object checker = lookupAttr.execute(frame, ob, T__CHECK_RETVAL_);
+                Object checker = lookupAttr.execute(frame, inliningTarget, ob, T__CHECK_RETVAL_);
                 stgdict.checker = checker != PNone.NO_VALUE ? checker : null;
             }
 
             return result;
         }
 
-        static Object[] converters_from_argtypes(VirtualFrame frame, Object[] args,
+        static Object[] converters_from_argtypes(VirtualFrame frame, Node inliningTarget, Object[] args,
                         PRaiseNode raiseNode,
                         PyObjectLookupAttr lookupAttr) {
             int nArgs = args.length;
@@ -192,7 +195,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 Object cnv;
                 Object tp = args[i];
 
-                cnv = lookupAttr.execute(frame, tp, T_FROM_PARAM);
+                cnv = lookupAttr.execute(frame, inliningTarget, tp, T_FROM_PARAM);
                 if (cnv == PNone.NO_VALUE) {
                     throw raiseNode.raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,10 +55,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -66,25 +69,27 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@code double}). Raises {@code ValueError} when the conversion fails.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyFloatFromString extends PNodeWithContext {
-    public abstract double execute(Frame frame, Object obj);
+    public abstract double execute(Frame frame, Node inliningTarget, Object obj);
 
-    public abstract double execute(Frame frame, TruffleString obj);
+    public abstract double execute(Frame frame, Node inliningTarget, TruffleString obj);
 
     @Specialization
-    static double doString(VirtualFrame frame, TruffleString object,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                    @Shared("repr") @Cached PyObjectReprAsTruffleStringNode reprNode,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        return convertStringToDouble(frame, toJavaStringNode.execute(object), object, reprNode, raiseNode);
+    static double doString(VirtualFrame frame, Node inliningTarget, TruffleString object,
+                    @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode,
+                    @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+        return convertStringToDouble(frame, inliningTarget, toJavaStringNode.execute(object), object, reprNode, raiseNode);
     }
 
     @Specialization
-    double doGeneric(VirtualFrame frame, Object object,
-                    @Cached(parameters = "3") BufferAcquireGenerateUncachedNode acquireNode,
-                    @Cached CastToJavaStringNode cast,
-                    @Shared("repr") @Cached PyObjectReprAsTruffleStringNode reprNode,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+    static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached(parameters = "3", inline = false) BufferAcquireGenerateUncachedNode acquireNode,
+                    @Cached(inline = false) CastToJavaStringNode cast,
+                    @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
         String string = null;
         try {
             string = cast.execute(object);
@@ -107,9 +112,9 @@ public abstract class PyFloatFromString extends PNodeWithContext {
             }
         }
         if (string != null) {
-            return convertStringToDouble(frame, string, object, reprNode, raiseNode);
+            return convertStringToDouble(frame, inliningTarget, string, object, reprNode, raiseNode);
         }
-        throw raiseNode.raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", object);
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", object);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -117,7 +122,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         return new String(bytes, offset, length);
     }
 
-    private static double convertStringToDouble(VirtualFrame frame, String src, Object origObj, PyObjectReprAsTruffleStringNode reprNode, PRaiseNode raiseNode) {
+    private static double convertStringToDouble(VirtualFrame frame, Node inliningTarget, String src, Object origObj, PyObjectReprAsTruffleStringNode reprNode, PRaiseNode.Lazy raiseNode) {
         String str = FloatUtils.removeUnicodeAndUnderscores(src);
         // Adapted from CPython's float_from_string_inner
         if (str != null) {
@@ -133,12 +138,12 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         }
         TruffleString repr;
         try {
-            repr = reprNode.execute(frame, origObj);
+            repr = reprNode.execute(frame, inliningTarget, origObj);
         } catch (PException e) {
             // Failed to format the message. Mirrors CPython behavior when the repr fails
-            throw raiseNode.raise(ValueError);
+            throw raiseNode.get(inliningTarget).raise(ValueError);
         }
-        throw raiseNode.raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, repr);
+        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, repr);
     }
 
 }

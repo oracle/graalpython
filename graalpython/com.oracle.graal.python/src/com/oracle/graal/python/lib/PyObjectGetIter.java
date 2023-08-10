@@ -49,12 +49,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -66,25 +68,35 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent PyObject_GetIter
  */
 @GenerateUncached
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetIter extends Node {
-    public abstract Object execute(Frame frame, Object receiver);
+    public static Object executeUncached(Object obj) {
+        return PyObjectGetIterNodeGen.getUncached().execute(null, null, obj);
+    }
+
+    public final Object executeCached(Frame frame, Object receiver) {
+        return execute(frame, this, receiver);
+    }
+
+    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver);
 
     @Specialization
     static Object getIterRange(PIntRange object,
-                    @Shared @Cached PythonObjectFactory factory) {
+                    @Shared @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntRangeIterator(object);
     }
 
     @Specialization
-    static Object getIter(Frame frame, Object receiver,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getReceiverClass,
-                    @Cached(parameters = "Iter") LookupSpecialMethodSlotNode lookupIter,
+    @InliningCutoff
+    static Object getIter(Frame frame, Node inliningTarget, Object receiver,
+                    @Cached GetClassNode getReceiverClass,
+                    @Cached(parameters = "Iter", inline = false) LookupSpecialMethodSlotNode lookupIter,
                     @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Shared @Cached PythonObjectFactory factory,
+                    @Shared @Cached(inline = false) PythonObjectFactory factory,
                     @Cached PRaiseNode.Lazy raise,
-                    @Cached CallUnaryMethodNode callIter,
+                    @Cached(inline = false) CallUnaryMethodNode callIter,
                     @Cached PyIterCheckNode checkNode) {
         Object type = getReceiverClass.execute(inliningTarget, receiver);
         Object iterMethod = PNone.NO_VALUE;
@@ -94,7 +106,7 @@ public abstract class PyObjectGetIter extends Node {
             // ignore
         }
         if (iterMethod instanceof PNone) {
-            if (sequenceCheckNode.execute(receiver)) {
+            if (sequenceCheckNode.execute(inliningTarget, receiver)) {
                 return factory.createSequenceIterator(receiver);
             }
         } else {

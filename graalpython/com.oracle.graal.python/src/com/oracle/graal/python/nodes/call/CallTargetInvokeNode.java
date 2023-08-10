@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,12 +55,15 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
@@ -106,9 +109,10 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(guards = {"globals == null", "closure == null"})
     protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
-                    @Cached ConditionProfile generatorFunctionProfile) {
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached InlinedConditionProfile generatorFunctionProfile) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
+        optionallySetGeneratorFunction(inliningTarget, arguments, ct, generatorFunctionProfile, callee);
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:
         // 1. This node is the first invoke node used via interop.
@@ -130,10 +134,11 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(replaces = "doNoClosure")
     protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
-                    @Cached ConditionProfile generatorFunctionProfile) {
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached InlinedConditionProfile generatorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, callee, null, null, arguments, generatorFunctionProfile);
+        return doNoClosure(frame, callee, null, null, arguments, inliningTarget, generatorFunctionProfile);
     }
 
     public final CallTarget getCallTarget() {

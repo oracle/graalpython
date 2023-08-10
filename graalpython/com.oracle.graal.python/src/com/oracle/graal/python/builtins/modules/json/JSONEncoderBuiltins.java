@@ -161,7 +161,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     if (!isString(result)) {
                         throw raise(TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
-                    builder.appendStringUncached(CastToTruffleStringNode.getUncached().execute(result));
+                    builder.appendStringUncached(CastToTruffleStringNode.executeUncached(result));
                     break;
                 default:
                     assert false;

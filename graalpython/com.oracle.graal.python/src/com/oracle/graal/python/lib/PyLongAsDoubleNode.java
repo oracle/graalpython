@@ -48,16 +48,25 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double. Raises
  * {@code OverflowError} on overflow.
  */
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 public abstract class PyLongAsDoubleNode extends PNodeWithContext {
-    public abstract Object execute(Object object);
+    public static Object executeUncached(Object object) {
+        return PyLongAsDoubleNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract Object execute(Node inliningTarget, Object object);
 
     @Specialization
     static double doBoolean(boolean self) {
@@ -81,7 +90,7 @@ public abstract class PyLongAsDoubleNode extends PNodeWithContext {
 
     @Fallback
     Object fallback(Object object) {
-        if (!PyLongCheckNodeGen.getUncached().execute(object)) {
+        if (!PyLongCheckNode.executeUncached(object)) {
             throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
         return PNotImplemented.NOT_IMPLEMENTED;

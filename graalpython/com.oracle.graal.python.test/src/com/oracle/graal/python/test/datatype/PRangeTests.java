@@ -68,7 +68,7 @@ public class PRangeTests {
             PRange range = factory.createIntRange(10);
             int index = 0;
             TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
-            Object iter = PyObjectGetIter.getUncached().execute(null, range);
+            Object iter = PyObjectGetIter.executeUncached(range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
             IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();
@@ -96,7 +96,7 @@ public class PRangeTests {
             PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
             int index = 0;
             TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
-            Object iter = PyObjectGetIter.getUncached().execute(null, range);
+            Object iter = PyObjectGetIter.executeUncached(range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
             IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();

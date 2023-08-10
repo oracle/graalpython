@@ -134,7 +134,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -302,7 +302,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
             if (needsMainImporter) {
                 Object sysPath = sysModule.getAttribute(T_PATH);
-                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, T_INSERT, 0, inputFilePath);
+                PyObjectCallMethodObjArgs.getUncached().execute(null, null, sysPath, T_INSERT, 0, inputFilePath);
             } else {
                 // This is normally done by PythonLanguage, but is suppressed when we have a path
                 // argument
@@ -350,7 +350,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         // Equivalent of CPython's pymain_run_module
         private static void runModule(TruffleString module, boolean setArgv0) {
             Object runpy = AbstractImportNode.importModule(T_RUNPY);
-            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, T__RUN_MODULE_AS_MAIN, module, setArgv0);
+            PyObjectCallMethodObjArgs.executeUncached(runpy, T__RUN_MODULE_AS_MAIN, module, setArgv0);
         }
 
         // Equivalent of CPython's pymain_get_importer, but returns a boolean
@@ -372,7 +372,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                             importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
-                            if (!IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
+                            if (!IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
                                 throw e;
                             }
                         }
@@ -410,9 +410,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object filename,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Shared @Cached TruffleString.EqualNode eqNode) {
-            return doString(frame, castToTruffleStringNode.execute(filename), eqNode);
+            return doString(frame, castToTruffleStringNode.execute(inliningTarget, filename), eqNode);
         }
     }
 
@@ -491,6 +492,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
@@ -498,7 +500,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
             } else {
-                TruffleString moduleName = (TruffleString) getItem.execute(frame, globals, T___NAME__);
+                TruffleString moduleName = (TruffleString) getItem.execute(frame, inliningTarget, globals, T___NAME__);
                 builtinModule = getCore().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }

@@ -152,9 +152,10 @@ public final class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        public int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+        public static int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
-            int len = sizeNode.execute(frame, self.getObject());
+            int len = sizeNode.execute(frame, inliningTarget, self.getObject());
             if (len < self.index) {
                 return 0;
             }
@@ -168,32 +169,35 @@ public final class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(PStringReverseIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             if (self.isExhausted()) {
-                return reduceInternal(self, "", null, getClassNode);
+                return reduceInternal(inliningTarget, self, "", null, getClassNode);
             }
-            return reduceInternal(self, self.value, self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, self.value, self.index, getClassNode);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object reduce(PSequenceReverseIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             if (self.isExhausted()) {
-                return reduceInternal(self, factory().createList(), null, getClassNode);
+                return reduceInternal(inliningTarget, self, factory().createList(), null, getClassNode);
             }
-            return reduceInternal(self, self.getPSequence(), self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, self.getPSequence(), self.index, getClassNode);
         }
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T___REDUCE__)") LookupAndCallUnaryNode callReduce,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             Object content = callReduce.executeObject(frame, self.getPSequence());
-            return reduceInternal(self, content, self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, content, self.index, getClassNode);
         }
 
-        private PTuple reduceInternal(Object self, Object arg, Object state, GetClassNode getClassNode) {
-            Object revIter = getClassNode.execute(self);
+        private PTuple reduceInternal(Node inliningTarget, Object self, Object arg, Object state, GetClassNode getClassNode) {
+            Object revIter = getClassNode.execute(inliningTarget, self);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
@@ -209,8 +213,9 @@ public final class ReversedBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         public static Object setState(VirtualFrame frame, PBuiltinIterator self, Object index,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            int idx = asSizeNode.executeExact(frame, index);
+            int idx = asSizeNode.executeExact(frame, inliningTarget, index);
             if (idx < -1) {
                 idx = -1;
             }

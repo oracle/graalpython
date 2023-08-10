@@ -47,11 +47,14 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
@@ -59,17 +62,23 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * overflow.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class PyLongAsLongNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+    public final long executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
+    }
+
+    public abstract long execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static long doObject(VirtualFrame frame, Object object,
+    static long doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return pyLongAsLongAndOverflow.execute(frame, object);
+            return pyLongAsLongAndOverflow.execute(frame, inliningTarget, object);
         } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
         }
     }
 

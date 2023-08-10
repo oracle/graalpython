@@ -69,12 +69,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_collections")
 public final class CollectionsModuleBuiltins extends PythonBuiltins {
@@ -126,13 +128,15 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doDeque", "doDequeInt"})
+        @SuppressWarnings("truffle-static-method")
         PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode toIndexNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
             if (deque instanceof PDeque) {
                 if (indexObj != PNone.NO_VALUE) {
-                    int index = castToJavaIntExactNode.execute(toIndexNode.execute(frame, indexObj));
+                    int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
                     return doDequeInt(cls, (PDeque) deque, index, getNextNode);
                 }
                 return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
@@ -163,13 +167,15 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doDeque", "doDequeInt"})
+        @SuppressWarnings("truffle-static-method")
         PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode toIndexNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
             if (deque instanceof PDeque) {
                 if (indexObj != PNone.NO_VALUE) {
-                    int index = castToJavaIntExactNode.execute(toIndexNode.execute(frame, indexObj));
+                    int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
                     return doDequeInt(cls, (PDeque) deque, index, getNextNode);
                 }
                 return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);

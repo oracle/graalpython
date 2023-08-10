@@ -63,7 +63,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -103,6 +103,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isStopped()")
+        @SuppressWarnings("truffle-static-method")
         Object next(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isStartedProfile,
@@ -160,7 +161,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isRaisedStopIteration()")
         Object reduce(PPermutations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PList poolList = factory().createList(self.getPool());
             PTuple tuple = factory().createTuple(new Object[]{poolList, self.getR()});
@@ -177,7 +178,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isRaisedStopIteration()")
         Object reduceStopped(PPermutations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{factory().createEmptyTuple(), self.getR()});
             Object[] result = new Object[]{type, tuple};
@@ -197,13 +198,13 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedLoopConditionProfile indicesProfile,
                         @Cached InlinedLoopConditionProfile cyclesProfile) {
-            if (sizeNode.execute(frame, state) != 3) {
+            if (sizeNode.execute(frame, inliningTarget, state) != 3) {
                 throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             Object indices = getItemNode.execute(frame, state, 0);
             Object cycles = getItemNode.execute(frame, state, 1);
             int poolLen = self.getPool().length;
-            if (sizeNode.execute(frame, indices) != poolLen || sizeNode.execute(frame, cycles) != self.getR()) {
+            if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
                 throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
 

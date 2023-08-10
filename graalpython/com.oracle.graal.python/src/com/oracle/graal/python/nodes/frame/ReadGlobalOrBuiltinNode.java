@@ -49,6 +49,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,6 +64,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeInfo(shortName = "read_global")
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
 public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     public final Object execute(VirtualFrame frame, TruffleString name) {
         CompilerAsserts.partialEvaluationConstant(name);
@@ -85,7 +88,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    protected Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
+    protected static Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
@@ -97,7 +100,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
 
     @InliningCutoff
     @Specialization(replaces = "readGlobalCached")
-    protected Object readGlobal(PythonModule globals, TruffleString attributeId,
+    protected static Object readGlobal(PythonModule globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
@@ -122,55 +125,55 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1", rewriteOn = GlobalsDictStorageChanged.class)
-    protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+    protected static Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
         if (cachedGlobals.getDictStorage() != cachedStorage) {
             throw GlobalsDictStorageChanged.INSTANCE;
         }
-        Object result = getItem.execute(cachedStorage, attributeId);
+        Object result = getItem.execute(inliningTarget, cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
     }
 
     @InliningCutoff
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
                     "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
-    protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+    protected static Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        Object result = getItem.execute(cachedGlobals.getDictStorage(), attributeId);
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
+        Object result = getItem.execute(inliningTarget, cachedGlobals.getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
     }
 
     @InliningCutoff
     @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"})
-    protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+    protected static Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
                     @Bind("globals.getDictStorage()") HashingStorage storage,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        Object result = getItem.execute(storage, attributeId);
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
+        Object result = getItem.execute(inliningTarget, storage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
     }
 
     @InliningCutoff
     @Specialization
-    protected Object readGlobalDictGeneric(VirtualFrame frame, PDict globals, TruffleString attributeId,
+    protected static Object readGlobalDictGeneric(VirtualFrame frame, PDict globals, TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached IsBuiltinObjectProfile errorProfile) {
         try {
-            Object result = getItemNode.execute(frame, globals, attributeId);
+            Object result = getItemNode.execute(frame, inliningTarget, globals, attributeId);
             return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
         } catch (PException e) {
             e.expect(inliningTarget, KeyError, errorProfile);
@@ -178,7 +181,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
         }
     }
 
-    private Object returnGlobalOrBuiltin(Object result, TruffleString attributeId, ReadBuiltinNode readFromBuiltinsNode, Node inliningTarget, InlinedBranchProfile wasReadFromModule) {
+    private static Object returnGlobalOrBuiltin(Object result, TruffleString attributeId, ReadBuiltinNode readFromBuiltinsNode, Node inliningTarget, InlinedBranchProfile wasReadFromModule) {
         if (result != PNone.NO_VALUE) {
             wasReadFromModule.enter(inliningTarget);
             return result;
@@ -186,9 +189,26 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
             return readFromBuiltinsNode.execute(attributeId);
         }
     }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class Lazy extends Node {
+        public final ReadGlobalOrBuiltinNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        public abstract ReadGlobalOrBuiltinNode execute(Node inliningTarget);
+
+        @Specialization
+        static ReadGlobalOrBuiltinNode doIt(@Cached(inline = false) ReadGlobalOrBuiltinNode node) {
+            return node;
+        }
+    }
 }
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
 abstract class ReadBuiltinNode extends PNodeWithContext {
     public abstract Object execute(TruffleString attributeId);
 
@@ -197,9 +217,9 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     @Specialization(guards = "isSingleContext(this)")
     Object returnBuiltinFromConstantModule(TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
+                    @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
                     @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
         return readBuiltinFromModule(attributeId, raiseNode, inliningTarget, isBuiltinProfile, builtins, readFromBuiltinsNode);
     }
@@ -213,22 +233,22 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     @Specialization(replaces = "returnBuiltinFromConstantModule")
     Object returnBuiltin(TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
-                    @Cached InlinedConditionProfile ctxInitializedProfile) {
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
+                    @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
+                    @Exclusive @Cached InlinedConditionProfile ctxInitializedProfile) {
         PythonModule builtins = getBuiltins(inliningTarget, ctxInitializedProfile);
         return returnBuiltinFromConstantModule(attributeId, inliningTarget, raiseNode, isBuiltinProfile, readFromBuiltinsNode, builtins);
     }
 
-    private Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode raiseNode, Node inliningTarget,
+    private Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode.Lazy raiseNode, Node inliningTarget,
                     InlinedConditionProfile isBuiltinProfile, PythonModule builtins,
                     ReadAttributeFromObjectNode readFromBuiltinsNode) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
         if (isBuiltinProfile.profile(inliningTarget, builtin != PNone.NO_VALUE)) {
             return builtin;
         } else {
-            throw raiseNameNotDefined(raiseNode, attributeId);
+            throw raiseNameNotDefined(raiseNode.get(inliningTarget), attributeId);
         }
     }
 

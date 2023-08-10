@@ -86,14 +86,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -414,9 +415,10 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteLongNode write,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
                 write.write(pointer, asLong.toInt64(newValue, true));
             } catch (PException e) {
@@ -425,7 +427,7 @@ public class CApiMemberAccessNodes {
                  * error indication value -1 to the member. That looks rather like a bug but let's
                  * just do the same.
                  */
-                e.expectOverflowError(exceptionProfile);
+                e.expectOverflowError(inliningTarget, exceptionProfile);
                 write.write(pointer, -1);
                 throw e;
             }
@@ -436,10 +438,10 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteIntNode write,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinObjectProfile exceptionProfile) {
             /*
              * This emulates the arguably buggy behavior from CPython where it accepts MIN_LONG to
              * MAX_ULONG values.
@@ -450,7 +452,7 @@ public class CApiMemberAccessNodes {
                 /*
                  * Special case: accept signed long as well.
                  */
-                e.expectOverflowError(exceptionProfile);
+                e.expectOverflowError(inliningTarget, exceptionProfile);
                 write.write(pointer, (int) asLong.toInt64(newValue, true));
                 // swallowing the exception
             }
@@ -461,9 +463,10 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
                         @Cached CStructAccess.WriteLongNode write,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
                 write.write(pointer, asLong.toUInt64(newValue, true));
             } catch (PException e) {
@@ -472,7 +475,7 @@ public class CApiMemberAccessNodes {
                  * error indication value -1 to the member. That looks rather like a bug but let's
                  * just do the same.
                  */
-                e.expectOverflowError(exceptionProfile);
+                e.expectOverflowError(inliningTarget, exceptionProfile);
                 write.write(pointer, -1);
                 throw e;
             }
@@ -483,9 +486,10 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached AsNativeDoubleNode asDouble,
                         @Cached CStructAccess.WriteDoubleNode write,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+                        @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
                 write.write(pointer, asDouble.executeDouble(newValue));
             } catch (PException e) {
@@ -494,7 +498,7 @@ public class CApiMemberAccessNodes {
                  * error indication value -1 to the member. That looks rather like a bug but let's
                  * just do the same.
                  */
-                e.expectTypeError(exceptionProfile);
+                e.expectTypeError(inliningTarget, exceptionProfile);
                 write.write(pointer, -1);
                 throw e;
             }
@@ -628,7 +632,7 @@ public class CApiMemberAccessNodes {
                 }
             }
 
-            if (type == T_BOOL && !ensureIsSameTypeNode().execute(PythonBuiltinClassType.Boolean, ensureGetClassNode().execute(value))) {
+            if (type == T_BOOL && !ensureIsSameTypeNode().executeCached(PythonBuiltinClassType.Boolean, ensureGetClassNode().executeCached(value))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
             }
 

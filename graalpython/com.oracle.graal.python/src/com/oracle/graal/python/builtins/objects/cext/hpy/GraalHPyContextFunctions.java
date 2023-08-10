@@ -345,7 +345,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -1188,6 +1188,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object moduleDefPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callFromHPyModuleDefNode,
                         @Cached PCallHPyFunction callGetterNode,
@@ -1236,7 +1237,7 @@ public abstract class GraalHPyContextFunctions {
 
                 for (long i = 0; i < nModuleDefines; i++) {
                     Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
-                    int kind = castToJavaIntNode.execute(callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                    int kind = castToJavaIntNode.execute(inliningTarget, callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
                     switch (kind) {
                         case GraalHPyDef.HPY_DEF_KIND_METH:
                             Object methodDef = callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_METH, moduleDefine);
@@ -1368,7 +1369,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
@@ -1396,7 +1397,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unusued") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
@@ -1413,8 +1414,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyLongAsDoubleNode asDoubleNode) {
-            return asDoubleNode.execute(arg);
+            return asDoubleNode.execute(inliningTarget, arg);
         }
     }
 
@@ -1445,7 +1447,7 @@ public abstract class GraalHPyContextFunctions {
             }
             PDict dict = (PDict) left;
             try {
-                Object item = getItem.execute(null, dict.getDictStorage(), key);
+                Object item = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 return item != null ? item : NULL_HANDLE_DELEGATE;
             } catch (PException e) {
                 /*
@@ -1482,6 +1484,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object left, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached ListNodes.AppendNode appendNode,
                         @Cached PRaiseNode raiseNode) {
             if (!PGuards.isList(left)) {
@@ -1508,8 +1511,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static double doGeneric(@SuppressWarnings("unused") Object hpyContext, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return asDoubleNode.execute(null, value);
+            return asDoubleNode.execute(null, inliningTarget, value);
         }
     }
 
@@ -1526,7 +1530,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PDict));
         }
@@ -1539,7 +1543,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PBytes));
         }
@@ -1552,7 +1556,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PString));
         }
@@ -1565,7 +1569,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PTuple));
         }
@@ -1578,7 +1582,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PList));
         }
@@ -1604,7 +1608,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1755,8 +1759,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext,
+                        @Bind("$node") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode) {
-            return getThreadStateNode.getCurrentException(hpyContext.getContext()) != null ? 1 : 0;
+            return getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext()) != null ? 1 : 0;
         }
     }
 
@@ -1766,9 +1771,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object exc,
+                        @Bind("$node") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached RecursiveExceptionMatches exceptionMatches) {
-            PException err = getThreadStateNode.getCurrentException(hpyContext.getContext());
+            PException err = getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext());
             if (err == null) {
                 return 0;
             }
@@ -1785,8 +1791,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext,
+                        @Bind("$node") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode) {
-            getThreadStateNode.setCurrentException(hpyContext.getContext(), null);
+            getThreadStateNode.setCurrentException(inliningTarget, hpyContext.getContext(), null);
             return NULL_HANDLE_DELEGATE;
         }
     }
@@ -1813,10 +1820,11 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object object,
+                        @Bind("$node") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode) {
-            PException exception = getThreadStateNode.getCurrentException(hpyContext.getContext());
-            getThreadStateNode.setCurrentException(hpyContext.getContext(), null);
+            PException exception = getThreadStateNode.getCurrentException(inliningTarget, hpyContext.getContext());
+            getThreadStateNode.setCurrentException(inliningTarget, hpyContext.getContext(), null);
             writeUnraisableNode.execute(null, exception.getUnreifiedException(), null, (object instanceof PNone) ? PNone.NONE : object);
             return 0; // void
         }
@@ -2023,8 +2031,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object unicodeObject, long index,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyUnicodeReadCharNode unicodeReadChar) {
-            return unicodeReadChar.execute(unicodeObject, index);
+            return unicodeReadChar.execute(inliningTarget, unicodeObject, index);
         }
     }
 
@@ -2077,6 +2086,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PBytes doGeneric(GraalHPyContext hpyContext, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PCallHPyFunction callHelperNode,
                         @Cached GetByteArrayNode getByteArrayNode,
@@ -2085,7 +2095,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory) {
             int size;
             try {
-                size = castToJavaIntNode.execute(callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
+                size = castToJavaIntNode.execute(inliningTarget, callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
             } catch (PException e) {
                 throw raiseNode.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
             }
@@ -2145,8 +2155,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return PInt.intValue(isTrueNode.execute(null, object));
+            return PInt.intValue(isTrueNode.execute(null, inliningTarget, object));
         }
     }
 
@@ -2156,8 +2167,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttributeNode) {
-            return getAttributeNode.execute(receiver, key);
+            return getAttributeNode.execute(inliningTarget, receiver, key);
         }
     }
 
@@ -2167,9 +2179,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectGetAttr getAttributeNode) {
-            return getAttributeNode.execute(receiver, fromCharPointerNode.execute(charPtr));
+            return getAttributeNode.execute(inliningTarget, receiver, fromCharPointerNode.execute(charPtr));
         }
     }
 
@@ -2178,9 +2191,10 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyMaybeGetAttrS extends HPyTernaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.execute(null, receiver, fromCharPointerNode.execute(charPtr));
+            return lookupAttr.execute(null, inliningTarget, receiver, fromCharPointerNode.execute(charPtr));
         }
     }
 
@@ -2195,7 +2209,7 @@ public abstract class GraalHPyContextFunctions {
             Object typeSpec = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_FROM_HPY_TYPE_SPEC, typeSpecPtr);
             Object typeSpecParamArray = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY, typeSpecParamArrayPtr);
             Object newType = createTypeFromSpecNode.execute(hpyContext, typeSpec, typeSpecParamArray);
-            assert PGuards.isClass(newType, IsTypeNode.getUncached()) : "Object created from type spec is not a type";
+            assert PGuards.isClassUncached(newType) : "Object created from type spec is not a type";
             return newType;
         }
     }
@@ -2206,9 +2220,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttributeNode) {
             try {
-                Object attr = getAttributeNode.execute(receiver, key);
+                Object attr = getAttributeNode.execute(inliningTarget, receiver, key);
                 return PInt.intValue(attr != PNone.NO_VALUE);
             } catch (PException e) {
                 return 0;
@@ -2222,10 +2237,11 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectGetAttr getAttributeNode) {
             try {
-                Object attr = getAttributeNode.execute(receiver, fromCharPointerNode.execute(charPtr));
+                Object attr = getAttributeNode.execute(inliningTarget, receiver, fromCharPointerNode.execute(charPtr));
                 return PInt.intValue(attr != PNone.NO_VALUE);
             } catch (PException e) {
                 return 0;
@@ -2239,8 +2255,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(receiver, key, value);
+            setAttrNode.execute(inliningTarget, receiver, key, value);
             return 0;
         }
     }
@@ -2251,9 +2268,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(receiver, fromCharPointerNode.execute(charPtr), value);
+            setAttrNode.execute(inliningTarget, receiver, fromCharPointerNode.execute(charPtr), value);
             return 0;
         }
     }
@@ -2265,8 +2283,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode) {
-            return getItemNode.execute(null, receiver, key);
+            return getItemNode.execute(null, inliningTarget, receiver, key);
         }
     }
 
@@ -2276,9 +2295,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectGetItem getItemNode) {
-            return getItemNode.execute(null, receiver, fromCharPointerNode.execute(charPtr));
+            return getItemNode.execute(null, inliningTarget, receiver, fromCharPointerNode.execute(charPtr));
         }
     }
 
@@ -2289,8 +2309,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyObjectSetItem setItemNode) {
-            setItemNode.execute(null, receiver, key, value);
+            setItemNode.execute(null, inliningTarget, receiver, key, value);
             return 0;
         }
     }
@@ -2301,9 +2322,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object charPtr, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PyObjectSetItem setItemNode) {
-            setItemNode.execute(null, receiver, fromCharPointerNode.execute(charPtr), value);
+            setItemNode.execute(null, inliningTarget, receiver, fromCharPointerNode.execute(charPtr), value);
             return 0;
         }
     }
@@ -2328,15 +2350,16 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object type, Object dataOutVar,
+                        @Bind("$node") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode) {
 
             // check if argument is actually a type
-            if (!isTypeNode.execute(type)) {
-                return raiseNode.raise(TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
+            if (!isTypeNode.execute(inliningTarget, type)) {
+                return raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
             }
 
             // create the managed Python object
@@ -2540,10 +2563,10 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object arg1, int arg2,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
                         @Cached CallTernaryMethodNode callRichcmp) {
-            Object richcmp = lookupRichcmp.execute(null, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T_RICHCMP, receiver);
+            Object richcmp = lookupRichcmp.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T_RICHCMP, receiver);
             return callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
         }
     }
@@ -2555,12 +2578,12 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(Object ctx, Object receiver, Object arg1, int arg2,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
                         @Cached CallTernaryMethodNode callRichcmp,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object result = GraalHPyRichcompare.doGeneric(ctx, receiver, arg1, arg2, inliningTarget, getClassNode, lookupRichcmp, callRichcmp);
-            return PInt.intValue(isTrueNode.execute(null, result));
+            return PInt.intValue(isTrueNode.execute(null, inliningTarget, result));
         }
     }
 
@@ -2570,8 +2593,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode) {
-            return indexNode.execute(null, object);
+            return indexNode.execute(null, inliningTarget, object);
         }
     }
 
@@ -2585,9 +2609,9 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached CanBeDoubleNode canBeDoubleNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Int") LookupCallableSlotInMRONode lookup) {
-            if (indexCheckNode.execute(object) || canBeDoubleNode.execute(object)) {
+            if (indexCheckNode.execute(inliningTarget, object) || canBeDoubleNode.execute(inliningTarget, object)) {
                 return 1;
             }
             Object receiverType = getClassNode.execute(inliningTarget, object);
@@ -2601,6 +2625,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object arrayPtr, long nelements,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallHPyFunction callHelperNode,
@@ -2608,7 +2633,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory) {
             int n;
             try {
-                n = castToJavaIntExactNode.execute(nelements);
+                n = castToJavaIntExactNode.execute(inliningTarget, nelements);
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(castToJavaIntExactNode, PythonBuiltinClassType.MemoryError);
@@ -2668,13 +2693,14 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle, long lidx, Object value,
+                        @Bind("$node") Node inliningTarget,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setItemNode) {
             Object builder = asPythonObjectNode.execute(builderHandle);
             if (builder instanceof ObjectSequenceStorage storage) {
                 try {
-                    int idx = castToJavaIntExactNode.execute(lidx);
+                    int idx = castToJavaIntExactNode.execute(inliningTarget, lidx);
                     setItemNode.execute(null, NoGeneralizationNode.DEFAULT, storage, idx, value);
                 } catch (CannotCastException e) {
                     // fall through
@@ -2847,8 +2873,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck) {
-            return PInt.intValue(callableCheck.execute(object));
+            return PInt.intValue(callableCheck.execute(inliningTarget, object));
         }
     }
 
@@ -2858,8 +2885,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheck) {
-            return PInt.intValue(sequenceCheck.execute(object));
+            return PInt.intValue(sequenceCheck.execute(inliningTarget, object));
         }
     }
 
@@ -2869,6 +2897,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object callable, Object argsObject, Object kwargsObject,
+                        @Bind("$node") Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
                         @Cached HashingStorageLen lenNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -2877,7 +2906,7 @@ public abstract class GraalHPyContextFunctions {
             // check and expand args
             Object[] args = castArgs(argsObject, expandArgsNode, raiseNode);
             // check and expand kwargs
-            PKeyword[] keywords = castKwargs(kwargsObject, lenNode, expandKwargsNode, raiseNode);
+            PKeyword[] keywords = castKwargs(inliningTarget, kwargsObject, lenNode, expandKwargsNode, raiseNode);
             return callNode.execute(callable, args, keywords);
         }
 
@@ -2894,22 +2923,22 @@ public abstract class GraalHPyContextFunctions {
             throw raiseNode.raise(TypeError, ErrorMessages.HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL);
         }
 
-        private static PKeyword[] castKwargs(Object kwargs,
+        private static PKeyword[] castKwargs(Node inliningTarget, Object kwargs,
                         HashingStorageLen lenNode,
                         ExpandKeywordStarargsNode expandKwargsNode,
                         PRaiseNode raiseNode) {
             // this indicates that a NULL handle was passed (which is valid)
-            if (kwargs == PNone.NO_VALUE || isEmptyDict(kwargs, lenNode)) {
+            if (kwargs == PNone.NO_VALUE || isEmptyDict(inliningTarget, kwargs, lenNode)) {
                 return PKeyword.EMPTY_KEYWORDS;
             }
             if (PGuards.isDict(kwargs)) {
-                return expandKwargsNode.execute(kwargs);
+                return expandKwargsNode.execute(inliningTarget, kwargs);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL);
         }
 
-        private static boolean isEmptyDict(Object delegate, HashingStorageLen lenNode) {
-            return delegate instanceof PDict && lenNode.execute(((PDict) delegate).getDictStorage()) == 0;
+        private static boolean isEmptyDict(Node inliningTarget, Object delegate, HashingStorageLen lenNode) {
+            return delegate instanceof PDict && lenNode.execute(inliningTarget, ((PDict) delegate).getDictStorage()) == 0;
         }
     }
 
@@ -2921,16 +2950,16 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         static int doGeneric(GraalHPyContext hpyContext, Object object) {
             PythonContext context = hpyContext.getContext();
-            Object type = InlinedGetClassNode.executeUncached(object);
+            Object type = GetClassNode.executeUncached(object);
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
             stderr.println("object type     : " + type);
-            stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
+            stderr.println("object type name: " + GetNameNode.executeUncached(type));
 
             // the most dangerous part
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                stderr.println(PyObjectReprAsTruffleStringNode.getUncached().execute(null, object).toJavaStringUncached());
+                stderr.println(PyObjectReprAsTruffleStringNode.executeUncached(object).toJavaStringUncached());
                 stderr.flush();
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point
@@ -2946,7 +2975,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             return getClassNode.execute(inliningTarget, object);
         }
     }
@@ -2959,7 +2988,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object, Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), type));
         }
@@ -2970,6 +2999,7 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyNewExceptionWithDoc extends HPy5ContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object namePtr, Object docPtr, Object base, Object dictObj,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -2987,11 +3017,12 @@ public abstract class GraalHPyContextFunctions {
             } else {
                 doc = null;
             }
-            return createNewExceptionWithDoc(namePtr, base, dictObj, doc, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode, codepointLengthNode, substringNode, getHashingStorageItem,
+            return createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, doc, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode, codepointLengthNode, substringNode,
+                            getHashingStorageItem,
                             setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
         }
 
-        static Object createNewExceptionWithDoc(Object namePtr, Object base, Object dictObj, TruffleString doc,
+        static Object createNewExceptionWithDoc(Node inliningTarget, Object namePtr, Object base, Object dictObj, TruffleString doc,
                         FromCharPointerNode fromCharPointerNode,
                         CastToTruffleStringNode castToTruffleStringNode,
                         TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -3030,11 +3061,11 @@ public abstract class GraalHPyContextFunctions {
                 dictStorage = dict.getDictStorage();
             }
 
-            if (!getHashingStorageItem.hasKey(dictStorage, SpecialAttributeNames.T___MODULE__)) {
-                dictStorage = setHashingStorageItem.execute(dictStorage, SpecialAttributeNames.T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
+            if (!getHashingStorageItem.hasKey(inliningTarget, dictStorage, SpecialAttributeNames.T___MODULE__)) {
+                dictStorage = setHashingStorageItem.execute(inliningTarget, dictStorage, SpecialAttributeNames.T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }
             if (doc != null) {
-                dictStorage = setHashingStorageItem.execute(dictStorage, SpecialAttributeNames.T___DOC__, doc);
+                dictStorage = setHashingStorageItem.execute(inliningTarget, dictStorage, SpecialAttributeNames.T___DOC__, doc);
             }
             dict.setDictStorage(dictStorage);
 
@@ -3055,6 +3086,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object namePtr, Object base, Object dictObj,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -3065,7 +3097,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CallNode callTypeConstructorNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            return GraalHPyNewExceptionWithDoc.createNewExceptionWithDoc(namePtr, base, dictObj, null, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode, codepointLengthNode,
+            return GraalHPyNewExceptionWithDoc.createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, null, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode,
+                            codepointLengthNode,
                             substringNode, getHashingStorageItem, setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
         }
     }
@@ -3323,8 +3356,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object container, Object key,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PySequenceContainsNode containsNode) {
-            return PInt.intValue(containsNode.execute(container, key));
+            return PInt.intValue(containsNode.execute(null, inliningTarget, container, key));
         }
     }
 
@@ -3353,8 +3387,9 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyDictKeys extends HPyBinaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object dict,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PyDictKeys keysNode) {
-            return keysNode.execute((PDict) dict);
+            return keysNode.execute(inliningTarget, (PDict) dict);
         }
     }
 
@@ -3363,11 +3398,12 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeInternFromString extends HPyBinaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object charPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached InternStringNode internStringNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString string = fromCharPointerNode.execute(charPtr);
-            PString interned = internStringNode.execute(string);
+            PString interned = internStringNode.execute(inliningTarget, string);
             if (interned == null) {
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_INTERN_P, string);
             }
@@ -3571,11 +3607,12 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeFromEncodedObject extends HPyQuaternaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object obj, Object encodingPtr, Object errorsPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached FromCharPointerNode fromNativeCharPointerNode,
                         @Cached PyUnicodeFromEncodedObject libNode) {
             TruffleString encoding = fromNativeCharPointerNode.execute(encodingPtr);
             TruffleString errors = fromNativeCharPointerNode.execute(errorsPtr);
-            return libNode.execute(null, obj, encoding, errors);
+            return libNode.execute(null, inliningTarget, obj, encoding, errors);
         }
     }
 
@@ -3584,13 +3621,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeSubstring extends HPyQuaternaryContextFunction {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object obj, long lstart, long lend,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached CastToJavaIntExactNode castStart,
                         @Cached CastToJavaIntExactNode castEnd,
                         @Cached StrGetItemNodeWithSlice getSlice) {
-            TruffleString value = castStr.execute(obj);
-            int start = castStart.execute(lstart);
-            int end = castEnd.execute(lend);
+            TruffleString value = castStr.execute(inliningTarget, obj);
+            int start = castStart.execute(inliningTarget, lstart);
+            int end = castEnd.execute(inliningTarget, lend);
             return getSlice.execute(value, new SliceInfo(start, end, 1));
         }
     }
@@ -3600,10 +3638,11 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPySliceUnpack extends HPy5ContextFunction {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object obj, Object startPtr, Object endPtr, Object stepPtr,
+                        @Bind("$node") Node inliningTarget,
                         @Cached PCallHPyFunction callWriteDataNode,
                         @Cached SliceNodes.SliceUnpack sliceUnpack) {
             if (obj instanceof PSlice slice) {
-                SliceInfo info = sliceUnpack.execute(slice);
+                SliceInfo info = sliceUnpack.execute(inliningTarget, slice);
                 callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, startPtr, 0L, info.start);
                 callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, endPtr, 0L, info.stop);
                 callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, stepPtr, 0L, info.step);

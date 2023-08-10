@@ -44,6 +44,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -57,34 +59,36 @@ import com.oracle.truffle.api.strings.TruffleString;
  * just accept PDict.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyDictDelItem extends Node {
     // Note: for now this simply delegates to HashingStorageDelItem, but in the future, this should,
     // unlike HashingStorageDelItem, also handle native subclasses of dict
 
-    public final void execute(PDict dict, TruffleString key) {
-        execute(null, dict, key);
+    public final void execute(Node inliningTarget, PDict dict, TruffleString key) {
+        execute(null, inliningTarget, dict, key);
     }
 
-    public abstract void execute(Frame frame, PDict dict, TruffleString key);
+    public abstract void execute(Frame frame, Node inliningTarget, PDict dict, TruffleString key);
 
-    public abstract void execute(Frame frame, PDict dict, Object key);
+    public abstract void execute(Frame frame, Node inliningTarget, PDict dict, Object key);
 
     // We never need a frame for reading string keys
     @Specialization
-    static void delItemWithStringKey(@SuppressWarnings("unused") PDict dict, TruffleString key,
+    static void delItemWithStringKey(Node inliningTarget, @SuppressWarnings("unused") PDict dict, TruffleString key,
                     @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(dict.getDictStorage(), key, dict);
+        delItem.execute(inliningTarget, dict.getDictStorage(), key, dict);
     }
 
     @Specialization(replaces = "delItemWithStringKey")
-    static void delItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key,
+    static void delItemCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PDict dict, Object key,
                     @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(frame, dict.getDictStorage(), key, dict);
+        delItem.execute(frame, inliningTarget, dict.getDictStorage(), key, dict);
     }
 
     @Specialization(replaces = "delItemCached")
-    static void delItem(PDict dict, Object key,
+    static void delItem(Node inliningTarget, PDict dict, Object key,
                     @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(null, dict.getDictStorage(), key, dict);
+        delItem.execute(null, inliningTarget, dict.getDictStorage(), key, dict);
     }
 }

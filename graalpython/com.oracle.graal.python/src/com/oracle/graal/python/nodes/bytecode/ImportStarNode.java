@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -61,10 +62,11 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class ImportStarNode extends AbstractImportNode {
     public abstract void execute(VirtualFrame frame, TruffleString moduleName, int level);
 
@@ -80,7 +82,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached GetNextNode getNextNode,
                     @Cached PyObjectSizeNode sizeNode,
                     @Cached PyObjectGetItem getItemNode,
-                    @Cached ConditionProfile javaImport,
+                    @Cached InlinedConditionProfile javaImport,
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -92,7 +94,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
             locals = PArguments.getGlobals(frame);
         }
 
-        if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
+        if (javaImport.profile(inliningTarget, emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {
                 InteropLibrary interopLib = InteropLibrary.getFactory().getUncached();
                 Object hostAttrs = interopLib.getMembers(importedModule, true);
@@ -102,7 +104,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     String attrName = interopLib.asString(interopLib.readArrayElement(hostAttrs, i));
                     Object attr = interopLib.readMember(importedModule, attrName);
                     attr = PForeignToPTypeNode.getUncached().executeConvert(attr);
-                    writeAttribute(frame, locals, TruffleString.fromJavaStringUncached(attrName, TS_ENCODING), attr, setItemNode, setAttrNode);
+                    writeAttribute(frame, inliningTarget, locals, TruffleString.fromJavaStringUncached(attrName, TS_ENCODING), attr, setItemNode, setAttrNode);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -110,21 +112,21 @@ public abstract class ImportStarNode extends AbstractImportNode {
             }
         } else {
             try {
-                Object attrAll = getAttrNode.execute(frame, importedModule, T___ALL__);
-                int n = sizeNode.execute(frame, attrAll);
+                Object attrAll = getAttrNode.execute(frame, inliningTarget, importedModule, T___ALL__);
+                int n = sizeNode.execute(frame, inliningTarget, attrAll);
                 for (int i = 0; i < n; i++) {
-                    Object attrName = getItemNode.execute(frame, attrAll, i);
-                    writeAttributeToLocals(frame, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
+                    Object attrName = getItemNode.execute(frame, inliningTarget, attrAll, i);
+                    writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
                                     codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                 }
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, isAttributeErrorProfile);
                 assert importedModule instanceof PythonModule;
-                Object keysIterator = getIterNode.execute(frame, getDictNode.execute(importedModule));
+                Object keysIterator = getIterNode.execute(frame, inliningTarget, getDictNode.execute(inliningTarget, importedModule));
                 while (true) {
                     try {
                         Object key = getNextNode.execute(frame, keysIterator);
-                        writeAttributeToLocals(frame, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
+                        writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
                                         codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                     } catch (PException iterException) {
                         iterException.expectStopIteration(inliningTarget, isStopIterationProfile);
@@ -136,24 +138,24 @@ public abstract class ImportStarNode extends AbstractImportNode {
     }
 
     // TODO: remove once we removed PythonModule globals
-    private static void writeAttribute(VirtualFrame frame, Object globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
+    private static void writeAttribute(VirtualFrame frame, Node inliningTarget, Object globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
         if (globals instanceof PDict || globals instanceof PMappingproxy) {
-            setItemNode.execute(frame, globals, name, value);
+            setItemNode.execute(frame, inliningTarget, globals, name, value);
         } else {
-            setAttrNode.execute(frame, globals, name, value);
+            setAttrNode.execute(frame, inliningTarget, globals, name, value);
         }
     }
 
-    private void writeAttributeToLocals(VirtualFrame frame, TruffleString moduleName, PythonModule importedModule, Object locals, Object attrName, boolean fromAll,
+    private void writeAttributeToLocals(VirtualFrame frame, Node inliningTarget, TruffleString moduleName, PythonModule importedModule, Object locals, Object attrName, boolean fromAll,
                     CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode, PyObjectGetAttr getAttr,
                     PyObjectSetItem dictWriteNode, PyObjectSetAttr setAttrNode) {
         try {
-            TruffleString name = castToTruffleStringNode.execute(attrName);
+            TruffleString name = castToTruffleStringNode.execute(inliningTarget, attrName);
             // skip attributes with leading '__' if there was no '__all__' attribute (see
             // 'ceval.c: import_all_from')
             if (fromAll || !isDunder(name, cpLenNode, cpAtIndexNode)) {
-                Object moduleAttr = getAttr.execute(frame, importedModule, name);
-                writeAttribute(frame, locals, name, moduleAttr, dictWriteNode, setAttrNode);
+                Object moduleAttr = getAttr.execute(frame, inliningTarget, importedModule, name);
+                writeAttribute(frame, inliningTarget, locals, name, moduleAttr, dictWriteNode, setAttrNode);
             }
         } catch (CannotCastException cce) {
             throw PRaiseNode.raiseUncached(this, TypeError, fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING,

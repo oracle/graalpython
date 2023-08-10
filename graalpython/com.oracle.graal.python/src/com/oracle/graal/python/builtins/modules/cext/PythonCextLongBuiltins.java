@@ -174,24 +174,26 @@ public final class PythonCextLongBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object signNative(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(obj,getClassNode,isSubtypeNode)"})
+        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(inliningTarget, obj,getClassNode,isSubtypeNode)"})
         static Object sign(@SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        protected boolean isPIntSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PInt);
+        protected boolean isPIntSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PInt);
         }
     }
 
@@ -229,6 +231,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         Object doGeneric(Object object, int mode, long targetTypeSize,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
@@ -239,7 +242,7 @@ public final class PythonCextLongBuiltins {
                  * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
-                if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
+                if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion

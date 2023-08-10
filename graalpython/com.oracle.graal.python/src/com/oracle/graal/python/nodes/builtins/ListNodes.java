@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -84,10 +84,12 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -106,6 +108,7 @@ public abstract class ListNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class, PythonOptions.class})
+    @GenerateInline(false) // footprint reduction 40 -> 21
     public abstract static class ConstructListNode extends PNodeWithContext {
 
         public final PList execute(Frame frame, Object value) {
@@ -116,48 +119,50 @@ public abstract class ListNodes {
 
         @Specialization
         static PList listString(Object cls, TruffleString arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             return factory.createList(cls, StringUtils.toCharacterArray(arg, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode));
         }
 
         @Specialization
         static PList listString(Object cls, PString arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory factory,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return listString(cls, castToStringNode.execute(arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return listString(cls, castToStringNode.execute(inliningTarget, arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = "isNoValue(none)")
         static PList none(Object cls, @SuppressWarnings("unused") PNone none,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
         }
 
-        @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(list, inliningTarget, getClassNode)", limit = "1")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            return factory.createList(cls, copyNode.execute(inliningTarget, getSequenceStorageNode.execute(list)));
+            return factory.createList(cls, copyNode.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, list)));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         static PList listIterable(VirtualFrame frame, Object cls, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode createStorageFromIteratorNode,
-                        @Cached PythonObjectFactory factory) {
-            Object iterObj = getIter.execute(frame, iterable);
+                        @Shared @Cached PythonObjectFactory factory) {
+            Object iterObj = getIter.execute(frame, inliningTarget, iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
             return factory.createList(cls, storage);
         }
@@ -179,19 +184,21 @@ public abstract class ListNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class FastConstructListNode extends PNodeWithContext {
 
-        public abstract PSequence execute(Frame frame, Object value);
+        public abstract PSequence execute(Frame frame, Node inliningTarget, Object value);
 
-        @Specialization(guards = "cannotBeOverridden(value, getClassNode)", limit = "1")
-        protected static PSequence doPList(PSequence value,
+        @Specialization(guards = "cannotBeOverridden(value, inliningTarget, getClassNode)", limit = "1")
+        protected static PSequence doPList(@SuppressWarnings("unused") Node inliningTarget, PSequence value,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return value;
         }
 
         @Fallback
         protected PSequence doGeneric(VirtualFrame frame, Object value,
-                        @Cached ConstructListNode constructListNode) {
+                        @Cached(inline = false) ConstructListNode constructListNode) {
             return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
         }
 
@@ -217,18 +224,22 @@ public abstract class ListNodes {
             errorMessage = message;
         }
 
+        @NeverDefault
         public static IndexNode create(TruffleString message) {
             return IndexNodeGen.create(message, CheckType.SUBSCRIPT);
         }
 
+        @NeverDefault
         public static IndexNode create() {
             return IndexNodeGen.create(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
         }
 
+        @NeverDefault
         public static IndexNode createInteger(TruffleString msg) {
             return IndexNodeGen.create(msg, CheckType.INTEGER);
         }
 
+        @NeverDefault
         public static IndexNode createNumber(TruffleString msg) {
             return IndexNodeGen.create(msg, CheckType.NUMBER);
         }
@@ -271,6 +282,7 @@ public abstract class ListNodes {
         }
 
         @Fallback
+        @InliningCutoff
         Object doGeneric(VirtualFrame frame, Object object) {
             Object idx = getIndexNode.executeObject(frame, object);
             boolean valid = false;
@@ -306,6 +318,7 @@ public abstract class ListNodes {
      * code will only see lists of the correct size and storage type.
      */
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 36 -> 17
     public abstract static class AppendNode extends PNodeWithContext {
         private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 
@@ -322,6 +335,7 @@ public abstract class ListNodes {
 
         @Specialization
         void appendObjectGeneric(PList list, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {
             if (updateStoreProfile[0] == null) {
@@ -329,14 +343,14 @@ public abstract class ListNodes {
                 // yet, in case we're transitioning exactly once, because we'll pontentially pass
                 // that information on to the list origin and it'll never happen again.
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                SequenceStorage newStore = SequenceStorageNodes.AppendNode.getUncached().execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                SequenceStorage newStore = SequenceStorageNodes.AppendNode.executeUncached(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 updateStoreProfile[0] = BranchProfile.create();
                 list.setSequenceStorage(newStore);
                 if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
                     list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
                 }
             } else {
-                SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                SequenceStorage newStore = appendNode.execute(inliningTarget, list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 if (list.getSequenceStorage() != newStore) {
                     updateStoreProfile[0].enter();
                     list.setSequenceStorage(newStore);
@@ -365,7 +379,7 @@ public abstract class ListNodes {
         NativeSequenceStorage getNative(PythonAbstractNativeObject list,
                         @Cached CStructAccess.ReadPointerNode getContents,
                         @Cached CStructAccess.ReadI64Node readI64Node) {
-            assert IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
+            assert IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
             Object array = getContents.readFromObj(list, PyListObject__ob_item);
             int size = (int) readI64Node.readFromObj(list, PyVarObject__ob_size);
             int allocated = (int) readI64Node.readFromObj(list, PyListObject__allocated);

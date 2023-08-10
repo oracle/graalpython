@@ -42,15 +42,15 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,9 +62,11 @@ import com.oracle.truffle.api.strings.TruffleString;
  * protocols, and false otherwise.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doString(@SuppressWarnings("unused") TruffleString object) {
@@ -101,31 +103,18 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization
-    static boolean doPythonObject(PythonAbstractObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Shared @Cached PyComplexCheckNode checkComplex) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
-    }
-
-    @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
-    static boolean doObject(Object object,
-                    @Bind("this") Node inliningTarget,
+    @Fallback
+    static boolean doOthers(Node inliningTarget, Object object,
                     @Cached LazyInteropLibrary interopLibrary,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Shared @Cached PyComplexCheckNode checkComplex) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
+                    @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
+                    @Cached(parameters = "Int", inline = false) LookupCallableSlotInMRONode lookupInt,
+                    @Cached PyComplexCheckNode checkComplex) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.get(inliningTarget).isNumber(object);
         }
-        return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
+        return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(inliningTarget, object);
     }
 }

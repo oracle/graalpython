@@ -58,13 +58,17 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -73,10 +77,20 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
  * because the object is not a Python string, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic(PGuards.class)
 public abstract class CastToTruffleStringNode extends PNodeWithContext {
 
-    public abstract TruffleString execute(Object x) throws CannotCastException;
+    public abstract TruffleString execute(Node inliningTarget, Object x) throws CannotCastException;
+
+    public final TruffleString executeCached(Object x) throws CannotCastException {
+        return execute(this, x);
+    }
+
+    public static TruffleString executeUncached(Object x) throws CannotCastException {
+        return CastToTruffleStringNodeGen.getUncached().execute(null, x);
+    }
 
     @Specialization
     static TruffleString doTruffleString(TruffleString x) {
@@ -89,12 +103,13 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!x.isMaterialized()")
-    static TruffleString doPStringGeneric(PString x,
+    static TruffleString doPStringGeneric(Node inliningTarget, PString x,
                     @Cached StringMaterializeNode materializeNode) {
-        return materializeNode.execute(x);
+        return materializeNode.execute(inliningTarget, x);
     }
 
     @GenerateUncached
+    @GenerateInline(false) // Footprint reduction 48 -> 29
     public abstract static class ReadNativeStringNode extends PNodeWithContext {
 
         public abstract TruffleString execute(Object pointer);
@@ -139,11 +154,12 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static TruffleString doNativeObject(PythonNativeObject x,
+    @InliningCutoff
+    static TruffleString doNativeObject(Node inliningTarget, PythonNativeObject x,
                     @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached ReadNativeStringNode read) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) ReadNativeStringNode read) {
+        if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
             return read.execute(x.getPtr());
         }
         // the object's type is not a subclass of 'str'
@@ -160,6 +176,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
         return CastToTruffleStringNodeGen.create();
     }
 
+    @NeverDefault
     public static CastToTruffleStringNode getUncached() {
         return CastToTruffleStringNodeGen.getUncached();
     }

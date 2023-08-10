@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,12 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class JavaLongConversionNode extends LongConversionBaseNode {
     protected JavaLongConversionNode(long defaultValue, boolean useDefaultForNone) {
@@ -56,9 +58,10 @@ public abstract class JavaLongConversionNode extends LongConversionBaseNode {
     }
 
     @Specialization(guards = "!isHandledPNone(value)")
-    long doOthers(VirtualFrame frame, Object value,
+    static long doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyLongAsLongNode asLongNode) {
-        return asLongNode.execute(frame, value);
+        return asLongNode.execute(frame, inliningTarget, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -107,7 +107,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return eqNode.execute(frame, left, right);
+                return eqNode.compare(frame, inliningTarget, left, right);
             }
             return left == null && right == null;
         }
@@ -135,7 +135,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return neNode.execute(frame, left, right);
+                return neNode.compare(frame, inliningTarget, left, right);
             }
             return left != null || right != null;
         }
@@ -163,7 +163,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return ltNode.execute(frame, left, right);
+                return ltNode.compare(frame, inliningTarget, left, right);
             }
             return right != null;
         }
@@ -191,7 +191,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return leNode.execute(frame, left, right);
+                return leNode.compare(frame, inliningTarget, left, right);
             }
             return left == null;
         }
@@ -219,7 +219,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return gtNode.execute(frame, left, right);
+                return gtNode.compare(frame, inliningTarget, left, right);
             }
             return left != null;
         }
@@ -247,7 +247,7 @@ public final class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(inliningTarget, self);
             Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
-                return geNode.execute(frame, left, right);
+                return geNode.compare(frame, inliningTarget, left, right);
             }
             return right == null;
         }
@@ -269,14 +269,14 @@ public final class CellBuiltins extends PythonBuiltins {
         static TruffleString repr(PCell self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetRefNode getRef,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object ref = getRef.execute(inliningTarget, self);
             if (ref == null) {
                 return simpleTruffleStringFormatNode.format("<cell at 0x%s: empty>", PythonAbstractObject.systemHashCodeAsHexString(self));
             }
-            TruffleString typeName = getNameNode.execute(getClassNode.execute(inliningTarget, ref));
+            TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, ref));
             return simpleTruffleStringFormatNode.format("<cell at 0x%s: %s object at 0x%s>", PythonAbstractObject.systemHashCodeAsHexString(self), typeName,
                             PythonAbstractObject.systemHashCodeAsHexString(ref));
         }

@@ -69,11 +69,13 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_locale")
@@ -334,10 +336,12 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"})
+        @SuppressWarnings("truffle-static-method")
         TruffleString doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached CastToTruffleStringNode castToStringNode) {
-            long l = asLongNode.execute(frame, category);
+            long l = asLongNode.execute(frame, inliningTarget, category);
             if (!isValidCategory(l)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
             }
@@ -346,7 +350,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             // may be NONE or NO_VALUE
             if (!PGuards.isPNone(posixLocaleID)) {
                 try {
-                    posixLocaleIDStr = castToStringNode.execute(posixLocaleID);
+                    posixLocaleIDStr = castToStringNode.execute(inliningTarget, posixLocaleID);
                 } catch (CannotCastException e) {
                     // fall through
                 }

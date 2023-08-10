@@ -62,10 +62,10 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -139,9 +139,9 @@ public class CtypesNodes {
          * otherwise FALSE also for subclasses of c_int and such.
          */
         // corresponds to _ctypes_simple_instance
-        boolean ctypesSimpleInstance(Node inliningTarget, Object type, GetBaseClassNode getBaseClassNode, InlinedIsSameTypeNode isSameTypeNode) {
+        boolean ctypesSimpleInstance(Node inliningTarget, Object type, GetBaseClassNode getBaseClassNode, IsSameTypeNode isSameTypeNode) {
             if (isPyCSimpleTypeObject(type)) {
-                return !isSameTypeNode.execute(inliningTarget, getBaseClassNode.execute(type), SimpleCData);
+                return !isSameTypeNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, type), SimpleCData);
             }
             return false;
         }
@@ -154,7 +154,7 @@ public class CtypesNodes {
         @Specialization
         static boolean checkType(Object receiver, Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object clazz = getClassNode.execute(inliningTarget, receiver);
             // IsSameTypeNode.execute(clazz, type) is done within IsSubtypeNode

@@ -57,17 +57,18 @@ import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageForEachNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool.Comparison;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
@@ -85,7 +86,7 @@ public class ObjectHashMapTests {
 
     private static final class EqNodeStub extends PyObjectRichCompareBool.EqNode {
         @Override
-        public boolean execute(Frame frame, Object a, Object b) {
+        protected boolean execute(Frame frame, Node inliningTarget, Object a, Object b, Comparison cmp) {
             // Sanity check: we do not use any other keys in the tests
             assert a instanceof Long || a instanceof DictKey;
             assert b instanceof Long || b instanceof DictKey;
@@ -295,7 +296,7 @@ public class ObjectHashMapTests {
 
         EconomicMapStorage storage = new EconomicMapStorage(actual, false);
         int[] size = new int[]{0};
-        HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<>() {
+        HashingStorageForEach.executeUncached(storage, new HashingStorageForEachCallback<>() {
             @Override
             public Object execute(Frame frame, Node inliningTarget, HashingStorage s, HashingStorageIterator cbIt, Object accumulator) {
                 Object key = HashingStorageIteratorKey.executeUncached(s, cbIt);
@@ -314,7 +315,7 @@ public class ObjectHashMapTests {
 
     private static Object[] reverseKeysToArray(ObjectHashMap m) {
         EconomicMapStorage s = new EconomicMapStorage(m, false);
-        return iteratorToArray(s, HashingStorageGetReverseIteratorNodeGen.getUncached().execute(s));
+        return iteratorToArray(s, HashingStorageGetReverseIterator.executeUncached(s));
     }
 
     private static Object[] iteratorToArray(HashingStorage s, HashingStorageIterator it) {
@@ -337,23 +338,23 @@ public class ObjectHashMapTests {
 
     private static Object get(ObjectHashMap map, Object key, long hash) {
         InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        return ObjectHashMap.GetNode.doGetWithRestart(null, map, key, hash,
-                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+        return ObjectHashMap.GetNode.doGetWithRestart(null, null, map, key, hash,
+                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
                         uncachedCounting, uncachedCounting,
                         new EqNodeStub());
     }
 
     private static void remove(ObjectHashMap map, Object key, long hash) {
         InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        ObjectHashMap.RemoveNode.doRemoveWithRestart(null, map, key, hash,
-                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+        ObjectHashMap.RemoveNode.doRemoveWithRestart(null, null, map, key, hash,
+                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
                         uncachedCounting, InlinedBranchProfile.getUncached(), new EqNodeStub());
     }
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
         InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        ObjectHashMap.PutNode.doPutWithRestart(null, map, key, hash, value,
-                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+        ObjectHashMap.PutNode.doPutWithRestart(null, null, map, key, hash, value,
+                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
                         uncachedCounting, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
                         new EqNodeStub());
     }

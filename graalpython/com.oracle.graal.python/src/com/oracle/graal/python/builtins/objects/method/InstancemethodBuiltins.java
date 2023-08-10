@@ -98,14 +98,14 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "checkCallableNode.execute(callable)")
+        @Specialization(guards = "checkCallableNode.execute(this, callable)")
         protected static PNone init(PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
             self.setCallable(callable);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!checkCallableNode.execute(callable)")
+        @Specialization(guards = "!checkCallableNode.execute(this, callable)")
         protected PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode) {
             throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
@@ -135,7 +135,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, errorProfile);
-                return getAttrNode.execute(frame, self.getCallable(), key);
+                return getAttrNode.execute(frame, inliningTarget, self.getCallable(), key);
             }
         }
     }
@@ -145,8 +145,9 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doc(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___DOC__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___DOC__);
         }
     }
 
@@ -184,9 +185,10 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprBuiltinFunction(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<instancemethod %s at 0x%s>", toStr(getNameNode.execute(frame, self.getCallable(), T___NAME__)),
+            return simpleTruffleStringFormatNode.format("<instancemethod %s at 0x%s>", toStr(getNameNode.execute(frame, inliningTarget, self.getCallable(), T___NAME__)),
                             PythonAbstractObject.systemHashCodeAsHexString(self.getCallable()));
         }
 

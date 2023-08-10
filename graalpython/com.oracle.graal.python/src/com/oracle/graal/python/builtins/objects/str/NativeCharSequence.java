@@ -52,6 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -96,9 +97,9 @@ public final class NativeCharSequence implements CharSequence {
         return TruffleString.CodePointLengthNode.getUncached().execute(materialize(), TS_ENCODING);
     }
 
-    int length(InteropLibrary lib, CastToJavaIntExactNode castToJavaIntNode) {
+    int length(Node inliningTarget, InteropLibrary lib, CastToJavaIntExactNode castToJavaIntNode) {
         try {
-            int arraySize = castToJavaIntNode.execute(lib.getArraySize(ptr));
+            int arraySize = castToJavaIntNode.execute(inliningTarget, lib.getArraySize(ptr));
             assert arraySize % elementSize == 0;
             // we need to subtract the terminating null character
             return arraySize / elementSize;

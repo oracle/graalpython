@@ -219,7 +219,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -240,7 +239,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibr
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.OverflowException;
@@ -253,9 +251,12 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
@@ -265,9 +266,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.module.UnixSystem;
@@ -302,6 +302,8 @@ import com.sun.security.auth.module.UnixSystem;
 @ExportLibrary(PosixSupportLibrary.class)
 @SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
+
+    private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
     private static final PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
                     new PosixFilePermission[]{},
@@ -403,10 +405,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public TruffleString strerror(int errorCode,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch) {
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch) {
         OSErrorEnum err = OSErrorEnum.fromNumber(errorCode);
         if (err == null) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             err = OSErrorEnum.EINVAL;
         }
         return err.getMessage();
@@ -428,19 +431,20 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public int openat(int dirFd, Object path, int flags, int mode,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString pathname = pathToTruffleString(path, fromJavaStringNode);
-        TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile file = resolvePath(inliningTarget, dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
         Set<StandardOpenOption> options = flagsToOptions(flags);
         FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
         try {
             return openTruffleFile(file, options, attributes);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e, eqNode);
             throw posixException(errAndMsg);
         }
@@ -469,18 +473,18 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public long write(int fd, Buffer data,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        Channel channel = getFileChannel(fd, channelClassProfile);
+        Channel channel = getFileChannel(fd);
         if (!(channel instanceof WritableByteChannel)) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
         try {
             return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
@@ -493,21 +497,35 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public Buffer read(int fd, long length,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Cached ReadFromChannelNode readNode,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        Channel channel = getFileChannel(fd, channelClassProfile);
-        if (channel == null) {
-            errorBranch.enter();
+        Channel channel = getFileChannel(fd);
+        if (!(channel instanceof ReadableByteChannel)) {
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
-        // TODO this is throwing python exceptions
         try {
-            ByteSequenceStorage array = readNode.execute(channel, (int) length);
-            return new Buffer(array.getInternalByteArray(), array.length());
-        } catch (NotYetConnectedException e) {
-            throw posixException(e, eqNode);
+            return readBytesFromChannel((ReadableByteChannel) channel, length);
+        } catch (Exception e) {
+            errorBranch.enter(inliningTarget);
+            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        }
+    }
+
+    @TruffleBoundary
+    private static Buffer readBytesFromChannel(ReadableByteChannel channel, long size) throws IOException {
+        if (channel instanceof SeekableByteChannel seekableByteChannel) {
+            long availableSize = seekableByteChannel.size() - seekableByteChannel.position();
+            size = Math.min(size, availableSize);
+        }
+        size = Math.min(size, MAX_READ);
+        ByteBuffer dst = ByteBuffer.allocate((int) size);
+        int readSize = channel.read(dst);
+        if (readSize <= 0) {
+            return new Buffer(PythonUtils.EMPTY_BYTE_ARRAY, 0);
+        } else {
+            return new Buffer(dst.array(), readSize);
         }
     }
 
@@ -700,17 +718,17 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public long lseek(int fd, long offset, int how,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached ConditionProfile notSupported,
-                    @Exclusive @Cached ConditionProfile noFile,
-                    @Exclusive @Cached ConditionProfile notSeekable,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedConditionProfile notSupported,
+                    @Exclusive @Cached InlinedConditionProfile noFile,
+                    @Exclusive @Cached InlinedConditionProfile notSeekable,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        Channel channel = getFileChannel(fd, channelClassProfile);
-        if (noFile.profile(channel == null)) {
+        Channel channel = getFileChannel(fd);
+        if (noFile.profile(inliningTarget, channel == null)) {
             throw posixException(OSErrorEnum.EBADF);
         }
-        if (notSeekable.profile(!(channel instanceof SeekableByteChannel))) {
+        if (notSeekable.profile(inliningTarget, !(channel instanceof SeekableByteChannel))) {
             throw posixException(OSErrorEnum.ESPIPE);
         }
         SeekableByteChannel fc = (SeekableByteChannel) channel;
@@ -718,10 +736,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             newPos = setPosition(offset, how, fc);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
-        if (notSupported.profile(newPos < 0)) {
+        if (notSupported.profile(inliningTarget, newPos < 0)) {
             if (newPos == -2) {
                 throw new UnsupportedPosixFeatureException("SEEK_HOLE and SEEK_DATA are not supported");
             } else {
@@ -761,7 +779,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage(name = "ftruncate")
     public void ftruncateMessage(int fd, long length,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         // TODO: will merge with super.ftruncate once the super class is merged with this class
         Object ret;
@@ -771,7 +790,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
         if (ret == null) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
     }
@@ -785,12 +804,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     final void flock(int fd, int operation,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        Channel channel = getFileChannel(fd, channelClassProfile);
+        Channel channel = getFileChannel(fd);
         if (channel == null) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
         // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
@@ -848,8 +867,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public boolean getBlocking(int fd,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+    public boolean getBlocking(int fd) throws PosixException {
         Channel channel = getChannel(fd);
         if (channel == null) {
             throw posixException(OSErrorEnum.EBADF);
@@ -857,7 +875,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (channel instanceof EmulatedSocket) {
             return getBlocking((EmulatedSocket) channel);
         }
-        Channel fileChannel = getFileChannel(fd, channelClassProfile);
+        Channel fileChannel = getFileChannel(fd);
         if (fileChannel instanceof SelectableChannel) {
             return getBlocking((SelectableChannel) fileChannel);
         }
@@ -884,7 +902,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (PythonOptions.WITHOUT_JAVA_INET) {
             throw new UnsupportedPosixFeatureException("setBlocking was excluded");
@@ -895,7 +912,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 setBlocking((EmulatedSocket) channel, blocking);
                 return;
             }
-            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            Channel fileChannel = getFileChannel(fd);
             if (fileChannel instanceof SelectableChannel) {
                 setBlocking((SelectableChannel) fileChannel, blocking);
             } else if (fileChannel != null) {
@@ -936,18 +953,19 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString pathname = pathToTruffleString(path, fromJavaStringNode);
-        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile f = resolvePath(inliningTarget, dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
         LinkOption[] linkOptions = getLinkOptions(followSymlinks);
         try {
             return fstat(f, linkOptions);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e, eqNode);
             throw posixException(errAndMsg);
         }
@@ -955,18 +973,18 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public long[] fstat(int fd,
-                    @Exclusive @Cached BranchProfile nullPathProfile,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached InlinedBranchProfile nullPathProfile,
+                    @Exclusive @Cached InlinedBranchProfile errorBranch,
+                    @Exclusive @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);
         if (path == null) {
-            nullPathProfile.enter();
-            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            nullPathProfile.enter(inliningTarget);
+            Channel fileChannel = getFileChannel(fd);
             if (fileChannel == null) {
-                errorBranch.enter();
+                errorBranch.enter(inliningTarget);
                 throw posixException(OSErrorEnum.EBADF);
             }
             return fstatWithoutPath(fileChannel);
@@ -975,7 +993,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             return fstat(f, new LinkOption[0]);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e, eqNode);
             throw posixException(errAndMsg);
         }
@@ -1251,83 +1269,87 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString pathname = pathToTruffleString(path, fromJavaStringNode);
-        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile f = resolvePath(inliningTarget, dirFd, pathname, defaultDirFdPofile, eqNode, toJavaStringNode);
         if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
             // we cannot check this if the file does not exist
             boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
             if (isDirectory != rmdir) {
-                errorBranch.enter();
+                errorBranch.enter(inliningTarget);
                 throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR);
             }
         }
         try {
             f.delete();
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
 
     @ExportMessage
     public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString srcPath = pathToTruffleString(oldPath, fromJavaStringNode);
-        TruffleFile srcFile = resolvePath(oldFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile srcFile = resolvePath(inliningTarget, oldFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
         TruffleString dstPath = pathToTruffleString(newPath, fromJavaStringNode);
-        TruffleFile dstFile = resolvePath(newFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile dstFile = resolvePath(inliningTarget, newFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
         try {
             if ((flags & PosixConstants.AT_SYMLINK_FOLLOW.value) != 0) {
                 dstFile = dstFile.getCanonicalFile();
             }
             srcFile.createLink(dstFile);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
 
     @ExportMessage
     public void symlinkat(Object target, int linkDirFd, Object link,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString linkPath = pathToTruffleString(link, fromJavaStringNode);
-        TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile linkFile = resolvePath(inliningTarget, linkDirFd, linkPath, defaultDirFdPofile, eqNode, toJavaStringNode);
         TruffleString targetPath = pathToTruffleString(target, fromJavaStringNode);
         TruffleFile targetFile = getTruffleFile(targetPath, eqNode);
         try {
             linkFile.createSymbolicLink(targetFile);
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
 
     @ExportMessage
     public void mkdirat(int dirFd, Object path, int mode,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString pathStr = pathToTruffleString(path, fromJavaStringNode);
-        TruffleFile linkFile = resolvePath(dirFd, pathStr, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile linkFile = resolvePath(inliningTarget, dirFd, pathStr, defaultDirFdPofile, eqNode, toJavaStringNode);
         try {
             linkFile.createDirectory();
         } catch (Exception e) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
@@ -1339,48 +1361,49 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void chdir(Object path,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
-        chdirStr(pathToTruffleString(path, fromJavaStringNode), errorBranch, eqNode);
+        chdirStr(inliningTarget, pathToTruffleString(path, fromJavaStringNode), errorBranch, eqNode);
     }
 
     @ExportMessage
     public void fchdir(int fd,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached BranchProfile asyncProfile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);
         if (path == null) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADF);
         }
-        chdirStr(path, errorBranch, eqNode);
+        chdirStr(inliningTarget, path, errorBranch, eqNode);
     }
 
     private static final TruffleString T_FILESYSTEM_DOES_NOT_SUPPORT_CHANGING_CUR_DIR = tsLiteral("The filesystem does not support changing of the current working directory");
 
-    private void chdirStr(TruffleString pathStr, BranchProfile errorBranch, TruffleString.EqualNode eqNode) throws PosixException {
+    private void chdirStr(Node inliningTarget, TruffleString pathStr, InlinedBranchProfile errorBranch, TruffleString.EqualNode eqNode) throws PosixException {
         TruffleFile truffleFile = getTruffleFile(pathStr, eqNode).getAbsoluteFile();
         if (!truffleFile.exists()) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         }
         if (!truffleFile.isDirectory()) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOTDIR);
         }
         try {
             context.getEnv().setCurrentWorkingDirectory(truffleFile);
         } catch (IllegalArgumentException ignored) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         } catch (SecurityException ignored) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         } catch (UnsupportedOperationException ignored) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(new ErrorAndMessagePair(OSErrorEnum.EIO, T_FILESYSTEM_DOES_NOT_SUPPORT_CHANGING_CUR_DIR));
         }
     }
@@ -1434,7 +1457,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public Object opendir(Object path,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         return opendirImpl(pathToTruffleString(path, fromJavaStringNode), -1, eqNode);
@@ -1442,12 +1464,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public Object fdopendir(int fd,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);
         if (path == null) {
-            errorBranch.enter();
+            errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.ENOENT);
         }
         return opendirImpl(path, fd, eqNode);
@@ -1562,54 +1585,59 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleString pathStr = pathToTruffleString(path, fromJavaStringNode);
-        TruffleFile file = resolvePath(dirFd, pathStr, defaultDirFdPofile, eqNode, toJavaStringNode);
-        setUTimeNode.execute(file, timespec, followSymlinks);
+        TruffleFile file = resolvePath(inliningTarget, dirFd, pathStr, defaultDirFdPofile, eqNode, toJavaStringNode);
+        setUTimeNode.execute(inliningTarget, file, timespec, followSymlinks);
     }
 
     @ExportMessage
     public void futimens(int fd, long[] timespec,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);
         TruffleFile file = getTruffleFile(path, eqNode);
-        setUTimeNode.execute(file, timespec, true);
+        setUTimeNode.execute(inliningTarget, file, timespec, true);
     }
 
     @ExportMessage
     public void futimes(int fd, Timeval[] timeval,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString path = getFilePath(fd, fromJavaStringNode);
         TruffleFile file = getTruffleFile(path, eqNode);
-        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), true);
     }
 
     @ExportMessage
     public void lutimes(Object filename, Timeval[] timeval,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString filenameStr = pathToTruffleString(filename, fromJavaStringNode);
         TruffleFile file = getTruffleFile(filenameStr, eqNode);
-        setUTimeNode.execute(file, timevalToTimespec(timeval), false);
+        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), false);
     }
 
     @ExportMessage
     public void utimes(Object filename, Timeval[] timeval,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         TruffleString filenameStr = pathToTruffleString(filename, fromJavaStringNode);
         TruffleFile file = getTruffleFile(filenameStr, eqNode);
-        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+        setUTimeNode.execute(inliningTarget, file, timevalToTimespec(timeval), true);
     }
 
     private static long[] timevalToTimespec(Timeval[] timeval) {
@@ -1621,34 +1649,37 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class SetUTimeNode extends Node {
-        abstract void execute(TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException;
+        abstract void execute(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException;
 
         @Specialization(guards = "timespec == null")
-        static void doCurrentTime(TruffleFile file, long[] timespec, boolean followSymlinks,
-                        @Shared("errorBranch") @Cached BranchProfile errBranch,
-                        @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        static void doCurrentTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
+                        @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
+                        @Shared("eq") @Cached(inline = false) TruffleString.EqualNode eqNode) throws PosixException {
             FileTime time = FileTime.fromMillis(System.currentTimeMillis());
-            setFileTimes(followSymlinks, file, time, time, errBranch, eqNode);
+            setFileTimes(inliningTarget, followSymlinks, file, time, time, errBranch, eqNode);
         }
 
         // the second guard is just so that Truffle does not generate dead code that throws
         // UnsupportedSpecializationException..
         @Specialization(guards = {"timespec != null", "file != null"})
-        static void doGivenTime(TruffleFile file, long[] timespec, boolean followSymlinks,
-                        @Shared("errorBranch") @Cached BranchProfile errBranch,
-                        @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        static void doGivenTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
+                        @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
+                        @Shared("eq") @Cached(inline = false) TruffleString.EqualNode eqNode) throws PosixException {
             FileTime atime = toFileTime(timespec[0], timespec[1]);
             FileTime mtime = toFileTime(timespec[2], timespec[3]);
-            setFileTimes(followSymlinks, file, mtime, atime, errBranch, eqNode);
+            setFileTimes(inliningTarget, followSymlinks, file, mtime, atime, errBranch, eqNode);
         }
 
-        private static void setFileTimes(boolean followSymlinks, TruffleFile file, FileTime mtime, FileTime atime, BranchProfile errBranch, TruffleString.EqualNode eqNode) throws PosixException {
+        private static void setFileTimes(Node inliningTarget, boolean followSymlinks, TruffleFile file, FileTime mtime, FileTime atime, InlinedBranchProfile errBranch, TruffleString.EqualNode eqNode)
+                        throws PosixException {
             try {
                 file.setLastAccessTime(atime, getLinkOptions(followSymlinks));
                 file.setLastModifiedTime(mtime, getLinkOptions(followSymlinks));
             } catch (Exception e) {
-                errBranch.enter();
+                errBranch.enter(inliningTarget);
                 final ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e, eqNode);
                 // setLastAccessTime/setLastModifiedTime and NOFOLLOW_LINKS does not work (at least)
                 // on OpenJDK8 on Linux and gives ELOOP error. See some explanation in this thread:
@@ -1675,16 +1706,17 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         try {
-            TruffleFile newFile = resolvePath(newDirFd, pathToTruffleString(newPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            TruffleFile newFile = resolvePath(inliningTarget, newDirFd, pathToTruffleString(newPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
             if (newFile.isDirectory()) {
                 throw posixException(OSErrorEnum.EISDIR);
             }
-            TruffleFile oldFile = resolvePath(oldDirFd, pathToTruffleString(oldPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            TruffleFile oldFile = resolvePath(inliningTarget, oldDirFd, pathToTruffleString(oldPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
             oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e, eqNode));
@@ -1693,18 +1725,19 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @Shared("errorBranch") @Cached BranchProfile errBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         if (effectiveIds) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
         }
         TruffleFile file = null;
         try {
-            file = resolvePath(dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            file = resolvePath(inliningTarget, dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
         } catch (PosixException e) {
             // When the dirFd is invalid descriptor, we just return false, like the real faccessat
             return false;
@@ -1719,7 +1752,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (!followSymlinks) {
             // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
             // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions check
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
         }
         boolean result = true;
@@ -1737,11 +1770,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
-        TruffleFile file = resolvePath(dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         if (getPythonOS() == PLATFORM_WIN32) {
             // cmp cpython's simple chmod implementation
@@ -1777,11 +1811,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public Object readlinkat(int dirFd, Object path,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
-        TruffleFile file = resolvePath(dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleFile file = resolvePath(inliningTarget, dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
         try {
             TruffleFile canonicalFile = file.getCanonicalFile();
             if (file.equals(canonicalFile)) {
@@ -2426,7 +2461,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile isAnonymousProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         if (prot == PROT_NONE.value) {
@@ -2434,7 +2470,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
 
         // Note: the profile is not really defaultDirProfile, but it's good to share...
-        if (isAnonymousProfile.profile((flags & MAP_ANONYMOUS.value) != 0)) {
+        if (isAnonymousProfile.profile(inliningTarget, (flags & MAP_ANONYMOUS.value) != 0)) {
             try {
                 return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
             } catch (OverflowException e) {
@@ -2481,15 +2517,16 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public byte mmapReadByte(Object mmap, long index,
-                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
         ByteBuffer readingBuffer = allocateByteBuffer(1);
-        int readSize = readBytes(handle, index, readingBuffer, errBranch, eqNode);
+        int readSize = readBytes(inliningTarget, handle, index, readingBuffer, errBranch, eqNode);
         if (readSize == 0) {
             throw posixException(OSErrorEnum.ENODATA);
         }
@@ -2499,18 +2536,20 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public void mmapWriteByte(Object mmap, long index, byte value,
-                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        mmapWriteBytes(mmap, index, new byte[]{value}, 1, errBranch, eqNode);
+        mmapWriteBytes(mmap, index, new byte[]{value}, 1, inliningTarget, errBranch, eqNode);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
@@ -2518,23 +2557,23 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             sz = PythonUtils.toIntExact(length);
         } catch (OverflowException e) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EOVERFLOW);
         }
         ByteBuffer readingBuffer = allocateByteBuffer(sz);
-        int readSize = readBytes(handle, index, readingBuffer, errBranch, eqNode);
+        int readSize = readBytes(inliningTarget, handle, index, readingBuffer, errBranch, eqNode);
         if (readSize > 0) {
             getByteBufferArray(readingBuffer, bytes, readSize);
         }
         return readSize;
     }
 
-    private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer, BranchProfile errBranch, TruffleString.EqualNode eqNode) throws PosixException {
+    private static int readBytes(Node inliningTarget, MMapHandle handle, long index, ByteBuffer readingBuffer, InlinedBranchProfile errBranch, TruffleString.EqualNode eqNode) throws PosixException {
         try {
             position(handle.channel, index + handle.offset);
             return readChannel(handle.channel, readingBuffer);
         } catch (IOException e) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
@@ -2542,10 +2581,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (mmap == MMapHandle.NONE) {
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EACCES);
         }
         MMapHandle handle = (MMapHandle) mmap;
@@ -2558,7 +2598,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         } catch (Exception e) {
             // Catching generic Exception to also cover NonWritableChannelException
-            errBranch.enter();
+            errBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
     }
@@ -4190,9 +4230,10 @@ public final class EmulatedPosixSupport extends PosixResources {
      * Resolves the path relative to the directory given as file descriptor. Honors the
      * {@link PosixConstants#AT_FDCWD}.
      */
-    private TruffleFile resolvePath(int dirFd, TruffleString pathname, ConditionProfile defaultDirFdPofile, TruffleString.EqualNode eqNode, TruffleString.ToJavaStringNode toJavaStringNode)
+    private TruffleFile resolvePath(Node inliningTarget, int dirFd, TruffleString pathname, InlinedConditionProfile defaultDirFdPofile, TruffleString.EqualNode eqNode,
+                    TruffleString.ToJavaStringNode toJavaStringNode)
                     throws PosixException {
-        if (defaultDirFdPofile.profile(dirFd == AT_FDCWD.value)) {
+        if (defaultDirFdPofile.profile(inliningTarget, dirFd == AT_FDCWD.value)) {
             return getTruffleFile(pathname, eqNode);
         } else {
             TruffleFile file = getTruffleFile(pathname, eqNode);

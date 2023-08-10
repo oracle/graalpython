@@ -51,10 +51,11 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@GenerateInline(false) // used in bytecode root node
 public abstract class GetANextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object receiver);
 
@@ -79,7 +81,7 @@ public abstract class GetANextNode extends PNodeWithContext {
     Object doGeneric(Frame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
-                    @Cached InlinedGetClassNode getAsyncIterType,
+                    @Cached GetClassNode getAsyncIterType,
                     @Cached PRaiseNode raiseNoANext,
                     @Cached InlinedBranchProfile errorProfile,
                     @Cached CallUnaryMethodNode callANext,

@@ -49,8 +49,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodecBuiltins {
@@ -58,10 +60,11 @@ public final class PythonCextCodecBuiltins {
     abstract static class PyCodec_Encoder extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(TruffleString encoding,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
-            PTuple codecInfo = lookupNode.execute(null, encoding);
-            return getItemScalarNode.execute(codecInfo.getSequenceStorage(), 0);
+            PTuple codecInfo = lookupNode.execute(null, inliningTarget, encoding);
+            return getItemScalarNode.execute(inliningTarget, codecInfo.getSequenceStorage(), 0);
         }
     }
 
@@ -69,10 +72,11 @@ public final class PythonCextCodecBuiltins {
     abstract static class PyCodec_Decoder extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(TruffleString encoding,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.PyCodecLookupNode lookupNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
-            PTuple codecInfo = lookupNode.execute(null, encoding);
-            return getItemScalarNode.execute(codecInfo.getSequenceStorage(), 1);
+            PTuple codecInfo = lookupNode.execute(null, inliningTarget, encoding);
+            return getItemScalarNode.execute(inliningTarget, codecInfo.getSequenceStorage(), 1);
         }
     }
 }

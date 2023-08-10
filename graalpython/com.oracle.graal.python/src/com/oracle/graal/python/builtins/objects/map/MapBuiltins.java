@@ -60,12 +60,14 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
@@ -80,20 +82,22 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization(guards = "args.length == 0")
         static PNone doOne(VirtualFrame frame, PMap self, Object func, Object iterable, @SuppressWarnings("unused") Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
-            self.setIterators(new Object[]{getIter.execute(frame, iterable)});
+            self.setIterators(new Object[]{getIter.execute(frame, inliningTarget, iterable)});
             return PNone.NONE;
         }
 
         @Specialization(replaces = "doOne")
         static PNone doGeneric(VirtualFrame frame, PMap self, Object func, Object iterable, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
             Object[] iterators = new Object[args.length + 1];
-            iterators[0] = getIter.execute(frame, iterable);
+            iterators[0] = getIter.execute(frame, inliningTarget, iterable);
             for (int i = 0; i < args.length; i++) {
-                iterators[i + 1] = getIter.execute(frame, args[i]);
+                iterators[i + 1] = getIter.execute(frame, inliningTarget, args[i]);
             }
             self.setIterators(iterators);
             return PNone.NONE;
@@ -105,15 +109,15 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
-                        @Cached CallVarargsMethodNode callNode,
-                        @Cached GetNextNode next) {
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached GetNextNode next) {
             return callNode.execute(frame, self.getFunction(), new Object[]{next.execute(frame, self.getIterators()[0])}, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
-                        @Cached CallVarargsMethodNode callNode,
-                        @Cached GetNextNode next) {
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @Shared @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {

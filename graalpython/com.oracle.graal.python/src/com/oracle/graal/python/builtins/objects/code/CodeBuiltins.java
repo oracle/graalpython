@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -88,8 +90,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStrings(self.getFreeVars(), internStringNode, factory());
+            return internStrings(inliningTarget, self.getFreeVars(), internStringNode, factory());
         }
     }
 
@@ -98,8 +101,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStrings(self.getCellVars(), internStringNode, factory());
+            return internStrings(inliningTarget, self.getCellVars(), internStringNode, factory());
         }
     }
 
@@ -108,10 +112,11 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected static Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
             TruffleString filename = self.getFilename();
             if (filename != null) {
-                return internStringNode.execute(filename);
+                return internStringNode.execute(inliningTarget, filename);
             }
             return PNone.NONE;
         }
@@ -132,8 +137,9 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         protected static Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStringNode.execute(self.co_name());
+            return internStringNode.execute(inliningTarget, self.co_name());
         }
     }
 
@@ -205,8 +211,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStrings(self.getConstants(), internStringNode, factory());
+            return internStrings(inliningTarget, self.getConstants(), internStringNode, factory());
         }
     }
 
@@ -215,8 +222,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStrings(self.getNames(), internStringNode, factory());
+            return internStrings(inliningTarget, self.getNames(), internStringNode, factory());
         }
     }
 
@@ -225,8 +233,9 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached InternStringNode internStringNode) {
-            return internStrings(self.getVarnames(), internStringNode, factory());
+            return internStrings(inliningTarget, self.getVarnames(), internStringNode, factory());
         }
     }
 
@@ -278,7 +287,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             } else {
                 tuple = factory().createEmptyTuple();
             }
-            return PyObjectGetIter.getUncached().execute(null, tuple);
+            return PyObjectGetIter.executeUncached(tuple);
         }
     }
 
@@ -336,17 +345,18 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
         @Specialization
         long hash(VirtualFrame frame, PCode self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
             long h, h0, h1, h2, h3, h4, h5, h6;
             PythonObjectFactory factory = factory();
 
-            h0 = hashNode.execute(frame, self.co_name());
-            h1 = hashNode.execute(frame, self.co_code(factory));
-            h2 = hashNode.execute(frame, self.co_consts(factory));
-            h3 = hashNode.execute(frame, self.co_names(factory));
-            h4 = hashNode.execute(frame, self.co_varnames(factory));
-            h5 = hashNode.execute(frame, self.co_freevars(factory));
-            h6 = hashNode.execute(frame, self.co_cellvars(factory));
+            h0 = hashNode.execute(frame, inliningTarget, self.co_name());
+            h1 = hashNode.execute(frame, inliningTarget, self.co_code(factory));
+            h2 = hashNode.execute(frame, inliningTarget, self.co_consts(factory));
+            h3 = hashNode.execute(frame, inliningTarget, self.co_names(factory));
+            h4 = hashNode.execute(frame, inliningTarget, self.co_varnames(factory));
+            h5 = hashNode.execute(frame, inliningTarget, self.co_freevars(factory));
+            h6 = hashNode.execute(frame, inliningTarget, self.co_cellvars(factory));
 
             h = h0 ^ h1 ^ h2 ^ h3 ^ h4 ^ h5 ^ h6 ^
                             self.co_argcount() ^ self.co_posonlyargcount() ^ self.co_kwonlyargcount() ^
@@ -393,6 +403,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         Object[] coVarnames, Object[] coFreevars,
                         Object[] coCellvars, TruffleString coFilename,
                         TruffleString coName, Object coLnotab,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
@@ -406,10 +417,10 @@ public final class CodeBuiltins extends PythonBuiltins {
                                 coFlags == -1 ? self.co_flags() : coFlags,
                                 PGuards.isNone(coCode) ? self.getCodestring() : bufferLib.getInternalOrCopiedByteArray(coCode),
                                 coConsts.length == 0 ? null : coConsts,
-                                coNames.length == 0 ? null : objectArrayToTruffleStringArray(coNames, castToTruffleStringNode),
-                                coVarnames.length == 0 ? null : objectArrayToTruffleStringArray(coVarnames, castToTruffleStringNode),
-                                coFreevars.length == 0 ? null : objectArrayToTruffleStringArray(coFreevars, castToTruffleStringNode),
-                                coCellvars.length == 0 ? null : objectArrayToTruffleStringArray(coCellvars, castToTruffleStringNode),
+                                coNames.length == 0 ? null : objectArrayToTruffleStringArray(inliningTarget, coNames, castToTruffleStringNode),
+                                coVarnames.length == 0 ? null : objectArrayToTruffleStringArray(inliningTarget, coVarnames, castToTruffleStringNode),
+                                coFreevars.length == 0 ? null : objectArrayToTruffleStringArray(inliningTarget, coFreevars, castToTruffleStringNode),
+                                coCellvars.length == 0 ? null : objectArrayToTruffleStringArray(inliningTarget, coCellvars, castToTruffleStringNode),
                                 coFilename.isEmpty() ? self.co_filename() : coFilename,
                                 coName.isEmpty() ? self.co_name() : coName,
                                 coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
@@ -434,7 +445,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         return false;
     }
 
-    private static PTuple internStrings(Object[] values, InternStringNode internStringNode, PythonObjectFactory factory) {
+    private static PTuple internStrings(Node inliningTarget, Object[] values, InternStringNode internStringNode, PythonObjectFactory factory) {
         if (values == null) {
             return factory.createEmptyTuple();
         }
@@ -445,7 +456,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             result = new Object[values.length];
             for (int i = 0; i < values.length; ++i) {
                 if (values[i] instanceof TruffleString) {
-                    result[i] = internStringNode.execute(values[i]);
+                    result[i] = internStringNode.execute(inliningTarget, values[i]);
                 } else {
                     result[i] = values[i];
                 }

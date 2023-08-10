@@ -101,13 +101,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeBuildEncodingMapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeDecodeCharmapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeEncodeCharmapNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecRegisterErrorNode;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -130,7 +130,6 @@ import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -159,7 +158,11 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -169,7 +172,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS)
@@ -203,64 +206,56 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         return CodecsModuleBuiltinsFactory.getFactories();
     }
 
+    @GenerateInline
     @GenerateUncached
-    public abstract static class RaiseEncodingErrorNode extends Node {
-        public abstract RuntimeException execute(TruffleEncoder encoder, Object inputObject);
-
-        @Specialization
-        static RuntimeException doRaise(TruffleEncoder encoder, Object inputObject,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode) {
-            int start = encoder.getInputPosition();
-            int end = start + encoder.getErrorLength();
-            Object exception = callNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
-            if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject(exception);
-            } else {
-                // Shouldn't happen unless the user manually replaces the method, which is really
-                // unexpected and shouldn't be permitted at all, but currently it is
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, exception);
-            }
-        }
-    }
-
-    @GenerateUncached
+    @GenerateCached(false)
     public abstract static class HandleEncodingErrorNode extends Node {
-        public abstract void execute(TruffleEncoder encoder, TruffleString errorAction, Object inputObject);
+        public abstract void execute(Node inliningTarget, TruffleEncoder encoder, TruffleString errorAction, Object inputObject);
 
         @Specialization
-        static void handle(TruffleEncoder encoder, TruffleString errorAction, Object inputObject,
-                        @Cached ConditionProfile strictProfile,
-                        @Cached ConditionProfile backslashreplaceProfile,
-                        @Cached ConditionProfile surrogatepassProfile,
-                        @Cached ConditionProfile surrogateescapeProfile,
-                        @Cached ConditionProfile xmlcharrefreplaceProfile,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
-                        @Cached PRaiseNode raiseNode) {
+        static void handle(Node inliningTarget, TruffleEncoder encoder, TruffleString errorAction, Object inputObject,
+                        @Cached InlinedConditionProfile strictProfile,
+                        @Cached InlinedConditionProfile backslashreplaceProfile,
+                        @Cached InlinedConditionProfile surrogatepassProfile,
+                        @Cached InlinedConditionProfile surrogateescapeProfile,
+                        @Cached InlinedConditionProfile xmlcharrefreplaceProfile,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached(inline = false) TruffleString.EqualNode equalNode,
+                        // TODO: (blocked by GR-46101) make this CallNode.Lazy
+                        @Cached(inline = false) CallNode lazyCallNode) {
             boolean fixed;
             try {
                 // Ignore and replace are handled by Java Charset
-                if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
+                if (strictProfile.profile(inliningTarget, equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
                     fixed = false;
-                } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
+                } else if (backslashreplaceProfile.profile(inliningTarget, equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
                     fixed = backslashreplace(encoder);
-                } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
+                } else if (surrogatepassProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
                     fixed = surrogatepass(encoder, equalNode);
-                } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
+                } else if (surrogateescapeProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
                     fixed = surrogateescape(encoder);
-                } else if (xmlcharrefreplaceProfile.profile(equalNode.execute(T_XMLCHARREFREPLACE, errorAction, TS_ENCODING))) {
+                } else if (xmlcharrefreplaceProfile.profile(inliningTarget, equalNode.execute(T_XMLCHARREFREPLACE, errorAction, TS_ENCODING))) {
                     fixed = xmlcharrefreplace(encoder);
                 } else {
-                    throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+                    throw raiseNode.get(inliningTarget).raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
             if (!fixed) {
-                throw raiseEncodingErrorNode.execute(encoder, inputObject);
+                int start = encoder.getInputPosition();
+                int end = start + encoder.getErrorLength();
+                Object exception = lazyCallNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
+                if (exception instanceof PBaseException) {
+                    throw raiseNode.get(inliningTarget).raiseExceptionObject((PBaseException) exception);
+                } else {
+                    // Shouldn't happen unless the user manually replaces the method, which is
+                    // really
+                    // unexpected and shouldn't be permitted at all, but currently it is
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, exception);
+                }
             }
         }
 
@@ -353,22 +348,24 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class RaiseDecodingErrorNode extends Node {
-        protected abstract Object execute(TruffleDecoder decoder, Object inputObject, boolean justMakeExcept);
+        protected abstract Object execute(Node inliningTarget, TruffleDecoder decoder, Object inputObject, boolean justMakeExcept);
 
         // make_decode_exception
-        public Object makeDecodeException(TruffleDecoder decoder, Object inputObject) {
-            return execute(decoder, inputObject, true);
+        public Object makeDecodeException(Node inliningTarget, TruffleDecoder decoder, Object inputObject) {
+            return execute(inliningTarget, decoder, inputObject, true);
         }
 
-        public Object raise(TruffleDecoder decoder, Object inputObject) {
-            return execute(decoder, inputObject, false);
+        public Object raise(Node inliningTarget, TruffleDecoder decoder, Object inputObject) {
+            return execute(inliningTarget, decoder, inputObject, false);
         }
 
         @Specialization
-        static Object doRaise(TruffleDecoder decoder, Object inputObject, boolean justMakeExcept,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode) {
+        static Object doRaise(Node inliningTarget, TruffleDecoder decoder, Object inputObject, boolean justMakeExcept,
+                        @Cached(inline = false) CallNode callNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int start = decoder.getInputPosition();
             int end = start + decoder.getErrorLength();
             Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
@@ -376,35 +373,37 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 return exception;
             }
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject(exception);
+                throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, exception);
+                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, exception);
             }
         }
     }
 
     @GenerateUncached
+    @GenerateCached(false)
+    @GenerateInline
     protected abstract static class InternErrorAction extends Node {
 
-        public abstract TruffleString execute(TruffleString errorAction);
+        public abstract TruffleString execute(Node inliningTarget, TruffleString errorAction);
 
         @Specialization
-        public static TruffleString intern(TruffleString errorAction,
-                        @Cached ConditionProfile strictProfile,
-                        @Cached ConditionProfile backslashreplaceProfile,
-                        @Cached ConditionProfile surrogatepassProfile,
-                        @Cached ConditionProfile surrogateescapeProfile,
-                        @Cached TruffleString.EqualNode equalNode) {
-            if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
+        public static TruffleString intern(Node inliningTarget, TruffleString errorAction,
+                        @Cached InlinedConditionProfile strictProfile,
+                        @Cached InlinedConditionProfile backslashreplaceProfile,
+                        @Cached InlinedConditionProfile surrogatepassProfile,
+                        @Cached InlinedConditionProfile surrogateescapeProfile,
+                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
+            if (strictProfile.profile(inliningTarget, equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
                 return T_STRICT;
-            } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
+            } else if (backslashreplaceProfile.profile(inliningTarget, equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
                 return T_BACKSLASHREPLACE;
-            } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
+            } else if (surrogatepassProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
                 return T_SURROGATEPASS;
-            } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
+            } else if (surrogateescapeProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
                 return T_SURROGATEESCAPE;
             }
             return errorAction;
@@ -415,58 +414,62 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
      * This Node is expecting the errorAction truffle string to be interned ahead.
      */
     @ImportStatic(StringLiterals.class)
+    // Not inlined because: Truffle DSL bug in @Fallback, and this node is relatively heavy and used
+    // "lazily", i.e., not on all code-paths
+    @GenerateInline(false)
     public abstract static class HandleDecodingErrorNode extends Node {
         public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization(guards = "errorAction == T_STRICT")
         static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
-            raiseDecodingErrorNode.raise(decoder, inputObject);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
+            raiseDecodingErrorNode.raise(inliningTarget, decoder, inputObject);
         }
 
         @Specialization(guards = "errorAction == T_BACKSLASHREPLACE")
-        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
-                        @Cached PRaiseNode raiseNode) {
+        void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
                 // Ignore and replace are handled by Java Charset
                 if (!backslashreplace(decoder)) {
-                    raiseDecodingErrorNode.raise(decoder, inputObject);
+                    raiseDecodingErrorNode.raise(inliningTarget, decoder, inputObject);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(MemoryError);
+                PRaiseNode.raiseUncached(this, MemoryError);
             }
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEPASS")
         static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
                 // Ignore and replace are handled by Java Charset
                 if (!surrogatepass(decoder, equalNode)) {
-                    raiseDecodingErrorNode.raise(decoder, inputObject);
+                    raiseDecodingErrorNode.raise(inliningTarget, decoder, inputObject);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEESCAPE")
         static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
-                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             try {
                 // Ignore and replace are handled by Java Charset
                 if (!surrogateescape(decoder)) {
-                    raiseDecodingErrorNode.raise(decoder, inputObject);
+                    raiseDecodingErrorNode.raise(inliningTarget, decoder, inputObject);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
@@ -479,47 +482,47 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PyLongAsIntNode asIntNode,
-                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Exclusive @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 Object errorHandler = lookupErrorNode.execute(inliningTarget, errorAction);
                 if (errorHandler == null) {
-                    throw raiseNode.raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
+                    throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
                 }
-                Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(decoder, inputObject);
+                Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(inliningTarget, decoder, inputObject);
                 Object restuple = callNode.execute(errorHandler, exceptionObject);
 
                 Object[] t = null;
                 if (PGuards.isPTuple(restuple)) {
-                    t = getArray.execute(((PTuple) restuple).getSequenceStorage());
+                    t = getArray.execute(inliningTarget, ((PTuple) restuple).getSequenceStorage());
                 }
 
                 if (t == null || t.length != 2) {
-                    throw raiseNode.raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
                 }
-                int newpos = asIntNode.execute(null, t[1]);
+                int newpos = asIntNode.execute(null, inliningTarget, t[1]);
                 /*- Copy back the bytes variables, which might have been modified by the callback */
                 assert exceptionObject instanceof PBaseException;
                 Object obj = attrNode.get((PBaseException) exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
                 SequenceStorage inputStorage = getBytesStorage.execute(inliningTarget, obj);
-                byte[] input = getBytes.execute(inputStorage);
+                byte[] input = getBytes.execute(inliningTarget, inputStorage);
                 int insize = inputStorage.length();
 
                 if (newpos < 0) {
                     newpos = insize + newpos;
                 }
                 if (newpos < 0 || newpos > insize) {
-                    throw raiseNode.raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                    throw raiseNode.get(inliningTarget).raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
                 }
 
                 if (!custom(decoder, input, insize, newpos)) {
-                    throw raiseNode.raise(SystemError);
+                    throw raiseNode.get(inliningTarget).raise(SystemError);
                 }
 
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
@@ -591,32 +594,34 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 48 -> 30
     public abstract static class CodecsEncodeToJavaBytesNode extends Node {
         public abstract byte[] execute(Object self, TruffleString encoding, TruffleString errors);
 
         @Specialization
         byte[] encode(Object self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode castStr,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached HandleEncodingErrorNode errorHandler,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
             String input = castStr.execute(self);
             CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
-            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
+            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
             Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
             if (charset == null) {
-                throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
+                throw raiseNode.get(inliningTarget).raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleEncoder encoder;
             try {
                 encoder = new TruffleEncoder(normalizedEncoding, charset, input, errorAction);
                 while (!encoder.encodingStep()) {
-                    errorHandler.execute(encoder, errors, self);
+                    errorHandler.execute(inliningTarget, encoder, errors, self);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raiseMemoryError();
+                throw PRaiseNode.raiseUncached(this, MemoryError);
             }
             return encoder.getBytes();
         }
@@ -637,10 +642,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isString(self)"})
         Object encode(Object self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached CodecsEncodeToJavaBytesNode encode) {
-            TruffleString input = castStr.execute(self);
+            TruffleString input = castStr.execute(inliningTarget, self);
             PBytes bytes = factory().createBytes(encode.execute(self, encoding, errors));
             return factory().createTuple(new Object[]{bytes, codePointLengthNode.execute(input, TS_ENCODING)});
         }
@@ -668,22 +674,10 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
-                        @Cached InternalCodecsDecodeNode internalNode) {
-            return internalNode.execute(frame, this, input, encoding, errors, finalData);
-        }
-    }
-
-    public abstract static class InternalCodecsDecodeNode extends PNodeWithContext {
-        abstract Object execute(Frame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData);
-
-        public final Object call(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData) {
-            return execute(frame, node, input, encoding, errors, finalData);
-        }
-
         @Specialization(limit = "3")
-        Object decode(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
+        @SuppressWarnings("truffle-static-method")
+        Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("input") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
@@ -692,12 +686,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached HandleDecodingErrorNode errorHandler,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            Object buffer = acquireLib.acquireReadonly(input, frame, node);
+            Object buffer = acquireLib.acquireReadonly(input, frame, this);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
-                TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
+                TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
                 Charset charset = CharsetMapping.getCharsetForDecodingNormalized(normalizedEncoding, bytes, len);
                 if (charset == null) {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
@@ -706,7 +700,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 try {
                     decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
-                        errorHandler.execute(decoder, internErrorAction.execute(errors), factory.createBytes(bytes, len));
+                        errorHandler.execute(decoder, internErrorAction.execute(inliningTarget, errors), factory.createBytes(bytes, len));
                     }
                 } catch (OutOfMemoryError e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -878,8 +872,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object encode(PBytes data, @SuppressWarnings("unused") TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
-            byte[] bytes = getInternalByteArrayNode.execute(data.getSequenceStorage());
+            byte[] bytes = getInternalByteArrayNode.execute(inliningTarget, data.getSequenceStorage());
             int size = bytes.length;
             ByteArrayBuffer buffer = new ByteArrayBuffer();
             char c;
@@ -925,8 +920,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodecsLookupNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object lookup(TruffleString encoding,
+                        @Bind("this") Node inliningTarget,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
-            if (hasTruffleEncodingNormalized(normalizeEncodingNameNode.execute(encoding))) {
+            if (hasTruffleEncodingNormalized(normalizeEncodingNameNode.execute(inliningTarget, encoding))) {
                 return true;
             } else {
                 return PNone.NONE;
@@ -943,9 +939,10 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PTuple lookup(VirtualFrame frame, TruffleString encoding,
+        static PTuple lookup(VirtualFrame frame, TruffleString encoding,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCodecLookupNode lookup) {
-            return lookup.execute(frame, encoding);
+            return lookup.execute(frame, inliningTarget, encoding);
         }
 
         @Override
@@ -955,27 +952,29 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @GenerateInline // always used eagerly, reconsider if used "lazily"
+    @GenerateCached(false)
     public abstract static class PyCodecLookupNode extends PNodeWithContext {
-        public abstract PTuple execute(Frame frame, TruffleString encoding);
+        public abstract PTuple execute(Frame frame, Node inliningTarget, TruffleString encoding);
 
         @Specialization
-        PTuple lookup(VirtualFrame frame, TruffleString encoding,
-                        @Cached CallUnaryMethodNode callNode,
+        static PTuple lookup(VirtualFrame frame, Node inliningTarget, TruffleString encoding,
+                        @Cached(inline = false) CallUnaryMethodNode callNode,
                         @Cached PyObjectTypeCheck typeCheck,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached ConditionProfile hasSearchPathProfile,
-                        @Cached ConditionProfile hasTruffleEncodingProfile,
-                        @Cached ConditionProfile isTupleProfile,
+                        @Cached(inline = false) PyObjectSizeNode sizeNode,
+                        @Cached InlinedConditionProfile hasSearchPathProfile,
+                        @Cached InlinedConditionProfile hasTruffleEncodingProfile,
+                        @Cached InlinedConditionProfile isTupleProfile,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
-                        @Cached PRaiseNode raiseNode) {
-            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
-            PythonContext context = getContext();
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
+            PythonContext context = PythonContext.get(inliningTarget);
             ensureRegistryInitialized(context);
             PTuple result = getSearchPath(context, normalizedEncoding);
-            if (hasSearchPathProfile.profile(result != null)) {
+            if (hasSearchPathProfile.profile(inliningTarget, result != null)) {
                 return result;
             }
-            if (hasTruffleEncodingProfile.profile(hasTruffleEncodingNormalized(normalizedEncoding))) {
+            if (hasTruffleEncodingProfile.profile(inliningTarget, hasTruffleEncodingNormalized(normalizedEncoding))) {
                 PythonModule codecs = context.lookupBuiltinModule(T__CODECS_TRUFFLE);
                 result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, context.factory());
             } else {
@@ -983,8 +982,8 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 for (Object func : searchPaths) {
                     Object obj = callNode.executeObject(func, normalizedEncoding);
                     if (obj != PNone.NONE) {
-                        if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, typeCheck, sizeNode))) {
-                            throw raiseNode.raise(TypeError, CODEC_SEARCH_MUST_RETURN_4);
+                        if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, obj, 4, typeCheck, sizeNode))) {
+                            throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_SEARCH_MUST_RETURN_4);
                         }
                         result = (PTuple) obj;
                         break;
@@ -995,7 +994,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 putSearchPath(context, normalizedEncoding, result);
                 return result;
             }
-            throw raiseNode.raise(LookupError, UNKNOWN_ENCODING, encoding);
+            throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ENCODING, encoding);
         }
 
         @TruffleBoundary
@@ -1015,8 +1014,8 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static boolean isTupleInstanceCheck(VirtualFrame frame, Object result, int len, PyObjectTypeCheck typeCheck, PyObjectSizeNode sizeNode) throws PException {
-        return typeCheck.execute(result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, result) == len;
+    private static boolean isTupleInstanceCheck(VirtualFrame frame, Node inliningTarget, Object result, int len, PyObjectTypeCheck typeCheck, PyObjectSizeNode sizeNode) throws PException {
+        return typeCheck.execute(inliningTarget, result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, inliningTarget, result) == len;
     }
 
     private static void ensureRegistryInitialized(PythonContext context) {
@@ -1026,20 +1025,18 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "callableCheckNode.execute(searchFunction)", limit = "1")
+        @Specialization
         Object lookup(Object searchFunction,
-                        @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
-            PythonContext context = PythonContext.get(this);
-            ensureRegistryInitialized(context);
-            add(context, searchFunction);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!callableCheckNode.execute(searchFunction)", limit = "1")
-        Object lookupNoCallble(Object searchFunction,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheckNode) {
-            throw raise(TypeError, ARG_MUST_BE_CALLABLE);
+            if (callableCheckNode.execute(inliningTarget, searchFunction)) {
+                PythonContext context = PythonContext.get(this);
+                ensureRegistryInitialized(context);
+                add(context, searchFunction);
+                return PNone.NONE;
+            } else {
+                throw raise(TypeError, ARG_MUST_BE_CALLABLE);
+            }
         }
 
         @TruffleBoundary
@@ -1133,16 +1130,17 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
                         @Cached CallBinaryMethodNode callEncoderNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectTypeCheck typeCheck,
-                        @Cached ConditionProfile isTupleProfile) {
+                        @Cached InlinedConditionProfile isTupleProfile) {
             Object encoder = CodecsModuleBuiltins.encoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(encoder, obj, errors);
-            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
+            if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "encoder");
             }
             return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);
@@ -1164,16 +1162,17 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
                         @Cached CallBinaryMethodNode callEncoderNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectTypeCheck typeCheck,
-                        @Cached ConditionProfile isTupleProfile) {
+                        @Cached InlinedConditionProfile isTupleProfile) {
             Object decoder = CodecsModuleBuiltins.decoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(decoder, obj, errors);
-            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
+            if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "decoder");
             }
             return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);

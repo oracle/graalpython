@@ -130,11 +130,12 @@ public final class DirEntryBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PDirEntry self,
+                        @Bind("this") Node inliningTarget,
                         @Cached NameNode nameNode,
                         @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<DirEntry %s>", castToStringNode.execute(reprNode.executeObject(frame, nameNode.execute(frame, self))));
+            return simpleTruffleStringFormatNode.format("<DirEntry %s>", castToStringNode.execute(inliningTarget, reprNode.executeObject(frame, nameNode.execute(frame, self))));
         }
     }
 
@@ -174,8 +175,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.pathCache == null", "self.produceBytes()"})
         PosixPath createBytes(VirtualFrame frame, PDirEntry self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
             Object opaquePath = getOpaquePathHelperNode.execute(frame, self.dirEntryData, self.scandirPath);
             self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, getPosixSupport(), factory()), opaquePath, true);
             return self.pathCache;
@@ -183,8 +184,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.pathCache == null", "!self.produceBytes()"})
         PosixPath createString(VirtualFrame frame, PDirEntry self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
             Object opaquePath = getOpaquePathHelperNode.execute(frame, self.dirEntryData, self.scandirPath);
             self.pathCache = new PosixPath(posixLib.getPathAsString(getPosixSupport(), opaquePath), opaquePath, false);
             return self.pathCache;
@@ -260,6 +261,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"followSymlinks", "self.statCache == null", "isSymlink"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSymlinkNode isSymlinkNode,
@@ -273,6 +275,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!followSymlinks", "self.lstatCache == null"})
+        @SuppressWarnings("truffle-static-method")
         PTuple uncachedLStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -296,7 +299,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
     }
 
     abstract static class StatHelperNode extends StatHelperSimpleNode {
-        @Specialization(guards = {"followSymlinks", "self.statCache == null", "!isSymlink"})
+        @Specialization(guards = {"followSymlinks", "self.statCache == null", "!isSymlink"}, limit = "1")
         static PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @SuppressWarnings("unused") @Cached IsSymlinkNode isSymlinkNode,
                         @SuppressWarnings("unused") @Bind("isSymlinkNode.executeBoolean(frame, self)") boolean isSymlink,

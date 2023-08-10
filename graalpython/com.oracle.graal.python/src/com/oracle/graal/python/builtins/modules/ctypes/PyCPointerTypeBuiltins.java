@@ -84,12 +84,14 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -114,6 +116,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -138,9 +141,9 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
             PDict typedict = (PDict) args[2];
             // Borrowed ref:
-            Object proto = getItem.execute(typedict.getDictStorage(), T__TYPE_);
+            Object proto = getItem.execute(inliningTarget, typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
-                PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
+                PyCPointerType_SetProto(inliningTarget, stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
                 /* PyCPointerType_SetProto has verified proto has a stgdict. */
                 /*
@@ -164,8 +167,8 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute(result, stgdict);
+            addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
+            setDict.execute(inliningTarget, result, stgdict);
 
             return result;
         }
@@ -201,6 +204,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(value)")
         Object PyCPointerType_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CastToJavaBooleanNode toJavaBooleanNode,
                         @Cached IsInstanceNode isInstanceNode,
@@ -223,7 +227,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                  */
                 StgDictObject v = pyObjectStgDictNode.execute(value);
                 assert v != null : "Cannot be NULL for pointer or array objects";
-                if (toJavaBooleanNode.execute(isSubClassNode.execute(frame, v.proto, typedict.proto))) {
+                if (toJavaBooleanNode.execute(inliningTarget, isSubClassNode.execute(frame, v.proto, typedict.proto))) {
                     return value;
                 }
             }
@@ -237,12 +241,13 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCPointerType_set_type(Object self, TruffleString type,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
-            PyCPointerType_SetProto(dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
-            dict.setDictStorage(setItem.execute(dict.getDictStorage(), T__TYPE_, type));
+            PyCPointerType_SetProto(inliningTarget, dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
+            dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), T__TYPE_, type));
             return PNone.NONE;
         }
 
@@ -265,11 +270,11 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
      * property/method, and the sequence protocol.
      *
      */
-    static void PyCPointerType_SetProto(StgDictObject stgdict, Object proto,
+    static void PyCPointerType_SetProto(Node inliningTarget, StgDictObject stgdict, Object proto,
                     IsTypeNode isTypeNode,
                     PyTypeStgDictNode pyTypeStgDictNode,
                     PRaiseNode raiseNode) {
-        if (proto == null || !isTypeNode.execute(proto)) {
+        if (proto == null || !isTypeNode.execute(inliningTarget, proto)) {
             throw raiseNode.raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
         if (pyTypeStgDictNode.execute(proto) == null) {

@@ -337,7 +337,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
 
             nextIdx.value = idx;
             if (isFloat) {
-                if (PyFloatCheckExactNode.getUncached().execute(scanner.parseFloat)) {
+                if (PyFloatCheckExactNode.executeUncached(scanner.parseFloat)) {
                     String numStr = string.substring(start, idx);
                     return FloatUtils.parseValidString(numStr);
                 } else {
@@ -346,7 +346,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     return callParseFloat.executeObject(scanner.parseFloat, numStr);
                 }
             } else {
-                if (PyLongCheckExactNode.getUncached().execute(scanner.parseInt)) {
+                if (PyLongCheckExactNode.executeUncached(scanner.parseInt)) {
                     Object rval = BuiltinConstructors.IntNode.parseSimpleDecimalLiteral(string, start, idx - start);
                     if (rval != null) {
                         return rval;
@@ -537,7 +537,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
     private static RuntimeException decodeError(Node raisingNode, String jsonString, int pos, TruffleString format) {
         CompilerAsserts.neverPartOfCompilation();
         Object module = AbstractImportNode.importModule(toTruffleStringUncached("json.decoder"));
-        Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, T_JSON_DECODE_ERROR);
+        Object errorClass = PyObjectLookupAttr.executeUncached(module, T_JSON_DECODE_ERROR);
         Object exception = CallNode.getUncached().execute(errorClass, format, toTruffleStringUncached(jsonString), pos);
         throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }

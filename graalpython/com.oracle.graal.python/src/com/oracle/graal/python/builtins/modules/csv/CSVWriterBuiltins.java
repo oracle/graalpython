@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,7 +89,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached InlinedGetClassNode getClass,
+                        @Cached GetClassNode getClass,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
@@ -105,7 +105,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             Object iter;
 
             try {
-                iter = getIter.execute(frame, seq);
+                iter = getIter.execute(frame, inliningTarget, seq);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
@@ -124,7 +124,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                     } else {
                         first = false;
                     }
-                    joinField(sb, dialect, field, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, objectStrAsTruffleStringNode,
+                    joinField(inliningTarget, sb, dialect, field, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, objectStrAsTruffleStringNode,
                                     pyNumberCheckNode);
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
@@ -141,14 +141,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             return callNode.executeObject(frame, self.write, toStringNode.execute(sb));
         }
 
-        private void joinField(TruffleStringBuilder sb, CSVDialect dialect, Object field, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+        private void joinField(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, Object field, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         TruffleStringIterator.NextNode nextNode, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode, TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode, PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode, PyNumberCheckNode pyNumberCheckNode) {
             boolean quoted;
 
             switch (dialect.quoting) {
                 case QUOTE_NONNUMERIC:
-                    quoted = !pyNumberCheckNode.execute(field);
+                    quoted = !pyNumberCheckNode.execute(inliningTarget, field);
                     break;
                 case QUOTE_ALL:
                     quoted = true;
@@ -161,7 +161,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             if (field == PNone.NONE) {
                 joinAppend(sb, dialect, null, quoted, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode);
             } else {
-                TruffleString str = objectStrAsTruffleStringNode.execute(field);
+                TruffleString str = objectStrAsTruffleStringNode.execute(null, inliningTarget, field);
                 joinAppend(sb, dialect, str, quoted, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode);
             }
         }
@@ -261,7 +261,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached WriteRowNode writeRow) {
             Object iter, row;
 
-            iter = getIter.execute(frame, seq);
+            iter = getIter.execute(frame, inliningTarget, seq);
 
             while (true) {
                 try {

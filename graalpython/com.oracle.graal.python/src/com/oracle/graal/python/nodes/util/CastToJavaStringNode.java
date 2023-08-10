@@ -49,10 +49,13 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode.ReadNativeStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -61,36 +64,39 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 @ImportStatic(PGuards.class)
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class CastToJavaStringNode extends PNodeWithContext {
 
     public abstract String execute(Object x) throws CannotCastException;
 
     @Specialization
     static String doString(TruffleString x,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return toJavaStringNode.execute(x);
     }
 
     @Specialization(guards = "x.isMaterialized()")
     static String doPStringMaterialized(PString x,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return toJavaStringNode.execute(x.getMaterialized());
     }
 
     @Specialization(guards = "!x.isMaterialized()")
     static String doPStringGeneric(PString x,
+                    @Bind("this") Node inliningTarget,
                     @Cached StringMaterializeNode materializeNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return toJavaStringNode.execute(materializeNode.execute(x));
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaString) {
+        return toJavaString.execute(materializeNode.execute(inliningTarget, x));
     }
 
     @Specialization
     static String doNativeObject(PythonNativeObject x,
+                    @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaString,
+                    @Shared @Cached TruffleString.ToJavaStringNode toJavaString,
                     @Cached ReadNativeStringNode read) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+        if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
             return toJavaString.execute(read.execute(x.getPtr()));
         }
         // the object's type is not a subclass of 'str'

@@ -875,22 +875,22 @@ public abstract class Python3Core {
             loadFile(toTruffleStringUncached("importlib/_bootstrap"), getContext().getStdlibHome(), bootstrap);
         } else {
             bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB_EXTERNAL, true);
-            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
-            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
+            setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
+            setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB + "' # <frozen>");
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB_EXTERNAL + "' # <frozen>");
         }
-        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB, bootstrap);
-        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB_EXTERNAL, bootstrapExternal);
+        setItem.execute(null, null, sysModules, T__FROZEN_IMPORTLIB, bootstrap);
+        setItem.execute(null, null, sysModules, T__FROZEN_IMPORTLIB_EXTERNAL, bootstrapExternal);
 
         // __package__ needs to be set and doesn't get set by _bootstrap setup
         writeNode.execute(bootstrap, T___PACKAGE__, T_IMPORTLIB);
         writeNode.execute(bootstrapExternal, T___PACKAGE__, T_IMPORTLIB);
 
-        callNode.execute(null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
+        callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
         writeNode.execute(getBuiltins(), T___IMPORT__, readNode.execute(bootstrap, T___IMPORT__));
         // see CPython's init_importlib_external
-        callNode.execute(null, bootstrap, toTruffleStringUncached("_install_external_importers"));
+        callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install_external_importers"));
         if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             // see CPython's _PyImportZip_Init
             Object pathHooks = readNode.execute(sysModule, toTruffleStringUncached("path_hooks"));
@@ -911,7 +911,7 @@ public abstract class Python3Core {
                         removeBuiltinModule(t_zipimport);
                     }
                 } else {
-                    setItem.execute(null, sysModules, t_zipimport, zipimport);
+                    setItem.execute(null, null, sysModules, t_zipimport, zipimport);
                     LOGGER.log(Level.FINE, () -> "import 'zipimport' # <frozen>");
                 }
                 if (zipimport == null) {
@@ -1055,7 +1055,7 @@ public abstract class Python3Core {
      */
     public final Object getStderr() {
         try {
-            return PyObjectLookupAttr.getUncached().execute(null, sysModule, T_STDERR);
+            return PyObjectLookupAttr.executeUncached(sysModule, T_STDERR);
         } catch (PException e) {
             try {
                 getContext().getEnv().err().write("lost sys.stderr\n".getBytes());

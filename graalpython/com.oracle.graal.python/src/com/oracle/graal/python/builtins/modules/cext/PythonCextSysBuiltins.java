@@ -53,8 +53,10 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSysBuiltins {
@@ -64,18 +66,19 @@ public final class PythonCextSysBuiltins {
 
         @Specialization
         Object getObject(TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached PyObjectSetAttr setAttrNode) {
             try {
                 PythonModule sys = getCore().lookupBuiltinModule(T_SYS);
-                Object value = lookupNode.execute(null, sys, name);
+                Object value = lookupNode.execute(null, inliningTarget, sys, name);
                 if (value == PNone.NO_VALUE) {
                     return getNativeNull();
                 }
                 Object promotedValue = promoteNode.execute(value);
                 if (promotedValue != null) {
-                    setAttrNode.execute(sys, name, promotedValue);
+                    setAttrNode.execute(inliningTarget, sys, name, promotedValue);
                     return promotedValue;
                 }
                 return value;

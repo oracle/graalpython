@@ -49,20 +49,19 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -70,9 +69,11 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent of CPython's {@code PySequence_Check}.
  */
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PySequenceCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
@@ -94,35 +95,21 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         return false;
     }
 
-    protected static boolean cannotBeSequence(Object object) {
-        return object instanceof PDict || object instanceof PMappingproxy;
-    }
-
-    @Specialization(guards = {"!cannotBeSequence(object)"})
-    boolean doPythonObject(PythonObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        return lookupGetItem.execute(type) != PNone.NO_VALUE;
-    }
-
     @Specialization
     static boolean doNative(PythonAbstractNativeObject object,
-                    @Cached PythonToNativeNode toSulongNode,
-                    @Cached PCallCapiFunction callCapiFunction) {
+                    @Cached(inline = false) PythonToNativeNode toSulongNode,
+                    @Cached(inline = false) PCallCapiFunction callCapiFunction) {
         return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object))) != 0;
     }
 
-    @Specialization(guards = {"!cannotBeSequence(object)", "!isNativeObject(object)"}, replaces = "doPythonObject")
-    boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+    @Fallback
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "GetItem", inline = false) LookupCallableSlotInMRONode lookupGetItem,
+                    @Cached LazyInteropLibrary lazyLib) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return lib.hasArrayElements(object);
+            return lazyLib.get(inliningTarget).hasArrayElements(object);
         }
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }

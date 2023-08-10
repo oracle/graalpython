@@ -193,8 +193,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object read(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_READ, args);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_READ, args);
         }
     }
 
@@ -203,8 +204,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class PeekNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object peek(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_PEEK, args);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_PEEK, args);
         }
     }
 
@@ -213,8 +215,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class Read1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object read1(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_READ1, args);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_READ1, args);
         }
     }
 
@@ -223,8 +226,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class ReadIntoNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object readInto(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_READINTO, args);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_READINTO, args);
         }
     }
 
@@ -233,8 +237,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class ReadInto1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object readInto1(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_READINTO1, args);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_READINTO1, args);
         }
     }
 
@@ -243,8 +248,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends WriterInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object write(VirtualFrame frame, PRWPair self, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), T_WRITE, args);
+            return callMethod.execute(frame, inliningTarget, self.getWriter(), T_WRITE, args);
         }
     }
 
@@ -253,8 +259,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends WriterInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), T_FLUSH);
+            return callMethod.execute(frame, inliningTarget, self.getWriter(), T_FLUSH);
         }
     }
 
@@ -263,8 +270,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class ReadableNode extends ReaderInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), T_READABLE);
+            return callMethod.execute(frame, inliningTarget, self.getReader(), T_READABLE);
         }
     }
 
@@ -273,8 +281,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class WritableNode extends WriterInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), T_WRITABLE);
+            return callMethod.execute(frame, inliningTarget, self.getWriter(), T_WRITABLE);
         }
     }
 
@@ -293,7 +302,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
             PException writeEx = null;
             if (self.getWriter() != null) {
                 try {
-                    callMethodWriter.execute(frame, self.getWriter(), T_CLOSE);
+                    callMethodWriter.execute(frame, inliningTarget, self.getWriter(), T_CLOSE);
                 } catch (PException e) {
                     hasException.enter(inliningTarget);
                     writeEx = e;
@@ -305,7 +314,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
             PException readEx;
             if (self.getReader() != null) {
                 try {
-                    Object res = callMethodReader.execute(frame, self.getReader(), T_CLOSE);
+                    Object res = callMethodReader.execute(frame, inliningTarget, self.getReader(), T_CLOSE);
                     if (gotException.profile(inliningTarget, writeEx != null)) {
                         throw writeEx;
                     }
@@ -340,12 +349,12 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached IsNode isNode,
                         @Cached InlinedConditionProfile isSameProfile) {
-            Object res = callMethodWriter.execute(frame, self.getWriter(), T_ISATTY);
+            Object res = callMethodWriter.execute(frame, inliningTarget, self.getWriter(), T_ISATTY);
             if (isSameProfile.profile(inliningTarget, isNode.isTrue(res))) {
                 /* either True or exception */
                 return res;
             }
-            return callMethodReader.execute(frame, self.getReader(), T_ISATTY);
+            return callMethodReader.execute(frame, inliningTarget, self.getReader(), T_ISATTY);
         }
     }
 
@@ -355,8 +364,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getWriter() != null")
         static Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getWriter(), T_CLOSED);
+            return getAttr.execute(frame, inliningTarget, self.getWriter(), T_CLOSED);
         }
 
         @SuppressWarnings("unused")

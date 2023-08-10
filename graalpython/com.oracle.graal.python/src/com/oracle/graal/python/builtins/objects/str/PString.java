@@ -29,7 +29,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -37,6 +36,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -44,6 +44,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -76,7 +77,7 @@ public final class PString extends PSequence {
 
     @TruffleBoundary
     public TruffleString getValueUncached() {
-        return isMaterialized() ? getMaterialized() : StringMaterializeNodeGen.getUncached().execute(this);
+        return isMaterialized() ? getMaterialized() : StringMaterializeNode.executeUncached(this);
     }
 
     public boolean isNativeCharSequence() {
@@ -154,19 +155,21 @@ public final class PString extends PSequence {
 
     @ExportMessage
     String asString(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("materialize") @Cached StringMaterializeNode stringMaterializeNode,
                     @Shared("gil") @Cached GilNode gil,
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return toJavaStringNode.execute(asTruffleString(stringMaterializeNode, gil));
+        return toJavaStringNode.execute(asTruffleString(inliningTarget, stringMaterializeNode, gil));
     }
 
     @ExportMessage
     TruffleString asTruffleString(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("materialize") @Cached StringMaterializeNode stringMaterializeNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return stringMaterializeNode.execute(this);
+            return stringMaterializeNode.execute(inliningTarget, this);
         } finally {
             gil.release(mustRelease);
         }
@@ -174,13 +177,14 @@ public final class PString extends PSequence {
 
     @ExportMessage
     Object readArrayElement(long index,
+                    @Bind("$node") Node inliningTarget,
                     @Cached CastToTruffleStringNode cast,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                return codePointAtIndexNode.execute(cast.execute(this), (int) index, TS_ENCODING);
+                return codePointAtIndexNode.execute(cast.execute(inliningTarget, this), (int) index, TS_ENCODING);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("A PString should always have an underlying CharSequence");
             }

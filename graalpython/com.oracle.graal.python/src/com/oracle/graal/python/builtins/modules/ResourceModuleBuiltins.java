@@ -48,6 +48,8 @@ import java.lang.management.MemoryUsage;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -65,7 +67,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "resource")
 public final class ResourceModuleBuiltins extends PythonBuiltins {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,10 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -52,7 +55,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LookupAndCallVarargsNode extends Node {
     protected final TruffleString name;
-    @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
@@ -66,18 +68,23 @@ public abstract class LookupAndCallVarargsNode extends Node {
     }
 
     @Specialization(guards = {"callable.getClass() == cachedClass"}, limit = "3")
-    Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
+    static Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("callable.getClass()") Class<?> cachedClass,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Shared @Cached CallVarargsMethodNode dispatchNode) {
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(inliningTarget, callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
     @Specialization(replaces = "callObject")
+    @InliningCutoff
     @Megamorphic
-    Object callObjectMegamorphic(VirtualFrame frame, Object callable, Object[] arguments,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+    static Object callObjectMegamorphic(VirtualFrame frame, Object callable, Object[] arguments,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Shared @Cached CallVarargsMethodNode dispatchNode) {
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(inliningTarget, callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

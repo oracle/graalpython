@@ -62,8 +62,10 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextImportBuiltins {
@@ -90,10 +92,11 @@ public final class PythonCextImportBuiltins {
     abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
         @Specialization
         Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode) {
             // Get the __import__ function from the builtins
-            Object importFunc = getAttrNode.execute(null, getContext().getBuiltins(), T___IMPORT__);
+            Object importFunc = getAttrNode.execute(null, inliningTarget, getContext().getBuiltins(), T___IMPORT__);
             // Call the __import__ function with the proper argument list
             return callNode.execute(importFunc, new Object[]{name}, new PKeyword[]{
                             new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, locals),

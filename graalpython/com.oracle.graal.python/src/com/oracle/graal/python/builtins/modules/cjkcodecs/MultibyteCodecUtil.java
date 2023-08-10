@@ -144,12 +144,11 @@ public class MultibyteCodecUtil {
         // call_error_callback
         @Specialization
         static Object callErrorCallback(Node inliningTarget, Object errors, Object exc,
-                        @Cached(inline = false) CastToTruffleStringNode castToStringNode,
-                        @Cached(inline = false) PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached(inline = false) CallNode callNode) {
-            assert (unicodeCheckNode.execute(errors));
-            TruffleString str = castToStringNode.execute(errors);
+            assert (PyUnicodeCheckNode.executeUncached(errors));
+            TruffleString str = castToStringNode.execute(inliningTarget, errors);
             Object cb = lookupErrorNode.execute(inliningTarget, str);
             return callNode.execute(cb, exc);
         }
@@ -256,14 +255,14 @@ public class MultibyteCodecUtil {
             boolean isUnicode = false;
             if (!isError) {
                 PTuple tuple = (PTuple) retobj;
-                Object[] array = getArray.execute(tuple.getSequenceStorage());
+                Object[] array = getArray.execute(inliningTarget, tuple.getSequenceStorage());
                 isError = array.length != 2;
                 if (!isError) {
                     tobj = array[0];
                     newposobj = array[1];
-                    isUnicode = unicodeCheckNode.execute(tobj);
+                    isUnicode = unicodeCheckNode.execute(inliningTarget, tobj);
                     isError = !isUnicode && !bytesCheckNode.execute(inliningTarget, tobj);
-                    isError = isError || !longCheckNode.execute(newposobj);
+                    isError = isError || !longCheckNode.execute(inliningTarget, newposobj);
                 }
             }
 
@@ -273,7 +272,7 @@ public class MultibyteCodecUtil {
 
             PBytes retstr;
             if (isUnicode) {
-                TruffleString str = toTString.execute(tobj);
+                TruffleString str = toTString.execute(inliningTarget, tobj);
                 int datalen = codePointLengthNode.execute(str, TS_ENCODING);
                 retstr = encodeEmptyInput(datalen, MBENC_FLUSH, factory);
                 if (retstr == null) {
@@ -294,7 +293,7 @@ public class MultibyteCodecUtil {
 
             int newpos = 0;
             try {
-                newpos = asSizeNode.execute(frame, newposobj);
+                newpos = asSizeNode.execute(frame, inliningTarget, newposobj);
                 if (newpos < 0) {
                     newpos += buf.getInlen();
                 }
@@ -388,13 +387,13 @@ public class MultibyteCodecUtil {
             Object newposobj = null;
             if (!isError) {
                 PTuple tuple = (PTuple) retobj;
-                Object[] array = getArray.execute(tuple.getSequenceStorage());
+                Object[] array = getArray.execute(inliningTarget, tuple.getSequenceStorage());
                 isError = array.length != 2;
                 if (!isError) {
                     retuni = array[0];
                     newposobj = array[1];
-                    isError = !unicodeCheckNode.execute(retuni);
-                    isError = isError || !longCheckNode.execute(newposobj);
+                    isError = !unicodeCheckNode.execute(inliningTarget, retuni);
+                    isError = isError || !longCheckNode.execute(inliningTarget, newposobj);
                 }
             }
 
@@ -406,7 +405,7 @@ public class MultibyteCodecUtil {
 
             int newpos = -1;
             try {
-                newpos = asSizeNode.execute(frame, newposobj);
+                newpos = asSizeNode.execute(frame, inliningTarget, newposobj);
                 if (newpos < 0) {
                     newpos += buf.getInpos();
                 }

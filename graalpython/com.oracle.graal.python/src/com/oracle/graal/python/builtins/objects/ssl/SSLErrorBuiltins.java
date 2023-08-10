@@ -183,7 +183,7 @@ public final class SSLErrorBuiltins extends PythonBuiltins {
             if (PGuards.isString(strerror)) {
                 return strerror;
             }
-            return strNode.execute(frame, getArgsNode.execute(inliningTarget, self));
+            return strNode.execute(frame, inliningTarget, getArgsNode.execute(inliningTarget, self));
         }
     }
 

@@ -51,8 +51,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextSliceBuiltins {
 
@@ -60,8 +62,9 @@ public final class PythonCextSliceBuiltins {
     abstract static class PySlice_New extends CApiTernaryBuiltinNode {
         @Specialization
         static Object slice(Object start, Object stop, Object step,
+                        @Bind("this") Node inliningTarget,
                         @Cached PySliceNew sliceNode) {
-            return sliceNode.execute(prepare(start), prepare(stop), prepare(step));
+            return sliceNode.execute(inliningTarget, prepare(start), prepare(stop), prepare(step));
         }
 
         private static Object prepare(Object obj) {

@@ -38,7 +38,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-limit", "deprecated", "truffle-static-method"})
-package com.oracle.graal.python.builtins.objects.socket;
+package com.oracle.graal.python.nodes.util;
 
-import com.oracle.truffle.api.dsl.SuppressPackageWarnings;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
+
+/**
+ * Casts a builtin Python string, i.e., {@link PString}, to a TruffleString without coercion.
+ * <b>ATTENTION:</b> This node assumes that the input is a builtin string, otherwise it fails with
+ * unsupported specialization error.
+ */
+@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+@ImportStatic(PGuards.class)
+public abstract class CastBuiltinStringToTruffleStringNode extends PNodeWithContext {
+    public abstract TruffleString execute(Node inliningTarget, Object x) throws CannotCastException;
+
+    public final TruffleString executeCached(Object x) throws CannotCastException {
+        return execute(this, x);
+    }
+
+    public static TruffleString executeUncached(Object x) throws CannotCastException {
+        return CastToTruffleStringNodeGen.getUncached().execute(null, x);
+    }
+
+    @Specialization
+    static TruffleString doTruffleString(TruffleString x) {
+        return x;
+    }
+
+    @Specialization(guards = "x.isMaterialized()")
+    static TruffleString doPStringMaterialized(PString x) {
+        return x.getMaterialized();
+    }
+
+    @Specialization(guards = "!x.isMaterialized()")
+    static TruffleString doPStringGeneric(Node inliningTarget, PString x,
+                    @Cached StringMaterializeNode materializeNode) {
+        return materializeNode.execute(inliningTarget, x);
+    }
+}

@@ -53,8 +53,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFrameBuiltins {
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {PyFrameObject}, call = Direct)
@@ -87,8 +89,9 @@ public final class PythonCextFrameBuiltins {
     abstract static class PyFrame_GetLocals extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PFrame frame,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            return getFrameLocalsNode.execute(frame);
+            return getFrameLocalsNode.execute(inliningTarget, frame);
         }
     }
 

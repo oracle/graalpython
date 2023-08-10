@@ -63,11 +63,14 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PKeyWrapper)
 public final class KeyWrapperBuiltins extends PythonBuiltins {
@@ -84,7 +87,6 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
 
     abstract static class WrapperKeyCompareNode extends PythonBinaryBuiltinNode {
         @Child private BinaryComparisonNode comparisonNode;
-        @Child private PyObjectIsTrueNode isTrueNode;
         @Child private CallNode callNode;
 
         protected BinaryComparisonNode ensureComparisonNode() {
@@ -93,14 +95,6 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
                 comparisonNode = insert(createCmp());
             }
             return comparisonNode;
-        }
-
-        protected PyObjectIsTrueNode ensureIsTrueNode() {
-            if (isTrueNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isTrueNode = insert(PyObjectIsTrueNode.create());
-            }
-            return isTrueNode;
         }
 
         protected CallNode ensureCallNode() {
@@ -116,9 +110,11 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other) {
+        public boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             final Object cmpResult = ensureCallNode().execute(frame, self.getCmp(), self.getObject(), other.getObject());
-            return ensureIsTrueNode().execute(frame, ensureComparisonNode().executeObject(frame, cmpResult, 0));
+            return isTrueNode.execute(frame, inliningTarget, ensureComparisonNode().executeObject(frame, cmpResult, 0));
         }
 
         @Fallback

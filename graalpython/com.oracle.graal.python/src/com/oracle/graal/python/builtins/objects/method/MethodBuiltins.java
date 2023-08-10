@@ -108,8 +108,9 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class DictNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self.getFunction());
+            return getDict.execute(inliningTarget, self.getFunction());
         }
     }
 
@@ -125,7 +126,7 @@ public final class MethodBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObj);
+                key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
@@ -149,6 +150,7 @@ public final class MethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString reprMethod(VirtualFrame frame, PMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached PyObjectLookupAttr lookup,
@@ -156,15 +158,15 @@ public final class MethodBuiltins extends PythonBuiltins {
             Object self = method.getSelf();
             Object func = method.getFunction();
 
-            Object funcName = lookup.execute(frame, func, T___QUALNAME__);
+            Object funcName = lookup.execute(frame, inliningTarget, func, T___QUALNAME__);
             if (funcName == PNone.NO_VALUE) {
-                funcName = lookup.execute(frame, func, T___NAME__);
+                funcName = lookup.execute(frame, inliningTarget, func, T___NAME__);
             }
 
             try {
-                return simpleTruffleStringFormatNode.format("<bound method %s of %s>", toStringNode.execute(funcName), repr.execute(frame, self));
+                return simpleTruffleStringFormatNode.format("<bound method %s of %s>", toStringNode.execute(inliningTarget, funcName), repr.execute(frame, inliningTarget, self));
             } catch (CannotCastException e) {
-                return simpleTruffleStringFormatNode.format("<bound method ? of %s>", repr.execute(frame, self));
+                return simpleTruffleStringFormatNode.format("<bound method ? of %s>", repr.execute(frame, inliningTarget, self));
             }
         }
     }
@@ -187,8 +189,9 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object kwDefaults(PMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
-            PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(self);
+            PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
         }
     }

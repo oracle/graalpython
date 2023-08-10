@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
@@ -75,7 +75,7 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
 
     @SuppressWarnings("unchecked")
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
-        if (GetClassNode.getUncached().execute(this) != PythonBuiltinClassType.PStaticmethod) {
+        if (GetPythonObjectClassNode.executeUncached(this) != PythonBuiltinClassType.PStaticmethod) {
             if (callable instanceof BoundBuiltinCallable) {
                 return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
             }

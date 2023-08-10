@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -105,7 +107,7 @@ public enum UnaryArithmetic {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callUnaryNode = insert(unaryOperator.create());
             }
-            return callUnaryNode.execute(frame, PArguments.getArgument(frame, 0));
+            return callUnaryNode.executeCached(frame, PArguments.getArgument(frame, 0));
         }
     }
 
@@ -149,6 +151,8 @@ public enum UnaryArithmetic {
      *
      */
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class PosNode extends UnaryArithmeticNode {
 
         static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
@@ -170,15 +174,18 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(T___POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___POS__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
+        @NeverDefault
         public static PosNode create() {
             return UnaryArithmeticFactory.PosNodeGen.create();
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class NegNode extends UnaryArithmeticNode {
 
         static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
@@ -205,15 +212,18 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(T___NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___NEG__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
+        @NeverDefault
         public static NegNode create() {
             return UnaryArithmeticFactory.NegNodeGen.create();
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class InvertNode extends UnaryArithmeticNode {
 
         static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");
@@ -235,10 +245,11 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(T___INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached(value = "createCallNode(T___INVERT__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
+        @NeverDefault
         public static InvertNode create() {
             return UnaryArithmeticFactory.InvertNodeGen.create();
         }

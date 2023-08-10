@@ -78,13 +78,13 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemSizeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNodeGen;
@@ -97,7 +97,6 @@ import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNa
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -269,7 +268,6 @@ public abstract class ToNativeTypeNode extends Node {
 
             PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
             PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
-            IsBuiltinClassProfile isBuiltin = IsBuiltinClassProfile.getUncached();
             LookupAttributeInMRONode.Dynamic lookupAttrNode = LookupAttributeInMRONodeGen.DynamicNodeGen.getUncached();
             PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNodeGen.getUncached();
             PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
@@ -279,23 +277,23 @@ public abstract class ToNativeTypeNode extends Node {
             CStructAccess.WriteIntNode writeI32Node = CStructAccessFactory.WriteIntNodeGen.getUncached();
             GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
 
-            GetMroStorageNode getMroStorageNode = GetMroStorageNode.getUncached();
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
+            PythonContext ctx = PythonContext.get(null);
+            PythonObjectFactory factory = ctx.factory();
+            Object nullValue = ctx.getNativeNull().getPtr();
 
             writeI64Node.write(mem, PyObject__ob_refcnt, obj.getRefCount());
             if (isType) {
                 // self-reference
                 writePtrNode.write(mem, PyObject__ob_type, mem);
             } else {
-                writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.getUncached().execute(clazz)));
+                writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
             }
 
-            Object superClass = GetSuperClassNodeGen.getUncached().execute(clazz);
+            Object superClass = GetSuperClassNode.executeUncached(clazz);
             if (superClass == null) {
-                superClass = PythonContext.get(null).getNativeNull();
+                superClass = ctx.getNativeNull();
             } else if (superClass instanceof PythonBuiltinClassType builtinClass) {
-                superClass = PythonContext.get(null).lookupType(builtinClass);
+                superClass = ctx.lookupType(builtinClass);
             }
 
             writeI64Node.write(mem, CFields.PyVarObject__ob_size, 0L);
@@ -309,7 +307,8 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, isBuiltin.profileClass(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocNumber.execute(clazz));
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number,
+                            InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocNumber.execute(clazz));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, hasSlot(clazz, SlotMethodDef.SQ_LENGTH) ? allocSequence.execute(clazz) : nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, hasSlot(clazz, SlotMethodDef.MP_LENGTH) ? allocMapping.execute(clazz) : nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
@@ -325,7 +324,7 @@ public abstract class ToNativeTypeNode extends Node {
             if (docObj instanceof TruffleString) {
                 docObj = new CStringWrapper((TruffleString) docObj);
             } else if (docObj instanceof PString) {
-                docObj = new CStringWrapper(castToStringNode.execute(docObj));
+                docObj = new CStringWrapper(castToStringNode.execute(null, docObj));
             } else {
                 docObj = toNative.execute(docObj);
             }
@@ -351,10 +350,8 @@ public abstract class ToNativeTypeNode extends Node {
                 writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(superClass));
             }
 
-            GetOrCreateDictNode getDict = GetOrCreateDictNode.getUncached();
-            HashingStorageAddAllToOther addAllToOtherNode = HashingStorageAddAllToOther.getUncached();
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PDict dict = getDict.execute(clazz);
+            PDict dict = GetOrCreateDictNode.executeUncached(clazz);
             if (!(dict instanceof StgDictObject)) {
                 HashingStorage dictStorage = dict.getDictStorage();
                 if (!(dictStorage instanceof DynamicObjectStorage)) {
@@ -362,7 +359,7 @@ public abstract class ToNativeTypeNode extends Node {
                     dict.setDictStorage(storage);
                     if (dictStorage != null) {
                         // copy all mappings to the new storage
-                        addAllToOtherNode.execute(null, dictStorage, dict);
+                        HashingStorageAddAllToOther.executeUncached(dictStorage, dict);
                     }
                 }
             }
@@ -384,11 +381,11 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, TypeBuiltins.TYPE_FREE));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
             if (clazz.basesTuple == null) {
-                clazz.basesTuple = factory.createTuple(GetBaseClassesNodeGen.getUncached().execute(clazz));
+                clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
             if (clazz.mroStore == null) {
-                clazz.mroStore = factory.createTuple(getMroStorageNode.execute(clazz));
+                clazz.mroStore = factory.createTuple(GetMroStorageNode.executeUncached(clazz));
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);

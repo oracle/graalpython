@@ -136,7 +136,7 @@ public abstract class PyObjectFormat extends PNodeWithContext {
         @Specialization(guards = "isString(formatSpec)", replaces = "doGeneric")
         static Object doGenericUncached(VirtualFrame frame, Object obj, Object formatSpec) {
             PythonUtils.assertUncached();
-            Object klass = GetClassNode.getUncached().execute(obj);
+            Object klass = GetClassNode.executeUncached(obj);
             Object slot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Format).execute(klass);
             return CallBinaryMethodNode.getUncached().executeObject(frame, slot, obj, formatSpec);
         }

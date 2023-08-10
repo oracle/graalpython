@@ -107,6 +107,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -150,8 +152,8 @@ public final class PartialBuiltins extends PythonBuiltins {
                                     "of the given arguments and keywords.\n")
     @GenerateNodeFactory
     public abstract static class PartialNewNode extends PythonBuiltinNode {
-        protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {
-            return isPartialWithoutDict(getDict, args) && withKwDict == ((PPartial) args[0]).hasKw(lenNode);
+        protected boolean isPartialWithoutDict(Node inliningTarget, GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {
+            return isPartialWithoutDict(getDict, args) && withKwDict == ((PPartial) args[0]).hasKw(inliningTarget, lenNode);
         }
 
         protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args) {
@@ -166,14 +168,14 @@ public final class PartialBuiltins extends PythonBuiltins {
             return args.length >= 1;
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"}, limit = "1")
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, false)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @Cached InlinedConditionProfile hasKeywordsProfile,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
+                        @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
+                        @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
@@ -188,37 +190,37 @@ public final class PartialBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, funcKwDict);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageCopy copyNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
+                        @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
+                        @Exclusive @Cached HashingStorageCopy copyNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
-            return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), copyNode));
+            return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(inliningTarget, factory(), copyNode));
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @Cached HashingStorage.InitNode initNode,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageCopy copyHashingStorageNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached InlinedConditionProfile hasArgsProfile,
+                        @Exclusive @Cached HashingStorage.InitNode initNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
+                        @Exclusive @Cached HashingStorageCopy copyHashingStorageNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
 
-            HashingStorage storage = copyHashingStorageNode.execute(function.getKw().getDictStorage());
+            HashingStorage storage = copyHashingStorageNode.execute(inliningTarget, function.getKw().getDictStorage());
             PDict result = factory().createDict(storage);
-            addAllToOtherNode.execute(frame, initNode.execute(frame, PNone.NO_VALUE, keywords), result);
+            addAllToOtherNode.execute(frame, inliningTarget, initNode.execute(frame, PNone.NO_VALUE, keywords), result);
 
             return factory().createPartial(cls, function.getFn(), funcArgs, result);
         }
@@ -227,11 +229,11 @@ public final class PartialBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached InlinedConditionProfile hasKeywordsProfile,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached InlinedConditionProfile hasKeywordsProfile,
                         @Cached PyCallableCheckNode callableCheckNode) {
             Object function = args[0];
-            if (!callableCheckNode.execute(function)) {
+            if (!callableCheckNode.execute(inliningTarget, function)) {
                 throw raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
             }
 
@@ -276,14 +278,16 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(mapping)")
         protected Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         protected Object setDict(PPartial self, PDict mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
-            setDict.execute(self, mapping);
+            setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
         }
 
@@ -307,16 +311,17 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PPartial self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached GetOrCreateDictNode getOrCreateDictNode) {
             final PDict dict;
             if (self.getShape().getPropertyCount() > 0) {
-                dict = getOrCreateDictNode.execute(self);
+                dict = getOrCreateDictNode.execute(inliningTarget, self);
             } else {
                 dict = getDictIfExistsNode.execute(self);
             }
-            final Object type = getClassNode.execute(self);
+            final Object type = getClassNode.execute(inliningTarget, self);
             final PTuple fnTuple = factory().createTuple(new Object[]{self.getFn()});
             final PTuple argsTuple = factory().createTuple(new Object[]{self.getFn(), self.getArgsTuple(factory()), self.getKw(), (dict != null) ? dict : PNone.NONE});
             return factory().createTuple(new Object[]{type, fnTuple, argsTuple});
@@ -328,6 +333,7 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         public Object setState(VirtualFrame frame, PPartial self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDictNode,
@@ -350,7 +356,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             final Object fnKwargs = getItemNode.execute(frame, state, 2);
             final Object dict = getItemNode.execute(frame, state, 3);
 
-            if (!callableCheckNode.execute(function) ||
+            if (!callableCheckNode.execute(inliningTarget, function) ||
                             !PGuards.isPTuple(fnArgs) ||
                             (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
                 throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
@@ -359,7 +365,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             self.setFn(function);
 
             final PTuple fnArgsTuple;
-            if (!tupleCheckExactNode.execute(fnArgs)) {
+            if (!tupleCheckExactNode.execute(inliningTarget, fnArgs)) {
                 fnArgsTuple = constructTupleNode.execute(frame, fnArgs);
             } else {
                 fnArgsTuple = (PTuple) fnArgs;
@@ -369,8 +375,8 @@ public final class PartialBuiltins extends PythonBuiltins {
             final PDict fnKwargsDict;
             if (fnKwargs == PNone.NONE) {
                 fnKwargsDict = factory().createDict();
-            } else if (!dictCheckExactNode.execute(fnKwargs)) {
-                fnKwargsDict = factory().createDict(copyStorageNode.execute(getHashingStorageNode.execute(frame, fnKwargs)));
+            } else if (!dictCheckExactNode.execute(inliningTarget, fnKwargs)) {
+                fnKwargsDict = factory().createDict(copyStorageNode.execute(inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, fnKwargs)));
             } else {
                 fnKwargsDict = (PDict) fnKwargs;
             }
@@ -380,7 +386,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                 deleteDictNode.execute(self);
             } else {
                 assert dict instanceof PDict;
-                setDictNode.execute(self, (PDict) dict);
+                setDictNode.execute(inliningTarget, self, (PDict) dict);
             }
 
             return PNone.NONE;
@@ -409,37 +415,37 @@ public final class PartialBuiltins extends PythonBuiltins {
             return keywords.length > 0;
         }
 
-        @Specialization(guards = "!self.hasKw(lenNode)")
-        Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = "!self.hasKw(inliningTarget, lenNode)")
+        static Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
+                        @Shared @Cached InlinedConditionProfile hasArgsProfile,
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
         }
 
-        @Specialization(guards = {"self.hasKw(lenNode)", "!withKeywords(keywords)"})
-        Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        @Specialization(guards = {"self.hasKw(inliningTarget, lenNode)", "!withKeywords(keywords)"})
+        static Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached ExpandKeywordStarargsNode starargsNode,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
+                        @Shared @Cached ExpandKeywordStarargsNode starargsNode,
+                        @Shared @Cached InlinedConditionProfile hasArgsProfile,
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
-            return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(self.getKw()));
+            return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(inliningTarget, self.getKw()));
         }
 
-        @Specialization(guards = {"self.hasKw(lenNode)", "withKeywords(keywords)"})
-        Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = {"self.hasKw(inliningTarget, lenNode)", "withKeywords(keywords)"})
+        static Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached ExpandKeywordStarargsNode starargsNode,
-                        @Cached InlinedConditionProfile hasArgsProfile,
-                        @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
+                        @Shared @Cached ExpandKeywordStarargsNode starargsNode,
+                        @Shared @Cached InlinedConditionProfile hasArgsProfile,
+                        @Shared @Cached CallVarargsMethodNode callNode,
+                        @SuppressWarnings("unused") @Shared @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
 
-            final PKeyword[] pKeywords = starargsNode.execute(self.getKw());
+            final PKeyword[] pKeywords = starargsNode.execute(inliningTarget, self.getKw());
             PKeyword[] callKeywords = PKeyword.create(pKeywords.length + keywords.length);
             PythonUtils.arraycopy(pKeywords, 0, callKeywords, 0, pKeywords.length);
             int kwIndex = pKeywords.length;
@@ -462,33 +468,35 @@ public final class PartialBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
-        private static void reprArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, TruffleStringBuilder.AppendStringNode appendStringNode) {
+        private static void reprArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode,
+                        TruffleStringBuilder.AppendStringNode appendStringNode) {
             for (Object arg : partial.getArgs()) {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
-                appendStringNode.execute(sb, reprNode.execute(frame, arg));
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, arg));
             }
         }
 
-        private static void reprKwArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, PyObjectStrAsTruffleStringNode strNode,
-                        HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageIteratorNext, HashingStorageIteratorKey hashingStorageIteratorKey,
-                        HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
+        private static void reprKwArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode,
+                        PyObjectStrAsTruffleStringNode strNode, HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageIteratorNext,
+                        HashingStorageIteratorKey hashingStorageIteratorKey, HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
             if (kwDict != null) {
                 HashingStorage storage = kwDict.getDictStorage();
-                HashingStorageIterator it = getHashingStorageIterator.execute(storage);
-                while (hashingStorageIteratorNext.execute(storage, it)) {
-                    Object key = hashingStorageIteratorKey.execute(storage, it);
-                    final Object value = getItem.execute(frame, storage, key);
+                HashingStorageIterator it = getHashingStorageIterator.execute(inliningTarget, storage);
+                while (hashingStorageIteratorNext.execute(inliningTarget, storage, it)) {
+                    Object key = hashingStorageIteratorKey.execute(inliningTarget, storage, it);
+                    final Object value = getItem.execute(frame, inliningTarget, storage, key);
                     appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendStringNode.execute(sb, strNode.execute(frame, key));
+                    appendStringNode.execute(sb, strNode.execute(frame, inliningTarget, key));
                     appendStringNode.execute(sb, T_EQ);
-                    appendStringNode.execute(sb, reprNode.execute(frame, value));
+                    appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, value));
                 }
             }
         }
 
         @Specialization
         public static TruffleString repr(VirtualFrame frame, PPartial partial,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached GetClassNode classNode,
@@ -500,8 +508,8 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            final Object cls = classNode.execute(partial);
-            final TruffleString name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, partial) : nameNode.execute(cls);
+            final Object cls = classNode.execute(inliningTarget, partial);
+            final TruffleString name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, inliningTarget, partial) : nameNode.execute(inliningTarget, cls);
             PythonContext ctxt = PythonContext.get(classNameNode);
             if (!ctxt.reprEnter(partial)) {
                 return T_ELLIPSIS;
@@ -510,9 +518,9 @@ public final class PartialBuiltins extends PythonBuiltins {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 appendStringNode.execute(sb, name);
                 appendStringNode.execute(sb, T_LPAREN);
-                appendStringNode.execute(sb, reprNode.execute(frame, partial.getFn()));
-                reprArgs(frame, partial, sb, reprNode, appendStringNode);
-                reprKwArgs(frame, partial, sb, reprNode, strNode,
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, partial.getFn()));
+                reprArgs(frame, inliningTarget, partial, sb, reprNode, appendStringNode);
+                reprKwArgs(frame, inliningTarget, partial, sb, reprNode, strNode,
                                 getHashingStorageIterator, hashingStorageIteratorNext, hashingStorageIteratorKey,
                                 getItem, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);

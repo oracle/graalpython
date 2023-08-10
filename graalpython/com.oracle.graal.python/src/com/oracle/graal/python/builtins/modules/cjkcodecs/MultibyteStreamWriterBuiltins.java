@@ -71,12 +71,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteStreamWriter)
@@ -97,17 +99,18 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         @Specialization
         Object mbstreamwriterNew(VirtualFrame frame, Object type, Object stream, Object err,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual) { // "O|s:StreamWriter"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
-                errors = castToStringNode.execute(err);
+                errors = castToStringNode.execute(inliningTarget, err);
             }
 
             MultibyteStreamWriterObject self = factory().createMultibyteStreamWriterObject(type);
 
-            Object codec = getAttr.execute(frame, type, CODEC);
+            Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
@@ -139,11 +142,12 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteStreamWriter_write
         @Specialization
         Object write(VirtualFrame frame, MultibyteStreamWriterObject self, Object strobj,
+                        @Bind("this") Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             // mbstreamwriter_iwrite
             Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory());
-            callMethod.execute(frame, self.stream, WRITE, str);
+            callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             return PNone.NONE;
         }
     }
@@ -154,19 +158,21 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteStreamWriter_writelines
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object writelines(VirtualFrame frame, MultibyteStreamWriterObject self, PSequence lines,
+                        @Bind("this") Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
 
-            SequenceStorage sq = getStorage.execute(lines);
+            SequenceStorage sq = getStorage.execute(inliningTarget, lines);
             for (int i = 0; i < sq.length(); i++) {
                 /* length can be changed even within this loop */
                 Object strobj = getItem.execute(sq, i);
                 // mbstreamwriter_iwrite
                 Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory());
-                callMethod.execute(frame, self.stream, WRITE, str);
+                callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             }
             return PNone.NONE;
         }
@@ -185,6 +191,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteStreamWriter_reset_impl
         @Specialization
         Object reset(VirtualFrame frame, MultibyteStreamWriterObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached MultibyteCodecUtil.EncodeNode encodeNode) {
@@ -208,7 +215,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
             // assert(PyBytes_Check(pwrt));
             if (pwrt.getSequenceStorage().length() > 0) {
-                callMethod.execute(frame, self.stream, WRITE, pwrt);
+                callMethod.execute(frame, inliningTarget, self.stream, WRITE, pwrt);
             }
 
             return PNone.NONE;

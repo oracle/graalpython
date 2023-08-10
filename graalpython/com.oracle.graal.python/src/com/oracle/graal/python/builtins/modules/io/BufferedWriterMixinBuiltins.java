@@ -82,8 +82,9 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class WritableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), T_WRITABLE);
+            return callMethod.execute(frame, inliningTarget, self.getRaw(), T_WRITABLE);
         }
     }
 

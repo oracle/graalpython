@@ -42,10 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -53,12 +50,7 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @GenerateUncached
 public abstract class PyListCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
-
-    @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached IsBuiltinObjectProfile isBuiltin) {
-        return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PList);
+    public static boolean executeUncached(Object object) {
+        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PList);
     }
 }

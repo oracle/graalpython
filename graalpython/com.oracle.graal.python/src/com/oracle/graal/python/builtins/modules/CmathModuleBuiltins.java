@@ -12,6 +12,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
@@ -26,17 +27,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "cmath")
 public final class CmathModuleBuiltins extends PythonBuiltins {
@@ -281,14 +285,14 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doC(PComplex value,
-                        @Cached ComplexBuiltins.AbsNode absNode) {
+                        @Shared @Cached ComplexBuiltins.AbsNode absNode) {
             return toPolar(value, absNode);
         }
 
         @Specialization
         PTuple doGeneral(VirtualFrame frame, Object value,
                         @Cached CoerceToComplexNode coerceToComplex,
-                        @Cached ComplexBuiltins.AbsNode absNode) {
+                        @Shared @Cached ComplexBuiltins.AbsNode absNode) {
             return toPolar(coerceToComplex.execute(frame, value), absNode);
         }
 
@@ -338,10 +342,12 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode rAsDoubleNode,
                         @Cached PyFloatAsDoubleNode phiAsDoubleNode) {
-            return rect(rAsDoubleNode.execute(frame, r), phiAsDoubleNode.execute(frame, phi));
+            return rect(rAsDoubleNode.execute(frame, inliningTarget, r), phiAsDoubleNode.execute(frame, inliningTarget, phi));
         }
 
         @TruffleBoundary
@@ -403,21 +409,21 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y,
-                        @Cached ComplexBuiltins.DivNode divNode) {
+                        @Shared @Cached ComplexBuiltins.DivNode divNode) {
             return divNode.executeComplex(frame, log(x), log(y));
         }
 
         @Specialization(guards = "isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
-                        @Cached CoerceToComplexNode coerceXToComplex) {
+                        @Shared @Cached CoerceToComplexNode coerceXToComplex) {
             return log(coerceXToComplex.execute(frame, xObj));
         }
 
         @Specialization(guards = "!isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
-                        @Cached CoerceToComplexNode coerceXToComplex,
-                        @Cached CoerceToComplexNode coerceYToComplex,
-                        @Cached ComplexBuiltins.DivNode divNode) {
+                        @Shared @Cached CoerceToComplexNode coerceXToComplex,
+                        @Exclusive @Cached CoerceToComplexNode coerceYToComplex,
+                        @Shared @Cached ComplexBuiltins.DivNode divNode) {
             PComplex x = log(coerceXToComplex.execute(frame, xObj));
             PComplex y = log(coerceYToComplex.execute(frame, yObj));
             return divNode.executeComplex(frame, x, y);
@@ -1015,15 +1021,17 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceAToComplex,
                         @Cached CoerceToComplexNode coerceBToComplex,
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
                         @Cached PyFloatAsDoubleNode absAsDoubleNode) {
             PComplex a = coerceAToComplex.execute(frame, aObj);
             PComplex b = coerceBToComplex.execute(frame, bObj);
-            double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, relTolObj);
-            double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, absTolObj);
+            double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
+            double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, inliningTarget, absTolObj);
             return isClose(a, b, relTol, absTol);
         }
 

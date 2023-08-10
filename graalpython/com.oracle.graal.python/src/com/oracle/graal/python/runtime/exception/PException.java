@@ -53,10 +53,10 @@ import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinSubtypeObjectProfile;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -69,7 +69,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -214,34 +214,8 @@ public final class PException extends AbstractTruffleException {
         return pythonException;
     }
 
-    @Deprecated // TODO: DSL inlining
-    public boolean expectTypeOrOverflowError(IsBuiltinClassProfile profile) {
-        boolean ofError = !profile.profileException(this, PythonBuiltinClassType.TypeError);
-        if (ofError && !profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
-            throw this;
-        }
-        return ofError;
-    }
-
-    @Deprecated // TODO: DSL inlining
-    public void expectOverflowError(IsBuiltinClassProfile profile) {
-        if (!profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
-            throw this;
-        }
-    }
-
-    @Deprecated // TODO: DSL inlining
-    public void expectTypeError(IsBuiltinClassProfile profile) {
-        if (!profile.profileException(this, PythonBuiltinClassType.TypeError)) {
-            throw this;
-        }
-    }
-
-    @Deprecated // TODO: DSL inlining
-    public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
-        if (!profile.profileException(this, error)) {
-            throw this;
-        }
+    public void expectCached(PythonBuiltinClassType error, IsBuiltinObjectProfile profile) {
+        expect(profile, error, profile);
     }
 
     public void expectIndexError(Node inliningTarget, IsBuiltinObjectProfile profile) {
@@ -270,10 +244,18 @@ public final class PException extends AbstractTruffleException {
         return ofError;
     }
 
+    public void expectOverflowErrorCached(IsBuiltinObjectProfile profile) {
+        expectOverflowError(profile, profile);
+    }
+
     public void expectOverflowError(Node inliningTarget, IsBuiltinObjectProfile profile) {
         if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.OverflowError)) {
             throw this;
         }
+    }
+
+    public void expectTypeErrorCached(IsBuiltinObjectProfile profile) {
+        expectTypeError(profile, profile);
     }
 
     public void expectTypeError(Node inliningTarget, IsBuiltinObjectProfile profile) {
@@ -451,11 +433,12 @@ public final class PException extends AbstractTruffleException {
 
     @ExportMessage(name = "getSourceLocation")
     SourceSection getExceptionSourceLocation(
-                    @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
+                    @Bind("$node") Node inliningTarget,
+                    @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (hasSourceLocation()) {
             return getLocation().getEncapsulatingSourceSection();
         }
-        unsupportedProfile.enter();
+        unsupportedProfile.enter(inliningTarget);
         throw UnsupportedMessageException.create();
     }
 

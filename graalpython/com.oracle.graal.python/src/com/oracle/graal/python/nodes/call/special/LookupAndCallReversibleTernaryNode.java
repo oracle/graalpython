@@ -43,15 +43,16 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,38 +82,43 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     }
 
     @Specialization(guards = "v.getClass() == cachedVClass", limit = "getCallSiteInlineCacheMaxDepth()")
+    @SuppressWarnings("truffle-static-method")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
-                    @Cached InlinedGetClassNode getClass,
-                    @Cached InlinedGetClassNode getClassR,
-                    @Cached InlinedGetClassNode getThirdClass,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached InlinedIsSameTypeNode isSameTypeNode,
-                    @Cached InlinedBranchProfile notImplementedBranch) {
-        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch);
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattrR,
+                    @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetClassNode getClassR,
+                    @Exclusive @Cached GetClassNode getThirdClass,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                    @Exclusive @Cached InlinedBranchProfile notImplementedBranch,
+                    @Exclusive @Cached CallTernaryMethodNode dispatchNode) {
+        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch, dispatchNode);
     }
 
     @Specialization(replaces = "callObjectR")
     @Megamorphic
+    @SuppressWarnings("truffle-static-method")
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
                     @Bind("this") Node inliningTarget,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
-                    @Cached InlinedGetClassNode getClass,
-                    @Cached InlinedGetClassNode getClassR,
-                    @Cached InlinedGetClassNode getThirdClass,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached InlinedIsSameTypeNode isSameTypeNode,
-                    @Cached InlinedBranchProfile notImplementedBranch) {
-        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch);
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattrR,
+                    @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetClassNode getClassR,
+                    @Exclusive @Cached GetClassNode getThirdClass,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                    @Exclusive @Cached InlinedBranchProfile notImplementedBranch,
+                    @Exclusive @Cached CallTernaryMethodNode dispatchNode) {
+        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch, dispatchNode);
     }
 
     private Object doCallObjectR(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z, LookupSpecialBaseNode getattr,
-                    LookupSpecialBaseNode getattrR, InlinedGetClassNode getClass, InlinedGetClassNode getClassR, InlinedGetClassNode getThirdClass,
-                    IsSubtypeNode isSubtype, InlinedIsSameTypeNode isSameTypeNode, InlinedBranchProfile notImplementedBranch) {
+                    LookupSpecialBaseNode getattrR, GetClassNode getClass, GetClassNode getClassR, GetClassNode getThirdClass,
+                    IsSubtypeNode isSubtype, IsSameTypeNode isSameTypeNode, InlinedBranchProfile notImplementedBranch,
+                    CallTernaryMethodNode dispatchNode) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
         // of this method is modeled after this. However, this method also merges the logic from

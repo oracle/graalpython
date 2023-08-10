@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,8 +63,6 @@ public class NarrowBigIntegerNodeTests {
         PythonTests.closeContext();
     }
 
-    private static NarrowBigIntegerNode narrow = NarrowBigIntegerNodeGen.getUncached();
-
     @Test
     public void smallInts() {
         expectInt(-2);
@@ -108,19 +106,19 @@ public class NarrowBigIntegerNodeTests {
     }
 
     private static void expectInt(int expected) {
-        Object actual = narrow.execute(BigInteger.valueOf(expected));
+        Object actual = NarrowBigIntegerNode.executeUncached(BigInteger.valueOf(expected));
         Assert.assertTrue(actual instanceof Integer);
         Assert.assertEquals(expected, (int) actual);
     }
 
     private static void expectLong(long expected) {
-        Object actual = narrow.execute(BigInteger.valueOf(expected));
+        Object actual = NarrowBigIntegerNode.executeUncached(BigInteger.valueOf(expected));
         Assert.assertTrue(actual instanceof Long);
         Assert.assertEquals(expected, (long) actual);
     }
 
     private static void expectPInt(BigInteger expected) {
-        Object actual = narrow.execute(expected);
+        Object actual = NarrowBigIntegerNode.executeUncached(expected);
         Assert.assertTrue(actual instanceof PInt);
         Assert.assertEquals(expected, ((PInt) actual).getValue());
     }

@@ -45,10 +45,13 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -60,12 +63,14 @@ import com.oracle.truffle.api.strings.TruffleString;
  * @see PyObjectStrAsObjectNode
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
-    public abstract TruffleString execute(Frame frame, Object object);
-
-    public final TruffleString execute(Object object) {
-        return execute(null, object);
+    public static TruffleString executeUncached(Object object) {
+        return PyObjectStrAsTruffleStringNodeGen.getUncached().execute(null, null, object);
     }
+
+    public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
     static TruffleString doString(TruffleString obj) {
@@ -73,11 +78,11 @@ public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static TruffleString doGeneric(VirtualFrame frame, Object obj,
+    static TruffleString doGeneric(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
                     @Cached CastToTruffleStringNode castToString) {
         try {
-            return castToString.execute(strNode.execute(frame, obj));
+            return castToString.execute(inliningTarget, strNode.execute(frame, inliningTarget, obj));
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
         }

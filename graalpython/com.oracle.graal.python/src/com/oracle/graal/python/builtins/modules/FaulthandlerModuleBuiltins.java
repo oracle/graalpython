@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
@@ -72,9 +75,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "faulthandler")
 public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
@@ -127,7 +127,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
             Object printStackFunc;
             try {
                 Object tracebackModule = AbstractImportNode.importModule(toTruffleStringUncached("traceback"));
-                printStackFunc = PyObjectLookupAttr.getUncached().execute(null, tracebackModule, T_PRINT_STACK);
+                printStackFunc = PyObjectLookupAttr.executeUncached(tracebackModule, T_PRINT_STACK);
             } catch (PException e) {
                 return;
             }

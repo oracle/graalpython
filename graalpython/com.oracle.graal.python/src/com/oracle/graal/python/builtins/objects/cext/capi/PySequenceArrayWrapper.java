@@ -49,12 +49,13 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
@@ -72,13 +73,14 @@ public final class PySequenceArrayWrapper {
 
         @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)"})
         static NativeSequenceStorage doManaged(SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Cached ConditionProfile isObjectArrayProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isObjectArrayProfile,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
-            Object array = getInternalArrayNode.execute(s);
+            Object array = getInternalArrayNode.execute(inliningTarget, s);
             if (isBytesLike) {
                 assert array instanceof byte[];
-            } else if (!isObjectArrayProfile.profile(array instanceof Object[])) {
+            } else if (!isObjectArrayProfile.profile(inliningTarget, array instanceof Object[])) {
                 array = generalize(s);
             }
             return storageToNativeNode.execute(array, s.length());

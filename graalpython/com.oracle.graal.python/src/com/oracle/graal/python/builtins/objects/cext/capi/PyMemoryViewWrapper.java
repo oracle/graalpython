@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -102,7 +102,7 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
         @Specialization
         Object doPythonNativeWrapper(PMemoryView object,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClass,
+                        @Cached GetClassNode getClass,
                         @Cached PythonToNativeNewRefNode toNative,
                         @Cached CStructAccess.AllocateNode allocNode,
                         @Cached CStructAccess.GetElementPtrNode getElementNode,
@@ -129,7 +129,7 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
             if (object.getBufferPointer() == null) {
                 // TODO GR-21120: Add support for PArray
                 PSequence owner = (PSequence) object.getOwner();
-                NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner), owner instanceof PBytesLike);
+                NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(inliningTarget, owner), owner instanceof PBytesLike);
                 if (nativeStorage == null) {
                     throw CompilerDirectives.shouldNotReachHere("cannot allocate native storage");
                 }

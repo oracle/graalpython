@@ -68,6 +68,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -168,7 +169,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
-                    @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                    @Shared @Cached PConstructAndRaiseNode constructAndRaiseNode,
                     @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert socket.getSocket() != null;
         prepare(socket);
@@ -272,7 +273,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() == null")
     void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                    @Shared @Cached PConstructAndRaiseNode constructAndRaiseNode) {
         prepare(socket);
         SSLOperationStatus status;
         try {

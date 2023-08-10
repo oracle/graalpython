@@ -93,9 +93,10 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
     abstract static class MemberDescriptorReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(GetSetDescriptor descr,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.GetNameNode getName,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<member '%s' of '%s' objects>", descr.getName(), getName.execute(descr.getType()));
+            return simpleTruffleStringFormatNode.format("<member '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
         }
     }
 

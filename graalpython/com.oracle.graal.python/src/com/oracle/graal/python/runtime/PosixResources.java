@@ -61,7 +61,6 @@ import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -276,15 +275,6 @@ abstract class PosixResources extends PosixSupport {
     protected boolean isStandardStream(int fd) {
         ChannelWrapper channelWrapper = files.get(fd);
         return channelWrapper != null && channelWrapper.isStandardStream;
-    }
-
-    @TruffleBoundary
-    public Channel getFileChannel(int fd, ValueProfile classProfile) {
-        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
-        if (channelWrapper != null) {
-            return classProfile.profile(channelWrapper.channel);
-        }
-        return null;
     }
 
     @TruffleBoundary

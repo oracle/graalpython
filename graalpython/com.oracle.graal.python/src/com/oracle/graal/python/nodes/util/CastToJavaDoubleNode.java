@@ -50,11 +50,12 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,11 +71,13 @@ import com.oracle.truffle.api.strings.TruffleString;
  * because the object is not a Python float, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaDoubleNode extends PNodeWithContext {
 
-    public abstract double execute(Object x);
+    public abstract double execute(Node inliningTarget, Object x);
 
     @Specialization
     static double toDouble(double x) {
@@ -87,19 +90,19 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    static double toInt(int x) {
+    static double doInt(int x) {
         return x;
     }
 
     @Specialization
-    static double toLong(long x) {
+    static double doLong(long x) {
         return x;
     }
 
     @Specialization
-    static double toPInt(PInt x,
-                    @Cached PRaiseNode raise) {
-        return x.doubleValueWithOverflow(raise);
+    static double doPInt(Node inliningTarget, PInt x,
+                    @Cached PRaiseNode.Lazy raise) {
+        return x.doubleValueWithOverflow(inliningTarget, raise);
     }
 
     @Specialization
@@ -113,12 +116,11 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    static double doNativeObject(PythonAbstractNativeObject x,
-                    @Bind("this") Node node,
+    static double doNativeObject(Node inliningTarget, PythonAbstractNativeObject x,
                     @Cached GetPythonObjectClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CStructAccess.ReadDoubleNode read) {
-        if (isSubtypeNode.execute(getClassNode.execute(node, x), PythonBuiltinClassType.PFloat)) {
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
+        if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PFloat)) {
             return read.readFromObj(x, PyFloatObject__ob_fval);
         }
         // the object's type is not a subclass of 'float'
@@ -151,9 +153,5 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
             return d;
         }
         throw CannotCastException.INSTANCE;
-    }
-
-    public static CastToJavaDoubleNode getUncached() {
-        return CastToJavaDoubleNodeGen.getUncached();
     }
 }

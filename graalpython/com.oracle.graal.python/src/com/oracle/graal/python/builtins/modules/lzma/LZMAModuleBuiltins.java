@@ -98,12 +98,14 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = LZMAModuleBuiltins.J__LZMA)
@@ -288,9 +290,10 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doInt(VirtualFrame frame, Object checkID,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
-            return isCheckSupported.execute(asSizeNode.executeExact(frame, checkID, ValueError));
+            return isCheckSupported.execute(asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
         }
     }
 
@@ -313,12 +316,13 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PDict encode(VirtualFrame frame, Object id, Object encodedProps,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties) {
             byte[] bytes = toBytes.execute(frame, encodedProps);
             PDict dict = factory().createDict();
-            decodeFilterProperties.execute(frame, toLong.execute(id), bytes, dict);
+            decodeFilterProperties.execute(frame, toLong.execute(inliningTarget, id), bytes, dict);
             return dict;
         }
     }

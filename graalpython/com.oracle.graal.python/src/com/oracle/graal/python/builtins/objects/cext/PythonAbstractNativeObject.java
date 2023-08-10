@@ -62,6 +62,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
@@ -204,11 +206,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage(library = InteropLibrary.class)
     boolean isMetaObject(
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached TypeNodes.IsTypeNode isType,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isType.execute(this);
+            return isType.execute(inliningTarget, this);
         } finally {
             gil.release(mustRelease);
         }
@@ -216,17 +219,18 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isType,
                     @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            if (!isType.execute(this)) {
+            if (!isType.execute(inliningTarget, this)) {
                 throw UnsupportedMessageException.create();
             }
-            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(inliningTarget, convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }
@@ -234,11 +238,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     String getMetaSimpleName(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode, castToJavaStringNode, gil));
+        return getSimpleName(getMetaQualifiedName(inliningTarget, isType, getTpNameNode, castToJavaStringNode, gil));
     }
 
     @TruffleBoundary
@@ -252,13 +257,14 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     String getMetaQualifiedName(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                     @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            if (!isType.execute(this)) {
+            if (!isType.execute(inliningTarget, this)) {
                 throw UnsupportedMessageException.create();
             }
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'

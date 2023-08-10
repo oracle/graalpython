@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,13 +45,17 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsLongAndOverflow}. Converts an object into a Java long
@@ -60,9 +64,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * {@link com.oracle.graal.python.util.OverflowException}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object) throws OverflowException;
+
+    public abstract long execute(Frame frame, Node inliningTarget, Object object) throws OverflowException;
+
+    // Attention: keep these Specializations in synch with BuiltinPyLongAsLongAndOverflowNode!
+    // DSL does not allow reusing BuiltinPyLongAsLongAndOverflowNode here
 
     @Specialization
     static long doInt(int object) {
@@ -92,12 +102,50 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
     // TODO When we implement casting native longs, this should cast them instead of calling their
     // __index__
     @Fallback
-    long doObject(VirtualFrame frame, Object object,
+    @InliningCutoff
+    static long doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached PyNumberIndexNode indexNode,
-                    @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
-        Object result = indexNode.execute(frame, object);
+                    @Cached BuiltinPyLongAsLongAndOverflowNode recursive) throws OverflowException {
+        Object result = indexNode.execute(frame, inliningTarget, object);
         // PyNumberIndexNode guarantees that the result is a builtin integer
         assert PyLongCheckExactNode.canBeBuiltinInt(result);
-        return recursive.execute(frame, result);
+        return recursive.execute(frame, inliningTarget, result);
+    }
+
+    /**
+     * Internal variant of {@link PyLongAsLongAndOverflowNode} that accepts only builtin integers.
+     * Truffle DSL does not allow us to (easily) reuse this code in
+     * {@link PyLongAsLongAndOverflowNode}.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class BuiltinPyLongAsLongAndOverflowNode extends PNodeWithContext {
+        public abstract long execute(Frame frame, Node inliningTarget, Object object) throws OverflowException;
+
+        @Specialization
+        static long doInt(int object) {
+            return object;
+        }
+
+        @Specialization
+        static long doLong(long object) {
+            return object;
+        }
+
+        @Specialization
+        static long doPInt(PInt object) throws OverflowException {
+            return object.longValueExact();
+        }
+
+        @Specialization
+        static long doBoolean(boolean x) {
+            return x ? 1 : 0;
+        }
+
+        @Specialization
+        static long doNativePointer(PythonNativeVoidPtr object) {
+            return object.getNativePointer();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -58,23 +60,25 @@ import com.oracle.truffle.api.nodes.Node;
  * function does a hard cast to the internal dict structure or aborts with BadInternalCall.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyDictKeys extends Node {
-    public abstract Object execute(PDict dict);
+    public abstract Object execute(Node inliningTarget, PDict dict);
 
     @Specialization
-    static Object getString(PDict dict,
-                    @Cached PythonObjectFactory factory,
+    static Object getString(Node inliningTarget, PDict dict,
+                    @Cached(inline = false) PythonObjectFactory factory,
                     @Cached HashingStorageLen lenNode,
                     @Cached HashingStorageGetIterator getIter,
                     @Cached HashingStorageIteratorNext iterNext,
                     @Cached HashingStorageIteratorKey iterKey) {
         HashingStorage storage = dict.getDictStorage();
-        int len = lenNode.execute(storage);
-        HashingStorageIterator it = getIter.execute(storage);
+        int len = lenNode.execute(inliningTarget, storage);
+        HashingStorageIterator it = getIter.execute(inliningTarget, storage);
         Object[] keys = new Object[len];
         int i = 0;
-        while (iterNext.execute(storage, it)) {
-            keys[i++] = iterKey.execute(storage, it);
+        while (iterNext.execute(inliningTarget, storage, it)) {
+            keys[i++] = iterKey.execute(inliningTarget, storage, it);
         }
         return factory.createList(keys);
     }

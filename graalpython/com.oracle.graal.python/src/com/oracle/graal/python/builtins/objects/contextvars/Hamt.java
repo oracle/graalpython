@@ -147,7 +147,7 @@ public final class Hamt {
         if (original instanceof Entry) {
             Entry existing = (Entry) original;
             if (newEntry.hash == existing.hash) {
-                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, newEntry.key, existing.key)) {
+                if (PyObjectRichCompareBool.EqNode.compareUncached(newEntry.key, existing.key)) {
                     return newEntry;
                 } else {
                     return new CollisionPart(existing.hash, existing, newEntry);
@@ -230,7 +230,7 @@ public final class Hamt {
         }
         if (part instanceof Entry) {
             Entry existing = (Entry) part;
-            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.getUncached().execute(null, existing.key, key)) {
+            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.compareUncached(existing.key, key)) {
                 return existing.value;
             }
             return null;
@@ -256,7 +256,7 @@ public final class Hamt {
                 return null;
             }
             for (Entry entry : existing.elems) {
-                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, entry.key, key)) {
+                if (PyObjectRichCompareBool.EqNode.compareUncached(entry.key, key)) {
                     return entry.value;
                 }
             }
@@ -325,7 +325,7 @@ public final class Hamt {
         }
         if (root instanceof Entry) {
             Entry existing = (Entry) root;
-            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.getUncached().execute(null, existing.key, key)) {
+            if (existing.hash == hash && PyObjectRichCompareBool.EqNode.compareUncached(existing.key, key)) {
                 return null;
             }
             return root;
@@ -369,7 +369,7 @@ public final class Hamt {
             CollisionPart existing = (CollisionPart) root;
             if (existing.hash == hash) {
                 for (int i = 0; i < existing.elems.length; ++i) {
-                    if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, existing.elems[i].key, key)) {
+                    if (PyObjectRichCompareBool.EqNode.compareUncached(existing.elems[i].key, key)) {
                         if (existing.elems.length == 1) {
                             return null;
                         }

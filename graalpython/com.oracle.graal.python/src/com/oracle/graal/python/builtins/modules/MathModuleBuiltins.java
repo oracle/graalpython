@@ -79,7 +79,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
@@ -91,6 +90,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -164,9 +164,11 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
+        @SuppressWarnings("truffle-static-method")
         public double doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return op(asDoubleNode.execute(frame, value));
+            return op(asDoubleNode.execute(frame, inliningTarget, value));
         }
 
         private double op(double arg) {
@@ -258,23 +260,23 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object ceilDouble(double value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(value));
         }
 
         @Fallback
         static Object ceil(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached("create(T___CEIL__)") LookupSpecialMethodNode lookupCeil,
                         @Cached CallUnaryMethodNode callCeil,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             Object method = lookupCeil.execute(frame, getClassNode.execute(inliningTarget, value), value);
             if (method != PNone.NO_VALUE) {
                 return callCeil.executeObject(frame, method, value);
             }
-            double doubleValue = asDoubleNode.execute(frame, value);
+            double doubleValue = asDoubleNode.execute(frame, inliningTarget, value);
             return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(doubleValue));
         }
     }
@@ -352,14 +354,16 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
+        @SuppressWarnings("truffle-static-method")
         public Object factorialObject(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode convert,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached FactorialNode recursiveNode) {
             try {
-                return recursiveNode.execute(frame, convert.execute(frame, value));
+                return recursiveNode.execute(frame, convert.execute(frame, inliningTarget, value));
             } catch (OverflowException e) {
-                if (asSizeNode.executeLossy(frame, value) >= 0) {
+                if (asSizeNode.executeLossy(frame, inliningTarget, value) >= 0) {
                     throw raise(OverflowError, ErrorMessages.FACTORIAL_ARGUMENT_SHOULD_NOT_EXCEED_D, Long.MAX_VALUE);
                 } else {
                     throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
@@ -425,10 +429,11 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object comb(VirtualFrame frame, Object n, Object k,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CombNode recursiveNode) {
-            Object nValue = indexNode.execute(frame, n);
-            Object kValue = indexNode.execute(frame, k);
+            Object nValue = indexNode.execute(frame, inliningTarget, n);
+            Object kValue = indexNode.execute(frame, inliningTarget, k);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -496,11 +501,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(k)")
-        Object perm(VirtualFrame frame, Object n, Object k,
+        static Object perm(VirtualFrame frame, Object n, Object k,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PermNode recursiveNode) {
-            Object nValue = indexNode.execute(frame, n);
-            Object kValue = indexNode.execute(frame, k);
+            Object nValue = indexNode.execute(frame, inliningTarget, n);
+            Object kValue = indexNode.execute(frame, inliningTarget, k);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -513,23 +519,23 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object floorDouble(double value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(value));
         }
 
         @Fallback
         static Object floor(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached("create(T___FLOOR__)") LookupSpecialMethodNode lookupFloor,
                         @Cached CallUnaryMethodNode callFloor,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
+                        @Exclusive @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
             Object method = lookupFloor.execute(frame, getClassNode.execute(inliningTarget, value), value);
             if (method != PNone.NO_VALUE) {
                 return callFloor.executeObject(frame, method, value);
             }
-            double doubleValue = asDoubleNode.execute(frame, value);
+            double doubleValue = asDoubleNode.execute(frame, inliningTarget, value);
             return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(doubleValue));
         }
     }
@@ -673,24 +679,25 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean isNan(@SuppressWarnings("unused") long value) {
+        public static boolean isNan(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(@SuppressWarnings("unused") PInt value) {
+        public static boolean isNan(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(double value) {
+        public static boolean isNan(double value) {
             return Double.isNaN(value);
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(VirtualFrame frame, Object value,
+        public static boolean isinf(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return isNan(asDoubleNode.execute(frame, value));
+            return isNan(asDoubleNode.execute(frame, inliningTarget, value));
         }
     }
 
@@ -759,13 +766,15 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isInteger(exp)")
+        @SuppressWarnings("truffle-static-method")
         double ldexp(VirtualFrame frame, double mantissa, Object exp,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode cast) {
-            if (isSubtypeNode.execute(getClassNode.execute(exp), PythonBuiltinClassType.PInt)) {
-                long longExp = cast.execute(indexNode.execute(frame, exp));
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, exp), PythonBuiltinClassType.PInt)) {
+                long longExp = cast.execute(inliningTarget, indexNode.execute(frame, inliningTarget, exp));
                 return ldexp(mantissa, longExp);
             } else {
                 throw raise(TypeError, ErrorMessages.EXPECTED_INT_MESSAGE);
@@ -813,7 +822,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create(Next)") LookupAndCallUnaryNode callNextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached IsBuiltinObjectProfile stopProfile) {
-            Object iterator = getIter.execute(frame, iterable);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
             return fsum(frame, iterator, callNextNode, asDoubleNode, inliningTarget, stopProfile);
         }
 
@@ -835,7 +844,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             double[] p = new double[arayLength];
             while (true) {
                 try {
-                    x = asDoubleNode.execute(frame, next.executeObject(frame, iterator));
+                    x = asDoubleNode.execute(frame, inliningTarget, next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, stopProfile);
                     break;
@@ -956,9 +965,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached BuiltinFunctions.AbsNode absNode) {
-            return indexNode.execute(frame, absNode.execute(frame, args[0]));
+            return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
         }
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
@@ -1048,10 +1058,11 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isRecursive", "!isNumber(x) || !isNumber(y)"})
         static Object gcd(VirtualFrame frame, Object x, Object y,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("create(true)") Gcd2Node recursiveNode) {
-            Object xValue = indexNode.execute(frame, x);
-            Object yValue = indexNode.execute(frame, y);
+            Object xValue = indexNode.execute(frame, inliningTarget, x);
+            Object yValue = indexNode.execute(frame, inliningTarget, y);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 
@@ -1080,6 +1091,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached LoopConditionProfile profile,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached Gcd2Node gcdNode,
@@ -1087,10 +1099,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached IntBuiltins.MulNode mulNode,
                         @Cached BinaryComparisonNode.EqNode eqNode,
                         @Shared @Cached BuiltinFunctions.AbsNode absNode) {
-            Object a = indexNode.execute(frame, args[0]);
+            Object a = indexNode.execute(frame, inliningTarget, args[0]);
             profile.profileCounted(args.length);
             for (int i = 1; profile.inject(i < args.length); i++) {
-                Object b = indexNode.execute(frame, args[i]);
+                Object b = indexNode.execute(frame, inliningTarget, args[i]);
                 if ((boolean) eqNode.executeObject(frame, a, 0)) {
                     continue;
                 }
@@ -1104,9 +1116,10 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached BuiltinFunctions.AbsNode absNode) {
-            return indexNode.execute(frame, absNode.execute(frame, args[0]));
+            return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
         }
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
@@ -1389,14 +1402,15 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isfinite(double value) {
+        public static boolean isfinite(double value) {
             return Double.isFinite(value);
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(VirtualFrame frame, Object value,
+        public static boolean isinf(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return isfinite(asDoubleNode.execute(frame, value));
+            return isfinite(asDoubleNode.execute(frame, inliningTarget, value));
         }
     }
 
@@ -1407,24 +1421,25 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public boolean isinf(@SuppressWarnings("unused") long value) {
+        public static boolean isinf(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isinf(@SuppressWarnings("unused") PInt value) {
+        public static boolean isinf(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
         @Specialization
-        public boolean isinf(double value) {
+        public static boolean isinf(double value) {
             return Double.isInfinite(value);
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public boolean isinf(VirtualFrame frame, Object value,
+        public static boolean isinf(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return isinf(asDoubleNode.execute(frame, value));
+            return isinf(asDoubleNode.execute(frame, inliningTarget, value));
         }
     }
 
@@ -1432,6 +1447,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
+    @SuppressWarnings("truffle-static-method")
     public abstract static class LogNode extends PythonBinaryBuiltinNode {
 
         @Child private LogNode recLogNode;
@@ -1589,33 +1605,37 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double logO(VirtualFrame frame, Object value, PNone novalue,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, value), novalue);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
         public double logOO(VirtualFrame frame, Object value, Object base,
-                        @Cached PyFloatAsDoubleNode valueAsDoubleNode,
-                        @Cached PyFloatAsDoubleNode baseAsDoubleNode) {
-            return executeRecursiveLogNode(frame, valueAsDoubleNode.execute(frame, value), baseAsDoubleNode.execute(frame, base));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, asDoubleNode.execute(frame, inliningTarget, value), asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logLO(VirtualFrame frame, long value, Object base,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, base));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logDO(VirtualFrame frame, double value, Object base,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, base));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logPIO(VirtualFrame frame, PInt value, Object base,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, base));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, inliningTarget, base));
         }
 
         private void raiseMathError(Node inliningTarget, InlinedConditionProfile doNotFit, boolean con) {
@@ -1853,19 +1873,22 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 2")
         public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached PyFloatAsDoubleNode xAsDouble,
-                        @Cached PyFloatAsDoubleNode yAsDouble) {
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyFloatAsDoubleNode xAsDouble,
+                        @Exclusive @Cached PyFloatAsDoubleNode yAsDouble) {
             if (keywords.length != 0) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
-            double x = xAsDouble.execute(frame, arguments[0]);
-            double y = yAsDouble.execute(frame, arguments[1]);
+            double x = xAsDouble.execute(frame, inliningTarget, arguments[0]);
+            double y = yAsDouble.execute(frame, inliningTarget, arguments[1]);
             return Math.hypot(x, y);
         }
 
         @Specialization
-        public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+        @SuppressWarnings("truffle-static-method")
+        double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyFloatAsDoubleNode asDoubleNode) {
             if (keywords.length != 0) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "hypot()");
             }
@@ -1873,7 +1896,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             boolean foundNan = false;
             double[] coordinates = new double[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
-                double x = asDoubleNode.execute(frame, arguments[i]);
+                double x = asDoubleNode.execute(frame, inliningTarget, arguments[i]);
                 x = Math.abs(x);
                 if (Double.isNaN(x)) {
                     foundNan = true;
@@ -2239,23 +2262,26 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object isqrtLong(long x,
-                        @Cached NarrowBigIntegerNode makeInt) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached NarrowBigIntegerNode makeInt) {
             raiseIfNegative(x < 0);
-            return makeInt.execute(op(PInt.longToBigInteger(x)));
+            return makeInt.execute(inliningTarget, op(PInt.longToBigInteger(x)));
         }
 
         @Specialization
         Object isqrtPInt(PInt x,
-                        @Cached NarrowBigIntegerNode makeInt) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached NarrowBigIntegerNode makeInt) {
             raiseIfNegative(x.isNegative());
-            return makeInt.execute(op(x.getValue()));
+            return makeInt.execute(inliningTarget, op(x.getValue()));
         }
 
         @Specialization(guards = "!isInteger(x)")
         static Object doGeneral(VirtualFrame frame, Object x,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached IsqrtNode recursiveNode) {
-            return recursiveNode.execute(frame, indexNode.execute(frame, x));
+            return recursiveNode.execute(frame, indexNode.execute(frame, inliningTarget, x));
         }
 
         @TruffleBoundary
@@ -2305,7 +2331,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile startIsNoValueProfile,
                         @Cached PyObjectGetIter getIter) {
             Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
-            Object iterator = getIter.execute(frame, iterable);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
             Object value = start;
             while (true) {
                 Object nextValue;
@@ -2347,8 +2373,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             boolean foundNan = false;
             loopProfile1.profileCounted(inliningTarget, len);
             for (int i = 0; loopProfile1.inject(inliningTarget, i < len); ++i) {
-                double a = asDoubleNode.execute(frame, ps[i]);
-                double b = asDoubleNode.execute(frame, qs[i]);
+                double a = asDoubleNode.execute(frame, inliningTarget, ps[i]);
+                double b = asDoubleNode.execute(frame, inliningTarget, qs[i]);
                 double x = Math.abs(a - b);
                 diffs[i] = x;
                 foundNan |= Double.isNaN(x);

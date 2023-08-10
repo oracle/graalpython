@@ -83,13 +83,13 @@ public abstract class PyLongFromDoubleNode extends Node {
 
     @Specialization(guards = {"!fitLong(value)", "isFinite(value)"})
     static Object doFinite(double value,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createInt(toBigInteger(value));
     }
 
     @Specialization(guards = "!isFinite(value)")
     static Object doInfinite(double value,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached(inline = false) PRaiseNode raiseNode) {
         if (Double.isNaN(value)) {
             throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER);
         }

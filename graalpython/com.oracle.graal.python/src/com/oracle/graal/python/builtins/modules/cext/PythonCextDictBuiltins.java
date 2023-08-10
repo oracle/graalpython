@@ -145,14 +145,14 @@ public final class PythonCextDictBuiltins {
              */
             if (pos == 0) {
                 HashingStorage storage = dict.getDictStorage();
-                int len = lenNode.execute(storage);
+                int len = lenNode.execute(inliningTarget, storage);
                 if (len > 0) {
                     boolean needsRewrite = false;
                     if (storage instanceof EconomicMapStorage) {
                         economicMapProfile.enter(inliningTarget);
-                        HashingStorageIterator it = getIterator.execute(storage);
-                        while (itNext.execute(storage, it)) {
-                            if (promoteKeyNode.execute(itKey.execute(storage, it)) != null || promoteValueNode.execute(itValue.execute(storage, it)) != null) {
+                        HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+                        while (itNext.execute(inliningTarget, storage, it)) {
+                            if (promoteKeyNode.execute(itKey.execute(inliningTarget, storage, it)) != null || promoteValueNode.execute(itValue.execute(inliningTarget, storage, it)) != null) {
                                 needsRewrite = true;
                                 break;
                             }
@@ -167,10 +167,10 @@ public final class PythonCextDictBuiltins {
                     if (needsRewrite) {
                         needsRewriteProfile.enter(inliningTarget);
                         EconomicMapStorage newStorage = EconomicMapStorage.create(len);
-                        HashingStorageIterator it = getIterator.execute(storage);
-                        while (itNext.execute(storage, it)) {
-                            Object key = itKey.execute(storage, it);
-                            Object value = itValue.execute(storage, it);
+                        HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+                        while (itNext.execute(inliningTarget, storage, it)) {
+                            Object key = itKey.execute(inliningTarget, storage, it);
+                            Object value = itValue.execute(inliningTarget, storage, it);
                             Object promotedKey = promoteKeyNode.execute(key);
                             if (promotedKey != null) {
                                 key = promotedKey;
@@ -179,7 +179,8 @@ public final class PythonCextDictBuiltins {
                             if (promotedValue != null) {
                                 value = promotedValue;
                             }
-                            setItem.execute(null, newStorage, key, value);
+                            // promoted key will never have side-effecting __hash__/__eq__
+                            setItem.execute(null, inliningTarget, newStorage, key, value);
                         }
                         dict.setDictStorage(newStorage);
                     }
@@ -187,21 +188,21 @@ public final class PythonCextDictBuiltins {
             }
 
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageIterator it = getIterator.execute(storage);
+            HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             /*
              * The iterator index starts from -1, but pos starts from 0, so we subtract 1 here and
              * add it back later when computing new pos.
              */
             it.setState((int) pos - 1);
-            boolean hasNext = itNext.execute(storage, it);
+            boolean hasNext = itNext.execute(inliningTarget, storage, it);
             if (!hasNext) {
                 return getNativeNull();
             }
-            Object key = itKey.execute(storage, it);
-            Object value = itValue.execute(storage, it);
+            Object key = itKey.execute(inliningTarget, storage, it);
+            Object value = itValue.execute(inliningTarget, storage, it);
             assert promoteKeyNode.execute(key) == null;
             assert promoteValueNode.execute(value) == null;
-            long hash = itKeyHash.execute(storage, it);
+            long hash = itKeyHash.execute(inliningTarget, storage, it);
             int newPos = it.getState() + 1;
             return factory().createTuple(new Object[]{key, value, hash, newPos});
         }
@@ -230,8 +231,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static int size(PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(dict.getDictStorage());
+            return lenNode.execute(inliningTarget, dict.getDictStorage());
         }
 
         @Fallback
@@ -244,8 +246,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
         Object copy(PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode) {
-            return factory().createDict(copyNode.execute(dict.getDictStorage()));
+            return factory().createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
         }
 
         @Fallback
@@ -265,7 +268,7 @@ public final class PythonCextDictBuiltins {
                         @Cached SetItemNode setItemNode,
                         @Cached BranchProfile noResultProfile) {
             try {
-                Object res = getItem.execute(null, dict.getDictStorage(), key);
+                Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter();
                     return getNativeNull();
@@ -302,7 +305,7 @@ public final class PythonCextDictBuiltins {
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
                         @Cached BranchProfile noResultProfile) {
-            Object res = getItem.execute(null, dict.getDictStorage(), key);
+            Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (res == null) {
                 noResultProfile.enter();
                 return getNativeNull();
@@ -347,7 +350,7 @@ public final class PythonCextDictBuiltins {
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
                         @Cached BranchProfile wrongHashProfile) {
-            if (hashNode.execute(null, key) != castToLong.execute(givenHash)) {
+            if (hashNode.execute(null, inliningTarget, key) != castToLong.execute(inliningTarget, givenHash)) {
                 wrongHashProfile.enter();
                 throw raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
             }
@@ -366,8 +369,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyDictSetDefault setDefault) {
-            return setDefault.execute(null, dict, key, value);
+            return setDefault.execute(null, inliningTarget, dict, key, value);
         }
 
         @Fallback
@@ -410,8 +414,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PDict dict, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
-            return PInt.intValue(getItem.hasKey(null, dict.getDictStorage(), key));
+            return PInt.intValue(getItem.hasKey(null, inliningTarget, dict.getDictStorage(), key));
         }
 
         @Fallback
@@ -467,20 +472,22 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override != 0"})
         int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupKeys,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached CallNode callNode) {
             // lookup "keys" to raise the right error:
-            if (lookupKeys.execute(null, b, T_KEYS) == PNone.NO_VALUE) {
+            if (lookupKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
                 throw raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
-            Object updateCallable = lookupAttr.execute(null, a, T_UPDATE);
+            Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
             callNode.execute(updateCallable, new Object[]{b});
             return 0;
         }
 
         @Specialization(guards = "override == 0")
         static int merge(PDict a, PDict b, @SuppressWarnings("unused") int override,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetIterator getBIter,
                         @Cached HashingStorageIteratorNext itBNext,
                         @Cached HashingStorageIteratorKey itBKey,
@@ -490,13 +497,13 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageSetItemWithHash setAItem,
                         @Cached LoopConditionProfile loopProfile) {
             HashingStorage bStorage = b.getDictStorage();
-            HashingStorageIterator bIt = getBIter.execute(bStorage);
+            HashingStorageIterator bIt = getBIter.execute(inliningTarget, bStorage);
             HashingStorage aStorage = a.getDictStorage();
-            while (loopProfile.profile(itBNext.execute(bStorage, bIt))) {
-                Object key = itBKey.execute(bStorage, bIt);
-                long hash = itBKeyHash.execute(bStorage, bIt);
-                if (getAItem.execute(null, aStorage, key, hash) != null) {
-                    setAItem.execute(null, aStorage, key, hash, itBValue.execute(bStorage, bIt));
+            while (loopProfile.profile(itBNext.execute(inliningTarget, bStorage, bIt))) {
+                Object key = itBKey.execute(inliningTarget, bStorage, bIt);
+                long hash = itBKeyHash.execute(inliningTarget, bStorage, bIt);
+                if (getAItem.execute(null, inliningTarget, aStorage, key, hash) != null) {
+                    setAItem.execute(null, inliningTarget, aStorage, key, hash, itBValue.execute(inliningTarget, bStorage, bIt));
                 }
             }
             return 0;
@@ -504,6 +511,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = {"override == 0", "!isDict(b)"})
         int merge(PDict a, Object b, @SuppressWarnings("unused") int override,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
@@ -513,7 +521,7 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageSetItem setItemA,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached BranchProfile noKeyProfile) {
-            Object attr = getAttrNode.execute(null, a, T_KEYS);
+            Object attr = getAttrNode.execute(null, inliningTarget, a, T_KEYS);
             PList keys = listNode.execute(null, callNode.execute(null, attr));
 
             SequenceStorage keysStorage = keys.getSequenceStorage();
@@ -522,10 +530,10 @@ public final class PythonCextDictBuiltins {
             loopProfile.profileCounted(size);
             for (int i = 0; loopProfile.inject(i < size); i++) {
                 Object key = getKeyNode.execute(keysStorage, i);
-                if (!getItemA.hasKey(null, aStorage, key)) {
+                if (!getItemA.hasKey(null, inliningTarget, aStorage, key)) {
                     noKeyProfile.enter();
-                    Object value = getValueNode.execute(null, b, key);
-                    aStorage = setItemA.execute(null, aStorage, key, value);
+                    Object value = getValueNode.execute(null, inliningTarget, b, key);
+                    aStorage = setItemA.execute(null, inliningTarget, aStorage, key, value);
                 }
             }
             a.setDictStorage(aStorage);

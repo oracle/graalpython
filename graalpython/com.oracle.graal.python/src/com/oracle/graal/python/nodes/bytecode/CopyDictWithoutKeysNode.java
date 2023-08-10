@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,9 +62,9 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1")
     static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
                     @Cached("keys.length") int keysLength,
-                    @Cached PythonObjectFactory factory,
-                    @Cached DictNodes.UpdateNode updateNode,
-                    @Cached DictBuiltins.DelItemNode delItemNode) {
+                    @Shared @Cached PythonObjectFactory factory,
+                    @Shared @Cached DictNodes.UpdateNode updateNode,
+                    @Shared @Cached DictBuiltins.DelItemNode delItemNode) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
         deleteKeys(frame, keys, keysLength, delItemNode, rest);
@@ -80,9 +81,9 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
 
     @Specialization(guards = "keys.length > 32")
     static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
-                    @Cached PythonObjectFactory factory,
-                    @Cached DictNodes.UpdateNode updateNode,
-                    @Cached DictBuiltins.DelItemNode delItemNode) {
+                    @Shared @Cached PythonObjectFactory factory,
+                    @Shared @Cached DictNodes.UpdateNode updateNode,
+                    @Shared @Cached DictBuiltins.DelItemNode delItemNode) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
         for (int i = 0; i < keys.length; i++) {

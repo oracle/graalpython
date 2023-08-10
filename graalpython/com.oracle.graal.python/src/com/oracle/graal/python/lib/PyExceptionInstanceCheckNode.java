@@ -43,7 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -69,8 +69,8 @@ public abstract class PyExceptionInstanceCheckNode extends Node {
 
     @Fallback
     static boolean doOther(Node inliningTarget, Object object,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         // May be native or interop
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PBaseException);
     }

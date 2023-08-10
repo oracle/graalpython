@@ -74,6 +74,6 @@ public final class LookupInheritedSlotNode extends PNodeWithContext {
     }
 
     public Object execute(Object object) {
-        return lookupInMRONode.execute(getClassNode.execute(object));
+        return lookupInMRONode.execute(getClassNode.executeCached(object));
     }
 }

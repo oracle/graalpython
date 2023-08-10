@@ -47,11 +47,12 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -63,6 +64,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@GenerateInline(false) // Used in BCI
 public abstract class ExitWithNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop, boolean rootNodeVisible);
 
@@ -70,7 +72,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
     int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
                     @Bind("this") Node inliningTarget,
                     @Cached CallQuaternaryMethodNode callExit,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached PyObjectIsTrueNode isTrueNode) {
         int stackTop = stackTopIn;
@@ -93,7 +95,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
                 Object excType = getClassNode.execute(inliningTarget, pythonException);
                 Object excTraceback = getTracebackNode.execute(inliningTarget, pythonException);
                 Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
-                if (!isTrueNode.execute(virtualFrame, result)) {
+                if (!isTrueNode.execute(virtualFrame, inliningTarget, result)) {
                     if (exception instanceof PException) {
                         throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
                     } else if (exception instanceof AbstractTruffleException) {

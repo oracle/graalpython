@@ -130,13 +130,14 @@ public final class PythonClass extends PythonManagedClass {
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
+                    @Bind("$node") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(inliningTarget, convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }

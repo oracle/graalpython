@@ -103,22 +103,22 @@ public final class TemplateFormatter {
     }
 
     @TruffleBoundary
-    public TruffleString build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    public TruffleString build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode) {
         this.args = argsArg;
         this.keywords = kwArgs;
         this.autoNumbering = 0;
         this.autoNumberingState = ANS_INIT;
-        return buildString(node, 0, template.length(), 2, formatNode, getItemNode);
+        return buildString(node, 0, template.length(), 2, formatNode);
     }
 
-    private TruffleString buildString(Node node, int start, int end, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    private TruffleString buildString(Node node, int start, int end, int level, FormatNode formatNode) {
         if (level == 0) {
             throw PRaiseNode.raiseUncached(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
-        return doBuildString(node, start, end, level - 1, this.template, formatNode, getItemNode);
+        return doBuildString(node, start, end, level - 1, this.template, formatNode);
     }
 
-    private TruffleString doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    private TruffleString doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode) {
         StringBuilder out = new StringBuilder();
         int lastLiteral = start;
         int i = start;
@@ -183,7 +183,7 @@ public final class TemplateFormatter {
                 if (nested > 0) {
                     throw PRaiseNode.raiseUncached(node, ValueError, EXPECTED_RBRACE_BEFORE_END_OF_STRING);
                 }
-                Object rendered = renderField(node, fieldStart, i, recursive, level, formatNode, getItemNode);
+                Object rendered = renderField(node, fieldStart, i, recursive, level, formatNode);
                 out.append(rendered);
                 i += 1;
                 lastLiteral = i;
@@ -244,7 +244,7 @@ public final class TemplateFormatter {
         return new Field(s.substring(start, end), null, end);
     }
 
-    private Object getArgument(Node node, String name, PyObjectGetItem getItemNode) {
+    private Object getArgument(Node node, String name) {
         // First, find the argument.
         int i = 0;
         int end = name.length();
@@ -287,7 +287,7 @@ public final class TemplateFormatter {
         Object arg = null;
         if (index == -1) {
             String kwarg = intString;
-            arg = getKeyword(node, kwarg, getItemNode);
+            arg = getKeyword(node, kwarg);
         } else if (index > SysModuleBuiltins.MAXSIZE) {
             throw PRaiseNode.raiseUncached(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
         } else {
@@ -299,10 +299,10 @@ public final class TemplateFormatter {
             }
             arg = this.args[index];
         }
-        return resolveLookups(node, arg, name, i, end, getItemNode);
+        return resolveLookups(node, arg, name, i, end);
     }
 
-    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end, PyObjectGetItem getItemNode) {
+    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end) {
         // Resolve attribute and item lookups.
         int i = startArg;
         int start = startArg;
@@ -324,7 +324,7 @@ public final class TemplateFormatter {
                 }
                 TruffleString attr = toTruffleStringUncached(name.substring(start, i));
                 if (result != null) {
-                    result = PyObjectLookupAttr.getUncached().execute(null, result, attr);
+                    result = PyObjectLookupAttr.executeUncached(result, attr);
                 } else {
                     this.parserList.add(new Object[]{true, attr});
                 }
@@ -351,7 +351,7 @@ public final class TemplateFormatter {
                 Object item = index != -1 ? index : toTruffleStringUncached(s);
                 i += 1; // # Skip "]"
                 if (result != null) {
-                    result = getItemNode.execute(null, result, item);
+                    result = PyObjectGetItem.executeUncached(result, item);
                 } else {
                     this.parserList.add(new Object[]{false, item});
                 }
@@ -376,7 +376,7 @@ public final class TemplateFormatter {
         }
     }
 
-    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode) {
         Field filed = parseField(node, start, end);
         String name = filed.name;
         Character conversion = filed.conversion;
@@ -398,12 +398,12 @@ public final class TemplateFormatter {
             return this.empty;
         }
 
-        Object obj = getArgument(node, name, getItemNode);
+        Object obj = getArgument(node, name);
         if (conversion != null) {
             obj = convert(node, obj, conversion);
         }
         if (recursive) {
-            spec = buildString(node, specStart, end, level, formatNode, getItemNode);
+            spec = buildString(node, specStart, end, level, formatNode);
         }
         Object rendered = formatNode.execute(null, obj, spec);
         return rendered;
@@ -449,18 +449,18 @@ public final class TemplateFormatter {
         }
         //
         this.parserList = new ArrayList<>();
-        this.resolveLookups(node, null, name, i, end, null);
+        this.resolveLookups(node, null, name, i, end);
         return new FieldNameSplitResult(first, parserList);
     }
 
     private static Object convert(Node node, Object obj, char conversion) {
         switch (conversion) {
             case 'r':
-                return PyObjectReprAsObjectNode.getUncached().execute(null, obj);
+                return PyObjectReprAsObjectNode.executeUncached(obj);
             case 's':
-                return PyObjectStrAsTruffleStringNode.getUncached().execute(null, obj);
+                return PyObjectStrAsTruffleStringNode.executeUncached(obj);
             case 'a':
-                return PyObjectAsciiNode.getUncached().execute(null, obj);
+                return PyObjectAsciiNode.executeUncached(obj);
             default:
                 throw PRaiseNode.raiseUncached(node, ValueError, INVALID_CONVERSION);
         }
@@ -470,14 +470,14 @@ public final class TemplateFormatter {
     public List<Object[]> formatterParser(Node node) {
         this.parserList = new ArrayList<>();
         this.lastEnd = 0;
-        buildString(node, 0, this.template.length(), 2, null, null);
+        buildString(node, 0, this.template.length(), 2, null);
         if (this.lastEnd < this.template.length()) {
             parserList.add(new Object[]{toTruffleStringUncached(this.template.substring(this.lastEnd)), PNone.NONE, PNone.NONE, PNone.NONE});
         }
         return parserList;
     }
 
-    private Object getKeyword(Node node, String key, PyObjectGetItem getItemNode) {
+    private Object getKeyword(Node node, String key) {
         TruffleString tKey = toTruffleStringUncached(key);
         if (keywords instanceof PKeyword[]) {
             for (PKeyword kwArg : (PKeyword[]) keywords) {
@@ -486,7 +486,7 @@ public final class TemplateFormatter {
                 }
             }
         } else {
-            Object result = getItemNode.execute(null, keywords, tKey);
+            Object result = PyObjectGetItem.executeUncached(keywords, tKey);
             if (result != null) {
                 return result;
             }

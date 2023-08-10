@@ -42,8 +42,9 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -52,17 +53,18 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyBytes_CheckExact}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyBytesCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
+    static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached IsBuiltinObjectProfile isBuiltin) {
         return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PBytes);
     }
 
-    public static PyBytesCheckExactNode getUncached() {
-        return PyBytesCheckExactNodeGen.getUncached();
+    public static boolean executeUncached(Object object) {
+        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PBytes);
     }
 }

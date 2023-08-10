@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,19 +43,24 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(false) // Used in BCI
 public abstract class GetTPFlagsNode extends PNodeWithContext {
     public abstract long execute(Object object);
 
     @Specialization
     long get(Object object,
+                    @Bind("this") Node inliningTarget,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                     @Cached GetClassNode getClassNode) {
-        return getTypeFlagsNode.execute(getClassNode.execute(object));
+        return getTypeFlagsNode.execute(getClassNode.execute(inliningTarget, object));
     }
 
     public static GetTPFlagsNode create() {

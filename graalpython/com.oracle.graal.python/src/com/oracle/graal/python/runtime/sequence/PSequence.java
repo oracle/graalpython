@@ -33,6 +33,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -40,6 +41,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
@@ -155,11 +157,12 @@ public abstract class PSequence extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+    public long getArraySize(@Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getSequenceStorageNode.execute(this).length();
+            return getSequenceStorageNode.execute(inliningTarget, this).length();
         } finally {
             gil.release(mustRelease);
         }
@@ -167,13 +170,14 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public Object readArrayElement(long index,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+                return getItem.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, this), PInt.intValueExact(index));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

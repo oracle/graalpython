@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,12 +63,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
@@ -129,16 +131,18 @@ public final class RepeatBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
         Object reducePos(PRepeat self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClass) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getElement(), self.getCnt()});
             return factory().createTuple(new Object[]{type, tuple});
         }
 
         @Specialization(guards = "self.getCnt() < 0")
         Object reduceNeg(PRepeat self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClass) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getElement()});
             return factory().createTuple(new Object[]{type, tuple});
         }
@@ -149,25 +153,29 @@ public final class RepeatBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
         static TruffleString reprPos(VirtualFrame frame, PRepeat self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClass") @Cached GetClassNode getClass,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,
                         @Shared("castToTruffleString") @Cached CastToTruffleStringNode castNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object type = getClass.execute(self);
-            return simpleTruffleStringFormatNode.format("%s(%s, %d)", castNode.execute(getAttrNode.execute(frame, type, T___NAME__)), castNode.execute(reprNode.execute(frame, self.getElement())),
+            Object type = getClass.execute(inliningTarget, self);
+            return simpleTruffleStringFormatNode.format("%s(%s, %d)", castNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___NAME__)),
+                            castNode.execute(inliningTarget, reprNode.execute(frame, inliningTarget, self.getElement())),
                             self.getCnt());
         }
 
         @Specialization(guards = "self.getCnt() < 0")
         static TruffleString reprNeg(VirtualFrame frame, PRepeat self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClass") @Cached GetClassNode getClass,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,
                         @Shared("castToTruffleString") @Cached CastToTruffleStringNode castNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object type = getClass.execute(self);
-            return simpleTruffleStringFormatNode.format("%s(%s)", castNode.execute(getAttrNode.execute(frame, type, T___NAME__)), castNode.execute(reprNode.execute(frame, self.getElement())));
+            Object type = getClass.execute(inliningTarget, self);
+            return simpleTruffleStringFormatNode.format("%s(%s)", castNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___NAME__)),
+                            castNode.execute(inliningTarget, reprNode.execute(frame, inliningTarget, self.getElement())));
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,20 +41,20 @@
 
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.test.PythonTests;
-
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class PyObjectLookupAttrTests {
 
@@ -78,7 +78,7 @@ public class PyObjectLookupAttrTests {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                return lookupNode.execute(frame, PythonBuiltinClassType.Boolean, tsLiteral("real"));
+                return lookupNode.executeCached(frame, PythonBuiltinClassType.Boolean, tsLiteral("real"));
             }
         }.getCallTarget().call();
         Assert.assertNotSame(PNone.NO_VALUE, v);

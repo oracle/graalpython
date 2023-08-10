@@ -105,16 +105,18 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString repr(GetSetDescriptor descr,
+                        @Bind("this") Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(descr.getType()));
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
         }
 
         @Specialization
         TruffleString repr(HiddenKeyDescriptor descr,
+                        @Bind("this") Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getKey().getName(), getName.execute(descr.getType()));
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getKey().getName(), getName.execute(inliningTarget, descr.getType()));
         }
     }
 
@@ -136,8 +138,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNone(obj)")
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrGetNode getNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrGetNode getNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
             return getNode.execute(frame, descr, obj);
         }
@@ -145,8 +147,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNone(obj)")
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrGetNode getNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrGetNode getNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
             return getNode.execute(frame, descr, obj);
         }
@@ -158,8 +160,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrSetNode setNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrSetNode setNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
             return setNode.execute(frame, descr, obj, value);
         }
@@ -167,8 +169,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrSetNode setNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrSetNode setNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
             return setNode.execute(frame, descr, obj, value);
         }
@@ -181,8 +183,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrDeleteNode deleteNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrDeleteNode deleteNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
             return deleteNode.execute(frame, descr, obj);
         }
@@ -190,8 +192,8 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached DescrDeleteNode deleteNode) {
+                        @Shared @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Shared @Cached DescrDeleteNode deleteNode) {
             descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getKey(), obj);
             return deleteNode.execute(frame, descr, obj);
         }

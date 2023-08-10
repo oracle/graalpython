@@ -81,11 +81,13 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -105,17 +107,18 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
-                errors = castToStringNode.execute(err);
+                errors = castToStringNode.execute(inliningTarget, err);
             }
 
             MultibyteIncrementalDecoderObject self = factory().createMultibyteIncrementalDecoderObject(type);
 
-            Object codec = getAttr.execute(frame, type, CODEC);
+            Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
@@ -256,10 +259,11 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteIncrementalDecoder_setstate_impl
         Object setstate(VirtualFrame frame, MultibyteIncrementalDecoderObject self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
-            Object[] array = getArray.execute(state.getSequenceStorage());
+            Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             Object buffer = array[0];
             Object statelong = array[1];
 

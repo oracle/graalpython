@@ -69,7 +69,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -195,22 +194,21 @@ public abstract class CodeNodes {
         GetCodeCallTargetNode() {
         }
 
-        public abstract RootCallTarget execute(Node node, PCode code);
+        public abstract RootCallTarget execute(Node inliningTarget, PCode code);
 
         public static RootCallTarget executeUncached(PCode code) {
             return GetCodeCallTargetNodeGen.getUncached().execute(null, code);
         }
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
-        static RootCallTarget doCachedCode(Node node, @SuppressWarnings("unused") PCode code,
+        static RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,
                         @SuppressWarnings("unused") @Cached(value = "code", weak = true) PCode cachedCode,
                         @Cached(value = "code.initializeCallTarget()", weak = true) RootCallTarget cachedRootCallTarget) {
             return cachedRootCallTarget;
         }
 
         @Specialization(replaces = "doCachedCode")
-        static RootCallTarget doGeneric(Node node, PCode code,
-                        @Bind("this") Node inliningTarget,
+        static RootCallTarget doGeneric(Node inliningTarget, PCode code,
                         @Cached InlinedConditionProfile hasCtProfile) {
             RootCallTarget ct = code.callTarget;
             if (hasCtProfile.profile(inliningTarget, ct == null)) {
@@ -224,7 +222,7 @@ public abstract class CodeNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class GetCodeSignatureNode extends PNodeWithContext {
-        public abstract Signature execute(Node node, PCode code);
+        public abstract Signature execute(Node inliningTarget, PCode code);
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext(inliningTarget)"}, limit = "2")
         static Signature doCached(Node inliningTarget, @SuppressWarnings("unused") PCode code,
@@ -250,7 +248,7 @@ public abstract class CodeNodes {
         }
 
         @Specialization(replaces = "doCached")
-        static Signature getGeneric(Node inliningTarget, PCode code,
+        static Signature doCode(Node inliningTarget, PCode code,
                         @Cached InlinedConditionProfile signatureProfile,
                         @Cached InlinedConditionProfile ctProfile) {
             return code.getSignature(inliningTarget, signatureProfile);
@@ -262,15 +260,14 @@ public abstract class CodeNodes {
     @GenerateCached(false)
     public abstract static class GetCodeRootNode extends Node {
 
-        public abstract RootNode execute(Node node, PCode code);
+        public abstract RootNode execute(Node inliningTarget, PCode code);
 
         public static RootNode executeUncached(PCode code) {
             return GetCodeRootNodeGen.getUncached().execute(null, code);
         }
 
         @Specialization
-        static RootNode doIt(Node node, PCode code,
-                        @Bind("this") Node inliningTarget,
+        static RootNode doIt(Node inliningTarget, PCode code,
                         @Cached GetCodeCallTargetNode getCodeCallTargetNode) {
             return getCodeCallTargetNode.execute(inliningTarget, code).getRootNode();
         }

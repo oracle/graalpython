@@ -53,6 +53,8 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -138,17 +140,17 @@ public class EconomicMapStorage extends HashingStorage {
         loopProfile.profileCounted(inliningTarget, size);
         LoopNode.reportLoopCount(putNode, size);
         while (loopProfile.inject(inliningTarget, advance(cursor))) {
-            putNode.put(frame, map, getDictKey(cursor), value);
+            putNode.put(frame, inliningTarget, map, getDictKey(cursor), value);
         }
     }
 
     @TruffleBoundary
     public void putUncached(TruffleString key, Object value) {
-        ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
+        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     private void putUncached(Object key, Object value) {
-        ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.getUncached().execute(null, key), value);
+        ObjectHashMap.PutNode.putUncached(this.map, key, PyObjectHashNode.executeUncached(key), value);
     }
 
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {
@@ -188,12 +190,14 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class EconomicMapSetStringKey extends SpecializedSetStringKey {
         @Specialization
-        static void doIt(HashingStorage self, TruffleString key, Object value,
+        static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
                         @Cached PyObjectHashNode hashNode,
                         @Cached PutNode putNode) {
-            putNode.put(null, ((EconomicMapStorage) self).map, key, hashNode.execute(null, key), value);
+            putNode.put(null, inliningTarget, ((EconomicMapStorage) self).map, key, hashNode.execute(null, inliningTarget, key), value);
         }
     }
 }

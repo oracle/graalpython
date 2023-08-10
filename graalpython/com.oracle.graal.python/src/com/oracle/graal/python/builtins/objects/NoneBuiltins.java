@@ -61,11 +61,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNone)
@@ -113,12 +115,13 @@ public final class NoneBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached CallUnaryMethodNode callGet,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObj);
+                key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }

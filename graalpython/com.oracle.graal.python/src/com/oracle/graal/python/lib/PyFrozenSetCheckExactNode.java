@@ -42,27 +42,14 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyFrozenSet_CheckExact}.
  */
 @GenerateUncached
-public abstract class PyFrozenSetCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
-
-    @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached IsBuiltinObjectProfile isBuiltin) {
-        return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PFrozenSet);
-    }
-
-    public static PyFrozenSetCheckExactNode getUncached() {
-        return PyFrozenSetCheckExactNodeGen.getUncached();
+public abstract class PyFrozenSetCheckExactNode {
+    public static boolean executeUncached(Object object) {
+        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PFrozenSet);
     }
 }

@@ -79,15 +79,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProperty)
 public final class PropertyBuiltins extends PythonBuiltins {
@@ -122,9 +124,9 @@ public final class PropertyBuiltins extends PythonBuiltins {
             }
             // if no docstring given and the getter has one, use that one
             if ((doc == PNone.NO_VALUE || doc == PNone.NONE) && fget != PNone.NO_VALUE) {
-                Object get_doc = PyObjectLookupAttr.getUncached().execute(null, fget, T___DOC__);
+                Object get_doc = PyObjectLookupAttr.executeUncached(fget, T___DOC__);
                 if (get_doc != PNone.NO_VALUE) {
-                    if (InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(self), PythonBuiltinClassType.PProperty)) {
+                    if (InlineIsBuiltinClassProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(self), PythonBuiltinClassType.PProperty)) {
                         self.setDoc(get_doc);
                     } else {
                         /*
@@ -215,7 +217,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object copy(PProperty pold, Object getArg, Object setArg, Object delArg) {
 
-            Object type = GetClassNode.getUncached().execute(pold);
+            Object type = GetPythonObjectClassNode.executeUncached(pold);
 
             Object get;
             if (PGuards.isPNone(getArg)) {
@@ -306,7 +308,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             Object fget = self.getFget();
             if (fget == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, UNREADABLE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.getUncached().execute(frame, self.getPropertyName()));
+                    throw raise(AttributeError, UNREADABLE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
                     throw raise(AttributeError, UNREADABLE_ATTRIBUTE);
                 }
@@ -333,7 +335,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             Object func = self.getFset();
             if (func == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.getUncached().execute(frame, self.getPropertyName()));
+                    throw raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
                     throw raise(AttributeError, CANT_SET_ATTRIBUTE);
                 }
@@ -361,7 +363,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             Object func = self.getFdel();
             if (func == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, CANT_DELETE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.getUncached().execute(frame, self.getPropertyName()));
+                    throw raise(AttributeError, CANT_DELETE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
                     throw raise(AttributeError, CANT_DELETE_ATTRIBUTE);
                 }
@@ -385,24 +387,25 @@ public final class PropertyBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneric(VirtualFrame frame, PProperty self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isAbstract(frame, lookup, isTrueNode, self.getFget())) {
+            if (isAbstract(frame, inliningTarget, lookup, isTrueNode, self.getFget())) {
                 return true;
             }
-            if (isAbstract(frame, lookup, isTrueNode, self.getFset())) {
+            if (isAbstract(frame, inliningTarget, lookup, isTrueNode, self.getFset())) {
                 return true;
             }
-            return isAbstract(frame, lookup, isTrueNode, self.getFdel());
+            return isAbstract(frame, inliningTarget, lookup, isTrueNode, self.getFdel());
         }
 
-        private static boolean isAbstract(VirtualFrame frame, PyObjectLookupAttr lookup, PyObjectIsTrueNode isTrueNode, Object func) {
+        private static boolean isAbstract(VirtualFrame frame, Node inliningTarget, PyObjectLookupAttr lookup, PyObjectIsTrueNode isTrueNode, Object func) {
             if (func == null) {
                 return false;
             }
-            Object result = lookup.execute(frame, func, T___ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, inliningTarget, func, T___ISABSTRACTMETHOD__);
             if (result != PNone.NO_VALUE) {
-                return isTrueNode.execute(frame, result);
+                return isTrueNode.execute(frame, inliningTarget, result);
             }
             return false;
         }

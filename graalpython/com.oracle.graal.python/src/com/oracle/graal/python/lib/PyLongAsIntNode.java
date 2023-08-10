@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,21 +45,33 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code _PyLong_AsInt}. Converts an object into a Java int using it's
+ * Equivalent of CPython's {@code _PyLong_AsInt}. Converts an object into a Java int using its
  * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
  * overflow.
  */
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 public abstract class PyLongAsIntNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, Object object);
+    public static int executeUncached(Object o) {
+        return PyLongAsIntNodeGen.getUncached().execute(null, null, o);
+    }
+
+    public abstract int execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
     static int doInt(int object) {
@@ -67,23 +79,23 @@ public abstract class PyLongAsIntNode extends PNodeWithContext {
     }
 
     @Specialization
-    static int doObject(VirtualFrame frame, Object object,
+    static int doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            long result = pyLongAsLongAndOverflow.execute(frame, object);
+            long result = pyLongAsLongAndOverflow.execute(frame, inliningTarget, object);
             int intResult = (int) result;
             if (intResult != result) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java int");
+                throw raiseOverflow(inliningTarget, raiseNode);
             }
             return intResult;
         } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java int");
+            throw raiseOverflow(inliningTarget, raiseNode);
         }
     }
 
-    public static PyLongAsIntNode getUncached() {
-        return PyLongAsIntNodeGen.getUncached();
+    @InliningCutoff
+    private static PException raiseOverflow(Node inliningTarget, Lazy raiseNode) {
+        throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java int");
     }
-
 }

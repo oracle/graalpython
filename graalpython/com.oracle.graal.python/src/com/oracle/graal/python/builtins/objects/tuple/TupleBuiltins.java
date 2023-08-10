@@ -165,7 +165,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             }
 
             // Note: ItemIndexNode normalizes the end to min(end, length(storage))
-            int idx = itemIndexNode.execute(frame, storage, value, start, end);
+            int idx = itemIndexNode.execute(frame, inliningTarget, storage, value, start, end);
             if (idx != -1) {
                 return idx;
             }
@@ -187,7 +187,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             SequenceStorage tupleStore = getTupleStorage.execute(inliningTarget, self);
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object seqItem = getItemNode.execute(tupleStore, i);
-                if (eqNode.execute(frame, seqItem, value)) {
+                if (eqNode.compare(frame, inliningTarget, seqItem, value)) {
                     count++;
                 }
             }
@@ -200,8 +200,9 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(Object self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {
-            return pyTupleSizeNode.execute(self);
+            return pyTupleSizeNode.execute(inliningTarget, self);
         }
     }
 
@@ -213,9 +214,9 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         private static final TruffleString NULL = tsLiteral("(null)");
 
-        public static TruffleString toString(VirtualFrame frame, Object item, PyObjectReprAsTruffleStringNode reprNode) {
+        public static TruffleString toString(VirtualFrame frame, Node inliningTarget, Object item, PyObjectReprAsTruffleStringNode reprNode) {
             if (item != null) {
-                return reprNode.execute(frame, item);
+                return reprNode.execute(frame, inliningTarget, item);
             }
             return NULL;
         }
@@ -240,12 +241,12 @@ public final class TupleBuiltins extends PythonBuiltins {
                 TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
                 appendStringNode.execute(buf, T_LPAREN);
                 for (int i = 0; i < len - 1; i++) {
-                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(tupleStore, i), reprNode));
+                    appendStringNode.execute(buf, toString(frame, inliningTarget, getItemNode.execute(tupleStore, i), reprNode));
                     appendStringNode.execute(buf, T_COMMA_SPACE);
                 }
 
                 if (len > 0) {
-                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(tupleStore, len - 1), reprNode));
+                    appendStringNode.execute(buf, toString(frame, inliningTarget, getItemNode.execute(tupleStore, len - 1), reprNode));
                 }
 
                 if (len == 1) {
@@ -277,8 +278,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(key)")
+        @Specialization(guards = "indexCheck.execute(this, key)")
         static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
@@ -292,8 +294,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(key) || isPSlice(key)")
+        @Specialization(guards = "indexCheck.execute(inliningTarget, key) || isPSlice(key)")
         static Object doNative(VirtualFrame frame, PythonAbstractNativeObject tuple, Object key,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached GetNativeTupleStorage asNativeStorage) {
@@ -312,13 +315,13 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     abstract static class AbstractCmpNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
+        static boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
                         @Shared("cmp") @Cached("createCmp()") SequenceStorageNodes.CmpNode cmp) {
             return cmp.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1", replaces = "doPTuple")
-        boolean doTuple(VirtualFrame frame, Object left, Object right,
+        static boolean doTuple(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
                         @Cached GetTupleStorage getLeft,
@@ -329,7 +332,7 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doOther(Object left, Object right) {
+        static Object doOther(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -408,6 +411,7 @@ public final class TupleBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBuiltinNode {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         PTuple doTuple(Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
@@ -442,8 +446,8 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile isSingleRepeat,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
-            int repeats = asSizeNode.executeExact(frame, right);
-            if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(left))) {
+            int repeats = asSizeNode.executeExact(frame, inliningTarget, right);
+            if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(inliningTarget, left))) {
                 return left;
             } else {
                 return factory().createTuple(repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
@@ -459,7 +463,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(frame, getTupleStorage.execute(inliningTarget, self), other);
+            return containsNode.execute(frame, inliningTarget, getTupleStorage.execute(inliningTarget, self), other);
         }
 
     }
@@ -510,31 +514,33 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         long computeHash(VirtualFrame frame, PTuple self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("hash") @Cached PyObjectHashNode hashNode) {
             // XXX CPython claims that caching the hash is not worth the space overhead:
             // https://bugs.python.org/issue9685
-            long hash = doComputeHash(frame, getItemNode, hashNode, self.getSequenceStorage());
+            long hash = doComputeHash(frame, inliningTarget, getItemNode, hashNode, self.getSequenceStorage());
             self.setHash(hash);
             return hash;
         }
 
         @Specialization
         long computeHash(VirtualFrame frame, PythonAbstractNativeObject self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Cached GetNativeTupleStorage getStorage) {
-            return doComputeHash(frame, getItemNode, hashNode, getStorage.execute(self));
+            return doComputeHash(frame, inliningTarget, getItemNode, hashNode, getStorage.execute(self));
         }
 
-        private static long doComputeHash(VirtualFrame frame, SequenceStorageNodes.GetItemNode getItemNode, PyObjectHashNode hashNode, SequenceStorage tupleStore) {
+        private static long doComputeHash(VirtualFrame frame, Node inliningTarget, SequenceStorageNodes.GetItemNode getItemNode, PyObjectHashNode hashNode, SequenceStorage tupleStore) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             int len = tupleStore.length();
             long multiplier = 0xf4243;
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(tupleStore, i);
-                long tmp = hashNode.execute(frame, item);
+                long tmp = hashNode.execute(frame, inliningTarget, item);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }

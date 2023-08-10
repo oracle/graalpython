@@ -82,6 +82,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -118,24 +120,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     abstract static class ArrayNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
 
-        @Specialization(guards = "args.length == 1")
+        @Specialization(guards = "args.length == 1 || args.length == 2")
         Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
-                        @Shared @Cached CastToTruffleStringCheckedNode cast,
-                        @Shared @Cached ArrayNodeInternal arrayNodeInternal) {
+                        @Cached InlinedConditionProfile hasInitializerProfile,
+                        @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached CastToTruffleStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal) {
             checkKwargs(cls, kwargs, inliningTarget, isNotSubtypeProfile);
-            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), PNone.NO_VALUE);
-        }
-
-        @Specialization(guards = "args.length == 2")
-        Object array3(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
-                        @Shared @Cached CastToTruffleStringCheckedNode cast,
-                        @Shared @Cached ArrayNodeInternal arrayNodeInternal) {
-            checkKwargs(cls, kwargs, inliningTarget, isNotSubtypeProfile);
-            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), args[1]);
+            Object initializer = hasInitializerProfile.profile(inliningTarget, args.length == 2) ? args[1] : PNone.NO_VALUE;
+            return arrayNodeInternal.execute(frame, cls, cast.cast(inliningTarget, args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), initializer);
         }
 
         @Fallback
@@ -162,7 +156,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 splitArgsNode = insert(SplitArgsNode.create());
             }
-            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
+            return execute(frame, arguments[0], splitArgsNode.executeCached(arguments), keywords);
         }
 
         @ImportStatic(PGuards.class)
@@ -182,9 +176,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization
+            @InliningCutoff
             PArray arrayWithRangeInitializer(Object cls, TruffleString typeCode, PIntRange range,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
@@ -218,6 +213,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = "isString(initializer)")
+            @InliningCutoff
             PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
                             @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -233,9 +229,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             @SuppressWarnings("truffle-static-method")
+            @InliningCutoff
             PArray arrayArrayInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PArray initializer,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached ArrayNodes.GetValueNode getValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
@@ -254,20 +251,21 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             @Specialization(guards = "!isBytes(initializer)")
             @SuppressWarnings("truffle-static-method")
+            @InliningCutoff
             PArray arraySequenceInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PSequence initializer,
                             @Bind("this") Node inliningTarget,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
-                SequenceStorage storage = getSequenceStorageNode.execute(initializer);
+                SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, initializer);
                 int length = storage.length();
                 try {
                     PArray array = getFactory().createArray(cls, typeCode, format, length);
                     for (int i = 0; i < length; i++) {
-                        putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(storage, i));
+                        putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(inliningTarget, storage, i));
                     }
                     return array;
                 } catch (OverflowException e) {
@@ -278,15 +276,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)", "!isPSequence(initializer)"})
             @SuppressWarnings("truffle-static-method")
+            @InliningCutoff
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
                             @Bind("this") Node inliningTarget,
                             @Cached PyObjectGetIter getIter,
-                            @Shared @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached GetNextNode nextNode,
                             @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
-                Object iter = getIter.execute(frame, initializer);
+                Object iter = getIter.execute(frame, inliningTarget, initializer);
 
                 BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 PArray array = getFactory().createArray(cls, typeCode, format);
@@ -357,9 +356,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "mformatCode == cachedCode", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object reconstructCached(VirtualFrame frame, Object arrayType, TruffleString typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
+                        @Bind("this") Node inliningTarget,
                         @Cached("mformatCode") int cachedCode,
-                        @Cached("createIdentityProfile()") ValueProfile formatProfile,
+                        // Truffle lacks generic inline value profile, but it still warns that this
+                        // can be inlined:
+                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Exclusive @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
@@ -371,11 +374,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
         }
 
         @Specialization(replaces = "reconstructCached")
+        @SuppressWarnings("truffle-static-method")
         Object reconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callDecode,
                         @Exclusive @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Exclusive @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
@@ -387,10 +392,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
         }
 
-        private Object doReconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
+        private Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
@@ -406,7 +411,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     TruffleString newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
                     array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
                     if (machineFormat.unicodeEncoding != null) {
-                        Object decoded = callDecode.execute(frame, bytes, T_DECODE, machineFormat.unicodeEncoding);
+                        Object decoded = callDecode.execute(frame, inliningTarget, bytes, T_DECODE, machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);
                     } else {
                         fromBytesNode.executeWithoutClinic(frame, array, bytes);

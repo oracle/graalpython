@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
-import com.oracle.truffle.api.strings.TruffleString;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
     private final TruffleString name;

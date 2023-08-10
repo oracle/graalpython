@@ -67,11 +67,13 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "nt", isEager = true)
@@ -99,11 +101,12 @@ public final class NtModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getfullpathname(Object path,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyOSFSPathNode fsPathNode,
                         @Cached CastToJavaStringNode castStr) {
             // TODO should call win api
             try {
-                String fspath = castStr.execute(fsPathNode.execute(null, path));
+                String fspath = castStr.execute(fsPathNode.execute(null, inliningTarget, path));
                 return PythonUtils.toTruffleStringUncached(getContext().getEnv().getPublicTruffleFile(fspath).getAbsoluteFile().toString());
             } catch (CannotCastException e) {
                 return path;

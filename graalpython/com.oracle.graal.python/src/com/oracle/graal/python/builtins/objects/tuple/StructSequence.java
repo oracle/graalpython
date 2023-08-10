@@ -108,6 +108,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -341,11 +342,11 @@ public class StructSequence {
         @Specialization(guards = "isNoValue(dict)")
         PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached FastConstructListNode fastConstructListNode,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Cached InlinedBranchProfile wrongLenProfile,
-                        @Cached InlinedBranchProfile needsReallocProfile) {
+                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
+                        @Exclusive @Cached ToArrayNode toArrayNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
@@ -355,19 +356,20 @@ public class StructSequence {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PTuple withDict(VirtualFrame frame, Object cls, Object sequence, PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached FastConstructListNode fastConstructListNode,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached IsBuiltinObjectProfile notASequenceProfile,
-                        @Cached InlinedBranchProfile wrongLenProfile,
-                        @Cached InlinedBranchProfile needsReallocProfile,
+                        @Exclusive @Cached FastConstructListNode fastConstructListNode,
+                        @Exclusive @Cached ToArrayNode toArrayNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
                         @Cached HashingStorageGetItem getItem) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
             for (int i = src.length; i < dst.length; ++i) {
-                Object o = getItem.execute(hs, fieldNames[i]);
+                Object o = getItem.execute(inliningTarget, hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
             return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
@@ -383,7 +385,7 @@ public class StructSequence {
                         ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile) {
             PSequence seq;
             try {
-                seq = fastConstructListNode.execute(frame, sequence);
+                seq = fastConstructListNode.execute(frame, inliningTarget, sequence);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, notASequenceProfile);
                 throw raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
@@ -431,6 +433,7 @@ public class StructSequence {
 
         @Specialization
         public PTuple reduce(PTuple self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached GetClassNode getClass) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
@@ -444,13 +447,13 @@ public class StructSequence {
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
-                    storage = setHashingStorageItem.execute(storage, fieldNames[i], data[i]);
+                    storage = setHashingStorageItem.execute(inliningTarget, storage, fieldNames[i], data[i]);
                 }
                 seq = factory().createTuple(Arrays.copyOf(data, inSequence));
                 dict = factory().createDict(storage);
             }
             PTuple seqDictPair = factory().createTuple(new Object[]{seq, dict});
-            return factory().createTuple(new Object[]{getClass.execute(self), seqDictPair});
+            return factory().createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
         }
     }
 
@@ -465,24 +468,25 @@ public class StructSequence {
 
         @Specialization
         public TruffleString repr(VirtualFrame frame, PTuple self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, getFullyQualifiedClassNameNode.execute(frame, self));
+            appendStringNode.execute(sb, getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self));
             appendStringNode.execute(sb, T_LPAREN);
             SequenceStorage tupleStore = self.getSequenceStorage();
             if (fieldNames.length > 0) {
                 appendStringNode.execute(sb, fieldNames[0]);
                 appendStringNode.execute(sb, T_EQ);
-                appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(tupleStore, 0)));
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemNode.execute(tupleStore, 0)));
                 for (int i = 1; i < fieldNames.length; i++) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, fieldNames[i]);
                     appendStringNode.execute(sb, T_EQ);
-                    appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(tupleStore, i)));
+                    appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemNode.execute(tupleStore, i)));
                 }
             }
             appendStringNode.execute(sb, T_RPAREN);
@@ -527,6 +531,6 @@ public class StructSequence {
         } else if (cls instanceof PythonBuiltinClass) {
             return ((PythonBuiltinClass) cls).getType().getPrintName();
         }
-        return GetNameNode.getUncached().execute(cls);
+        return GetNameNode.executeUncached(cls);
     }
 }

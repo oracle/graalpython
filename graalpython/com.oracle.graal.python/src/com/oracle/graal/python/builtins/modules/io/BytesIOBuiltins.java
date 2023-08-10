@@ -400,10 +400,12 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isPNone(size)"})
+        @SuppressWarnings("truffle-static-method")
         Object truncate(VirtualFrame frame, PBytesIO self, Object size,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            return truncate(self, asSizeNode.executeExact(frame, size), bufferLib);
+            return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), bufferLib);
         }
     }
 
@@ -449,7 +451,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter) {
             self.checkExports(this);
-            Object iter = getIter.execute(frame, lines);
+            Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
                 Object line;
                 try {
@@ -565,10 +567,11 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, PBytesIO self,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached SequenceStorageNodes.SetLenNode setLenNode) {
             self.unshareIfNecessary(bufferLib, factory());
-            setLenNode.execute(self.getBuf().getSequenceStorage(), self.getStringSize());
+            setLenNode.execute(inliningTarget, self.getBuf().getSequenceStorage(), self.getStringSize());
             PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
             return memoryViewNode.execute(frame, buf);
         }
@@ -591,11 +594,13 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
+        @SuppressWarnings("truffle-static-method")
         Object doit(VirtualFrame frame, PBytesIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
             Object initValue = getValueNode.execute(frame, self);
-            Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(self)};
+            Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(inliningTarget, self)};
             return factory().createTuple(state);
         }
     }
@@ -604,7 +609,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
                         @Cached PyIndexCheckNode indexCheckNode,
@@ -612,7 +619,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             self.checkExports(this);
-            Object[] array = getArray.execute(state.getSequenceStorage());
+            Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
             }
@@ -632,10 +639,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
              * of modifying self.getPos() directly to better protect the object internal state
              * against erroneous (or malicious) inputs.
              */
-            if (!indexCheckNode.execute(array[1])) {
+            if (!indexCheckNode.execute(inliningTarget, array[1])) {
                 throw raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
             }
-            int pos = asSizeNode.executeExact(frame, array[1]);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, array[1]);
             if (pos < 0) {
                 throw raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
             }
@@ -650,8 +657,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                  * Alternatively, we could replace the internal dictionary completely. However, it
                  * seems more practical to just update it.
                  */
-                PDict dict = getDict.execute(self);
-                addAllToOtherNode.execute(frame, ((PDict) array[2]).getDictStorage(), dict);
+                PDict dict = getDict.execute(inliningTarget, self);
+                addAllToOtherNode.execute(frame, inliningTarget, ((PDict) array[2]).getDictStorage(), dict);
             }
             return PNone.NONE;
         }

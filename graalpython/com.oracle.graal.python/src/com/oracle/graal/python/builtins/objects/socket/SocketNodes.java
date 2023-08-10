@@ -168,14 +168,14 @@ public abstract class SocketNodes {
             int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             int flowinfo = 0;
             if (hostAndPort.length > 2) {
-                flowinfo = asIntNode.execute(frame, hostAndPort[2]);
+                flowinfo = asIntNode.execute(frame, inliningTarget, hostAndPort[2]);
                 if (flowinfo < 0 || flowinfo > 0xfffff) {
                     throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
                 }
             }
             int scopeid = 0;
             if (hostAndPort.length > 3) {
-                scopeid = asIntNode.execute(frame, hostAndPort[3]);
+                scopeid = asIntNode.execute(frame, inliningTarget, hostAndPort[3]);
             }
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
             Object posixSupport = context.getPosixSupport();
@@ -183,7 +183,9 @@ public abstract class SocketNodes {
         }
 
         @Specialization(guards = "isUnix(socket)")
+        @SuppressWarnings("truffle-static-method")
         UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -192,9 +194,9 @@ public abstract class SocketNodes {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib) {
             byte[] path;
-            if (unicodeCheckNode.execute(address)) {
+            if (unicodeCheckNode.execute(inliningTarget, address)) {
                 // PyUnicode_EncodeFSDefault
-                TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(address), Encoding.UTF_8);
+                TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, address), Encoding.UTF_8);
                 path = copyToByteArrayNode.execute(utf8, Encoding.UTF_8);
             } else {
                 Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
@@ -241,7 +243,7 @@ public abstract class SocketNodes {
         private int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, Node inliningTarget, IsBuiltinObjectProfile errorProfile, Object portObj) {
             int port;
             try {
-                port = asIntNode.execute(frame, portObj);
+                port = asIntNode.execute(frame, inliningTarget, portObj);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, errorProfile);
                 port = -1;
@@ -455,21 +457,21 @@ public abstract class SocketNodes {
         @Specialization
         TruffleString convert(TruffleString value,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(idna(toJavaStringNode.execute(value)), TS_ENCODING);
         }
 
         @Specialization
         TruffleString convert(PString value,
                         @Cached CastToJavaStringNode cast,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(idna(cast.execute(value)), TS_ENCODING);
         }
 
         @Specialization
         TruffleString convert(PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             // TODO construct TruffleString from bytes directly - but which encoding to use?
             return fromJavaStringNode.execute(newString(toBytesNode.execute(value)), TS_ENCODING);
         }
@@ -522,8 +524,9 @@ public abstract class SocketNodes {
 
         @Specialization(guards = "!isNone(seconds)")
         long parse(VirtualFrame frame, Object seconds,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTimeFromObjectNode timeFromObjectNode) {
-            long timeout = timeFromObjectNode.execute(frame, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
+            long timeout = timeFromObjectNode.execute(frame, inliningTarget, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
             if (timeout < 0) {
                 throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }

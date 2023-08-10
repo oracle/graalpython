@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,7 +75,7 @@ public final class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
         Object doNext(VirtualFrame frame, PZip self,
-                        @Cached GetNextNode next) {
+                        @Shared @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
@@ -84,9 +85,10 @@ public final class PZipBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
+        @SuppressWarnings("truffle-static-method")
         Object doNext(VirtualFrame frame, PZip self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNextNode next,
+                        @Shared @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile classProfile) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
@@ -129,16 +131,18 @@ public final class PZipBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isStrict()")
         Object reduce(PZip self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClass) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(self.getIterators());
             return factory().createTuple(new Object[]{type, tuple});
         }
 
         @Specialization(guards = "self.isStrict()")
         Object reduceStrict(PZip self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClass) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(self.getIterators());
             return factory().createTuple(new Object[]{type, tuple, true});
         }
@@ -149,8 +153,9 @@ public final class PZipBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doit(VirtualFrame frame, PZip self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            self.setStrict(isTrueNode.execute(frame, state));
+            self.setStrict(isTrueNode.execute(frame, inliningTarget, state));
             return PNone.NONE;
         }
     }

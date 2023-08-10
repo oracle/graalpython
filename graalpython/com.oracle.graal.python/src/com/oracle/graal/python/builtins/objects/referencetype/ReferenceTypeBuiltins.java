@@ -140,7 +140,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectHashNode hashNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(inliningTarget, referent != null)) {
-                long hash = hashNode.execute(frame, referent);
+                long hash = hashNode.execute(frame, inliningTarget, referent);
                 self.setHash(hash);
                 return hash;
             } else {
@@ -166,14 +166,15 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getObject() != null")
         static TruffleString repr(VirtualFrame frame, PReferenceType self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object object = self.getObject();
-            Object cls = getClassNode.execute(object);
-            TruffleString className = getNameNode.execute(cls);
-            Object name = lookup.execute(frame, object, T___NAME__);
+            Object cls = getClassNode.execute(inliningTarget, object);
+            TruffleString className = getNameNode.execute(inliningTarget, cls);
+            Object name = lookup.execute(frame, inliningTarget, object, T___NAME__);
             if (name == PNone.NO_VALUE) {
                 return simpleTruffleStringFormatNode.format("<weakref at %d; to '%s' at %d>", objectHashCode(self), className, objectHashCode(object));
             } else {

@@ -42,6 +42,8 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -49,18 +51,24 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class SplitArgsNode extends Node {
 
-    public abstract Object[] execute(Object[] varargsWitSelf);
+    public abstract Object[] execute(Node inliningTarget, Object[] varargsWitSelf);
+
+    public final Object[] executeCached(Object[] varargsWitSelf) {
+        return execute(this, varargsWitSelf);
+    }
 
     @Specialization(guards = "varargsWithSelf.length == 1")
-    Object[] doEmpty(@SuppressWarnings("unused") Object[] varargsWithSelf) {
+    static Object[] doEmpty(@SuppressWarnings("unused") Object[] varargsWithSelf) {
         return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
-    @Specialization(guards = {"varargsWithSelf.length == cachedLen", "varargsWithSelf.length < 32"})
+    @Specialization(guards = {"varargsWithSelf.length == cachedLen", "varargsWithSelf.length < 32"}, limit = "3")
     @ExplodeLoop
-    Object[] doCached(Object[] varargsWithSelf,
+    static Object[] doCached(Object[] varargsWithSelf,
                     @Cached("varargsWithSelf.length") int cachedLen) {
         Object[] splitArgs = new Object[cachedLen - 1];
         for (int i = 0; i < cachedLen - 1; i++) {
@@ -70,7 +78,7 @@ public abstract class SplitArgsNode extends Node {
     }
 
     @Specialization(replaces = "doCached")
-    Object[] doGeneric(@SuppressWarnings("unused") Object[] varargsWithSelf) {
+    static Object[] doGeneric(@SuppressWarnings("unused") Object[] varargsWithSelf) {
         Object[] splitArgs = new Object[varargsWithSelf.length - 1];
         PythonUtils.arraycopy(varargsWithSelf, 1, splitArgs, 0, varargsWithSelf.length - 1);
         return splitArgs;

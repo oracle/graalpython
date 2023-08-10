@@ -58,10 +58,13 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -137,8 +140,9 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         @Specialization(replaces = "doSlotCachedMultiCtx")
         Object doSlotUncachedMultiCtx(PythonClass klass,
+                        @Bind("this") Node inliningTarget,
                         @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
-            return slotValueProfile.profile(slot.getValue(klass));
+            return slotValueProfile.profile(inliningTarget, slot.getValue(klass));
         }
 
         // For PythonBuiltinClass it depends on whether we can cache the result:
@@ -158,39 +162,44 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         @Specialization(replaces = {"doBuiltinCachedSingleCtx", "doBuiltinCachedMultiCtx"})
         Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass,
+                        @Bind("this") Node inliningTarget,
                         @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
-            return slotValueProfile.profile(slot.getValue(klass));
+            return slotValueProfile.profile(inliningTarget, slot.getValue(klass));
         }
 
         // PythonBuiltinClassType: if the value of the slot is null, we must read the slot from the
         // resolved builtin class
-        @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"})
+        @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"}, limit = "1")
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
                         @Bind("slot.getValue(getContext().lookupType(cachedKlassType))") Object value) {
-            return slotValueProfile.profile(value);
+            return slotValueProfile.profile(inliningTarget, value);
         }
 
         // Fallback when the cache with PythonBuiltinClassType overflows:
 
         @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
         Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
+                        @Bind("this") Node inliningTarget,
                         @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
             Object result = slot.getValue(klass);
             if (result == null) {
                 result = slot.getValue(PythonContext.get(this).lookupType(klass));
             }
-            return slotValueProfile.profile(result);
+            return slotValueProfile.profile(inliningTarget, result);
         }
 
         // Native classes:
 
         @Specialization
+        @InliningCutoff
         static Object doNativeClass(PythonAbstractNativeObject klass,
+                        @Bind("this") Node inliningTarget,
                         @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile,
                         @Cached("create(slot.getName())") LookupAttributeInMRONode lookup) {
-            return slotValueProfile.profile(lookup.execute(klass));
+            return slotValueProfile.profile(inliningTarget, lookup.execute(klass));
         }
     }
 
@@ -244,13 +253,15 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     protected abstract static class SlotValueProfile extends Node {
-        final Object profile(Object value) {
-            return execute(value);
+        final Object profile(Node inliningTarget, Object value) {
+            return execute(inliningTarget, value);
         }
 
-        abstract Object execute(Object value);
+        abstract Object execute(Node inliningTarget, Object value);
 
         @Specialization
         static UnaryBuiltinDescriptor unaryDescr(UnaryBuiltinDescriptor value) {

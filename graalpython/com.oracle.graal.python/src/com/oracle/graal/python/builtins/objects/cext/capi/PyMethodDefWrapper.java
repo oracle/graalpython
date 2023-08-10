@@ -138,12 +138,12 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
 
         Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
 
-        Object name = getAttrNode.execute(obj, SpecialAttributeNames.T___NAME__);
+        Object name = getAttrNode.execute(null, obj, SpecialAttributeNames.T___NAME__);
         if (PGuards.isPNone(name)) {
             name = nullValue;
         } else {
             try {
-                name = new CStringWrapper(castToStringNode.execute(name));
+                name = new CStringWrapper(castToStringNode.execute(null, name));
             } catch (CannotCastException e) {
                 // fall through
             }
@@ -153,12 +153,12 @@ public final class PyMethodDefWrapper extends PythonReplacingNativeWrapper {
         writePointerNode.write(mem, PyMethodDef__ml_meth, getMeth(obj));
         writeIntNode.write(mem, PyMethodDef__ml_flags, getFlags(obj));
 
-        Object doc = getAttrNode.execute(obj, T___DOC__);
+        Object doc = getAttrNode.execute(null, obj, T___DOC__);
         if (PGuards.isPNone(doc)) {
             doc = nullValue;
         } else {
             try {
-                doc = new CStringWrapper(castToStringNode.execute(doc));
+                doc = new CStringWrapper(castToStringNode.execute(null, doc));
             } catch (CannotCastException e) {
                 doc = nullValue;
             }

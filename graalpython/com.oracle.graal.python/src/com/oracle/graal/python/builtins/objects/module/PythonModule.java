@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -94,7 +94,7 @@ public final class PythonModule extends PythonObject {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
         PDict dict = factory.createDictFixedStorage(pythonModule);
-        SetDictNode.getUncached().execute(pythonModule, dict);
+        SetDictNode.executeUncached(pythonModule, dict);
         return pythonModule;
     }
 

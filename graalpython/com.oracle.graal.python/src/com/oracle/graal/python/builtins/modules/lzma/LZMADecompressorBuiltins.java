@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -110,11 +111,12 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isRaw(format)", "validFormat(format)", "!isPNone(memlimitObj)"})
         PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, Object memlimitObj, @SuppressWarnings("unused") PNone filters,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
             int memlimit;
             try {
-                memlimit = cast.execute(memlimitObj);
+                memlimit = cast.execute(inliningTarget, memlimitObj);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
@@ -193,21 +195,23 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEOF()"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
-            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
+            byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
             return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
 
         }
 
         @Specialization(guards = {"!self.isEOF()"})
+        @SuppressWarnings("truffle-static-method")
         PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));

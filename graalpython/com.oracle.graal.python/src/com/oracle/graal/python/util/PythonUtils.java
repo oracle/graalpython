@@ -745,13 +745,13 @@ public final class PythonUtils {
         }
     }
 
-    public static TruffleString[] objectArrayToTruffleStringArray(Object[] array, CastToTruffleStringNode cast) {
+    public static TruffleString[] objectArrayToTruffleStringArray(Node inliningTarget, Object[] array, CastToTruffleStringNode cast) {
         if (array.length == 0) {
             return EMPTY_TRUFFLESTRING_ARRAY;
         }
         TruffleString[] result = new TruffleString[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = cast.execute(array[i]);
+            result[i] = cast.execute(inliningTarget, array[i]);
         }
         return result;
     }

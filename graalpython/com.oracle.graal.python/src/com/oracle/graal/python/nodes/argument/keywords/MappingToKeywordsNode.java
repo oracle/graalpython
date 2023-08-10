@@ -56,66 +56,74 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class MappingToKeywordsNode extends PNodeWithContext {
 
-    public abstract PKeyword[] execute(VirtualFrame frame, Object starargs) throws SameDictKeyException, NonMappingException;
+    public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, Object starargs) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(starargs, getClassNode, lookupIter)", limit = "1")
-    static PKeyword[] doDict(PDict starargs,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                    @Shared("convert") @Cached HashingStorageToKeywords convert) {
-        return convert.execute(starargs.getDictStorage());
+    @Specialization(guards = "hasBuiltinIter(inliningTarget, starargs, getClassNode, lookupIter)", limit = "1")
+    static PKeyword[] doDict(VirtualFrame frame, Node inliningTarget, PDict starargs,
+                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
+                    @Exclusive @Cached HashingStorageToKeywords convert) {
+        return convert.execute(frame, inliningTarget, starargs.getDictStorage());
     }
 
     @Fallback
-    static PKeyword[] doMapping(VirtualFrame frame, Object starargs,
-                    @Cached ConcatDictToStorageNode concatDictToStorageNode,
-                    @Shared("convert") @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
+    static PKeyword[] doMapping(VirtualFrame frame, Node inliningTarget, Object starargs,
+                    @Cached(inline = false) ConcatDictToStorageNode concatDictToStorageNode,
+                    @Exclusive @Cached HashingStorageToKeywords convert) throws SameDictKeyException, NonMappingException {
         HashingStorage storage = concatDictToStorageNode.execute(frame, EmptyStorage.INSTANCE, starargs);
-        return convert.execute(storage);
+        return convert.execute(frame, inliningTarget, storage);
     }
 
     /* CPython tests that tp_iter is dict_iter */
-    protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
+    protected static boolean hasBuiltinIter(Node inliningTarget, PDict dict, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(inliningTarget, dict)) == BuiltinMethodDescriptors.DICT_ITER;
     }
 
     @GenerateUncached
     @ImportStatic(PythonOptions.class)
+    @GenerateInline(false) // footprint reduction 44 to 26
     abstract static class AddKeywordNode extends HashingStorageNodes.HashingStorageForEachCallback<CopyKeywordsState> {
         @Override
-        public abstract CopyKeywordsState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
+        public abstract CopyKeywordsState execute(Frame frame, Node Node, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
 
         @Specialization
-        public CopyKeywordsState add(@SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
+        public CopyKeywordsState add(@SuppressWarnings("unused") Node Node, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached HashingStorageNodes.HashingStorageIteratorKey itKey,
                         @Cached HashingStorageNodes.HashingStorageIteratorKeyHash itKeyHash,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem) {
-            Object key = itKey.execute(storage, it);
-            long hash = itKeyHash.execute(storage, it);
-            Object value = getItem.execute(null, storage, key, hash);
+            Object key = itKey.execute(inliningTarget, storage, it);
+            long hash = itKeyHash.execute(inliningTarget, storage, it);
+            Object value = getItem.execute(null, inliningTarget, storage, key, hash);
             try {
-                state.addKeyword(castToTruffleStringNode.execute(key), value);
+                state.addKeyword(castToTruffleStringNode.execute(inliningTarget, key), value);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
             }
@@ -139,8 +147,10 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class HashingStorageToKeywords extends PNodeWithContext {
-        public abstract PKeyword[] execute(HashingStorage storage);
+        public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, HashingStorage storage);
 
         @Specialization
         static PKeyword[] doKeywordsStorage(KeywordsStorage storage) {
@@ -152,28 +162,17 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
             return PKeyword.EMPTY_KEYWORDS;
         }
 
-        @Specialization(guards = {"len(lenNode, storage) == cachedLen", "cachedLen < 32", "!isKeywordsStorage(storage)",
-                        "!isEmptyStorage(storage)"}, limit = "getVariableArgumentInlineCacheLimit()")
-        static PKeyword[] doCached(HashingStorage storage,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Cached AddKeywordNode addKeywordNode,
+        @Specialization(guards = {"!isKeywordsStorage(storage)", "!isEmptyStorage(storage)"})
+        static PKeyword[] doCached(VirtualFrame frame, Node inliningTarget, HashingStorage storage,
+                        @SuppressWarnings("unused") @Cached(parameters = "Iter", inline = false) LookupCallableSlotInMRONode lookupIter,
+                        @Cached(inline = false) AddKeywordNode addKeywordNode,
                         @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                        @Cached("len(lenNode, storage)") int cachedLen) {
-            PKeyword[] keywords = PKeyword.create(cachedLen);
-            forEachNode.execute(null, storage, addKeywordNode, new CopyKeywordsState(keywords));
+                        @Cached InlinedIntValueProfile lenProfile) {
+            int profiledLen = lenProfile.profile(inliningTarget, len(inliningTarget, lenNode, storage));
+            PKeyword[] keywords = PKeyword.create(profiledLen);
+            forEachNode.execute(frame, inliningTarget, storage, addKeywordNode, new CopyKeywordsState(keywords));
             return keywords;
-        }
-
-        @Specialization(guards = {"!isKeywordsStorage(storage)", "!isEmptyStorage(storage)"}, replaces = "doCached")
-        static PKeyword[] doGeneric(HashingStorage storage,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Cached AddKeywordNode addKeywordNode,
-                        @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
-                        @Cached HashingStorageLen lenNode) {
-            return doCached(storage, getClassNode, lookupIter, addKeywordNode, forEachNode, lenNode, len(lenNode, storage));
         }
 
         static boolean isKeywordsStorage(HashingStorage storage) {
@@ -184,8 +183,8 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
             return storage instanceof EmptyStorage;
         }
 
-        static int len(HashingStorageLen lenNode, HashingStorage storage) {
-            return lenNode.execute(storage);
+        static int len(Node inliningTarget, HashingStorageLen lenNode, HashingStorage storage) {
+            return lenNode.execute(inliningTarget, storage);
         }
     }
 }

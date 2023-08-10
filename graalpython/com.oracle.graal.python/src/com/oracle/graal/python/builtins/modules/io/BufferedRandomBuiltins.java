@@ -50,8 +50,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,7 +83,7 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetPythonObjectClassNode getSelfClass,
-                        @Cached InlinedGetClassNode getRawClass) {
+                        @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
             checkSeekableNode.checkSeekable(frame, inliningTarget, raw);

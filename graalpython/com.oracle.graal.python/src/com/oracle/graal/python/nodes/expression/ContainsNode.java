@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -59,7 +60,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ContainsNode extends BinaryOpNode {
     @Child private LookupAndCallBinaryNode callNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.Contains);
-    @Child private CoerceToBooleanNode castBool = CoerceToBooleanNode.createIfTrueNode();
 
     @Child private GetNextNode next;
 
@@ -70,63 +70,73 @@ public abstract class ContainsNode extends BinaryOpNode {
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            Object iterator = getIter.execute(frame, iter);
+            Object iterator = getIter.execute(frame, inliningTarget, iter);
             return sequenceContains(frame, iterator, item, eqNode, this, errorProfile);
         }
-        return castBool.executeBoolean(frame, result);
+        return castBool.executeBoolean(frame, inliningTarget, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doInt(VirtualFrame frame, int item, Object iter,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getIter.execute(frame, iter), item, eqNode, this, errorProfile);
+            return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, this, errorProfile);
         }
-        return castBool.executeBoolean(frame, result);
+        return castBool.executeBoolean(frame, inliningTarget, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLong(VirtualFrame frame, long item, Object iter,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getIter.execute(frame, iter), item, eqNode, this, errorProfile);
+            return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, this, errorProfile);
         }
-        return castBool.executeBoolean(frame, result);
+        return castBool.executeBoolean(frame, inliningTarget, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDouble(VirtualFrame frame, double item, Object iter,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getIter.execute(frame, iter), item, eqNode, this, errorProfile);
+            return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, this, errorProfile);
         }
-        return castBool.executeBoolean(frame, result);
+        return castBool.executeBoolean(frame, inliningTarget, result);
     }
 
     @Specialization
     boolean doGeneric(VirtualFrame frame, Object item, Object iter,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContainsObject(frame, getIter.execute(frame, iter), item, eqNode, this, errorProfile);
+            return sequenceContainsObject(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, this, errorProfile);
         }
-        return castBool.executeBoolean(frame, result);
+        return castBool.executeBoolean(frame, inliningTarget, result);
     }
 
     private void handleUnexpectedResult(VirtualFrame frame, Object iterator, Object item, UnexpectedResultException e, PyObjectRichCompareBool.EqNode eqNode,
@@ -137,7 +147,7 @@ public abstract class ContainsNode extends BinaryOpNode {
         // UnexpectedResultException. This will cause the DSL to disable the specialization with the
         // primitive value and return the result we got, without iterating again.
         Object result = e.getResult();
-        if (eqNode.execute(frame, result, item)) {
+        if (eqNode.compare(frame, inliningTarget, result, item)) {
             result = true;
         } else {
             result = sequenceContainsObject(frame, iterator, item, eqNode, inliningTarget, errorProfile);
@@ -213,7 +223,7 @@ public abstract class ContainsNode extends BinaryOpNode {
                     Node inliningTarget, IsBuiltinObjectProfile errorProfile) {
         while (true) {
             try {
-                if (eqNode.execute(frame, getNext().execute(frame, iterator), item)) {
+                if (eqNode.compare(frame, inliningTarget, getNext().execute(frame, iterator), item)) {
                     return true;
                 }
             } catch (PException e) {

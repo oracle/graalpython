@@ -55,12 +55,14 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
@@ -91,11 +93,12 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
-                    @Cached ConditionProfile isGeneratorFunctionProfile) {
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetGeneratorFunction(arguments, ct, isGeneratorFunctionProfile, callee);
+        optionallySetGeneratorFunction(inliningTarget, arguments, ct, isGeneratorFunctionProfile, callee);
         if (profileIsNullFrame(frame == null)) {
             PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));
             Object state = IndirectCalleeContext.enter(threadState, arguments, ct);

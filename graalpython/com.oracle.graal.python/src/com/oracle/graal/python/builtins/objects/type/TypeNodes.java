@@ -161,11 +161,14 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStor
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InlinedIsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -191,6 +194,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.Standalone
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -208,10 +212,12 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -242,9 +248,14 @@ import com.oracle.truffle.api.strings.TruffleString.IsValidNode;
 public abstract class TypeNodes {
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
     public abstract static class GetTypeFlagsNode extends Node {
 
         public abstract long execute(Object clazz);
+
+        public static long executeUncached(Object clazz) {
+            return GetTypeFlagsNodeGen.getUncached().execute(clazz);
+        }
 
         @Specialization
         long doBuiltinClassType(PythonBuiltinClassType clazz,
@@ -273,6 +284,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
+        @InliningCutoff
         static long doNative(PythonNativeClass clazz,
                         @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
             return getTpFlagsNode.readFromObj(clazz, PyTypeObject__tp_flags);
@@ -294,10 +306,10 @@ public abstract class TypeNodes {
 
             PythonContext context = PythonContext.get(this);
             // flags are inherited
-            MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
+            MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(clazz);
             int n = mroStorage.length();
             for (int i = 0; i < n; i++) {
-                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
+                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClassType) {
                     mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
                 }
@@ -472,30 +484,32 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class SetTypeFlagsNode extends Node {
 
-        public abstract void execute(Object clazz, long flags);
+        public abstract void execute(Node inliningTarget, Object clazz, long flags);
+
+        public static void executeUncached(Object clazz, long flags) {
+            SetTypeFlagsNodeGen.getUncached().execute(null, clazz, flags);
+        }
 
         @Specialization
-        void doPBCT(PythonBuiltinClassType clazz, long flags,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
-            doManaged(PythonContext.get(this).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
+        void doPBCT(Node inliningTarget, PythonBuiltinClassType clazz, long flags,
+                        @Shared("write") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
+            doManaged(PythonContext.get(inliningTarget).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
         }
 
         @Specialization
         static void doManaged(PythonManagedClass clazz, long flags,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
+                        @Shared("write") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeHiddenFlagsNode) {
             writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
         }
 
         @Specialization
         static void doNative(PythonNativeClass clazz, long flags,
-                        @Cached CStructAccess.WriteLongNode write) {
+                        @Cached(inline = false) CStructAccess.WriteLongNode write) {
             write.writeToObject(clazz, PyTypeObject__tp_flags, flags);
-        }
-
-        public static SetTypeFlagsNode getUncached() {
-            return TypeNodesFactory.SetTypeFlagsNodeGen.getUncached();
         }
     }
 
@@ -513,70 +527,90 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class GetMroNode extends Node {
 
-        public abstract PythonAbstractClass[] execute(Object obj);
+        public abstract PythonAbstractClass[] execute(Node inliningTarget, Object obj);
+
+        public final PythonAbstractClass[] executeCached(Object obj) {
+            return execute(this, obj);
+        }
+
+        public static PythonAbstractClass[] executeUncached(Object obj) {
+            return TypeNodesFactory.GetMroNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
-        PythonAbstractClass[] doIt(Object obj,
+        static PythonAbstractClass[] doIt(Node inliningTarget, Object obj,
                         @Cached GetMroStorageNode getMroStorageNode) {
-            return getMroStorageNode.execute(obj).getInternalClassArray();
+            return getMroStorageNode.execute(inliningTarget, obj).getInternalClassArray();
         }
 
         @NeverDefault
         public static GetMroNode create() {
             return TypeNodesFactory.GetMroNodeGen.create();
         }
-
-        public static GetMroNode getUncached() {
-            return TypeNodesFactory.GetMroNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
 
-        public abstract MroSequenceStorage execute(Object obj);
+        public abstract MroSequenceStorage execute(Node inliningTarget, Object obj);
+
+        public final MroSequenceStorage executeCached(Object obj) {
+            return execute(this, obj);
+        }
+
+        public static MroSequenceStorage executeUncached(Object obj) {
+            return GetMroStorageNodeGen.getUncached().execute(null, obj);
+        }
 
         private static MroSequenceStorage doPythonClass(PythonManagedClass obj, Node inliningTarget, InlinedConditionProfile notInitialized, InlinedConditionProfile isPythonClass,
                         PythonLanguage language) {
             if (!notInitialized.profile(inliningTarget, obj.isMROInitialized())) {
-                PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(obj, false);
-                if (isPythonClass.profile(inliningTarget, obj instanceof PythonClass)) {
-                    ((PythonClass) obj).setMRO(mro, language);
-                } else {
-                    assert obj instanceof PythonBuiltinClass;
-                    // the cast is here to help the compiler
-                    ((PythonBuiltinClass) obj).setMRO(mro);
-                }
+                initializeMRO(obj, inliningTarget, isPythonClass, language);
             }
             return obj.getMethodResolutionOrder();
         }
 
-        @Specialization
-        MroSequenceStorage doPythonClass(PythonManagedClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile notInitialized,
-                        @Cached InlinedConditionProfile isPythonClass) {
-            return doPythonClass(obj, inliningTarget, notInitialized, isPythonClass, getLanguage());
+        @InliningCutoff
+        private static void initializeMRO(PythonManagedClass obj, Node inliningTarget, InlinedConditionProfile isPythonClass, PythonLanguage language) {
+            PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(obj, false);
+            if (isPythonClass.profile(inliningTarget, obj instanceof PythonClass)) {
+                ((PythonClass) obj).setMRO(mro, language);
+            } else {
+                assert obj instanceof PythonBuiltinClass;
+                // the cast is here to help the compiler
+                ((PythonBuiltinClass) obj).setMRO(mro);
+            }
         }
 
         @Specialization
-        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(this).lookupType(obj).getMethodResolutionOrder();
+        static MroSequenceStorage doPythonClass(Node inliningTarget, PythonManagedClass obj,
+                        @Exclusive @Cached InlinedConditionProfile notInitialized,
+                        @Exclusive @Cached InlinedConditionProfile isPythonClass) {
+            return doPythonClass(obj, inliningTarget, notInitialized, isPythonClass, PythonLanguage.get(inliningTarget));
         }
 
         @Specialization
-        static MroSequenceStorage doNativeClass(PythonNativeClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode getTpMroNode,
-                        @Cached PRaiseNode raise,
-                        @Cached InlinedConditionProfile lazyTypeInitProfile,
-                        @Cached InlinedExactClassProfile tpMroProfile,
-                        @Cached InlinedExactClassProfile storageProfile) {
+        static MroSequenceStorage doBuiltinClass(Node inliningTarget, PythonBuiltinClassType obj) {
+            return PythonContext.get(inliningTarget).lookupType(obj).getMethodResolutionOrder();
+        }
+
+        @Specialization
+        @InliningCutoff
+        static MroSequenceStorage doNativeClass(Node inliningTarget, PythonNativeClass obj,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpMroNode,
+                        @Exclusive @Cached InlinedConditionProfile lazyTypeInitProfile,
+                        @Exclusive @Cached InlinedExactClassProfile tpMroProfile,
+                        @Exclusive @Cached InlinedExactClassProfile storageProfile,
+                        @Exclusive @Cached InlinedBranchProfile raiseSystemErrorBranch) {
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
             if (lazyTypeInitProfile.profile(inliningTarget, tupleObj == PNone.NO_VALUE)) {
-                tupleObj = initializeType(obj, getTpMroNode, raise);
+                tupleObj = initializeType(inliningTarget, obj, getTpMroNode);
             }
             Object profiled = tpMroProfile.profile(inliningTarget, tupleObj);
             if (profiled instanceof PTuple) {
@@ -585,17 +619,18 @@ public abstract class TypeNodes {
                     return (MroSequenceStorage) sequenceStorage;
                 }
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+            raiseSystemErrorBranch.enter(inliningTarget);
+            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
         }
 
-        private static Object initializeType(PythonNativeClass obj, CStructAccess.ReadObjectNode getTpMroNode, PRaiseNode raise) {
+        private static Object initializeType(Node inliningTarget, PythonNativeClass obj, CStructAccess.ReadObjectNode getTpMroNode) {
             // Special case: lazy type initialization (should happen at most only once per type)
             CompilerDirectives.transferToInterpreter();
 
             // call 'PyType_Ready' on the type
             int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
-                throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
+                PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
             }
 
             Object tupleObj = getTpMroNode.readFromObj(obj, PyTypeObject__tp_mro);
@@ -605,9 +640,7 @@ public abstract class TypeNodes {
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
-        static MroSequenceStorage doSlowPath(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise) {
+        static MroSequenceStorage doSlowPath(Node inliningTarget, Object obj) {
             if (obj instanceof PythonManagedClass) {
                 return doPythonClass((PythonManagedClass) obj, inliningTarget, InlinedConditionProfile.getUncached(), InlinedConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -616,7 +649,7 @@ public abstract class TypeNodes {
                 CStructAccess.ReadObjectNode getTypeMemeberNode = CStructAccess.ReadObjectNode.getUncached();
                 Object tupleObj = getTypeMemeberNode.readFromObj((PythonNativeClass) obj, PyTypeObject__tp_mro);
                 if (tupleObj == PNone.NO_VALUE) {
-                    tupleObj = initializeType((PythonNativeClass) obj, CStructAccess.ReadObjectNode.getUncached(), raise);
+                    tupleObj = initializeType(inliningTarget, (PythonNativeClass) obj, CStructAccess.ReadObjectNode.getUncached());
                 }
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
@@ -624,7 +657,7 @@ public abstract class TypeNodes {
                         return (MroSequenceStorage) sequenceStorage;
                     }
                 }
-                throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -640,23 +673,33 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class GetNameNode extends Node {
 
-        public abstract TruffleString execute(Object obj);
+        public abstract TruffleString execute(Node inliningTarget, Object obj);
+
+        public final TruffleString executeCached(Object obj) {
+            return execute(this, obj);
+        }
+
+        public static TruffleString executeUncached(Object obj) {
+            return GetNameNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
-        TruffleString doManagedClass(PythonManagedClass obj) {
+        static TruffleString doManagedClass(PythonManagedClass obj) {
             return obj.getName();
         }
 
         @Specialization
-        TruffleString doBuiltinClassType(PythonBuiltinClassType obj) {
+        static TruffleString doBuiltinClassType(PythonBuiltinClassType obj) {
             return obj.getName();
         }
 
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
-                        @Cached CStructAccess.ReadCharPtrNode getTpNameNode) {
+                        @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
         }
 
@@ -677,17 +720,19 @@ public abstract class TypeNodes {
         public static GetNameNode create() {
             return GetNameNodeGen.create();
         }
-
-        public static GetNameNode getUncached() {
-            return GetNameNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @TypeSystemReference(PythonTypes.class)
     public abstract static class GetSuperClassNode extends Node {
 
-        public abstract Object execute(Object obj);
+        public abstract Object execute(Node inliningTarget, Object obj);
+
+        public static Object executeUncached(Object obj) {
+            return GetSuperClassNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
         static Object doPythonClass(PythonClass obj) {
@@ -705,10 +750,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static Object doNative(PythonNativeClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
-                        @Cached PRaiseNode raise,
+        static Object doNative(Node inliningTarget, PythonNativeClass obj,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBaseNode,
+                        @Cached PRaiseNode.Lazy raise,
                         @Cached InlinedExactClassProfile resultTypeProfile) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
             if (PGuards.isPNone(result)) {
@@ -717,30 +761,35 @@ public abstract class TypeNodes {
                 return result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
+            throw raise.get(inliningTarget).raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
         }
     }
 
     @TypeSystemReference(PythonTypes.class)
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
-        public abstract Set<PythonAbstractClass> execute(Object obj);
+        public abstract Set<PythonAbstractClass> execute(Node inliningTarget, Object obj);
+
+        public static Set<PythonAbstractClass> executeUncached(Object obj) {
+            return GetSubclassesNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
-        Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
+        static Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
             return obj.getSubClasses();
         }
 
         @Specialization
-        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(this).lookupType(obj).getSubClasses();
+        static Set<PythonAbstractClass> doPythonClass(Node inliningTarget, PythonBuiltinClassType obj) {
+            return PythonContext.get(inliningTarget).lookupType(obj).getSubClasses();
         }
 
         @Specialization
-        Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode getTpSubclassesNode,
+        static Set<PythonAbstractClass> doNativeClass(Node inliningTarget, PythonNativeClass obj,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpSubclassesNode,
                         @Cached InlinedExactClassProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);
 
@@ -873,23 +922,19 @@ public abstract class TypeNodes {
 
             };
         }
-
-        @NeverDefault
-        public static GetSubclassesNode create() {
-            return GetSubclassesNodeGen.create();
-        }
-
-        public static GetSubclassesNode getUncached() {
-            return GetSubclassesNodeGen.getUncached();
-        }
-
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetBaseClassesNode extends PNodeWithContext {
 
         // TODO(fa): this should not return a Java array; maybe a SequenceStorage would fit
-        public abstract PythonAbstractClass[] execute(Object obj);
+        public abstract PythonAbstractClass[] execute(Node inliningTarget, Object obj);
+
+        public static PythonAbstractClass[] executeUncached(Object obj) {
+            return GetBaseClassesNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
         static PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
@@ -902,22 +947,21 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PythonAbstractClass[] doNative(PythonNativeClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
-                        @Cached CStructAccess.ReadObjectNode getTpBasesNode,
+        static PythonAbstractClass[] doNative(Node inliningTarget, PythonNativeClass obj,
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBasesNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.readFromObj(obj, PyTypeObject__tp_bases));
             if (result instanceof PTuple) {
-                Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
+                Object[] values = toArrayNode.execute(inliningTarget, ((PTuple) result).getSequenceStorage());
                 try {
                     return cast(values);
                 } catch (ClassCastException e) {
-                    throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.TYPE_DOES_NOT_PROVIDE_BASES);
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.TYPE_DOES_NOT_PROVIDE_BASES);
         }
 
         // TODO: get rid of this
@@ -932,13 +976,19 @@ public abstract class TypeNodes {
 
     @ImportStatic(SpecialMethodNames.class)
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
-        public abstract Object execute(Object obj);
+        public abstract Object execute(Node inliningTarget, Object obj);
+
+        public final Object executeCached(Object obj) {
+            return execute(this, obj);
+        }
 
         @Specialization
-        Object doPythonClass(PythonManagedClass obj,
-                        @Cached GetBestBaseClassNode getBestBaseClassNode) {
+        static Object doPythonClass(Node inliningTarget, PythonManagedClass obj,
+                        @Shared @Cached GetBestBaseClassNode getBestBaseClassNode) {
             PythonAbstractClass[] baseClasses = obj.getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
@@ -946,86 +996,82 @@ public abstract class TypeNodes {
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
-            return getBestBaseClassNode.execute(baseClasses);
+            return getBestBaseClassNode.execute(inliningTarget, baseClasses);
         }
 
         @Specialization
-        Object doPythonClass(PythonBuiltinClassType obj,
-                        @Cached GetBestBaseClassNode getBestBaseClassNode) {
-            PythonAbstractClass[] baseClasses = PythonContext.get(this).lookupType(obj).getBaseClasses();
+        static Object doPythonClass(Node inliningTarget, PythonBuiltinClassType obj,
+                        @Shared @Cached GetBestBaseClassNode getBestBaseClassNode) {
+            PythonAbstractClass[] baseClasses = PythonContext.get(inliningTarget).lookupType(obj).getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
             }
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
-            return getBestBaseClassNode.execute(baseClasses);
+            return getBestBaseClassNode.execute(inliningTarget, baseClasses);
         }
 
         @Specialization
-        static PythonAbstractClass doNative(PythonNativeClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
-                        @Cached CStructAccess.ReadObjectNode getTpBaseNode,
+        static PythonAbstractClass doNative(Node inliningTarget, PythonNativeClass obj,
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode getTpBaseNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached IsTypeNode isTypeNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.readFromObj(obj, PyTypeObject__tp_base));
             if (PGuards.isPNone(result)) {
                 return null;
-            } else if (PGuards.isClass(result, isTypeNode)) {
+            } else if (PGuards.isClass(inliningTarget, result, isTypeNode)) {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
+            throw raise.get(inliningTarget).raise(SystemError, ErrorMessages.INVALID_BASE_TYPE_OBJ_FOR_CLASS, GetNameNode.doSlowPath(obj), result);
         }
     }
 
     @ImportStatic(SpecialMethodNames.class)
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
-        @NeverDefault
-        static GetBestBaseClassNode create() {
-            return TypeNodesFactory.GetBestBaseClassNodeGen.create();
-        }
-
-        public abstract Object execute(PythonAbstractClass[] bases);
+        public abstract Object execute(Node inliningTarget, PythonAbstractClass[] bases);
 
         @Specialization(guards = "bases.length == 0")
-        PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
+        static PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
             return null;
         }
 
         @Specialization(guards = "bases.length == 1")
-        PythonAbstractClass getOne(PythonAbstractClass[] bases) {
+        static PythonAbstractClass getOne(PythonAbstractClass[] bases) {
             return bases[0];
         }
 
         @Specialization(guards = "bases.length > 1")
-        Object getBestBase(PythonAbstractClass[] bases,
-                        @Cached IsSubtypeNode isSubTypeNode,
+        static Object getBestBase(Node inliningTarget, PythonAbstractClass[] bases,
+                        @Cached(inline = false) IsSubtypeNode isSubTypeNode,
                         @Cached GetSolidBaseNode getSolidBaseNode,
-                        @Cached PRaiseNode raiseNode) {
-            return bestBase(bases, getSolidBaseNode, isSubTypeNode, raiseNode);
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            return bestBase(inliningTarget, bases, getSolidBaseNode, isSubTypeNode, raiseNode);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         // The fallback is necessary because the DSL otherwise generates code with a warning on
         // varargs ambiguity
-        Object fallback(PythonAbstractClass[] bases) {
+        static Object fallback(PythonAbstractClass[] bases) {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
         /**
          * Aims to get as close as possible to typeobject.best_base().
          */
-        private static Object bestBase(PythonAbstractClass[] bases, GetSolidBaseNode getSolidBaseNode, IsSubtypeNode isSubTypeNode, PRaiseNode raiseNode) throws PException {
+        private static Object bestBase(Node inliningTarget, PythonAbstractClass[] bases, GetSolidBaseNode getSolidBaseNode, IsSubtypeNode isSubTypeNode, PRaiseNode.Lazy raiseNode) throws PException {
             Object base = null;
             Object winner = null;
             for (int i = 0; i < bases.length; i++) {
                 PythonAbstractClass basei = bases[i];
-                Object candidate = getSolidBaseNode.execute(basei);
+                Object candidate = getSolidBaseNode.execute(inliningTarget, basei);
                 if (winner == null) {
                     winner = candidate;
                     base = basei;
@@ -1035,7 +1081,7 @@ public abstract class TypeNodes {
                     winner = candidate;
                     base = basei;
                 } else {
-                    throw raiseNode.raise(TypeError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
                 }
             }
             return base;
@@ -1045,7 +1091,6 @@ public abstract class TypeNodes {
     public abstract static class CheckCompatibleForAssigmentNode extends PNodeWithContext {
 
         @Child private GetBaseClassNode getBaseClassNode;
-        @Child private IsSameTypeNode isSameTypeNode;
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private PyObjectSizeNode sizeNode;
@@ -1059,8 +1104,9 @@ public abstract class TypeNodes {
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, Object newBase,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedBranchProfile errorSlotsBranch) {
-            if (!compatibleForAssignment(frame, oldBase, newBase)) {
+                        @Cached InlinedBranchProfile errorSlotsBranch,
+                        @Cached IsSameTypeNode isSameTypeNode) {
+            if (!compatibleForAssignment(frame, inliningTarget, oldBase, newBase, isSameTypeNode)) {
                 errorSlotsBranch.enter(inliningTarget);
                 throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
             }
@@ -1070,23 +1116,23 @@ public abstract class TypeNodes {
         /**
          * Aims to get as close as possible to typeobject.compatible_for_assignment().
          */
-        private boolean compatibleForAssignment(VirtualFrame frame, Object oldB, Object newB) {
+        private boolean compatibleForAssignment(VirtualFrame frame, Node inliningTarget, Object oldB, Object newB, IsSameTypeNode isSameTypeNode) {
             Object newBase = newB;
             Object oldBase = oldB;
 
-            Object newParent = getBaseClassNode().execute(newBase);
+            Object newParent = getBaseClassNode().executeCached(newBase);
             while (newParent != null && compatibleWithBase(frame, newBase, newParent)) {
                 newBase = newParent;
-                newParent = getBaseClassNode().execute(newBase);
+                newParent = getBaseClassNode().executeCached(newBase);
             }
 
-            Object oldParent = getBaseClassNode().execute(oldBase);
+            Object oldParent = getBaseClassNode().executeCached(oldBase);
             while (oldParent != null && compatibleWithBase(frame, oldBase, oldParent)) {
                 oldBase = oldParent;
-                oldParent = getBaseClassNode().execute(oldBase);
+                oldParent = getBaseClassNode().executeCached(oldBase);
             }
 
-            return getIsSameTypeNode().execute(newBase, oldBase) || (getIsSameTypeNode().execute(newParent, oldParent) && sameSlotsAdded(frame, newBase, oldBase));
+            return isSameTypeNode.execute(inliningTarget, newBase, oldBase) || (isSameTypeNode.execute(inliningTarget, newParent, oldParent) && sameSlotsAdded(frame, newBase, oldBase));
         }
 
         /**
@@ -1152,8 +1198,8 @@ public abstract class TypeNodes {
 
             aSlots = getLookupSlots().execute(aType);
             bSlots = getLookupSlots().execute(bType);
-            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, aSlots) : 0;
-            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, bSlots) : 0;
+            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().executeCached(frame, bSlots) : 0;
             return aSize == bSize;
         }
 
@@ -1165,20 +1211,12 @@ public abstract class TypeNodes {
             return getBaseClassNode;
         }
 
-        private IsSameTypeNode getIsSameTypeNode() {
-            if (isSameTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNode.create());
-            }
-            return isSameTypeNode;
-        }
-
         private TruffleString getTypeName(Object clazz) {
             if (getTypeNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTypeNameNode = insert(TypeNodes.GetNameNode.create());
             }
-            return getTypeNameNode.execute(clazz);
+            return getTypeNameNode.executeCached(clazz);
         }
 
         private Object getSlotsFromType(Object type) {
@@ -1238,6 +1276,7 @@ public abstract class TypeNodes {
     /**
      * Equivalent of checking type->tp_dictoffset != 0 in CPython
      */
+    @GenerateInline(false)
     abstract static class InstancesOfTypeHaveDictNode extends PNodeWithContext {
         public abstract boolean execute(Object type);
 
@@ -1298,41 +1337,38 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     abstract static class GetSolidBaseNode extends Node {
 
-        static GetSolidBaseNode create() {
-            return GetSolidBaseNodeGen.create();
-        }
+        abstract Object execute(Node inliningTarget, Object type);
 
-        static GetSolidBaseNode getUncached() {
-            return GetSolidBaseNodeGen.getUncached();
+        static Object executeUncached(Object type) {
+            return GetSolidBaseNodeGen.getUncached().execute(null, type);
         }
-
-        abstract Object execute(Object type);
 
         @Specialization
-        protected Object getSolid(Object type,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
+        protected static Object getSolid(Node inliningTarget, Object type,
+                        @Cached(inline = false) GetBaseClassNode getBaseClassNode,
+                        @Cached(value = "createForceType()", inline = false) ReadAttributeFromObjectNode readAttr,
                         @Cached InlinedBranchProfile typeIsNotBase,
                         @Cached InlinedBranchProfile hasBase,
                         @Cached InlinedBranchProfile hasNoBase) {
-            return solidBase(type, inliningTarget, getBaseClassNode, PythonContext.get(this), readAttr, typeIsNotBase, hasBase,
+            return solidBase(type, inliningTarget, getBaseClassNode, PythonContext.get(inliningTarget), readAttr, typeIsNotBase, hasBase,
                             hasNoBase, 0);
         }
 
         @TruffleBoundary
-        protected Object solidBaseTB(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
+        protected static Object solidBaseTB(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
             return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), InlinedBranchProfile.getUncached(),
                             InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), depth);
         }
 
-        protected Object solidBase(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
+        protected static Object solidBase(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
                         InlinedBranchProfile typeIsNotBase, InlinedBranchProfile hasBase, InlinedBranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
-            Object base = getBaseClassNode.execute(type);
+            Object base = getBaseClassNode.execute(inliningTarget, type);
             if (base != null) {
                 hasBase.enter(inliningTarget);
                 if (depth > 3) {
@@ -1364,9 +1400,9 @@ public abstract class TypeNodes {
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+            Object typeNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(type), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
-            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+            Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
             return typeNewMethod != baseNewMethod;
         }
@@ -1383,7 +1419,7 @@ public abstract class TypeNodes {
 
                 int count = 0;
                 int length = storage.length();
-                Object[] slots = GetInternalObjectArrayNode.getUncached().execute(storage);
+                Object[] slots = GetInternalObjectArrayNode.executeUncached(storage);
                 for (int i = 0; i < length; i++) {
                     // omit __DICT__ and __WEAKREF__, they cause no class layout conflict
                     // see also test_slts.py#test_no_bases_have_class_layout_conflict
@@ -1404,13 +1440,21 @@ public abstract class TypeNodes {
 
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class InlinedIsSameTypeNode extends PNodeWithContext {
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
+    public abstract static class IsSameTypeNode extends PNodeWithContext {
         public abstract boolean execute(Node inliningTarget, Object left, Object right);
 
+        public final boolean executeCached(Object left, Object right) {
+            return execute(this, left, right);
+        }
+
         public static boolean executeUncached(Object left, Object right) {
-            return InlinedIsSameTypeNodeGen.getUncached().execute(null, left, right);
+            return IsSameTypeNodeGen.getUncached().execute(null, left, right);
+        }
+
+        public static IsSameTypeNode create() {
+            return IsSameTypeNodeGen.create();
         }
 
         @Specialization
@@ -1434,6 +1478,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
+        @InliningCutoff
         static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             if (left == right) {
@@ -1452,42 +1497,19 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
-    @Deprecated // TODO: DSL inlining
-    public abstract static class IsSameTypeNode extends PNodeWithContext {
-
-        @Deprecated // TODO: DSL inlining
-        public abstract boolean execute(Object left, Object right);
-
-        @Specialization
-        boolean doIt(Object left, Object right,
-
-                        @Cached InlinedIsSameTypeNode isSameTypeNode) {
-            return isSameTypeNode.execute(this, left, right);
-        }
-
-        @NeverDefault
-        public static IsSameTypeNode create() {
-            return IsSameTypeNodeGen.create();
-        }
-
-        public static IsSameTypeNode getUncached() {
-            return IsSameTypeNodeGen.getUncached();
-        }
-    }
-
-    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class ProfileClassNode extends PNodeWithContext {
 
-        public abstract Object execute(Object object);
+        public abstract Object execute(Node inliningTarget, Object object);
 
-        public final Object profile(Object object) {
-            return execute(object);
+        public final Object profile(Node inliningTarget, Object object) {
+            return execute(inliningTarget, object);
         }
 
-        public final PythonBuiltinClassType profile(PythonBuiltinClassType object) {
-            return (PythonBuiltinClassType) execute(object);
+        public final PythonBuiltinClassType profile(Node inliningTarget, PythonBuiltinClassType object) {
+            return (PythonBuiltinClassType) execute(inliningTarget, object);
         }
 
         @Specialization(guards = {"classType == cachedClassType"}, limit = "1")
@@ -1527,10 +1549,6 @@ public abstract class TypeNodes {
             private static final long serialVersionUID = 1L;
             static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
-
-        public static ProfileClassNode getUncached() {
-            return TypeNodesFactory.ProfileClassNodeGen.getUncached();
-        }
     }
 
     public abstract static class ComputeMroNode extends Node {
@@ -1547,8 +1565,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(PythonAbstractClass cls) {
-            Object type = GetClassNode.getUncached().execute(cls);
-            if (IsTypeNode.getUncached().execute(type) && type instanceof PythonClass) {
+            Object type = GetClassNode.executeUncached(cls);
+            if (IsTypeNode.executeUncached(type) && type instanceof PythonClass) {
                 Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T_MRO);
                 if (mroMeth instanceof PFunction) {
                     Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
@@ -1572,11 +1590,11 @@ public abstract class TypeNodes {
                 }
             }
 
-            PythonAbstractClass[] baseClasses = GetBaseClassesNodeGen.getUncached().execute(cls);
+            PythonAbstractClass[] baseClasses = GetBaseClassesNode.executeUncached(cls);
             if (baseClasses.length == 0) {
                 currentMRO = new PythonAbstractClass[]{cls};
             } else if (baseClasses.length == 1) {
-                PythonAbstractClass[] baseMRO = GetMroNode.getUncached().execute(baseClasses[0]);
+                PythonAbstractClass[] baseMRO = GetMroNode.executeUncached(baseClasses[0]);
 
                 if (baseMRO == null) {
                     currentMRO = new PythonAbstractClass[]{cls};
@@ -1589,7 +1607,7 @@ public abstract class TypeNodes {
                 MROMergeState[] toMerge = new MROMergeState[baseClasses.length + 1];
 
                 for (int i = 0; i < baseClasses.length; i++) {
-                    toMerge[i] = new MROMergeState(GetMroNode.getUncached().execute(baseClasses[i]));
+                    toMerge[i] = new MROMergeState(GetMroNode.executeUncached(baseClasses[i]));
                 }
 
                 toMerge[baseClasses.length] = new MROMergeState(baseClasses);
@@ -1602,17 +1620,16 @@ public abstract class TypeNodes {
 
         private static PythonAbstractClass[] mroCheck(Object cls, Object[] mro) {
             List<PythonAbstractClass> resultMro = new ArrayList<>(mro.length);
-            GetSolidBaseNode getSolidBase = GetSolidBaseNode.getUncached();
-            Object solid = getSolidBase.execute(cls);
+            Object solid = GetSolidBaseNode.executeUncached(cls);
             for (int i = 0; i < mro.length; i++) {
                 Object object = mro[i];
                 if (object == null) {
                     continue;
                 }
-                if (!IsTypeNode.getUncached().execute(object)) {
+                if (!IsTypeNode.executeUncached(object)) {
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_NON_CLASS, "mro()", object);
                 }
-                if (!IsSubtypeNode.getUncached().execute(solid, getSolidBase.execute(object))) {
+                if (!IsSubtypeNode.getUncached().execute(solid, GetSolidBaseNode.executeUncached(object))) {
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT, "mro()", object);
                 }
                 resultMro.add((PythonAbstractClass) object);
@@ -1668,10 +1685,20 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @ImportStatic(PGuards.class)
     public abstract static class IsTypeNode extends Node {
 
-        public abstract boolean execute(Object obj);
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public final boolean executeCached(Object obj) {
+            return execute(this, obj);
+        }
+
+        public static boolean executeUncached(Object obj) {
+            return IsTypeNodeGen.getUncached().execute(null, obj);
+        }
 
         @Specialization
         static boolean doManagedClass(@SuppressWarnings("unused") PythonClass obj) {
@@ -1689,12 +1716,12 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static boolean doNativeClass(PythonAbstractNativeObject obj,
-                        @Bind("this") Node inliningTarget,
+        @InliningCutoff
+        static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached InlineIsBuiltinClassProfile profile,
-                        @Cached GetClassNode getClassNode,
-                        @Cached CExtNodes.PCallCapiFunction nativeTypeCheck) {
-            Object type = getClassNode.execute(obj);
+                        @Cached GetPythonObjectClassNode getClassNode,
+                        @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
+            Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
             }
@@ -1713,13 +1740,10 @@ public abstract class TypeNodes {
         public static IsTypeNode create() {
             return IsTypeNodeGen.create();
         }
-
-        public static IsTypeNode getUncached() {
-            return IsTypeNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class IsAcceptableBaseNode extends Node {
 
         public abstract boolean execute(Object obj);
@@ -1751,9 +1775,10 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeClass(PythonAbstractNativeObject obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
-            if (isType.execute(obj)) {
+            if (isType.execute(inliningTarget, obj)) {
                 return (getFlags.execute(obj) & BASETYPE) != 0;
             }
             return false;
@@ -1772,6 +1797,7 @@ public abstract class TypeNodes {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @ReportPolymorphism
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
         public abstract Shape execute(Object clazz);
@@ -1788,14 +1814,14 @@ public abstract class TypeNodes {
             return clazz.getInstanceShape(getLanguage());
         }
 
-        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"}, limit = "3")
         @SuppressWarnings("unused")
         protected static Shape doBuiltinClassCached(PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
-        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"}, limit = "3")
         @SuppressWarnings("unused")
         protected static Shape doClassCached(PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
@@ -1808,6 +1834,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
+        @InliningCutoff
         protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
@@ -1830,6 +1857,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
+        @InliningCutoff
         protected static Shape doError(@SuppressWarnings("unused") Object clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
@@ -1871,6 +1899,7 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorage.InitNode initNode,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
@@ -1905,7 +1934,7 @@ public abstract class TypeNodes {
                         globals = PArguments.getGlobals(frame);
                     }
                     if (globals != null) {
-                        TruffleString moduleName = getModuleNameFromGlobals(globals, getItemGlobals);
+                        TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
                         if (moduleName != null) {
                             newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                         }
@@ -1913,7 +1942,7 @@ public abstract class TypeNodes {
                 }
 
                 // delete __qualname__ from namespace
-                delItemNamespace.execute(namespace, T___QUALNAME__);
+                delItemNamespace.execute(inliningTarget, namespace, T___QUALNAME__);
 
                 // initialize '__doc__' attribute
                 if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
@@ -1921,25 +1950,25 @@ public abstract class TypeNodes {
                 }
 
                 // set __class__ cell contents
-                Object classcell = getItemNamespace.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
+                Object classcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    delItemNamespace.execute(namespace, SpecialAttributeNames.T___CLASSCELL__);
+                    delItemNamespace.execute(inliningTarget, namespace, SpecialAttributeNames.T___CLASSCELL__);
                 }
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
 
                 HashingStorage storage = namespace.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(storage);
-                while (itNext.execute(storage, it)) {
-                    Object value = itValue.execute(storage, it);
+                HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+                while (itNext.execute(inliningTarget, storage, it)) {
+                    Object value = itValue.execute(inliningTarget, storage, it);
                     Object setName = getSetNameNode.execute(value);
                     if (setName != PNone.NO_VALUE) {
-                        Object key = itKey.execute(storage, it);
+                        Object key = itKey.execute(inliningTarget, storage, it);
                         try {
                             callSetNameNode.execute(frame, setName, value, newType, key);
                         } catch (PException e) {
@@ -1961,12 +1990,12 @@ public abstract class TypeNodes {
             }
         }
 
-        private TruffleString getModuleNameFromGlobals(PythonObject globals, HashingStorageGetItem getItem) {
+        private TruffleString getModuleNameFromGlobals(Node inliningTarget, PythonObject globals, HashingStorageGetItem getItem) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, SpecialAttributeNames.T___NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = getItem.execute(((PDict) globals).getDictStorage(), SpecialAttributeNames.T___NAME__);
+                nameAttr = getItem.execute(inliningTarget, ((PDict) globals).getDictStorage(), SpecialAttributeNames.T___NAME__);
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid globals object");
@@ -1975,7 +2004,7 @@ public abstract class TypeNodes {
                 return null;
             }
             try {
-                return ensureCastToStringNode().execute(nameAttr);
+                return ensureCastToStringNode().executeCached(nameAttr);
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
@@ -2027,6 +2056,7 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached GetObjectArrayNode getObjectArray,
                         @Cached PythonObjectFactory factory,
+                        @Cached PyObjectSetAttr writeAttrNode,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
@@ -2059,7 +2089,7 @@ public abstract class TypeNodes {
                 }
             }
             // check for possible layout conflicts
-            Object base = getBestBaseNode.execute(basesArray);
+            Object base = getBestBaseNode.execute(inliningTarget, basesArray);
 
             assert metaclass != null;
 
@@ -2078,7 +2108,7 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(frame, pythonClass, namespace, setHashingStorageItem,
+            copyDictSlots(frame, inliningTarget, pythonClass, namespace, setHashingStorageItem,
                             getHashingStorageIterator, hashingStorageItNext, hashingStorageItKey, hashingStorageItKeyHash, hashingStorageItValue,
                             slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode,
                             codePointLengthNode, getOrCreateDictNode);
@@ -2092,9 +2122,9 @@ public abstract class TypeNodes {
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
             HashingStorage namespaceStorage = namespace.getDictStorage();
-            Object hashMethod = getHashingStorageItem.execute(frame, namespaceStorage, SpecialMethodNames.T___HASH__);
+            Object hashMethod = getHashingStorageItem.execute(frame, inliningTarget, namespaceStorage, SpecialMethodNames.T___HASH__);
             if (hashMethod == null) {
-                Object eqMethod = getHashingStorageItem.execute(frame, namespaceStorage, SpecialMethodNames.T___EQ__);
+                Object eqMethod = getHashingStorageItem.execute(frame, inliningTarget, namespaceStorage, SpecialMethodNames.T___EQ__);
                 if (eqMethod != null) {
                     pythonClass.setAttribute(SpecialMethodNames.T___HASH__, PNone.NONE);
                 }
@@ -2339,9 +2369,9 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static long installMemberDescriptors(PythonManagedClass pythonClass, SequenceStorage slotsStorage, long slotOffset) {
-            PDict typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+            PDict typeDict = GetOrCreateDictNode.executeUncached(pythonClass);
             for (int i = 0; i < slotsStorage.length(); i++) {
-                Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
+                Object slotName = SequenceStorageNodes.GetItemScalarNode.executeUncached(slotsStorage, i);
                 PyTruffleType_AddMember.addMember(pythonClass, typeDict, (TruffleString) slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
@@ -2361,7 +2391,7 @@ public abstract class TypeNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
             }
-            return getMroNode.execute(pythonClass);
+            return getMroNode.executeCached(pythonClass);
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -2372,7 +2402,7 @@ public abstract class TypeNodes {
             return castToStringNode;
         }
 
-        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageSetItemWithHash setHashingStorageItem,
+        private void copyDictSlots(VirtualFrame frame, Node inliningTarget, PythonClass pythonClass, PDict namespace, HashingStorageSetItemWithHash setHashingStorageItem,
                         HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
                         HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue, Object[] slots,
                         boolean[] qualnameSet, PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
@@ -2381,10 +2411,10 @@ public abstract class TypeNodes {
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
             HashingStorage namespaceStorage = namespace.getDictStorage();
-            HashingStorageIterator it = getHashingStorageIterator.execute(namespaceStorage);
-            while (hashingStorageItNext.execute(namespaceStorage, it)) {
-                Object keyObj = hashingStorageItKey.execute(namespaceStorage, it);
-                Object value = hashingStorageItValue.execute(namespaceStorage, it);
+            HashingStorageIterator it = getHashingStorageIterator.execute(inliningTarget, namespaceStorage);
+            while (hashingStorageItNext.execute(inliningTarget, namespaceStorage, it)) {
+                Object keyObj = hashingStorageItKey.execute(inliningTarget, namespaceStorage, it);
+                Object value = hashingStorageItValue.execute(inliningTarget, namespaceStorage, it);
                 if (keyObj instanceof TruffleString) {
                     TruffleString key = (TruffleString) keyObj;
                     if (equalNode.execute(T___SLOTS__, key, TS_ENCODING)) {
@@ -2431,7 +2461,7 @@ public abstract class TypeNodes {
                     }
                     if (equalNode.execute(T___QUALNAME__, key, TS_ENCODING)) {
                         try {
-                            pythonClass.setQualName(ensureCastToStringNode().execute(value));
+                            pythonClass.setQualName(ensureCastToStringNode().executeCached(value));
                             qualnameSet[0] = true;
                         } catch (CannotCastException e) {
                             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
@@ -2448,10 +2478,10 @@ public abstract class TypeNodes {
                     }
                 }
                 // Creates DynamicObjectStorage which ignores non-string keys
-                typeDict = getOrCreateDictNode.execute(pythonClass);
+                typeDict = getOrCreateDictNode.execute(inliningTarget, pythonClass);
                 // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
-                long keyHash = hashingStorageItKeyHash.execute(namespaceStorage, it);
-                HashingStorage updatedStore = setHashingStorageItem.execute(frame, typeDict.getDictStorage(), keyObj, keyHash, value);
+                long keyHash = hashingStorageItKeyHash.execute(inliningTarget, namespaceStorage, it);
+                HashingStorage updatedStore = setHashingStorageItem.execute(frame, inliningTarget, typeDict.getDictStorage(), keyObj, keyHash, value);
                 typeDict.setDictStorage(updatedStore);
             }
         }
@@ -2479,7 +2509,7 @@ public abstract class TypeNodes {
                     return null;
                 }
 
-                SequenceStorageNodes.AppendNode.getUncached().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
+                SequenceStorageNodes.AppendNode.executeUncached(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
                 if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
@@ -2554,6 +2584,7 @@ public abstract class TypeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
     public abstract static class GetBasicSizeNode extends Node {
         public abstract long execute(Node inliningTarget, Object cls);
 
@@ -2576,7 +2607,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_BASICSIZE, value);
         }
     }
@@ -2589,7 +2620,7 @@ public abstract class TypeNodes {
 
         @Specialization
         long lookup(Object cls,
-                        @Cached CExtNodes.LookupNativeI64MemberInMRONode lookup) {
+                        @Cached(inline = false) CExtNodes.LookupNativeI64MemberInMRONode lookup) {
             return lookup.execute(cls, PyTypeObject__tp_itemsize, TYPE_ITEMSIZE, GetItemSizeNode::getBuiltinTypeItemsize);
         }
 
@@ -2624,7 +2655,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_ITEMSIZE, value);
         }
     }
@@ -2637,7 +2668,7 @@ public abstract class TypeNodes {
 
         @Specialization
         long lookup(Object cls,
-                        @Cached CExtNodes.LookupNativeI64MemberInMRONode lookup) {
+                        @Cached(inline = false) CExtNodes.LookupNativeI64MemberInMRONode lookup) {
             return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinTypeItemsize);
         }
 
@@ -2665,7 +2696,7 @@ public abstract class TypeNodes {
 
         @Specialization
         void set(PythonManagedClass cls, long value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode write) {
             write.execute(cls, TYPE_DICTOFFSET, value);
         }
     }

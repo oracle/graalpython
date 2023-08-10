@@ -38,6 +38,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -104,7 +105,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     @ExplodeLoop
     Object extractKwargs(VirtualFrame frame,
                     @Cached(value = "getAndCheckKwargLen(frame)") int cachedLen,
-                    @Cached TruffleString.EqualNode equalNode) {
+                    @Exclusive @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         PKeyword[] remArguments = PKeyword.create(cachedLen);
         CompilerAsserts.compilationConstant(keywordNames.length);
@@ -137,7 +138,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
 
     @Specialization(replaces = "extractKwargs")
     Object extractVariableKwargs(VirtualFrame frame,
-                    @Cached TruffleString.EqualNode equalNode) {
+                    @Exclusive @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         PKeyword[] remArguments = PKeyword.create(keywordArguments.length);
         int i = 0;

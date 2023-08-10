@@ -95,6 +95,7 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone init(VirtualFrame frame, PDecoratedMethod self, Object callable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupModule,
                         @Cached PyObjectSetAttr setModule,
                         @Cached PyObjectLookupAttr lookupName,
@@ -106,18 +107,18 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAnnotations,
                         @Cached PyObjectSetAttr setAnnotations) {
             self.setCallable(callable);
-            copyAttr(frame, callable, self, T___MODULE__, lookupModule, setModule);
-            copyAttr(frame, callable, self, T___NAME__, lookupName, setName);
-            copyAttr(frame, callable, self, T___QUALNAME__, lookupQualname, setQualname);
-            copyAttr(frame, callable, self, T___DOC__, lookupDoc, setDoc);
-            copyAttr(frame, callable, self, T___ANNOTATIONS__, lookupAnnotations, setAnnotations);
+            copyAttr(frame, inliningTarget, callable, self, T___MODULE__, lookupModule, setModule);
+            copyAttr(frame, inliningTarget, callable, self, T___NAME__, lookupName, setName);
+            copyAttr(frame, inliningTarget, callable, self, T___QUALNAME__, lookupQualname, setQualname);
+            copyAttr(frame, inliningTarget, callable, self, T___DOC__, lookupDoc, setDoc);
+            copyAttr(frame, inliningTarget, callable, self, T___ANNOTATIONS__, lookupAnnotations, setAnnotations);
             return PNone.NONE;
         }
 
-        private static void copyAttr(VirtualFrame frame, Object wrapped, Object wrapper, TruffleString name, PyObjectLookupAttr lookup, PyObjectSetAttr set) {
-            Object attr = lookup.execute(frame, wrapped, name);
+        private static void copyAttr(VirtualFrame frame, Node inliningTarget, Object wrapped, Object wrapper, TruffleString name, PyObjectLookupAttr lookup, PyObjectSetAttr set) {
+            Object attr = lookup.execute(frame, inliningTarget, wrapped, name);
             if (attr != PNone.NO_VALUE) {
-                set.execute(frame, wrapper, name, attr);
+                set.execute(frame, inliningTarget, wrapper, name, attr);
             }
         }
     }
@@ -138,14 +139,16 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         protected Object setDict(PDecoratedMethod self, PDict mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
-            setDict.execute(self, mapping);
+            setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
         }
 
@@ -164,9 +167,9 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached InlinedConditionProfile hasAttrProfile) {
-            Object result = lookup.execute(frame, self.getCallable(), T___ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, inliningTarget, self.getCallable(), T___ISABSTRACTMETHOD__);
             if (hasAttrProfile.profile(inliningTarget, result != PNone.NO_VALUE)) {
-                return isTrue.execute(frame, result);
+                return isTrue.execute(frame, inliningTarget, result);
             }
             return false;
         }

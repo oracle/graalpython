@@ -47,8 +47,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextPosixmoduleBuiltins {
 
@@ -56,8 +58,9 @@ public final class PythonCextPosixmoduleBuiltins {
     abstract static class PyOS_FSPath extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doit(Object path,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyOSFSPathNode fspathNode) {
-            return fspathNode.execute(null, path);
+            return fspathNode.execute(null, inliningTarget, path);
         }
     }
 }

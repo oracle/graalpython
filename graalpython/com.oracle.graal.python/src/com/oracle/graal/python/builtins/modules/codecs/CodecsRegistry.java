@@ -63,8 +63,8 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.SurrogateEs
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.SurrogatePassErrorHandlerNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.XmlCharRefReplaceErrorHandlerNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.BackslashReplaceErrorHandlerNodeGen;
-import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.NameReplaceErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.IgnoreErrorHandlerNodeGen;
+import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.NameReplaceErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.ReplaceErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.StrictErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.SurrogateEscapeErrorHandlerNodeGen;
@@ -122,17 +122,17 @@ public final class CodecsRegistry {
 
         public abstract void execute(Node inliningTarget, TruffleString name, Object handler);
 
-        @Specialization(guards = "callableCheckNode.execute(handler)")
+        @Specialization(guards = "callableCheckNode.execute(inliningTarget, handler)")
         static void register(Node inliningTarget, TruffleString name, Object handler,
-                        @SuppressWarnings("unused") @Cached(inline = false) @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
+                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             ensureRegistryInitialized(context);
             putErrorHandler(context, name, handler);
         }
 
-        @Specialization(guards = "!callableCheckNode.execute(handler)")
-        static void registerNoCallable(@SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object handler,
-                        @SuppressWarnings("unused") @Cached(inline = false) @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
+        @Specialization(guards = "!callableCheckNode.execute(inliningTarget, handler)")
+        static void registerNoCallable(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object handler,
+                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
                         @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, HANDLER_MUST_BE_CALLABLE);
         }

@@ -145,6 +145,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached HashingStorageGetItem getItemResDict,
                         @Cached HashingStorageGetItem getItemStgDict,
@@ -163,7 +164,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            if (getItemResDict.hasKey(resDict.getDictStorage(), T__ABSTRACT_)) {
+            if (getItemResDict.hasKey(inliningTarget, resDict.getDictStorage(), T__ABSTRACT_)) {
                 return result;
             }
 
@@ -175,16 +176,16 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
              * replace the class dict by our updated stgdict, which holds info about storage
              * requirements of the instances
              */
-            dict.setDictStorage(addAllToOtherNode.execute(frame, resDict.getDictStorage(), dict.getDictStorage()));
-            setDict.execute(result, dict);
+            dict.setDictStorage(addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), dict.getDictStorage()));
+            setDict.execute(inliningTarget, result, dict);
             dict.format = T_UPPER_B;
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
-            Object fieldsValue = getItemStgDict.execute(dict.getDictStorage(), T__FIELDS_);
+            Object fieldsValue = getItemStgDict.execute(inliningTarget, dict.getDictStorage(), T__FIELDS_);
             if (fieldsValue != null) {
                 setFieldsAttributeNode.execute(frame, result, fieldsValue);
             } else {
-                StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(result));
+                StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, result));
                 if (basedict == null) {
                     return result;
                 }
@@ -237,20 +238,20 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
              * XXX Remove this in ctypes 1.0!
              */
             boolean use_broken_old_ctypes_semantics;
-            Object tmp = lookupSwappedbytes.execute(frame, type, T__SWAPPEDBYTES_);
+            Object tmp = lookupSwappedbytes.execute(frame, inliningTarget, type, T__SWAPPEDBYTES_);
             boolean big_endian;
             // PY_BIG_ENDIAN;
             big_endian = tmp == PNone.NO_VALUE; // !PY_BIG_ENDIAN;
 
-            tmp = lookupBrokenCtypes.execute(frame, type, T__USE_BROKEN_OLD_CTYPES_STRUCTURE_SEMANTICS_);
+            tmp = lookupBrokenCtypes.execute(frame, inliningTarget, type, T__USE_BROKEN_OLD_CTYPES_STRUCTURE_SEMANTICS_);
             use_broken_old_ctypes_semantics = tmp != PNone.NO_VALUE;
 
-            tmp = lookupPack.execute(frame, type, T__PACK_);
+            tmp = lookupPack.execute(frame, inliningTarget, type, T__PACK_);
             boolean isPacked = tmp != PNone.NO_VALUE;
             int pack = 0;
             if (tmp != PNone.NO_VALUE) {
                 try {
-                    pack = asSizeNode.executeLossy(frame, tmp);
+                    pack = asSizeNode.executeLossy(frame, inliningTarget, tmp);
                 } catch (PException e) {
                     e.expectTypeOrOverflowError(inliningTarget, isBuiltinClassProfile);
                     throw raise(ValueError, PACK_MUST_BE_A_NON_NEGATIVE_INTEGER);
@@ -260,7 +261,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             int len;
             try {
                 isSequenceNode.execute(fields);
-                len = sizeNode.execute(frame, fields);
+                len = sizeNode.execute(frame, inliningTarget, fields);
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isBuiltinClassProfile);
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
@@ -278,7 +279,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             stgdict.ffi_type_pointer = new FFIType();
             stgdict.ffi_type_pointer.elements = null;
 
-            StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(type));
+            StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(inliningTarget, type));
             if (basedict != null) {
                 stgdict.flags |= basedict.flags & (TYPEFLAG_HASUNION | TYPEFLAG_HASBITFIELD);
             }
@@ -337,12 +338,12 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             int bitofs = 0;
             boolean arrays_seen = false;
             for (int i = 0; i < len; i++) {
-                Object pair = getItemNode.execute(frame, fields, i);
+                Object pair = getItemNode.execute(frame, inliningTarget, fields, i);
                 // !PyArg_ParseTuple(pair, "UO|i", & name, &desc, &bitsize)
                 if (!PGuards.isPTuple(pair)) {
                     fieldsError();
                 }
-                Object[] tuple = getArray.execute(((PTuple) pair).getSequenceStorage());
+                Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
                 int tupleLen = tuple.length;
                 if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                     fieldsError();
@@ -382,7 +383,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                             }
                             /* else fall through */
                         default:
-                            throw raise(TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(desc));
+                            throw raise(TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(inliningTarget, desc));
                     }
                     if (bitsize <= 0 || bitsize > dict.size * 8) {
                         throw raise(ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);
@@ -393,7 +394,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 if (isStruct && !isPacked) {
                     TruffleString fieldfmt = dict.format != null ? dict.format : T_UPPER_B;
-                    TruffleString buf = formatNode.format("%s:%s:", fieldfmt, castToTruffleStringNode.execute(name));
+                    TruffleString buf = formatNode.format("%s:%s:", fieldfmt, castToTruffleStringNode.execute(inliningTarget, name));
 
                     if (dict.shape != null) {
                         stgdict.format = _ctypes_alloc_format_string_with_shape(dict.ndim, dict.shape, stgdict.format, buf, appendStringNode, toStringNode, formatNode);
@@ -541,7 +542,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 /* second pass to actually set the type pointers */
                 for (int i = 0; i < len; ++i) {
-                    Object pair = getItemNode.execute(frame, fields, i);
+                    Object pair = getItemNode.execute(frame, inliningTarget, fields, i);
                     /*
                      * In theory, we made this call in the first pass, so it *shouldn't* fail.
                      * However, you never know, and the code above might change later - keeping the
@@ -552,7 +553,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     if (!PGuards.isPTuple(pair)) {
                         fieldsError();
                     }
-                    Object[] tuple = getArray.execute(((PTuple) pair).getSequenceStorage());
+                    Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
                     int tupleLen = tuple.length;
                     if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                         fieldsError();

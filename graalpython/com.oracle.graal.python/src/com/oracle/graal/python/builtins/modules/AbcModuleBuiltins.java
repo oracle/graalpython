@@ -66,10 +66,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_abc")
@@ -89,13 +91,13 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object init(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached DeleteAttributeNode deleteAttributeNode) {
-            TypeNodes.IsTypeNode isTypeNode = TypeNodes.IsTypeNode.getUncached();
-            if (isTypeNode.execute(object)) {
-                Object flags = PyObjectLookupAttr.getUncached().execute(null, object, ABC_TPFLAGS);
+            if (TypeNodes.IsTypeNode.executeUncached(object)) {
+                Object flags = PyObjectLookupAttr.executeUncached(object, ABC_TPFLAGS);
                 long val;
                 try {
-                    val = CastToJavaLongLossyNode.getUncached().execute(flags);
+                    val = CastToJavaLongLossyNode.executeUncached(flags);
                 } catch (CannotCastException ex) {
                     return PNone.NONE;
                 }
@@ -105,7 +107,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                 long tpFlags = TypeNodes.GetTypeFlagsNode.getUncached().execute(object);
                 tpFlags |= (val & COLLECTION_FLAGS);
                 WriteAttributeToObjectNode.getUncached().execute(object, TYPE_FLAGS, tpFlags);
-                deleteAttributeNode.execute(null, object, ABC_TPFLAGS);
+                deleteAttributeNode.execute(null, inliningTarget, object, ABC_TPFLAGS);
             }
             return PNone.NONE;
         }
@@ -118,32 +120,29 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object register(Object self, Object subclass) {
-            TypeNodes.IsTypeNode isTypeNode = TypeNodes.IsTypeNode.getUncached();
-            if (isTypeNode.execute(self)) {
-                TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.getUncached();
-                long tpFlags = getFlagsNode.execute(self);
+            if (TypeNodes.IsTypeNode.executeUncached(self)) {
+                long tpFlags = TypeNodes.GetTypeFlagsNode.executeUncached(self);
                 long collectionFlag = tpFlags & COLLECTION_FLAGS;
                 if (collectionFlag > 0) {
-                    setCollectionFlagRecursive(subclass, collectionFlag, getFlagsNode, TypeNodes.SetTypeFlagsNode.getUncached(), TypeNodes.GetSubclassesNode.getUncached(), isTypeNode);
+                    setCollectionFlagRecursive(subclass, collectionFlag);
                 }
             }
             return PNone.NONE;
         }
 
-        private static void setCollectionFlagRecursive(Object child, long flag, TypeNodes.GetTypeFlagsNode getFlags, TypeNodes.SetTypeFlagsNode setTypeFlagsNode,
-                        TypeNodes.GetSubclassesNode getSubclassesNode, TypeNodes.IsTypeNode isTypeNode) {
+        private static void setCollectionFlagRecursive(Object child, long flag) {
             assert flag == TypeFlags.SEQUENCE || flag == TypeFlags.MAPPING : flag;
-            long origTpFlags = getFlags.execute(child);
+            long origTpFlags = TypeNodes.GetTypeFlagsNode.executeUncached(child);
             long tpFlags = origTpFlags & ~COLLECTION_FLAGS;
             tpFlags |= flag;
             if (tpFlags == origTpFlags || (origTpFlags & IMMUTABLETYPE) != 0) {
                 return;
             }
-            setTypeFlagsNode.execute(child, tpFlags);
-            Set<PythonAbstractClass> grandchildren = getSubclassesNode.execute(child);
+            TypeNodes.SetTypeFlagsNode.executeUncached(child, tpFlags);
+            Set<PythonAbstractClass> grandchildren = TypeNodes.GetSubclassesNode.executeUncached(child);
             for (PythonAbstractClass c : grandchildren) {
-                if (isTypeNode.execute(c)) {
-                    setCollectionFlagRecursive(c, flag, getFlags, setTypeFlagsNode, getSubclassesNode, isTypeNode);
+                if (TypeNodes.IsTypeNode.executeUncached(c)) {
+                    setCollectionFlagRecursive(c, flag);
                 }
             }
         }

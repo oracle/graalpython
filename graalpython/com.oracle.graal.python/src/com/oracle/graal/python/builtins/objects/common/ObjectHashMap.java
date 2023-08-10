@@ -45,11 +45,14 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import java.util.Arrays;
 
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool.EqNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -329,21 +332,14 @@ public final class ObjectHashMap {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetNode extends Node {
-        public final Object get(Frame frame, ObjectHashMap map, DictKey key) {
-            return execute(frame, map, key.getValue(), key.getPythonHash());
-        }
-
-        public final Object get(Frame frame, ObjectHashMap map, Object key, long keyHash) {
-            return execute(frame, map, key, keyHash);
-        }
-
-        abstract Object execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
+        public abstract Object execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...
         @Specialization
-        public static Object doGetWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        @Bind("this") Node inliningTarget,
+        public static Object doGetWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
                         @Cached InlinedBranchProfile lookupRestart,
                         @Cached InlinedCountingConditionProfile foundNullKey,
                         @Cached InlinedCountingConditionProfile foundSameHashKey,
@@ -380,7 +376,7 @@ public final class ObjectHashMap {
             }
             if (foundSameHashKey.profile(inliningTarget, index != DUMMY_INDEX)) {
                 int unwrappedIndex = unwrapIndex(index);
-                if (foundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                if (foundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                     return map.getValue(unwrappedIndex);
                 } else if (!isCollision(indices[compactIndex])) {
                     // ^ note: we need to re-read indices[compactIndex],
@@ -389,6 +385,15 @@ public final class ObjectHashMap {
                 }
             }
 
+            return getCollision(frame, map, key, keyHash, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static Object getCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Node inliningTarget,
+                        InlinedCountingConditionProfile collisionFoundNoValue,
+                        InlinedCountingConditionProfile collisionFoundEqKey,
+                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+            int index;
             // collision: intentionally counted loop
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
@@ -407,7 +412,7 @@ public final class ObjectHashMap {
                     }
                     if (index != DUMMY_INDEX) {
                         int unwrappedIndex = unwrapIndex(index);
-                        if (collisionFoundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                        if (collisionFoundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                             return map.getValue(unwrappedIndex);
                         } else if (!isCollision(indices[compactIndex])) {
                             // ^ note: we need to re-read indices[compactIndex],
@@ -427,21 +432,26 @@ public final class ObjectHashMap {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PutNode extends Node {
-        public final void put(Frame frame, ObjectHashMap map, DictKey key, Object value) {
-            execute(frame, map, key.getValue(), key.getPythonHash(), value);
+        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, DictKey key, Object value) {
+            execute(frame, inliningTarget, map, key.getValue(), key.getPythonHash(), value);
         }
 
-        public final void put(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value) {
-            execute(frame, map, key, keyHash, value);
+        public final void put(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value) {
+            execute(frame, inliningTarget, map, key, keyHash, value);
         }
 
-        abstract void execute(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value);
+        public static void putUncached(ObjectHashMap map, Object key, long keyHash, Object value) {
+            ObjectHashMapFactory.PutNodeGen.getUncached().execute(null, null, map, key, keyHash, value);
+        }
+
+        abstract void execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value);
 
         // "public" for testing...
         @Specialization
-        public static void doPutWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value,
-                        @Bind("this") Node inliningTarget,
+        public static void doPutWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash, Object value,
                         @Cached InlinedBranchProfile lookupRestart,
                         @Cached InlinedCountingConditionProfile foundNullKey,
                         @Cached InlinedCountingConditionProfile foundEqKey,
@@ -482,13 +492,20 @@ public final class ObjectHashMap {
                 return;
             }
 
-            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
                 // we found the key, override the value, Python does not override the key though
                 map.setValue(unwrapIndex(index), value);
                 return;
             }
 
-            // collision
+            putCollision(frame, map, key, keyHash, value, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, rehash2Profile, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static void putCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value, Node inliningTarget,
+                        InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
+                        InlinedBranchProfile rehash2Profile, EqNode eqNode,
+                        int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
             markCollision(indices, compactIndex);
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
@@ -501,12 +518,12 @@ public final class ObjectHashMap {
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    index = indices[compactIndex];
+                    int index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         map.putInNewSlot(indices, inliningTarget, rehash2Profile, key, keyHash, value, compactIndex);
                         return;
                     }
-                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
                         // we found the key, override the value, Python does not override the key
                         // though
                         map.setValue(unwrapIndex(index), value);
@@ -584,21 +601,14 @@ public final class ObjectHashMap {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class RemoveNode extends Node {
-        public final Object remove(Frame frame, ObjectHashMap map, DictKey key) {
-            return execute(frame, map, key.getValue(), key.getPythonHash());
-        }
-
-        public final Object remove(Frame frame, ObjectHashMap map, Object key, long keyHash) {
-            return execute(frame, map, key, keyHash);
-        }
-
-        abstract Object execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
+        public abstract Object execute(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...
         @Specialization
-        public static Object doRemoveWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        @Bind("this") Node inliningTarget,
+        public static Object doRemoveWithRestart(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
                         @Cached InlinedBranchProfile lookupRestart,
                         @Cached InlinedCountingConditionProfile foundNullKey,
                         @Cached InlinedCountingConditionProfile foundEqKey,
@@ -608,7 +618,7 @@ public final class ObjectHashMap {
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    return doRemove(frame, map, key, keyHash, inliningTarget, foundNullKey, foundEqKey,
+                    return doRemove(frame, inliningTarget, map, key, keyHash, foundNullKey, foundEqKey,
                                     collisionFoundNoValue, collisionFoundEqKey, compactProfile,
                                     eqNode);
                 } catch (RestartLookupException ignore) {
@@ -617,8 +627,7 @@ public final class ObjectHashMap {
             }
         }
 
-        static Object doRemove(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        Node inliningTarget,
+        static Object doRemove(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
                         InlinedCountingConditionProfile foundNullKey,
                         InlinedCountingConditionProfile foundEqKey,
                         InlinedCountingConditionProfile collisionFoundNoValue,
@@ -643,7 +652,7 @@ public final class ObjectHashMap {
             }
 
             int unwrappedIndex = unwrapIndex(index);
-            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                 Object result = map.getValue(unwrappedIndex);
                 indices[compactIndex] = DUMMY_INDEX;
                 map.setValue(unwrappedIndex, null);
@@ -653,6 +662,14 @@ public final class ObjectHashMap {
             }
 
             // collision: intentionally counted loop
+            return removeCollision(frame, inliningTarget, map, key, keyHash, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+        }
+
+        @InliningCutoff
+        private static Object removeCollision(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
+                        InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
+                        EqNode eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+            int unwrappedIndex;
             long perturb = keyHash;
             int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
             int i = 0;
@@ -664,12 +681,12 @@ public final class ObjectHashMap {
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    index = indices[compactIndex];
+                    int index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
-                        return null; // not found
+                        return null;
                     }
                     unwrappedIndex = unwrapIndex(index);
-                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                         Object result = map.getValue(unwrappedIndex);
                         indices[compactIndex] = DUMMY_INDEX;
                         map.setValue(unwrappedIndex, null);
@@ -702,7 +719,7 @@ public final class ObjectHashMap {
         }
     }
 
-    private boolean keysEqual(int[] originalIndices, Frame frame, int index, Object key, long keyHash,
+    private boolean keysEqual(int[] originalIndices, Frame frame, Node inliningTarget, int index, Object key, long keyHash,
                     PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
         if (hashes[index] != keyHash) {
             return false;
@@ -711,7 +728,7 @@ public final class ObjectHashMap {
         if (originalKey == key) {
             return true;
         }
-        boolean result = eqNode.execute(frame, originalKey, key);
+        boolean result = eqNode.compare(frame, inliningTarget, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
             // indices array. We need to restart the lookup. Other situations are OK:

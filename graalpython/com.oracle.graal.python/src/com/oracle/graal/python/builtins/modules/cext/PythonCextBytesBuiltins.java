@@ -93,8 +93,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -120,8 +120,9 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long doPBytes(PBytes obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, obj);
+            return sizeNode.execute(null, inliningTarget, obj);
         }
 
         @Specialization
@@ -176,7 +177,7 @@ public final class PythonCextBytesBuiltins {
         @Specialization
         Object fromObject(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
                         @Cached PyObjectLookupAttr lookupAttrNode) {
@@ -187,7 +188,7 @@ public final class PythonCextBytesBuiltins {
                 Object klass = getClassNode.execute(inliningTarget, obj);
                 if (isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes)) {
                     return obj;
-                } else if (isAcceptedSubtype(obj, klass, isSubtypeNode, lookupAttrNode)) {
+                } else if (isAcceptedSubtype(inliningTarget, obj, klass, isSubtypeNode, lookupAttrNode)) {
                     return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
                 } else {
                     throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
@@ -195,11 +196,11 @@ public final class PythonCextBytesBuiltins {
             }
         }
 
-        private static boolean isAcceptedSubtype(Object obj, Object klass, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
+        private static boolean isAcceptedSubtype(Node inliningTarget, Object obj, Object klass, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
             return isSubtypeNode.execute(klass, PythonBuiltinClassType.PList) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PTuple) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PMemoryView) ||
-                            (!isSubtypeNode.execute(klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(null, obj, T___ITER__) != PNone.NO_VALUE);
+                            (!isSubtypeNode.execute(klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(null, inliningTarget, obj, T___ITER__) != PNone.NO_VALUE);
         }
     }
 
@@ -273,12 +274,13 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static int resize(PBytesLike self, long newSizeL,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
-            int newSize = asSizeNode.executeExact(null, newSizeL);
+            int newSize = asSizeNode.executeExact(null, inliningTarget, newSizeL);
             int len = storage.length();
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
@@ -384,7 +386,7 @@ public final class PythonCextBytesBuiltins {
             int len = sequenceStorage.length();
             try {
                 for (int i = 0; i < len; i++) {
-                    if (getItemScalarNode.executeInt(sequenceStorage, i) == 0) {
+                    if (getItemScalarNode.executeInt(inliningTarget, sequenceStorage, i) == 0) {
                         return -1;
                     }
                 }
@@ -404,10 +406,11 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         Object doNative(PythonAbstractNativeObject obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray) {
-            if (isSubtypeNode.execute(getClassNode.execute(this, obj), PythonBuiltinClassType.PBytes)) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
             return doError(obj);

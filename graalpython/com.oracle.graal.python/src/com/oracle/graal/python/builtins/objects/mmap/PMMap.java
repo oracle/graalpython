@@ -131,14 +131,15 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
-        return castToIntNode.execute(ref.length);
+        return castToIntNode.execute(inliningTarget, ref.length);
     }
 
     @ExportMessage
     byte readByte(int byteOffset,
                     @Bind("$node") Node inliningTarget,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("gotException") @Cached InlinedBranchProfile gotException,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode raiseNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
@@ -154,7 +155,7 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     void writeByte(int byteOffset, byte value,
                     @Bind("$node") Node inliningTarget,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Shared("gotException") @Cached InlinedBranchProfile gotException,
                     @Shared("raiseNode") @Cached PConstructAndRaiseNode raiseNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {

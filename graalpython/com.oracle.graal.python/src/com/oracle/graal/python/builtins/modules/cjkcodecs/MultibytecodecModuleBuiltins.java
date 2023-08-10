@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -104,7 +103,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
                     DBCSMap[] maps, MultibyteCodec[] codecs,
                     PythonModule codec, PythonObjectFactory factory) {
         TruffleString tsName = toTruffleStringUncached(name);
-        TruffleString normalizedEncoding = NormalizeEncodingNameNodeGen.getUncached().execute(tsName);
+        TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(tsName);
         Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
         if (charset != null) {
             if (cidx != -1) {
