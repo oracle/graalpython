@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -141,53 +141,37 @@ public final class DirEntryBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    abstract static class GetOpaquePathHelperNode extends Node {
+    abstract static class CachedPosixPathNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object dirEntryData, PosixFileHandle path);
-
-        @Specialization
-        static Object getName(VirtualFrame frame, Node inliningTarget, Object dirEntryData, PosixFileHandle posixFileHandle,
-                        @Cached InlinedConditionProfile posixPathProfile,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            try {
-                if (posixPathProfile.profile(inliningTarget, posixFileHandle instanceof PosixPath)) {
-                    return posixLib.dirEntryGetPath(PosixSupport.get(inliningTarget), dirEntryData, ((PosixPath) posixFileHandle).value);
-                } else {
-                    return posixLib.dirEntryGetName(PosixSupport.get(inliningTarget), dirEntryData);
-                }
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
-            }
-        }
-    }
-
-    abstract static class CachedPosixPathNode extends PythonBuiltinBaseNode {
-
-        abstract PosixPath execute(VirtualFrame frame, PDirEntry self);
+        abstract PosixPath execute(VirtualFrame frame, Node inliningTarget, PDirEntry self);
 
         @Specialization(guards = "self.pathCache != null")
         static PosixPath cached(PDirEntry self) {
             return self.pathCache;
         }
 
-        @Specialization(guards = {"self.pathCache == null", "self.produceBytes()"})
-        PosixPath createBytes(VirtualFrame frame, PDirEntry self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
-            Object opaquePath = getOpaquePathHelperNode.execute(frame, inliningTarget, self.dirEntryData, self.scandirPath);
-            self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, getPosixSupport(), factory()), opaquePath, true);
-            return self.pathCache;
-        }
-
-        @Specialization(guards = {"self.pathCache == null", "!self.produceBytes()"})
-        PosixPath createString(VirtualFrame frame, PDirEntry self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
-            Object opaquePath = getOpaquePathHelperNode.execute(frame, inliningTarget, self.dirEntryData, self.scandirPath);
-            self.pathCache = new PosixPath(posixLib.getPathAsString(getPosixSupport(), opaquePath), opaquePath, false);
+        @Specialization(guards = "self.pathCache == null")
+        static PosixPath createBytes(VirtualFrame frame, Node inliningTarget, PDirEntry self,
+                        @Cached InlinedConditionProfile produceBytesProfile,
+                        @Cached InlinedConditionProfile posixPathProfile,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            Object opaquePath;
+            try {
+                if (posixPathProfile.profile(inliningTarget, self.scandirPath instanceof PosixPath)) {
+                    opaquePath = posixLib.dirEntryGetPath(PosixSupport.get(inliningTarget), self.dirEntryData, ((PosixPath) self.scandirPath).value);
+                } else {
+                    opaquePath = posixLib.dirEntryGetName(PosixSupport.get(inliningTarget), self.dirEntryData);
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+            if (produceBytesProfile.profile(inliningTarget, self.produceBytes())) {
+                self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, PosixSupport.get(inliningTarget), factory.get(inliningTarget)), opaquePath, true);
+            } else {
+                self.pathCache = new PosixPath(posixLib.getPathAsString(PosixSupport.get(inliningTarget), opaquePath), opaquePath, false);
+            }
             return self.pathCache;
         }
     }
@@ -197,8 +181,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object path(VirtualFrame frame, PDirEntry self,
+                        @Bind("this") Node inliningTarget,
                         @Cached CachedPosixPathNode cachedPosixPathNode) {
-            return cachedPosixPathNode.execute(frame, self).originalObject;
+            return cachedPosixPathNode.execute(frame, inliningTarget, self).originalObject;
         }
     }
 
@@ -246,7 +231,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class StatHelperSimpleNode extends PythonBuiltinBaseNode {
+    @GenerateInline(false) // Footprint reduction 40 -> 21
+    abstract static class StatHelperSimpleNode extends Node {
 
         abstract PTuple execute(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent);
 
@@ -263,34 +249,34 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"followSymlinks", "self.statCache == null", "isSymlink"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
+        static PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSymlinkNode isSymlinkNode,
                         @SuppressWarnings("unused") @Bind("isSymlinkNode.executeBoolean(frame, self)") boolean isSymlink,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
                         @Shared("positiveLongProfile") @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             // There are two caches - one for `follow_symlinks=True` and the other for
             // 'follow_symlinks=False`. They are different only when the dir entry is a symlink.
-            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, inliningTarget, posixLib, cachedPosixPathNode, positiveLongProfile, constructAndRaiseNode);
+            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, inliningTarget, posixLib, cachedPosixPathNode, positiveLongProfile, constructAndRaiseNode, factory);
         }
 
         @Specialization(guards = {"!followSymlinks", "self.lstatCache == null"})
-        @SuppressWarnings("truffle-static-method")
-        PTuple uncachedLStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
+        static PTuple uncachedLStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
                         @Shared("positiveLongProfile") @Cached InlinedConditionProfile positiveLongProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PTuple res;
             int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
-            PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
+            PosixPath posixPath = cachedPosixPathNode.execute(frame, inliningTarget, self);
             try {
-                long[] rawStat = posixLib.fstatat(getPosixSupport(), dirFd, posixPath.value, followSymlinks);
-                res = PosixModuleBuiltins.createStatResult(inliningTarget, factory(), positiveLongProfile, rawStat);
+                long[] rawStat = posixLib.fstatat(PosixSupport.get(inliningTarget), dirFd, posixPath.value, followSymlinks);
+                res = PosixModuleBuiltins.createStatResult(inliningTarget, factory, positiveLongProfile, rawStat);
             } catch (PosixException e) {
                 if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
                     return null;
@@ -302,6 +288,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false) // Footprint reduction 44 -> 25
     abstract static class StatHelperNode extends StatHelperSimpleNode {
         @Specialization(guards = {"followSymlinks", "self.statCache == null", "!isSymlink"}, limit = "1")
         static PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
@@ -322,7 +309,7 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class TestModeNode extends PythonBuiltinBaseNode {
+    abstract static class TestModeNode extends Node {
 
         private final long expectedMode;
         private final int expectedDirEntryType;
@@ -349,8 +336,8 @@ public final class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!followSymlinks")
         boolean useTypeIfKnown(VirtualFrame frame, PDirEntry self, @SuppressWarnings("unused") boolean followSymlinks,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            int entryType = posixLib.dirEntryGetType(getPosixSupport(), self.dirEntryData);
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+            int entryType = posixLib.dirEntryGetType(PosixSupport.get(this), self.dirEntryData);
             if (entryType != DT_UNKNOWN.value) {
                 return entryType == expectedDirEntryType;
             }

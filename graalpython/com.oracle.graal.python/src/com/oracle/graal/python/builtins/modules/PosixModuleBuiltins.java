@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
@@ -134,6 +135,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -533,7 +535,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object[] opaqueArgs = new Object[args.length];
             for (int i = 0; i < args.length; ++i) {
-                opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i], i == 0);
+                opaqueArgs[i] = toOpaquePathNode.execute(frame, inliningTarget, args[i], i == 0);
             }
             // TODO ValueError "execv() arg 2 first element cannot be empty"
 
@@ -1844,7 +1846,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @SuppressWarnings("truffle-static-method")
-    abstract static class UtimeArgsToTimespecNode extends PythonBuiltinBaseNode {
+    abstract static class UtimeArgsToTimespecNode extends PNodeWithRaise {
         abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 
         Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
@@ -1906,8 +1908,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw timesTupleError();
             }
             long[] timespec = new long[4];
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 1), timespec, 2);
+            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
+            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 1), timespec, 2);
             return timespec;
         }
     }
@@ -2667,26 +2669,23 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
      */
-    public abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
-        public abstract PBytes execute(Object obj);
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    public abstract static class StringOrBytesToBytesNode extends Node {
+        public abstract PBytes execute(Node inliningTarget, Object obj);
 
-        @Specialization
-        PBytes doString(TruffleString str,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        @Specialization(guards = "isString(strObj)")
+        static PBytes doString(Node inliningTarget, Object strObj,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            TruffleString str = castToStringNode.execute(inliningTarget, strObj);
             TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8);
             byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
             copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, Encoding.UTF_8);
-            return factory().createBytes(bytes);
-        }
-
-        @Specialization
-        PBytes doPString(PString pstr,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            return doString(castToStringNode.execute(inliningTarget, pstr), switchEncodingNode, copyToByteArrayNode);
+            return factory.createBytes(bytes);
         }
 
         @Specialization
@@ -2700,34 +2699,32 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      * the {@link PosixSupportLibrary} in use. Basically equivalent of
      * {@code PyUnicode_EncodeFSDefault}.
      */
-    abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
-        abstract Object execute(Object obj);
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    abstract static class StringOrBytesToOpaquePathNode extends Node {
+        abstract Object execute(Node inliningTarget, Object obj);
 
-        @Specialization
-        Object doString(TruffleString str,
-                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
-        }
-
-        @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object doPString(PString pstr,
-                        @Bind("this") Node inliningTarget,
+        @Specialization(guards = "isString(strObj)")
+        static Object doString(Node inliningTarget, Object strObj,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
-            return doString(castToStringNode.execute(inliningTarget, pstr), posixLib);
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString str = castToStringNode.execute(inliningTarget, strObj);
+            return checkPath(inliningTarget, posixLib.createPathFromString(PosixSupport.get(inliningTarget), str), raiseNode);
         }
 
         @Specialization
-        Object doBytes(PBytes bytes,
-                        @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromBytes(getContext().getPosixSupport(), toBytesNode.execute(bytes)));
+        static Object doBytes(Node inliningTarget, PBytes bytes,
+                        @Cached(inline = false) BytesNodes.ToBytesNode toBytesNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return checkPath(inliningTarget, posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), toBytesNode.execute(bytes)), raiseNode);
         }
 
-        private Object checkPath(Object path) {
+        private static Object checkPath(Node inliningTarget, Object path, PRaiseNode.Lazy raiseNode) {
             if (path == null) {
-                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
             return path;
         }
@@ -2737,43 +2734,51 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
      * {@link PosixSupportLibrary} implementation.
      */
-    abstract static class ObjectToOpaquePathNode extends PNodeWithRaise {
-        abstract Object execute(VirtualFrame frame, Object obj, boolean checkEmpty);
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class ObjectToOpaquePathNode extends Node {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object obj, boolean checkEmpty);
 
         @Specialization(guards = "!checkEmpty")
-        static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
-                        @Bind("this") Node inliningTarget,
+        static Object noCheck(VirtualFrame frame, Node inliningTarget, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Exclusive @Cached PyOSFSPathNode fspathNode,
                         @Exclusive @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
-            return stringOrBytesToOpaquePathNode.execute(fspathNode.execute(frame, inliningTarget, obj));
+            return stringOrBytesToOpaquePathNode.execute(inliningTarget, fspathNode.execute(frame, inliningTarget, obj));
         }
 
         @Specialization(guards = "checkEmpty")
-        @SuppressWarnings("truffle-static-method")
-        Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
-                        @Bind("this") Node inliningTarget,
+        static Object withCheck(VirtualFrame frame, Node inliningTarget, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Exclusive @Cached PyOSFSPathNode fspathNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Exclusive @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+                        @Exclusive @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object stringOrBytes = fspathNode.execute(frame, inliningTarget, obj);
             if (sizeNode.execute(frame, inliningTarget, obj) == 0) {
-                throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
             }
-            return stringOrBytesToOpaquePathNode.execute(stringOrBytes);
+            return stringOrBytesToOpaquePathNode.execute(inliningTarget, stringOrBytes);
         }
     }
 
-    abstract static class ConvertToTimespecBaseNode extends PythonBuiltinBaseNode {
-        abstract void execute(VirtualFrame frame, Object obj, long[] timespec, int offset);
+    abstract static class ConvertToTimespecBaseNode extends Node {
+        abstract void execute(VirtualFrame frame, Node inliningTarget, Object obj, long[] timespec, int offset);
     }
 
     /**
      * Equivalent of {@code _PyTime_ObjectToTimespec} as used in {@code os_utime_impl}.
      */
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
     abstract static class ObjectToTimespecNode extends ConvertToTimespecBaseNode {
 
-        @Specialization(guards = "!isNan(value)")
-        void doDoubleNotNan(double value, long[] timespec, int offset) {
+        @Specialization
+        static void doDouble(Node inliningTarget, double value, long[] timespec, int offset,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (Double.isNaN(value)) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_VALUE_NAN);
+            }
+
             double denominator = 1000000000.0;
             double floatPart = value % 1;
             double intPart = value - floatPart;
@@ -2788,26 +2793,17 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             assert 0.0 <= floatPart && floatPart < denominator;
             if (!MathGuards.fitLong(intPart)) {
-                throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
             timespec[offset] = (long) intPart;
             timespec[offset + 1] = (long) floatPart;
             assert 0 <= timespec[offset + 1] && timespec[offset + 1] < (long) denominator;
         }
 
-        @Specialization(guards = "isNan(value)")
-        @SuppressWarnings("unused")
-        void doDoubleNan(double value, long[] timespec, int offset) {
-            throw raise(ValueError, ErrorMessages.INVALID_VALUE_NAN);
-        }
-
         @Specialization
-        void doPFloat(PFloat obj, long[] timespec, int offset) {
-            double value = obj.getValue();
-            if (Double.isNaN(value)) {
-                throw raise(ValueError, ErrorMessages.INVALID_VALUE_NAN);
-            }
-            doDoubleNotNan(value, timespec, offset);
+        static void doPFloat(Node inliningTarget, PFloat obj, long[] timespec, int offset,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            doDouble(inliningTarget, obj.getValue(), timespec, offset, raiseNode);
         }
 
         @Specialization
@@ -2823,26 +2819,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"})
-        void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
+        static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
+                        @Cached PyLongAsLongAndOverflowNode asLongNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 timespec[offset] = asLongNode.execute(frame, inliningTarget, value);
             } catch (OverflowException e) {
-                throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
             timespec[offset + 1] = 0;
-        }
-
-        protected static boolean isNan(double value) {
-            return Double.isNaN(value);
         }
     }
 
     /**
      * Equivalent of {@code split_py_long_to_s_and_ns} as used in {@code os_utime_impl}.
      */
-    @ImportStatic(BinaryArithmetic.class)
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({BinaryArithmetic.class, PGuards.class})
     abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
 
         private static final long BILLION = 1000000000;
@@ -2859,11 +2853,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(value)"})
-        static void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("DivMod.create()") BinaryOpNode callDivmod,
+        static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
+                        @Cached(value = "DivMod.create()", inline = false) BinaryOpNode callDivmod,
                         @Cached LenNode lenNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object divmod = callDivmod.executeObject(frame, value, BILLION);
@@ -2923,7 +2916,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyOSFSPathNode fspathNode,
                         @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
-            return stringOrBytesToBytesNode.execute(fspathNode.execute(frame, inliningTarget, value));
+            return stringOrBytesToBytesNode.execute(inliningTarget, fspathNode.execute(frame, inliningTarget, value));
         }
 
         @ClinicConverterFactory

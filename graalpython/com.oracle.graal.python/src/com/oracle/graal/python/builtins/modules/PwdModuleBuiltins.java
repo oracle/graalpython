@@ -200,7 +200,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
-            Object nameEncoded = encodeFSDefault.execute(name);
+            Object nameEncoded = encodeFSDefault.execute(inliningTarget, name);
             PwdResult pwd;
             try {
                 gil.release(true);

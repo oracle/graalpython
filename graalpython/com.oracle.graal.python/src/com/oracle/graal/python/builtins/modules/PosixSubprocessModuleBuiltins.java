@@ -142,7 +142,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(argsStorage, i);
-                argsArray[i] = objectToOpaquePathNode.execute(frame, o, false);
+                argsArray[i] = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
             }
             return argsArray;
         }
@@ -264,7 +264,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
             Object[] processArgs = args;
             int[] fdsToKeep = convertFdSequence(inliningTarget, (PTuple) fdsToKeepObj, tupleGetItem, castToIntNode);
-            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
+            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, inliningTarget, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
 
