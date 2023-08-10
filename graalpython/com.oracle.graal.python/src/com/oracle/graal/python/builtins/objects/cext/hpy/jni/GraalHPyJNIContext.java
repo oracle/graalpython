@@ -63,6 +63,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodesFactory.HPyJNIFromCharPointerNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -79,6 +80,29 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadFloatNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCField;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
@@ -113,6 +137,28 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeAllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeFreeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeGetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeIsNullNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadFloatNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWritePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -197,6 +243,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private final PythonObjectSlowPathFactory slowPathFactory;
     private final int[] counts;
 
+    private final int[] ctypeSizes;
+    private final int[] cfieldOffsets;
+
     private long hPyDebugContext;
     private long hPyTraceContext;
     private long nativePointer;
@@ -221,6 +270,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         assert !PythonOptions.WITHOUT_JNI;
         this.slowPathFactory = context.getContext().factory();
         this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
+        this.ctypeSizes = new int[HPyContextSignatureType.values().length];
+        this.cfieldOffsets = new int[GraalHPyCField.values().length];
     }
 
     @Override
@@ -301,9 +352,19 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected long getWcharSize() {
-        // TODO(fa): implement
-        throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+    protected int getCTypeSize(HPyContextSignatureType ctype) {
+        return ctypeSizes[ctype.ordinal()];
+    }
+
+    @Override
+    protected int getCFieldOffset(GraalHPyCField cfield) {
+        return cfieldOffsets[cfield.ordinal()];
+    }
+
+    @Override
+    protected NativePointer nativeToInteropPointer(Object object) {
+        assert object instanceof Long;
+        return new NativePointer((Long) object);
     }
 
     @ExportMessage
@@ -335,7 +396,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             loadJNIBackend();
-            nativePointer = initJNI(this, context, createContextHandleArray());
+            nativePointer = initJNI(this, context, createContextHandleArray(), ctypeSizes, cfieldOffsets);
             if (nativePointer == 0) {
                 throw CompilerDirectives.shouldNotReachHere("Could not initialize HPy JNI backend.");
             }
@@ -346,7 +407,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     protected void initNativeFastPaths() {
         /*
          * Currently, the native fast path functions are only available if the JNI backend is used
-         * because they rely on 'initJNI' being called. In future, we might also want to use the
+         * because they rely on 'initJNI' being called. In the future, we might also want to use the
          * native fast path functions for the NFI backend.
          */
         assert useNativeFastPaths();
@@ -574,12 +635,232 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @Override
     public HPyFromCharPointerNode createFromCharPointerNode() {
-        return HPyJNIFromCharPointerNode.UNCACHED;
+        return HPyJNIFromCharPointerNodeGen.create();
     }
 
     @Override
     public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
-        return HPyJNIFromCharPointerNode.UNCACHED;
+        return HPyJNIFromCharPointerNodeGen.getUncached();
+    }
+
+    @Override
+    public AllocateNode createAllocateNode() {
+        return UnsafeAllocateNode.UNCACHED;
+    }
+
+    @Override
+    public AllocateNode getUncachedAllocateNode() {
+        return UnsafeAllocateNode.UNCACHED;
+    }
+
+    @Override
+    public FreeNode createFreeNode() {
+        return UnsafeFreeNode.UNCACHED;
+    }
+
+    @Override
+    public FreeNode getUncachedFreeNode() {
+        return UnsafeFreeNode.UNCACHED;
+    }
+
+    @Override
+    public GetElementPtrNode createGetElementPtrNode() {
+        return UnsafeGetElementPtrNode.UNCACHED;
+    }
+
+    @Override
+    public GetElementPtrNode getUncachedGetElementPtrNode() {
+        return UnsafeGetElementPtrNode.UNCACHED;
+    }
+
+    @Override
+    public ReadI32Node createReadI32Node() {
+        return UnsafeReadI32Node.UNCACHED;
+    }
+
+    @Override
+    public ReadI32Node getUncachedReadI32Node() {
+        return UnsafeReadI32Node.UNCACHED;
+    }
+
+    @Override
+    public ReadI64Node createReadI64Node() {
+        return UnsafeReadI64Node.UNCACHED;
+    }
+
+    @Override
+    public ReadI64Node getUncachedReadI64Node() {
+        return UnsafeReadI64Node.UNCACHED;
+    }
+
+    @Override
+    public ReadFloatNode createReadFloatNode() {
+        return UnsafeReadFloatNode.UNCACHED;
+    }
+
+    @Override
+    public ReadFloatNode getUncachedReadFloatNode() {
+        return UnsafeReadFloatNode.UNCACHED;
+    }
+
+    @Override
+    public ReadDoubleNode createReadDoubleNode() {
+        return UnsafeReadDoubleNode.UNCACHED;
+    }
+
+    @Override
+    public ReadDoubleNode getUncachedReadDoubleNode() {
+        return UnsafeReadDoubleNode.UNCACHED;
+    }
+
+    @Override
+    public ReadPointerNode createReadPointerNode() {
+        return UnsafeReadPointerNode.UNCACHED;
+    }
+
+    @Override
+    public ReadPointerNode getUncachedReadPointerNode() {
+        return UnsafeReadPointerNode.UNCACHED;
+    }
+
+    @Override
+    public IsNullNode createIsNullNode() {
+        return UnsafeIsNullNode.UNCACHED;
+    }
+
+    @Override
+    public IsNullNode getUncachedIsNullNode() {
+        return UnsafeIsNullNode.UNCACHED;
+    }
+
+    @Override
+    public ReadGenericNode createReadGenericNode() {
+        return UnsafeReadGenericNode.UNCACHED;
+    }
+
+    @Override
+    public ReadGenericNode getUncachedReadGenericNode() {
+        return UnsafeReadGenericNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyNode createReadHPyNode() {
+        return UnsafeReadHPyNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyNode getUncachedReadHPyNode() {
+        return UnsafeReadHPyNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyFieldNode createReadHPyFieldNode() {
+        return UnsafeReadHPyFieldNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyFieldNode getUncachedReadFieldHPyNode() {
+        return UnsafeReadHPyFieldNode.UNCACHED;
+    }
+
+    @Override
+    public WriteDoubleNode createWriteDoubleNode() {
+        return UnsafeWriteDoubleNode.UNCACHED;
+    }
+
+    @Override
+    public WriteDoubleNode getUncachedWriteDoubleNode() {
+        return UnsafeWriteDoubleNode.UNCACHED;
+    }
+
+    @Override
+    public WriteI32Node createWriteI32Node() {
+        return UnsafeWriteI32Node.UNCACHED;
+    }
+
+    @Override
+    public WriteI32Node getUncachedWriteI32Node() {
+        return UnsafeWriteI32Node.UNCACHED;
+    }
+
+    @Override
+    public WriteI64Node createWriteI64Node() {
+        return UnsafeWriteI64Node.UNCACHED;
+    }
+
+    @Override
+    public WriteI64Node getUncachedWriteI64Node() {
+        return UnsafeWriteI64Node.UNCACHED;
+    }
+
+    @Override
+    public WriteHPyNode createWriteHPyNode() {
+        return UnsafeWriteHPyNode.UNCACHED;
+    }
+
+    @Override
+    public WriteHPyNode getUncachedWriteHPyNode() {
+        return UnsafeWriteHPyNode.UNCACHED;
+    }
+
+    @Override
+    public WritePointerNode createWritePointerNode() {
+        return UnsafeWritePointerNode.UNCACHED;
+    }
+
+    @Override
+    public WritePointerNode getUncachedWritePointerNode() {
+        return UnsafeWritePointerNode.UNCACHED;
+    }
+
+    @Override
+    public ReadI8ArrayNode createReadI8ArrayNode() {
+        return UnsafeReadI8ArrayNode.UNCACHED;
+    }
+
+    @Override
+    public ReadI8ArrayNode getUncachedReadI8ArrayNode() {
+        return UnsafeReadI8ArrayNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyArrayNode createReadHPyArrayNode() {
+        return UnsafeReadHPyArrayNode.UNCACHED;
+    }
+
+    @Override
+    public ReadHPyArrayNode getUncachedReadHPyArrayNode() {
+        return UnsafeReadHPyArrayNode.UNCACHED;
+    }
+
+    @Override
+    public WriteSizeTNode createWriteSizeTNode() {
+        return UnsafeWriteSizeTNode.UNCACHED;
+    }
+
+    @Override
+    public WriteSizeTNode getUncachedWriteSizeTNode() {
+        return UnsafeWriteSizeTNode.UNCACHED;
+    }
+
+    @Override
+    public WriteGenericNode createWriteGenericNode() {
+        return UnsafeWriteGenericNode.UNCACHED;
+    }
+
+    @Override
+    public WriteGenericNode getUncachedWriteGenericNode() {
+        return UnsafeWriteGenericNode.UNCACHED;
+    }
+
+    @Override
+    public WriteHPyFieldNode createWriteHPyFieldNode() {
+        return UnsafeWriteHPyFieldNode.UNCACHED;
+    }
+
+    @Override
+    public WriteHPyFieldNode getUncachedWriteHPyFieldNode() {
+        return UnsafeWriteHPyFieldNode.UNCACHED;
     }
 
     /* JNI helper functions */
@@ -602,7 +883,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     /* HPY internal JNI trampoline declarations */
 
     @TruffleBoundary
-    private static native long initJNI(GraalHPyJNIContext backend, GraalHPyContext hpyContext, long[] ctxHandles);
+    private static native long initJNI(GraalHPyJNIContext backend, GraalHPyContext hpyContext, long[] ctxHandles, int[] ctypeSizes, int[] cfieldOffsets);
 
     @TruffleBoundary
     private static native int finalizeJNIContext(long uctxPointer);
@@ -891,7 +1172,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * {@link InteropLibrary#toNative(Object)} if the object is not a pointer already. The method
      * will throw a {@link CannotCastException} if coercion is not possible.
      */
-    private static long coerceToPointer(Object value) throws CannotCastException {
+    static long coerceToPointer(Object value) throws CannotCastException {
         if (value == null) {
             return 0;
         }

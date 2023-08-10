@@ -720,10 +720,6 @@ public final class GraalHPyContext extends CExtContext {
         }
     }
 
-    public long getWcharSize() {
-        return backend.getWcharSize();
-    }
-
     public void initHPyDebugContext() throws ApiInitException {
         backend.initHPyDebugContext();
     }
@@ -781,6 +777,7 @@ public final class GraalHPyContext extends CExtContext {
         return hpyGlobalsTable.length;
     }
 
+    @TruffleBoundary
     void initBatchGlobals(int startIdx, int nModuleGlobals) {
         if (nModuleGlobals == 0) {
             return;
@@ -789,7 +786,7 @@ public final class GraalHPyContext extends CExtContext {
         int endIdx = startIdx + nModuleGlobals;
         if (endIdx >= gtLen) {
             int newSize = endIdx + 1;
-            LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
+            LOGGER.fine(() -> PythonUtils.formatJString("resizing HPy globals table to %d", newSize));
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
             if (useNativeFastPaths) {
                 reallocateNativeSpacePointersMirror(hpyHandleTable.length, gtLen);
@@ -1195,6 +1192,18 @@ public final class GraalHPyContext extends CExtContext {
             DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
         }
         return s;
+    }
+
+    public int getCTypeSize(HPyContextSignatureType ctype) {
+        return backend.getCTypeSize(ctype);
+    }
+
+    public int getCFieldOffset(GraalHPyCField ctype) {
+        return backend.getCFieldOffset(ctype);
+    }
+
+    public Object nativeToInteropPointer(Object object) {
+        return backend.nativeToInteropPointer(object);
     }
 
     /**

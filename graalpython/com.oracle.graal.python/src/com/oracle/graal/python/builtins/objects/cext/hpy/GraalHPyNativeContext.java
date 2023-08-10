@@ -50,6 +50,27 @@ import java.io.PrintStream;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadFloatNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
@@ -127,7 +148,16 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract void setNativeCache(long cachePtr);
 
-    protected abstract long getWcharSize();
+    protected abstract int getCTypeSize(HPyContextSignatureType ctype);
+
+    protected abstract int getCFieldOffset(GraalHPyCField cfield);
+
+    /**
+     * Converts a native pointer from the representation used by this native context (e.g.
+     * {@link Long}) to an interop pointer object that responds to interop messages
+     * {@link InteropLibrary#isPointer(Object)} and {@link InteropLibrary#asPointer(Object)}.
+     */
+    protected abstract Object nativeToInteropPointer(Object object);
 
     protected abstract Object createArgumentsArray(Object[] args);
 
@@ -205,4 +235,92 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         out.flush();
         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
+
+    public abstract AllocateNode createAllocateNode();
+
+    public abstract AllocateNode getUncachedAllocateNode();
+
+    public abstract FreeNode createFreeNode();
+
+    public abstract FreeNode getUncachedFreeNode();
+
+    public abstract ReadI32Node createReadI32Node();
+
+    public abstract ReadI32Node getUncachedReadI32Node();
+
+    public abstract ReadI64Node createReadI64Node();
+
+    public abstract ReadI64Node getUncachedReadI64Node();
+
+    public abstract ReadFloatNode createReadFloatNode();
+
+    public abstract ReadFloatNode getUncachedReadFloatNode();
+
+    public abstract ReadDoubleNode createReadDoubleNode();
+
+    public abstract ReadDoubleNode getUncachedReadDoubleNode();
+
+    public abstract ReadPointerNode createReadPointerNode();
+
+    public abstract ReadPointerNode getUncachedReadPointerNode();
+
+    public abstract WriteDoubleNode createWriteDoubleNode();
+
+    public abstract WriteDoubleNode getUncachedWriteDoubleNode();
+
+    public abstract WriteI32Node createWriteI32Node();
+
+    public abstract WriteI32Node getUncachedWriteI32Node();
+
+    public abstract WriteI64Node createWriteI64Node();
+
+    public abstract WriteI64Node getUncachedWriteI64Node();
+
+    public abstract WriteHPyNode createWriteHPyNode();
+
+    public abstract WriteHPyNode getUncachedWriteHPyNode();
+
+    public abstract ReadI8ArrayNode createReadI8ArrayNode();
+
+    public abstract ReadI8ArrayNode getUncachedReadI8ArrayNode();
+
+    public abstract WritePointerNode createWritePointerNode();
+
+    public abstract WritePointerNode getUncachedWritePointerNode();
+
+    public abstract ReadHPyArrayNode createReadHPyArrayNode();
+
+    public abstract ReadHPyArrayNode getUncachedReadHPyArrayNode();
+
+    public abstract ReadHPyNode createReadHPyNode();
+
+    public abstract ReadHPyNode getUncachedReadHPyNode();
+
+    public abstract ReadHPyFieldNode createReadHPyFieldNode();
+
+    public abstract ReadHPyFieldNode getUncachedReadFieldHPyNode();
+
+    public abstract IsNullNode createIsNullNode();
+
+    public abstract IsNullNode getUncachedIsNullNode();
+
+    public abstract GraalHPyCAccess.ReadGenericNode createReadGenericNode();
+
+    public abstract GraalHPyCAccess.ReadGenericNode getUncachedReadGenericNode();
+
+    public abstract WriteSizeTNode createWriteSizeTNode();
+
+    public abstract WriteSizeTNode getUncachedWriteSizeTNode();
+
+    public abstract GetElementPtrNode createGetElementPtrNode();
+
+    public abstract GetElementPtrNode getUncachedGetElementPtrNode();
+
+    public abstract WriteHPyFieldNode createWriteHPyFieldNode();
+
+    public abstract WriteHPyFieldNode getUncachedWriteHPyFieldNode();
+
+    public abstract WriteGenericNode createWriteGenericNode();
+
+    public abstract WriteGenericNode getUncachedWriteGenericNode();
 }

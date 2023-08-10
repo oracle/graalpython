@@ -106,7 +106,8 @@ public final class GraalHPyInitObject implements TruffleObject {
             case J_SET_HPY_NATIVE_TYPE -> backend.hpyNativeTypeID = arguments[0];
             case J_SET_HPYFIELD_NATIVE_TYPE -> backend.hpyFieldNativeTypeID = arguments[0];
             case J_SET_HPY_ARRAY_NATIVE_TYPE -> backend.hpyArrayNativeTypeID = arguments[0];
-            case J_SET_WCHAR_SIZE -> backend.wcharSize = ensureLong(arguments[0]);
+            case J_SET_WCHAR_SIZE -> {
+                /* nothing to do */ }
             case J_SET_NATIVE_CACHE_FUNCTION_PTR -> backend.setNativeSpaceFunction = arguments[0];
             default -> throw UnsupportedMessageException.create();
         }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
@@ -47,10 +49,19 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,6 +72,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -71,6 +84,91 @@ import sun.misc.Unsafe;
 abstract class GraalHPyLLVMNodes {
 
     private GraalHPyLLVMNodes() {
+    }
+
+    @GenerateUncached
+    abstract static class LLVMAllocateNode extends AllocateNode {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, long size, @SuppressWarnings("unused") boolean zero,
+                        @Cached PCallHPyFunction callMallocNode) {
+            return callMallocNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
+        }
+    }
+
+    @GenerateUncached
+    abstract static class LLVMReadI8ArrayNode extends ReadI8ArrayNode {
+
+        @Specialization(limit = "1")
+        static byte[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
+                        @CachedLibrary("pointer") InteropLibrary interopLib,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached PCallHPyFunction callHPyFunction) {
+            if (!PInt.isIntRange(n)) {
+                throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
+            }
+            Object typedPointer;
+            if (!interopLib.hasArrayElements(pointer)) {
+                typedPointer = callHPyFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, pointer, n);
+            } else {
+                typedPointer = pointer;
+            }
+            try {
+                return getByteArrayNode.execute(typedPointer, n);
+            } catch (OverflowException | InteropException ex) {
+                throw CompilerDirectives.shouldNotReachHere(ex);
+            }
+        }
+    }
+
+    @GenerateUncached
+    abstract static class LLVMReadHPyArrayNode extends ReadHPyArrayNode {
+
+        @Specialization(limit = "1")
+        static Object[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode) {
+            if (!PInt.isIntRange(n)) {
+                throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
+            }
+            Object typedArrayPtr = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, n);
+            if (!lib.hasArrayElements(typedArrayPtr)) {
+                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
+            }
+
+            Object[] elements = new Object[(int) n];
+            try {
+                for (int i = 0; i < elements.length; i++) {
+                    /*
+                     * This will read an element of a 'HPy arr[]' and the returned value will be an
+                     * HPy "structure". So, we also need to read element "_i" to get the internal
+                     * handle value.
+                     */
+                    Object hpyStructPtr = lib.readArrayElement(typedArrayPtr, offset + i);
+                    elements[i] = asPythonObjectNode.execute(lib.readMember(hpyStructPtr, GraalHPyHandle.J_I));
+                }
+                return elements;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } catch (InvalidArrayIndexException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(lib, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(lib, SystemError, ErrorMessages.CANNOT_READ_HANDLE_VAL);
+            }
+        }
+    }
+
+    @GenerateUncached
+    abstract static class LLVMWritePointerNode extends WritePointerNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, Object valuePointer,
+                        @Cached PCallHPyFunction callWriteDataNode) {
+            callWriteDataNode.call(ctx, GRAAL_HPY_WRITE_PTR, basePointer, offset, valuePointer);
+        }
     }
 
     @GenerateUncached

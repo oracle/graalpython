@@ -63,6 +63,29 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadFloatNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI64Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCField;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
@@ -154,7 +177,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @CompilationFinal Object hpyArrayNativeTypeID;
     @CompilationFinal Object setNativeSpaceFunction;
 
-    @CompilationFinal long wcharSize = -1;
+    @CompilationFinal(dimensions = 1) int[] ctypeSizes;
+    @CompilationFinal(dimensions = 1) int[] cfieldOffsets;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
 
@@ -223,9 +247,21 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         return hpyArrayNativeTypeID;
     }
 
-    protected long getWcharSize() {
-        assert wcharSize > 0;
-        return wcharSize;
+    @Override
+    protected int getCTypeSize(HPyContextSignatureType ctype) {
+        assert ctypeSizes != null;
+        return ctypeSizes[ctype.ordinal()];
+    }
+
+    @Override
+    protected int getCFieldOffset(GraalHPyCField cfield) {
+        assert cfieldOffsets != null;
+        return cfieldOffsets[cfield.ordinal()];
+    }
+
+    @Override
+    protected Object nativeToInteropPointer(Object object) {
+        return object;
     }
 
     @Override
@@ -389,6 +425,226 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
         return HPyLLVMFromCharPointerNodeGen.getUncached();
+    }
+
+    @Override
+    public AllocateNode createAllocateNode() {
+        return null;
+    }
+
+    @Override
+    public AllocateNode getUncachedAllocateNode() {
+        return null;
+    }
+
+    @Override
+    public FreeNode createFreeNode() {
+        return null;
+    }
+
+    @Override
+    public FreeNode getUncachedFreeNode() {
+        return null;
+    }
+
+    @Override
+    public GetElementPtrNode createGetElementPtrNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public GetElementPtrNode getUncachedGetElementPtrNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public IsNullNode createIsNullNode() {
+        return null;
+    }
+
+    @Override
+    public IsNullNode getUncachedIsNullNode() {
+        return null;
+    }
+
+    @Override
+    public ReadI32Node createReadI32Node() {
+        return null;
+    }
+
+    @Override
+    public ReadI32Node getUncachedReadI32Node() {
+        return null;
+    }
+
+    @Override
+    public ReadI64Node createReadI64Node() {
+        return null;
+    }
+
+    @Override
+    public ReadI64Node getUncachedReadI64Node() {
+        return null;
+    }
+
+    @Override
+    public ReadFloatNode createReadFloatNode() {
+        return null;
+    }
+
+    @Override
+    public ReadFloatNode getUncachedReadFloatNode() {
+        return null;
+    }
+
+    @Override
+    public ReadDoubleNode createReadDoubleNode() {
+        return null;
+    }
+
+    @Override
+    public ReadDoubleNode getUncachedReadDoubleNode() {
+        return null;
+    }
+
+    @Override
+    public ReadPointerNode createReadPointerNode() {
+        return null;
+    }
+
+    @Override
+    public ReadPointerNode getUncachedReadPointerNode() {
+        return null;
+    }
+
+    @Override
+    public WriteDoubleNode createWriteDoubleNode() {
+        return null;
+    }
+
+    @Override
+    public WriteDoubleNode getUncachedWriteDoubleNode() {
+        return null;
+    }
+
+    @Override
+    public WriteI32Node createWriteI32Node() {
+        return null;
+    }
+
+    @Override
+    public WriteI32Node getUncachedWriteI32Node() {
+        return null;
+    }
+
+    @Override
+    public WriteI64Node createWriteI64Node() {
+        return null;
+    }
+
+    @Override
+    public WriteI64Node getUncachedWriteI64Node() {
+        return null;
+    }
+
+    @Override
+    public WriteHPyNode createWriteHPyNode() {
+        return null;
+    }
+
+    @Override
+    public WriteHPyNode getUncachedWriteHPyNode() {
+        return null;
+    }
+
+    @Override
+    public ReadI8ArrayNode createReadI8ArrayNode() {
+        return null;
+    }
+
+    @Override
+    public ReadI8ArrayNode getUncachedReadI8ArrayNode() {
+        return null;
+    }
+
+    @Override
+    public ReadHPyNode createReadHPyNode() {
+        return null;
+    }
+
+    @Override
+    public ReadHPyNode getUncachedReadHPyNode() {
+        return null;
+    }
+
+    @Override
+    public ReadHPyFieldNode createReadHPyFieldNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public ReadHPyFieldNode getUncachedReadFieldHPyNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public ReadGenericNode createReadGenericNode() {
+        return null;
+    }
+
+    @Override
+    public ReadGenericNode getUncachedReadGenericNode() {
+        return null;
+    }
+
+    @Override
+    public ReadHPyArrayNode createReadHPyArrayNode() {
+        return null;
+    }
+
+    @Override
+    public ReadHPyArrayNode getUncachedReadHPyArrayNode() {
+        return null;
+    }
+
+    @Override
+    public WritePointerNode createWritePointerNode() {
+        return null;
+    }
+
+    @Override
+    public WritePointerNode getUncachedWritePointerNode() {
+        return null;
+    }
+
+    @Override
+    public WriteSizeTNode createWriteSizeTNode() {
+        return null;
+    }
+
+    @Override
+    public WriteSizeTNode getUncachedWriteSizeTNode() {
+        return null;
+    }
+
+    @Override
+    public WriteGenericNode createWriteGenericNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public WriteGenericNode getUncachedWriteGenericNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public WriteHPyFieldNode createWriteHPyFieldNode() {
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @Override
+    public WriteHPyFieldNode getUncachedWriteHPyFieldNode() {
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @ExportMessage
