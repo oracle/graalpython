@@ -62,7 +62,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class PySequenceArrayWrapper {
 
     @GenerateUncached
-    abstract static class ToNativeStorageNode extends Node {
+    public abstract static class ToNativeStorageNode extends Node {
 
         public abstract NativeSequenceStorage execute(SequenceStorage object, boolean isBytesLike);
 
@@ -103,6 +103,10 @@ public final class PySequenceArrayWrapper {
 
         protected static boolean isNative(SequenceStorage s) {
             return s instanceof NativeSequenceStorage;
+        }
+
+        public static ToNativeStorageNode getUncached() {
+            return ToNativeStorageNodeGen.getUncached();
         }
     }
 

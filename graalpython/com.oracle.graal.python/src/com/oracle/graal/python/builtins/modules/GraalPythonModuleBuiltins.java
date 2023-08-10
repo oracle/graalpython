@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
@@ -90,7 +91,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -140,6 +144,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -253,6 +259,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("storage_to_native"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
         }
@@ -775,6 +782,36 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
+            }
+        }
+    }
+
+    @Builtin(name = "storage_to_native", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StorageToNative extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PBytesLike bytes) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
+            bytes.setSequenceStorage(newStorage);
+            return bytes;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PSequence sequence) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(sequence.getSequenceStorage(), false);
+            sequence.setSequenceStorage(newStorage);
+            return sequence;
+        }
+
+        private void ensureCapi() {
+            try {
+                CApiContext.ensureCapiWasLoaded(null, getContext(), T_EMPTY_STRING, T_EMPTY_STRING);
+            } catch (Exception e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }
