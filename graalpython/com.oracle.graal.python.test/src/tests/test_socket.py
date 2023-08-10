@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,10 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import unittest
-
 import socket
+import sys
+import threading
+import unittest
 
 
 def test_inet_aton():
@@ -58,10 +58,43 @@ class TestInetAtonErrors(unittest.TestCase):
         self.assertRaises(OSError, lambda : socket.inet_aton('255.255.256.1'))
         self.assertRaises(TypeError, lambda : socket.inet_aton(255))
 
-def test_get_name_info():    
+def test_get_name_info():
     import socket
     try :
         socket.getnameinfo((1, 0, 0, 0), 0)
     except TypeError:
         raised = True
     assert raised
+
+
+def test_recv_into():
+    port = None
+    event = threading.Event()
+    def server():
+        nonlocal port
+        with socket.create_server(('localhost', 0)) as sock:
+            port = sock.getsockname()[1]
+            event.set()
+            conn, addr = sock.accept()
+            conn.send(b'123')
+            conn.close()
+    thread = threading.Thread(target=server)
+    thread.start()
+    event.wait()
+    with socket.create_connection(('localhost', port)) as sock:
+        # Byte buffer with direct access to internal array
+        b = bytearray(b'aaa')
+        sock.recv_into(b, 1)
+        assert b == b'1aa'
+        # Byte buffer with offset, this currently doesn't have internal array acces, but we might implement it later
+        buffer = memoryview(b)[1:]
+        sock.recv_into(buffer, 1)
+        assert b == b'12a'
+        if sys.implementation.name == 'graalpy':
+            assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
+            __graalpython__.storage_to_native(b)
+        # Native buffer, no internal array
+        buffer = memoryview(buffer)[1:]
+        sock.recv_into(buffer, 1)
+        assert b == b'123'
+    thread.join()
