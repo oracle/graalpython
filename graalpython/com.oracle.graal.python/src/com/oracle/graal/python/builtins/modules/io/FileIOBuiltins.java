@@ -722,7 +722,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!self.isUTF8Write()"})
+        @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
         Object write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesToWriteNode getBytesToWriteNode,

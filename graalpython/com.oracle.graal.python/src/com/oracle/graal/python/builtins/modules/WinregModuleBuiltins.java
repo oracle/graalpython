@@ -94,8 +94,8 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
-                       @Bind("this") Node inliningTarget,
-                       @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (key instanceof Integer intKey) {
                 if (intKey == HKEY_CLASSES_ROOT) {
                     return factory().createLock();

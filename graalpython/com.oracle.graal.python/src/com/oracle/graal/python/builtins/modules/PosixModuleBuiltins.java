@@ -1863,7 +1863,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(ns)"})
         long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached LenNode lenNode,
+                        @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode) {
             return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode);
@@ -1872,7 +1872,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached LenNode lenNode,
+                        @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
             return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode);
@@ -2709,7 +2709,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object doString(Node inliningTarget, Object strObj,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, strObj);
             return checkPath(inliningTarget, posixLib.createPathFromString(PosixSupport.get(inliningTarget), str), raiseNode);
         }
@@ -2718,7 +2718,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static Object doBytes(Node inliningTarget, PBytes bytes,
                         @Cached(inline = false) BytesNodes.ToBytesNode toBytesNode,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             return checkPath(inliningTarget, posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), toBytesNode.execute(bytes)), raiseNode);
         }
 
@@ -2821,7 +2821,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 timespec[offset] = asLongNode.execute(frame, inliningTarget, value);
             } catch (OverflowException e) {

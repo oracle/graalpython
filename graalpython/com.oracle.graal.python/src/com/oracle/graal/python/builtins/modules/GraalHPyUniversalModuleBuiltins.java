@@ -59,10 +59,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -156,8 +155,10 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString extName, Object pkg, TruffleString file, Object loader, Object spec, Object env,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object module;
 
             PythonContext context = getContext();
@@ -170,11 +171,11 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                 // thrown by getHPyModeFromEnviron if value is not a string
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
             } catch (ApiInitException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
+                throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
+                throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (IOException e) {
-                throw getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
