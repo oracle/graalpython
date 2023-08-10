@@ -530,12 +530,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             return executeNode.execute(this, arguments);
-        } catch (PException e) {
-            throw e;
-        } catch (Throwable e) {
-            CompilerDirectives.transferToInterpreter();
-            e.printStackTrace();
-            throw e;
         } finally {
             gil.release(mustRelease);
         }
