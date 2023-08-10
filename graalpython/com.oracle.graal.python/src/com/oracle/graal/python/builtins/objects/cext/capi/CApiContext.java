@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -674,7 +675,8 @@ public final class CApiContext extends CExtContext {
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
-                e.printStackTrace();
+                // this is a fatal error, so print it to stderr:
+                e.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
                 throw new RuntimeException(e);
             }
         }
