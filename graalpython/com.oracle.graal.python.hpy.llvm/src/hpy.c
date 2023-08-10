@@ -625,6 +625,10 @@ void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* val
 	memcpy(addr, value, n);
 }
 
+void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
+    WriteMember(object, offset, WRAP(value), HPy);
+}
+
 void graal_hpy_write_HPyField(void* object, HPy_ssize_t offset, void* value) {
     WriteMember(object, offset, WRAP_FIELD(value), HPyField);
 }
