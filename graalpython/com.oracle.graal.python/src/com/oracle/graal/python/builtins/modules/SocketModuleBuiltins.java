@@ -288,7 +288,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached SocketNodes.MakeIpAddrNode makeIpAddrNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil) {
             /*
@@ -327,7 +327,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new Object[]{hostname, factory().createList(), factory().createList(storage)});
             } catch (GetAddrInfoException e) {
                 // TODO convert error code from gaierror to herror
-                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessageAsTruffleString()});
             }
         }
 
@@ -507,7 +507,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castAddress,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addrLen = addr.length();
@@ -574,7 +574,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 TruffleString service = posixLib.getPathAsString(getPosixSupport(), getnameinfo[1]);
                 return factory().createTuple(new Object[]{host, service});
             } catch (GetAddrInfoException e) {
-                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
             }
         }
 

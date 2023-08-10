@@ -1796,13 +1796,14 @@ public final class PythonCextBuiltins {
 
         @ExportMessage
         byte readBufferByte(long idx,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixSupportLib,
-                        @Cached PConstructAndRaiseNode raise) throws InvalidBufferOffsetException {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws InvalidBufferOffsetException {
             checkIndex(idx);
             try {
                 return (posixSupportLib.mmapReadByte(PythonContext.get(posixSupportLib).getPosixSupport(), delegate.getPosixSupportHandle(), idx));
             } catch (PosixException e) {
-                throw raise.raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
             }
         }
 

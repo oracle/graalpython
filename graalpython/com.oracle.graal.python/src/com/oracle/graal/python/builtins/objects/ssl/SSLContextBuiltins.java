@@ -163,7 +163,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
             if (method == null) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
@@ -188,7 +189,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
             } catch (KeyManagementException e) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
             }
         }
 
@@ -670,7 +671,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object storeStats(VirtualFrame frame, PSSLContext self,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 int x509 = 0, crl = 0, ca = 0;
                 for (X509Certificate cert : self.getCACerts()) {
@@ -686,7 +688,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createDict(new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
             } catch (Exception ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
     }
@@ -1037,7 +1039,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "!binary_form")
         Object getCerts(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 List<PDict> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
@@ -1047,7 +1050,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createList(PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateParsingException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
 

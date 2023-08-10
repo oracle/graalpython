@@ -267,9 +267,10 @@ public abstract class SocketNodes {
 
         @Specialization
         UniversalSockAddr setipaddr(VirtualFrame frame, TruffleString name, int family,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Cached GilNode gil) {
@@ -343,7 +344,7 @@ public abstract class SocketNodes {
                     gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
-                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
             }
         }
 
@@ -359,11 +360,13 @@ public abstract class SocketNodes {
         public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PythonObjectFactory factory,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -395,7 +398,7 @@ public abstract class SocketNodes {
                     throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
-                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
             }
         }
 
@@ -417,10 +420,12 @@ public abstract class SocketNodes {
         public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             try {
                 PythonContext context = PythonContext.get(this);
@@ -437,7 +442,7 @@ public abstract class SocketNodes {
                     throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
-                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
             }
         }
     }

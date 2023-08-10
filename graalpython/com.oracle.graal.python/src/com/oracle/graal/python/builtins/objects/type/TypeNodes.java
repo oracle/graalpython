@@ -2049,7 +2049,7 @@ public abstract class TypeNodes {
                         @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raise,
                         @Cached GetObjectArrayNode getObjectArray,
                         @Cached PythonObjectFactory factory,
@@ -2091,7 +2091,7 @@ public abstract class TypeNodes {
             assert metaclass != null;
 
             if (!isValidNode.execute(name, TS_ENCODING)) {
-                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", name, 0, codePointLengthNode.execute(name, TS_ENCODING), "can't encode class name");
+                throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", name, 0, codePointLengthNode.execute(name, TS_ENCODING), "can't encode class name");
             }
             if (indexOfCodePointNode.execute(name, 0, 0, codePointLengthNode.execute(name, TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
@@ -2402,7 +2402,7 @@ public abstract class TypeNodes {
         private void copyDictSlots(VirtualFrame frame, Node inliningTarget, PythonClass pythonClass, PDict namespace, HashingStorageSetItemWithHash setHashingStorageItem,
                         HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
                         HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue, Object[] slots,
-                        boolean[] qualnameSet, PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
+                        boolean[] qualnameSet, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
                         EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
@@ -2450,7 +2450,8 @@ public abstract class TypeNodes {
                         }
                         if (doc != null) {
                             if (!isValidNode.execute(doc, TS_ENCODING)) {
-                                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", doc, 0, codePointLengthNode.execute(doc, TS_ENCODING), "can't encode docstring");
+                                throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", doc, 0, codePointLengthNode.execute(doc, TS_ENCODING),
+                                                "can't encode docstring");
                             }
                         }
                         pythonClass.setAttribute(key, value);

@@ -111,8 +111,9 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object enumKey(VirtualFrame frame, Object key, Object index,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
-            throw constructAndRaiseNode.raiseOSError(frame, OSErrorEnum.ENOENT);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
         }
     }
 }
