@@ -138,7 +138,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     private static final String J_NAME = "HPy Universal ABI (GraalVM LLVM backend)";
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyLLVMContext.class);
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyLLVMContext.class);
 
     /** A resolving cache from Java string to HPyContextMember */
     public static HashMap<String, HPyContextMember> contextMembersByName;

@@ -127,14 +127,19 @@ public final class GraalHPyContext extends CExtContext {
     public static final String HPY_ABI_TAG = "hpy0";
     // {{end autogen}}
 
+    private static final String LOGGER_HPY_NAME = "hpy";
     private static final String HPY_EXT = ".hpy";
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyContext.class);
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
     private static final long NATIVE_ARGUMENT_STACK_SIZE = 1 << 15; // 32 kB stack size
 
     // "blah.hpy123[-graalpy231-310].so"
     private static final Pattern SO_NAME_PATTERN = Pattern.compile(".*" + Pattern.quote(HPY_EXT) + "(\\d+)(?:-[\\w-]+)?\\.so$");
+
+    public static TruffleLogger getLogger(Class<?> clazz) {
+        return PythonLanguage.getLogger(LOGGER_HPY_NAME + "." + clazz.getSimpleName());
+    }
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
@@ -505,7 +510,7 @@ public final class GraalHPyContext extends CExtContext {
      * exchanging process, see also {@link #references}).
      */
     static final class GraalHPyReferenceCleanerRunnable implements Runnable {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyReferenceCleanerRunnable.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyReferenceCleanerRunnable.class);
         private final ReferenceQueue<?> referenceQueue;
         private GraalHPyHandleReference cleanerList;
 
@@ -606,7 +611,7 @@ public final class GraalHPyContext extends CExtContext {
      */
     private static final class HPyNativeSpaceCleanerRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyNativeSpaceCleanerRootNode.class);
 
         @Child private PCallHPyFunction callBulkFree;
 

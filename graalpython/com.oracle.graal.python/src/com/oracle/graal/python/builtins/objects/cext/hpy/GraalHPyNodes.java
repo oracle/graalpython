@@ -77,6 +77,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -414,6 +415,8 @@ public abstract class GraalHPyNodes {
     @GenerateUncached
     public abstract static class GraalHPyModuleCreate extends Node {
 
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyModuleCreate.class);
+
         public abstract Object execute(GraalHPyContext hpyContext, TruffleString mName, Object spec, Object moduleDefPtr);
 
         @Specialization
@@ -526,10 +529,13 @@ public abstract class GraalHPyNodes {
                         case GraalHPyDef.HPY_DEF_KIND_MEMBER:
                         case GraalHPyDef.HPY_DEF_KIND_GETSET:
                             // silently ignore
-                            // TODO(fa): maybe we should log a warning
+                            LOGGER.warning("get/set definitions are not supported for modules");
                             break;
                         default:
-                            assert false : "unknown definition kind";
+                            if (LOGGER.isLoggable(Level.SEVERE)) {
+                                LOGGER.severe(PythonUtils.formatJString("unknown definition kind: %d", kind));
+                            }
+                            assert false;
                     }
                 }
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
@@ -805,7 +811,6 @@ public abstract class GraalHPyNodes {
      */
     @GenerateUncached
     public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyAddLegacyGetSetDefNode.class);
 
         public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDef);
 
@@ -2360,9 +2365,10 @@ public abstract class GraalHPyNodes {
     @GenerateUncached
     abstract static class HPyCreateTypeFromSpecNode extends Node {
 
-        abstract Object execute(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray);
-
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyCreateTypeFromSpecNode.class);
         static final TruffleString T_PYTRUFFLE_CREATETYPE = tsLiteral("PyTruffle_CreateType");
+
+        abstract Object execute(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray);
 
         @Specialization
         Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
@@ -2528,7 +2534,10 @@ public abstract class GraalHPyNodes {
                                 property = new HPyProperty(getSetDescriptor.getName(), getSetDescriptor);
                                 break;
                             default:
-                                assert false : "unknown definition kind";
+                                if (LOGGER.isLoggable(Level.SEVERE)) {
+                                    LOGGER.severe(PythonUtils.formatJString("unknown definition kind: %d", kind));
+                                }
+                                assert false;
                         }
 
                         if (property != null) {

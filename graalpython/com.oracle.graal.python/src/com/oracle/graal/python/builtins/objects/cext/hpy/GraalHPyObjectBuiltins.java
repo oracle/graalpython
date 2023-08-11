@@ -87,7 +87,7 @@ public abstract class GraalHPyObjectBuiltins {
 
         private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_SUPERCONS, false);
 
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyObjectNewNode.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyObjectNewNode.class);
 
         private static PKeyword[] createKwDefaults(Object superConstructor) {
             if (superConstructor != null) {

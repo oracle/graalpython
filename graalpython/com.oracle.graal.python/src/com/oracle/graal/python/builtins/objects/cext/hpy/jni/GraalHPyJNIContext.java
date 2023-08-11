@@ -189,7 +189,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private static final String J_NAME = "HPy Universal ABI (GraalVM JNI backend)";
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyJNIContext.class);
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyJNIContext.class);
 
     private static boolean jniBackendLoaded = false;
 

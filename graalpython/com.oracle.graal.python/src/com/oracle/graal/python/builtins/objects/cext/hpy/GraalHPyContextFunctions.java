@@ -2307,7 +2307,7 @@ public abstract class GraalHPyContextFunctions {
     @HPyContextFunction("ctx_New")
     @GenerateUncached
     public abstract static class GraalHPyNew extends HPyTernaryContextFunction {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyNew.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyNew.class);
         public static final String INVALID_BUILT_IN_SHAPE = "invalid built-in shape";
 
         @Specialization
@@ -2403,7 +2403,7 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyTypeGenericNew extends HPy5ContextFunction {
 
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyTypeGenericNew.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyTypeGenericNew.class);
 
         @Specialization
         @SuppressWarnings("unused")
