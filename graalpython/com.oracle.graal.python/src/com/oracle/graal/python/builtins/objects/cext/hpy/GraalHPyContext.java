@@ -133,8 +133,8 @@ public final class GraalHPyContext extends CExtContext {
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
     private static final long NATIVE_ARGUMENT_STACK_SIZE = 1 << 15; // 32 kB stack size
 
-    // "blah.hpy123[-310].so"
-    private static final Pattern SO_NAME_PATTERN = Pattern.compile(".*" + Pattern.quote(HPY_EXT) + "(\\d+)(?:-\\d+)?\\.so$");
+    // "blah.hpy123[-graalpy231-310].so"
+    private static final Pattern SO_NAME_PATTERN = Pattern.compile(".*" + Pattern.quote(HPY_EXT) + "(\\d+)(?:-[\\w-]+)?\\.so$");
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
