@@ -930,6 +930,21 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_Count = CPyExtFunction(
+        lambda args: args[0].count(args[1], args[2], args[3]),
+        lambda: (
+            (". .. ....", ".", 0, -1),
+            (". .. ....", ".", 3, 7),
+            (". .. ....", ".", 3, 19),
+            (". .. ....", "..", 0, -1),
+            (". .. ....", "...", 0, 4),
+        ),
+        resultspec="n",
+        argspec='OOnn',
+        arguments=["PyObject* string", "PyObject* sub", "Py_ssize_t start", "Py_ssize_t end"],
+        cmpfunc=unhandled_error_compare
+    )
+
 class TestUnicodeObject(object):
     def test_intern(self):
         TestIntern = CPyExtType(
