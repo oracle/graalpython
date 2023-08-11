@@ -46,10 +46,12 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LongIndexConverterNode extends LongConversionBaseNode {
     protected LongIndexConverterNode(long defaultValue, boolean useDefaultForNone) {
@@ -58,9 +60,10 @@ public abstract class LongIndexConverterNode extends LongConversionBaseNode {
 
     @Specialization(guards = "!isHandledPNone(value)")
     static long doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToJavaLongExactNode cast) {
-        return cast.execute(indexNode.execute(frame, value));
+        return cast.execute(inliningTarget, indexNode.execute(frame, inliningTarget, value));
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})

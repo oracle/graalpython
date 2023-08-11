@@ -45,9 +45,13 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNABLE_TO_GET_S;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -56,17 +60,20 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 /**
  * Equivalent of CPython's {@code PyImport_GetModule}.
  */
-public abstract class PyImportGetModule extends PNodeWithState {
-    public abstract Object execute(VirtualFrame frame, Object name);
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyImportGetModule extends PNodeWithContext {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object name);
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, Object name,
+    static Object doGeneric(VirtualFrame frame, Node node, Object name,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile noSysModulesProfile,
-                    @Cached DictBuiltins.GetItemNode getDictItemNode) {
-        final PDict sysModules = getContext().getSysModules();
+                    @Cached(inline = false) DictBuiltins.GetItemNode getDictItemNode,
+                    @Cached PRaiseNode.Lazy raise) {
+        final PDict sysModules = PythonContext.get(node).getSysModules();
         if (noSysModulesProfile.profile(inliningTarget, sysModules == null)) {
-            throw raise(PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
         }
         return getDictItemNode.execute(frame, sysModules, name);
     }

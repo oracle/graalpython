@@ -1572,4 +1572,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CORO_ALREADY_AWAITED = tsLiteral("coroutine is being awaited already");
     public static final TruffleString ANEXT_INVALID_OBJECT = tsLiteral("'async for' received an invalid object from __anext__: %p");
     public static final TruffleString ASYNCGEN_RAISED_ASYNCSTOPITER = tsLiteral("async generator raised StopAsyncIteration");
+    public static final TruffleString MAXSIZE_SHOULD_BE_INTEGER_OR_NONE = tsLiteral("maxsize should be integer or None");
+    public static final TruffleString THE_FIRST_ARGUMENT_MUST_BE_CALLABLE = tsLiteral("the first argument must be callable");
 }

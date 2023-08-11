@@ -91,6 +91,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -269,7 +270,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
+                        @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
@@ -295,7 +296,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -307,7 +308,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             if (slice.getStep() == PNone.NONE) {
                 step = 1;
             } else {
-                step = asSizeNode.executeExact(frame, slice.getStep(), ValueError);
+                step = asSizeNode.executeExact(frame, inliningTarget, slice.getStep(), ValueError);
                 if (step == 0) {
                     throw raise(ValueError, SLICE_STEP_CANNOT_BE_ZERO);
                 }
@@ -318,12 +319,12 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                 }
                 start = 0;
             } else {
-                start = asSizeNode.executeExact(frame, slice.getStart(), ValueError);
+                start = asSizeNode.executeExact(frame, inliningTarget, slice.getStart(), ValueError);
             }
             if (slice.getStop() == PNone.NONE) {
                 throw raise(ValueError, SLICE_STOP_IS_REQUIRED);
             }
-            stop = asSizeNode.executeExact(frame, slice.getStop(), ValueError);
+            stop = asSizeNode.executeExact(frame, inliningTarget, slice.getStop(), ValueError);
             int len;
             if ((step > 0 && start > stop) ||
                             (step < 0 && start < stop)) {
@@ -385,11 +386,11 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyIndexCheckNode indexCheckNode) {
-            if (indexCheckNode.execute(item)) {
-                int i = asSizeNode.executeExact(frame, item, IndexError);
+            if (indexCheckNode.execute(inliningTarget, item)) {
+                int i = asSizeNode.executeExact(frame, inliningTarget, item, IndexError);
                 return Pointer_item(self, i, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode);
             }
             throw raise(TypeError, POINTER_INDICES_MUST_BE_INTEGER);

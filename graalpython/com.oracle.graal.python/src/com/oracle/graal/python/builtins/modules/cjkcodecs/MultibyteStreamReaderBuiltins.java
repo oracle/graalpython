@@ -67,18 +67,20 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -102,17 +104,18 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual) { // "O|s:StreamReader"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
-                errors = castToStringNode.execute(err);
+                errors = castToStringNode.execute(inliningTarget, err);
             }
 
             MultibyteStreamReaderObject self = factory().createMultibyteStreamReaderObject(type);
-            Object codec = getAttr.execute(frame, type, CODEC);
+            Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
@@ -136,7 +139,8 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class IReadNode extends PNodeWithRaise {
+    @GenerateInline(false)
+    abstract static class IReadNode extends PNodeWithContext {
 
         abstract TruffleString execute(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint);
 
@@ -145,11 +149,12 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode) {
+                        @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
 
             if (sizehint == 0) {
                 return T_EMPTY_STRING;
@@ -158,15 +163,15 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
             for (;;) {
                 Object cres;
                 if (sizehint < 0) {
-                    cres = callMethod.execute(frame, self.stream, method);
+                    cres = callMethod.execute(frame, inliningTarget, self.stream, method);
                 } else {
-                    cres = callMethod.execute(frame, self.stream, method, sizehint);
+                    cres = callMethod.execute(frame, inliningTarget, self.stream, method, sizehint);
                 }
 
                 if (!(cres instanceof PBytes)) {
                     Object crestType = getClassNode.execute(inliningTarget, cres);
                     if (!bytesCheckNode.execute(inliningTarget, crestType)) {
-                        throw raise(TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(cres));
+                        throw raiseNode.get(inliningTarget).raise(TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(inliningTarget, cres));
                     }
                 }
 
@@ -195,7 +200,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (rsize > 0) {
-                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, getRaiseNode());
+                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, raiseNode.get(inliningTarget));
                 }
 
                 if (endoffile || sizehint < 0) {
@@ -206,7 +211,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (!buf.isFull()) { /* pending sequence exists */
-                    decoderAppendPending(self, buf, getRaiseNode());
+                    decoderAppendPending(self, buf, raiseNode.get(inliningTarget));
                 }
 
                 if (sizehint < 0 || buf.getOutpos() != 0 || rsize == 0) {

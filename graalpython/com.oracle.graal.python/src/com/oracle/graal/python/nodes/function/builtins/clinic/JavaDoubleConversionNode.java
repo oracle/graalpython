@@ -47,10 +47,12 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
 
@@ -83,9 +85,10 @@ public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
     }
 
     @Specialization(guards = "!isHandledPNone(value)")
-    double doOthers(VirtualFrame frame, Object value,
+    static double doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyFloatAsDoubleNode asDoubleNode) {
-        return asDoubleNode.execute(frame, value);
+        return asDoubleNode.execute(frame, inliningTarget, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)

@@ -138,11 +138,11 @@ public class BufferedIONodes {
         }
 
         @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
-        static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @Cached(inline = false) PyObjectGetAttr getAttr,
-                        @Cached(inline = false) PyObjectIsTrueNode isTrue) {
-            Object res = getAttr.execute(frame, self.getRaw(), T_CLOSED);
-            return isTrue.execute(frame, res);
+        static boolean isClosedBuffered(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            Object res = getAttr.execute(frame, inliningTarget, self.getRaw(), T_CLOSED);
+            return isTrue.execute(frame, inliningTarget, res);
         }
     }
 
@@ -152,11 +152,12 @@ public class BufferedIONodes {
 
         @Specialization
         boolean isSeekable(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
             assert self.isOK();
-            Object res = callMethod.execute(frame, self.getRaw(), T_SEEKABLE);
-            if (!isTrue.execute(frame, res)) {
+            Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
+            if (!isTrue.execute(frame, inliningTarget, res)) {
                 throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
@@ -180,12 +181,12 @@ public class BufferedIONodes {
         @Specialization
         static long toLong(VirtualFrame frame, Node inliningTarget, Object number, PythonBuiltinClassType err,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached(inline = false) PyNumberIndexNode indexNode,
-                        @Cached(inline = false) CastToJavaLongExactNode cast,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast,
                         @Cached IsBuiltinObjectProfile errorProfile) {
-            Object index = indexNode.execute(frame, number);
+            Object index = indexNode.execute(frame, inliningTarget, number);
             try {
-                return cast.execute(index);
+                return cast.execute(inliningTarget, index);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, errorProfile);
                 throw raiseNode.get(inliningTarget).raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
@@ -195,34 +196,30 @@ public class BufferedIONodes {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    static long tell(VirtualFrame frame, Node inliningTarget, Object raw,
+                    PyObjectCallMethodObjArgs callMethod,
+                    AsOffNumberNode asOffNumberNode) {
+        Object res = callMethod.execute(frame, inliningTarget, raw, T_TELL);
+        return asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     abstract static class RawTellNode extends PNodeWithContext {
-        final long executeIgnoreError(VirtualFrame frame, Node inliningTarget, PBuffered self) {
-            return execute(frame, inliningTarget, self, true);
-        }
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
-        final long execute(VirtualFrame frame, Node inliningTarget, PBuffered self) {
-            return execute(frame, inliningTarget, self, false);
-        }
-
-        abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, boolean ignore);
-
-        private static long tell(VirtualFrame frame, Node inliningTarget, Object raw,
-                        PyObjectCallMethodObjArgs callMethod,
-                        AsOffNumberNode asOffNumberNode) {
-            Object res = callMethod.execute(frame, raw, T_TELL);
-            return asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
+        public final long executeCached(VirtualFrame frame, PBuffered self) {
+            return execute(frame, this, self);
         }
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_tell
          */
-        @Specialization(guards = "!ignore")
-        static long bufferedRawTell(VirtualFrame frame, Node inliningTarget, PBuffered self, @SuppressWarnings("unused") boolean ignore,
+        @Specialization
+        static long bufferedRawTell(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         @Cached PRaiseNode.Lazy lazyRaiseNode,
-                        @Shared("callMethod") @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
-                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached AsOffNumberNode asOffNumberNode) {
             long n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
             if (n < 0) {
                 throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
@@ -230,11 +227,32 @@ public class BufferedIONodes {
             self.setAbsPos(n);
             return n;
         }
+    }
 
-        @Specialization(guards = "ignore")
-        static long bufferedRawTellIgnoreException(VirtualFrame frame, Node inliningTarget, PBuffered self, @SuppressWarnings("unused") boolean ignore,
-                        @Shared("callMethod") @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
-                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class LazyRawTellNode extends Node {
+        public final RawTellNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        protected abstract RawTellNode execute(Node inliningTarget);
+
+        @Specialization
+        RawTellNode doIt(@Cached(inline = false) RawTellNode node) {
+            return node;
+        }
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached(false)
+    abstract static class RawTellIgnoreErrorNode extends PNodeWithContext {
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
+
+        @Specialization
+        static long bufferedRawTellIgnoreException(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached AsOffNumberNode asOffNumberNode) {
             long n;
             try {
                 n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
@@ -251,18 +269,18 @@ public class BufferedIONodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_seek
      */
-    @GenerateInline
-    @GenerateCached(false)
+    @GenerateInline(false) // Used lazily
     abstract static class RawSeekNode extends PNodeWithContext {
 
-        public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, long target, int whence);
+        public abstract long execute(VirtualFrame frame, PBuffered self, long target, int whence);
 
         @Specialization
-        static long bufferedRawSeek(VirtualFrame frame, Node inliningTarget, PBuffered self, long target, int whence,
+        static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode) {
-            Object res = callMethod.execute(frame, self.getRaw(), T_SEEK, target, whence);
+            Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
             if (n < 0) {
                 raise.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
@@ -282,33 +300,33 @@ public class BufferedIONodes {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
         @Specialization(guards = {"self.isReadable()", "!self.isWritable()"})
-        protected static void readOnly(VirtualFrame frame, Node inliningTarget, PBuffered self,
-                        @Shared @Cached RawSeekNode rawSeekNode) {
+        protected static void readOnly(VirtualFrame frame, PBuffered self,
+                        @Shared @Cached(inline = false) RawSeekNode rawSeekNode) {
             /*
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
              */
-            long n = rawSeekNode.execute(frame, inliningTarget, self, -rawOffset(self), 1);
+            long n = rawSeekNode.execute(frame, self, -rawOffset(self), 1);
             self.resetRead(); // _bufferedreader_reset_buf
             assert n != -1;
         }
 
         @Specialization(guards = {"!self.isReadable()", "self.isWritable()"})
-        protected static void writeOnly(VirtualFrame frame, Node inliningTarget, PBuffered self,
-                        @Shared @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode) {
-            flushUnlockedNode.execute(frame, inliningTarget, self);
+        protected static void writeOnly(VirtualFrame frame, PBuffered self,
+                        @Shared @Cached(inline = false) BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode) {
+            flushUnlockedNode.execute(frame, self);
         }
 
         @Specialization(guards = {"self.isReadable()", "self.isWritable()"})
-        protected static void readWrite(VirtualFrame frame, Node inliningTarget, PBuffered self,
-                        @Shared @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
-                        @Shared @Cached RawSeekNode rawSeekNode) {
-            flushUnlockedNode.execute(frame, inliningTarget, self);
+        protected static void readWrite(VirtualFrame frame, PBuffered self,
+                        @Shared @Cached(inline = false) BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
+                        @Shared @Cached(inline = false) RawSeekNode rawSeekNode) {
+            flushUnlockedNode.execute(frame, self);
             /*
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
              */
-            long n = rawSeekNode.execute(frame, inliningTarget, self, -rawOffset(self), 1);
+            long n = rawSeekNode.execute(frame, self, -rawOffset(self), 1);
             self.resetRead(); // _bufferedreader_reset_buf
             assert n != -1;
         }
@@ -327,9 +345,9 @@ public class BufferedIONodes {
         static long seek(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, long off, int whence,
                         @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
-                        @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
-                        @Cached RawSeekNode rawSeekNode,
-                        @Cached RawTellNode rawTellNode,
+                        @Cached(inline = false) BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
+                        @Cached(inline = false) RawSeekNode rawSeekNode,
+                        @Cached LazyRawTellNode rawTellNode,
                         @Cached InlinedConditionProfile whenceSeekSetProfile,
                         @Cached InlinedConditionProfile whenceSeekCurProfile,
                         @Cached InlinedConditionProfile isReadbleProfile,
@@ -352,7 +370,7 @@ public class BufferedIONodes {
                  * that when whence == 2, though.
                  */
                 long current = self.getAbsPos() != -1 ? self.getAbsPos()
-                                : rawTellNode.execute(frame, inliningTarget, self);
+                                : rawTellNode.get(inliningTarget).executeCached(frame, self);
                 int avail = readahead(self);
                 if (isAvail.profile(inliningTarget, avail > 0)) {
                     long offset = target;
@@ -370,13 +388,13 @@ public class BufferedIONodes {
             try {
                 /* Fallback: invoke raw seek() method and clear buffer */
                 if (isWriteableProfile.profile(inliningTarget, self.isWritable())) {
-                    flushUnlockedNode.execute(frame, inliningTarget, self);
+                    flushUnlockedNode.execute(frame, self);
                 }
 
                 if (whenceSeekCur) {
                     target -= rawOffset(self);
                 }
-                long n = rawSeekNode.execute(frame, inliningTarget, self, target, whence);
+                long n = rawSeekNode.execute(frame, self, target, whence);
                 self.setRawPos(-1);
                 if (selfIsReadable) {
                     self.resetRead(); // _bufferedreader_reset_buf

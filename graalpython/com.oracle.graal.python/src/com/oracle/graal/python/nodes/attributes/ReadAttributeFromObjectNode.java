@@ -63,7 +63,9 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
+@GenerateInline(false) // footprint reduction 64 -> 47
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @NeverDefault
     public static ReadAttributeFromObjectNode create() {
@@ -120,12 +123,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }, limit = "1")
     @SuppressWarnings("unused")
     protected static Object readFromBuiltinModuleDict(PythonModule object, TruffleString key,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
         // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItem.execute(cachedStorage, key);
+        Object value = getItem.execute(inliningTarget, cachedStorage, key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -145,16 +149,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected static Object readObjectAttribute(PythonObject object, Object key,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
-                    @Cached GetDictIfExistsNode getDict,
+                    @Exclusive @Cached GetDictIfExistsNode getDict,
                     @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItem getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
         } else {
             // Note: we should pass the frame. In theory a subclass of a string may override
             // __hash__ or __eq__ and run some side effects in there.
-            Object value = getItem.execute(null, dict.getDictStorage(), key);
+            Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (value == null) {
                 return PNone.NO_VALUE;
             } else {
@@ -166,9 +170,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign object or primitive
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
     protected static Object readForeign(Object object, Object key,
+                    @Bind("this") Node inliningTarget,
                     @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached ReadAttributeFromForeign read) {
-        if (isForeignObjectNode.execute(object)) {
+        if (isForeignObjectNode.execute(inliningTarget, object)) {
             // there's an implicit condition profile from the isForeignObjectNode active
             // specializations
             return read.execute(object, key);
@@ -182,28 +187,32 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // the boolean flag forceType for the fallback in their type
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 64 -> 47
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
-                        @Cached GetDictIfExistsNode getDict,
-                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-            return readNative(key, getDict.execute(object), getItem);
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetDictIfExistsNode getDict,
+                        @Exclusive @Cached HashingStorageGetItem getItem) {
+            return readNative(inliningTarget, key, getDict.execute(object), getItem);
         }
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 68 -> 51
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
-                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-            return readNative(key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
+                        @Exclusive @Cached HashingStorageGetItem getItem) {
+            return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
 
-    private static Object readNative(Object key, Object dict, HashingStorageGetItem getItem) {
+    private static Object readNative(Node inliningTarget, Object key, Object dict, HashingStorageGetItem getItem) {
         if (dict instanceof PHashingCollection) {
-            Object result = getItem.execute(null, ((PHashingCollection) dict).getDictStorage(), key);
+            Object result = getItem.execute(null, inliningTarget, ((PHashingCollection) dict).getDictStorage(), key);
             if (result != null) {
                 return result;
             }
@@ -213,6 +222,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @ImportStatic(PythonOptions.class)
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 32 -> 13
     protected abstract static class ReadAttributeFromForeign extends PNodeWithContext {
         public abstract Object execute(Object object, Object key);
 

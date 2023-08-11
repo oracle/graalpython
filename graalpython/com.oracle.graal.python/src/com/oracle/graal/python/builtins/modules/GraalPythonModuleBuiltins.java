@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
@@ -90,7 +91,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -130,7 +134,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -140,6 +144,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -253,6 +259,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("storage_to_native"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
         }
@@ -295,7 +302,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
             if (needsMainImporter) {
                 Object sysPath = sysModule.getAttribute(T_PATH);
-                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, T_INSERT, 0, inputFilePath);
+                PyObjectCallMethodObjArgs.getUncached().execute(null, null, sysPath, T_INSERT, 0, inputFilePath);
             } else {
                 // This is normally done by PythonLanguage, but is suppressed when we have a path
                 // argument
@@ -343,7 +350,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         // Equivalent of CPython's pymain_run_module
         private static void runModule(TruffleString module, boolean setArgv0) {
             Object runpy = AbstractImportNode.importModule(T_RUNPY);
-            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, T__RUN_MODULE_AS_MAIN, module, setArgv0);
+            PyObjectCallMethodObjArgs.executeUncached(runpy, T__RUN_MODULE_AS_MAIN, module, setArgv0);
         }
 
         // Equivalent of CPython's pymain_get_importer, but returns a boolean
@@ -365,7 +372,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                             importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
-                            if (!IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
+                            if (!IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
                                 throw e;
                             }
                         }
@@ -403,9 +410,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object filename,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Shared @Cached TruffleString.EqualNode eqNode) {
-            return doString(frame, castToTruffleStringNode.execute(filename), eqNode);
+            return doString(frame, castToTruffleStringNode.execute(inliningTarget, filename), eqNode);
         }
     }
 
@@ -484,6 +492,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
@@ -491,7 +500,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
             } else {
-                TruffleString moduleName = (TruffleString) getItem.execute(frame, globals, T___NAME__);
+                TruffleString moduleName = (TruffleString) getItem.execute(frame, inliningTarget, globals, T___NAME__);
                 builtinModule = getCore().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
@@ -775,6 +784,36 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
+            }
+        }
+    }
+
+    @Builtin(name = "storage_to_native", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StorageToNative extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PBytesLike bytes) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
+            bytes.setSequenceStorage(newStorage);
+            return bytes;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PSequence sequence) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(sequence.getSequenceStorage(), false);
+            sequence.setSequenceStorage(newStorage);
+            return sequence;
+        }
+
+        private void ensureCapi() {
+            try {
+                CApiContext.ensureCapiWasLoaded(null, getContext(), T_EMPTY_STRING, T_EMPTY_STRING);
+            } catch (Exception e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }

@@ -149,7 +149,7 @@ public final class GetAttributeNode extends PNodeWithContext {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
             }
-            return getClassNode.execute(object);
+            return getClassNode.executeCached(object);
         }
     }
 

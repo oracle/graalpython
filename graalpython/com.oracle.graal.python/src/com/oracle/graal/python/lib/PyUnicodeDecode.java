@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,34 +51,39 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_Decode}.
  */
 @ImportStatic(PyUnicodeAsEncodedString.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyUnicodeDecode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object object, Object encoding, Object errors);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object encoding, Object errors);
 
     @Specialization(guards = "frame != null")
-    Object doFast(VirtualFrame frame, Object object, Object encoding, Object errors,
-                    @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                    @Cached PRaiseNode raiseNode) {
+    static Object doFast(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
+                    @Cached(inline = false) CodecsModuleBuiltins.DecodeNode decodeNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         final Object unicode = decodeNode.execute(frame, object, encoding, errors);
         if (!PGuards.isString(unicode)) {
-            throw raiseNode.raise(TypeError, DECODER_S_RETURNED_P_INSTEAD_OF_STR, encoding, unicode);
+            throw raiseNode.get(inliningTarget).raise(TypeError, DECODER_S_RETURNED_P_INSTEAD_OF_STR, encoding, unicode);
         }
         return unicode;
     }
 
     @Specialization(replaces = "doFast")
-    Object doWithCall(Object object, Object encoding, Object errors,
+    static Object doWithCall(Node inliningTarget, Object object, Object encoding, Object errors,
                     @Cached PyObjectCallMethodObjArgs callNode) {
-        return callNode.execute(null, PythonContext.get(this).getCore().lookupBuiltinModule(T__CODECS), T_DECODE, object, encoding, errors);
+        return callNode.execute(null, inliningTarget, PythonContext.get(inliningTarget).getCore().lookupBuiltinModule(T__CODECS), T_DECODE, object, encoding, errors);
     }
 }

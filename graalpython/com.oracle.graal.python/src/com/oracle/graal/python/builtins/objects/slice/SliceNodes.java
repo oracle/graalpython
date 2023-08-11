@@ -62,8 +62,10 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -79,6 +81,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class SliceNodes {
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class CreateSliceNode extends PNodeWithContext {
         public abstract PSlice execute(Object start, Object stop, Object step);
 
@@ -128,19 +131,21 @@ public abstract class SliceNodes {
      * Adopting logic from PySlice_AdjustIndices (sliceobject.c:248)
      */
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class AdjustIndices extends PNodeWithContext {
 
-        public abstract PSlice.SliceInfo execute(int length, PSlice.SliceInfo slice);
+        public abstract PSlice.SliceInfo execute(Node inliningTarget, int length, PSlice.SliceInfo slice);
 
         @Specialization
-        PSlice.SliceInfo calc(int length, PSlice.SliceInfo slice,
-                        @Cached PRaiseNode raiseNode) {
+        static PSlice.SliceInfo calc(Node inliningTarget, int length, PSlice.SliceInfo slice,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int start = slice.start;
             int stop = slice.stop;
             int step = slice.step;
 
             if (step == 0) {
-                raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
             assert step > Integer.MIN_VALUE : "step must not be minimum integer value";
 
@@ -180,6 +185,7 @@ public abstract class SliceNodes {
      * Coerce indices computation to lossy integer values
      */
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
     public abstract static class ComputeIndices extends PNodeWithContext {
 
         public abstract PSlice.SliceInfo execute(Frame frame, PSlice slice, int i);
@@ -191,12 +197,13 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "length >= 0")
         PSlice.SliceInfo doSliceObject(VirtualFrame frame, PObjectSlice slice, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached SliceExactCastToInt castStartNode,
                         @Cached SliceExactCastToInt castStopNode,
                         @Cached SliceExactCastToInt castStepNode) {
-            Object startIn = castStartNode.execute(frame, slice.getStart());
-            Object stopIn = castStopNode.execute(frame, slice.getStop());
-            Object stepIn = castStepNode.execute(frame, slice.getStep());
+            Object startIn = castStartNode.execute(frame, inliningTarget, slice.getStart());
+            Object stopIn = castStopNode.execute(frame, inliningTarget, slice.getStop());
+            Object stepIn = castStepNode.execute(frame, inliningTarget, slice.getStep());
             return PObjectSlice.computeIndices(startIn, stopIn, stepIn, length);
         }
 
@@ -211,17 +218,19 @@ public abstract class SliceNodes {
      * This is only applicable to slow path <i><b>internal</b></i> computations.
      */
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
     public abstract static class CoerceToObjectSlice extends PNodeWithContext {
 
         public abstract PObjectSlice execute(PSlice slice);
 
         @Specialization
         PObjectSlice doSliceInt(PIntSlice slice,
-                        @Cached SliceCastToToBigInt start,
-                        @Cached SliceCastToToBigInt stop,
-                        @Cached SliceCastToToBigInt step,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SliceCastToToBigInt start,
+                        @Shared @Cached SliceCastToToBigInt stop,
+                        @Shared @Cached SliceCastToToBigInt step,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
 
         protected static boolean isBigInt(PObjectSlice slice) {
@@ -235,11 +244,12 @@ public abstract class SliceNodes {
 
         @Specialization
         PObjectSlice doSliceObject(PObjectSlice slice,
-                        @Cached SliceCastToToBigInt start,
-                        @Cached SliceCastToToBigInt stop,
-                        @Cached SliceCastToToBigInt step,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SliceCastToToBigInt start,
+                        @Shared @Cached SliceCastToToBigInt stop,
+                        @Shared @Cached SliceCastToToBigInt step,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
 
     }
@@ -248,29 +258,33 @@ public abstract class SliceNodes {
      * This is only applicable to slow path <i><b>internal</b></i> computations.
      */
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CoerceToIntSlice extends PNodeWithContext {
 
-        public abstract PSlice execute(PSlice slice);
+        public abstract PSlice execute(Node inliningTarget, PSlice slice);
 
         @Specialization
-        PSlice doSliceInt(PIntSlice slice) {
+        static PSlice doSliceInt(PIntSlice slice) {
             return slice;
         }
 
         @Specialization
-        PSlice doSliceObject(PObjectSlice slice,
+        static PSlice doSliceObject(Node inliningTarget, PObjectSlice slice,
                         @Cached SliceLossyCastToInt start,
                         @Cached SliceLossyCastToInt stop,
                         @Cached SliceLossyCastToInt step,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class SliceUnpack extends PNodeWithContext {
 
-        public abstract PSlice.SliceInfo execute(PSlice slice);
+        public abstract PSlice.SliceInfo execute(Node inliningTarget, PSlice slice);
 
         @Specialization
         static PSlice.SliceInfo doSliceInt(PIntSlice slice) {
@@ -282,30 +296,31 @@ public abstract class SliceNodes {
         }
 
         @Specialization
-        static PSlice.SliceInfo doSliceObject(PObjectSlice slice,
+        @InliningCutoff
+        static PSlice.SliceInfo doSliceObject(Node inliningTarget, PObjectSlice slice,
                         @Cached SliceLossyCastToInt toInt,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /* this is harder to get right than you might think */
             int start, stop, step;
             if (slice.getStep() == PNone.NONE) {
                 step = 1;
             } else {
-                step = (int) toInt.execute(slice.getStep());
+                step = (int) toInt.execute(inliningTarget, slice.getStep());
                 if (step == 0) {
-                    raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                    raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
                 }
             }
 
             if (slice.getStart() == PNone.NONE) {
                 start = step < 0 ? Integer.MAX_VALUE : 0;
             } else {
-                start = (int) toInt.execute(slice.getStart());
+                start = (int) toInt.execute(inliningTarget, slice.getStart());
             }
 
             if (slice.getStop() == PNone.NONE) {
                 stop = step < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
             } else {
-                stop = (int) toInt.execute(slice.getStop());
+                stop = (int) toInt.execute(inliningTarget, slice.getStop());
             }
 
             return new PSlice.SliceInfo(start, stop, step);
@@ -325,11 +340,11 @@ public abstract class SliceNodes {
         public abstract PSlice.SliceInfoLong execute(Node inliningTarget, PSlice slice);
 
         @Specialization
-        static PSlice.SliceInfoLong doSliceInt(PIntSlice slice,
-                        @Shared @Cached PRaiseNode raiseNode) {
+        static PSlice.SliceInfoLong doSliceInt(Node inliningTarget, PIntSlice slice,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             long step = slice.getIntStep();
             if (step == 0) {
-                raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
 
             long start;
@@ -344,7 +359,7 @@ public abstract class SliceNodes {
         @Specialization
         static PSlice.SliceInfoLong doSliceObject(Node inliningTarget, PObjectSlice slice,
                         @Cached SliceLossyCastToLong toInt,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             /* this is harder to get right than you might think */
             long start, stop, step;
             if (slice.getStep() == PNone.NONE) {
@@ -352,7 +367,7 @@ public abstract class SliceNodes {
             } else {
                 step = toInt.execute(inliningTarget, slice.getStep());
                 if (step == 0) {
-                    raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
                 }
                 /*
                  * Same as in CPython 'PySlice_Unpack': Here step might be -Long.MAX_VALUE-1; in
@@ -382,78 +397,81 @@ public abstract class SliceNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class SliceCastToToBigInt extends Node {
 
-        public abstract Object execute(Object x);
+        public abstract Object execute(Node inliningTarget, Object x);
 
         @Specialization
-        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+        protected static Object doNone(@SuppressWarnings("unused") PNone i) {
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isPNone(i)")
-        protected Object doGeneric(Object i,
-                        @Bind("this") Node inliningTarget,
+        protected static Object doGeneric(Node inliningTarget, Object i,
                         @Cached InlinedBranchProfile exceptionProfile,
-                        @Cached PRaiseNode raise,
+                        @Cached PRaiseNode.Lazy raise,
                         @Cached CastToJavaBigIntegerNode cast) {
             try {
-                return cast.execute(i);
+                return cast.execute(inliningTarget, i);
             } catch (PException e) {
                 exceptionProfile.enter(inliningTarget);
-                throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
             }
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class SliceExactCastToInt extends Node {
 
-        public abstract Object execute(Frame frame, Object x);
+        public abstract Object execute(Frame frame, Node inliningTarget, Object x);
 
         @Specialization
-        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+        protected static Object doNone(@SuppressWarnings("unused") PNone i) {
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isPNone(i)")
-        protected Object doGeneric(Object i,
-                        @Cached PRaiseNode raise,
+        protected static Object doGeneric(Node inliningTarget, Object i,
+                        @Cached PRaiseNode.Lazy raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            if (indexCheckNode.execute(i)) {
-                return asSizeNode.executeExact(null, i);
+            if (indexCheckNode.execute(inliningTarget, i)) {
+                return asSizeNode.executeExact(null, inliningTarget, i);
             }
-            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class SliceLossyCastToInt extends Node {
 
-        public abstract Object execute(Object x);
+        public abstract Object execute(Node inliningTarget, Object x);
 
         @Specialization
-        protected Object doNone(@SuppressWarnings("unused") PNone i) {
+        protected static Object doNone(@SuppressWarnings("unused") PNone i) {
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isPNone(i)")
-        protected Object doGeneric(Object i,
-                        @Bind("this") Node inliningTarget,
+        protected static Object doGeneric(Node inliningTarget, Object i,
                         @Cached InlinedBranchProfile exceptionProfile,
-                        @Cached PRaiseNode raise,
+                        @Cached PRaiseNode.Lazy raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            if (indexCheckNode.execute(i)) {
-                return asSizeNode.executeLossy(null, i);
+            if (indexCheckNode.execute(inliningTarget, i)) {
+                return asSizeNode.executeLossy(null, inliningTarget, i);
             }
             exceptionProfile.enter(inliningTarget);
-            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
-
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 
@@ -466,14 +484,14 @@ public abstract class SliceNodes {
         public abstract long execute(Node inliningTarget, Object x);
 
         @Specialization(guards = "!isPNone(i)")
-        static long doGeneric(Object i,
-                        @Cached PRaiseNode raise,
+        static long doGeneric(Node inliningTarget, Object i,
+                        @Cached PRaiseNode.Lazy raise,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyLongSign signNode,
+                        @Cached(inline = false) PyLongSign signNode,
                         @Cached PyLongAsLongAndOverflowNode asSizeNode) {
-            if (indexCheckNode.execute(i)) {
+            if (indexCheckNode.execute(inliningTarget, i)) {
                 try {
-                    return asSizeNode.execute(null, i);
+                    return asSizeNode.execute(null, inliningTarget, i);
                 } catch (OverflowException e) {
                     if (signNode.execute(i) < 0) {
                         return Long.MIN_VALUE;
@@ -481,7 +499,7 @@ public abstract class SliceNodes {
                     return Long.MAX_VALUE;
                 }
             }
-            throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 
@@ -541,15 +559,16 @@ public abstract class SliceNodes {
         }
 
         @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"})
+        @SuppressWarnings("truffle-static-method")
         int doGeneric(VirtualFrame frame, Object i,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
-            if (indexCheckNode.execute(i)) {
+            if (indexCheckNode.execute(inliningTarget, i)) {
                 try {
-                    return asSizeNode.executeExact(frame, i);
+                    return asSizeNode.executeExact(frame, inliningTarget, i);
                 } catch (PException e) {
                     e.expect(inliningTarget, PythonBuiltinClassType.OverflowError, errorProfile);
                     return overflowValue;

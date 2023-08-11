@@ -79,11 +79,13 @@ import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -216,6 +218,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
@@ -225,7 +228,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
             // if args is an arbitrary iterable, converting it to an Object[] may run Python code
             Object[] arguments = getArgsNode.executeWith(frame, args);
-            PKeyword[] keywords = getKwArgsNode.execute(frame, kwargs);
+            PKeyword[] keywords = getKwArgsNode.execute(frame, inliningTarget, kwargs);
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment

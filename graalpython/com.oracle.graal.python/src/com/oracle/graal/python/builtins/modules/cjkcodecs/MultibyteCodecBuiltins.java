@@ -63,12 +63,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteCodec)
@@ -126,7 +128,9 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isTruffleString(input)")
+        @SuppressWarnings("truffle-static-method")
         Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
@@ -134,14 +138,14 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
                         @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached @Shared("q") TruffleString.EqualNode isEqual) {
             Object ucvt = input;
-            if (!unicodeCheck.execute(input)) {
-                ucvt = strNode.execute(frame, input);
-                if (!unicodeCheck.execute(ucvt)) {
+            if (!unicodeCheck.execute(inliningTarget, input)) {
+                ucvt = strNode.execute(frame, inliningTarget, input);
+                if (!unicodeCheck.execute(inliningTarget, ucvt)) {
                     throw raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
                 }
             }
 
-            TruffleString str = toTruffleStringNode.execute(ucvt);
+            TruffleString str = toTruffleStringNode.execute(inliningTarget, ucvt);
             return ts(frame, self, str, errors, encodeNode, codePointLengthNode, isEqual);
         }
 

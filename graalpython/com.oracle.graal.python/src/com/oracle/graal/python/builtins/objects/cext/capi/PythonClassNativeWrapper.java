@@ -134,7 +134,7 @@ public final class PythonClassNativeWrapper extends PythonReplacingNativeWrapper
         // initialize flags:
         long flags = GetTypeFlagsNode.getUncached().execute(clazz);
         flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
-        SetTypeFlagsNode.getUncached().execute(clazz, flags);
+        SetTypeFlagsNode.executeUncached(clazz, flags);
 
         initializeNode.execute(wrapper, pointer);
         wrapper.setReplacement(pointer, lib);

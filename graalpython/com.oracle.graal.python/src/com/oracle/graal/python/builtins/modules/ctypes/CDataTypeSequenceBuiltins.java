@@ -76,11 +76,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {
@@ -111,6 +113,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetItem getItem,
                         @Cached CallNode callNode,
@@ -119,19 +122,19 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @Cached SimpleTruffleStringFormatNode simpleFormatNode) {
             Object key = factory().createTuple(new Object[]{itemtype, length});
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object result = getItem.execute(frame, ctypes.cache, key);
+            Object result = getItem.execute(frame, inliningTarget, ctypes.cache, key);
             if (result != null) {
                 return result;
             }
 
-            if (!isTypeNode.execute(itemtype)) {
+            if (!isTypeNode.execute(inliningTarget, itemtype)) {
                 throw raise(TypeError, EXPECTED_A_TYPE_OBJECT);
             }
-            TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(itemtype), length);
+            TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(inliningTarget, itemtype), length);
             PDict dict = factory().createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
             PTuple tuple = factory().createTuple(new Object[]{PyCArray});
             result = callNode.execute(frame, PyCArrayType, name, tuple, dict);
-            HashingStorage newStorage = setItem.execute(frame, ctypes.cache, key, result);
+            HashingStorage newStorage = setItem.execute(frame, inliningTarget, ctypes.cache, key, result);
             assert newStorage == ctypes.cache;
             return result;
         }

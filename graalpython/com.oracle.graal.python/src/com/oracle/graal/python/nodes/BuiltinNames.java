@@ -129,7 +129,10 @@ public abstract class BuiltinNames {
     public static final String J_DEFAULTDICT = "defaultdict";
 
     public static final String J_PARTIAL = "partial";
+    public static final String J_LRU_CACHE_WRAPPER = "_lru_cache_wrapper";
 
+    public static final String J_FUNCTOOLS = "_functools";
+    public static final TruffleString T_FUNCTOOLS = tsLiteral(J_FUNCTOOLS);
     public static final String J_TUPLE_GETTER = "_tuplegetter";
 
     public static final String J_DEQUE = "deque";

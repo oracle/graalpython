@@ -64,6 +64,8 @@ import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
+@GenerateInline(false) // footprint reduction 40 -> 24
 public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(Frame frame, Object starargs);
 
@@ -101,14 +104,16 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doDict(PDict starargs,
+                    @Bind("this") Node inliningTarget,
                     @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
-        return node.execute(starargs.getDictStorage());
+        return node.execute(inliningTarget, starargs.getDictStorage());
     }
 
     @Specialization
     static Object[] doSet(PSet starargs,
+                    @Bind("this") Node inliningTarget,
                     @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
-        return node.execute(starargs.getDictStorage());
+        return node.execute(inliningTarget, starargs.getDictStorage());
     }
 
     @Specialization
@@ -124,7 +129,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
                     @Cached IsBuiltinObjectProfile errorProfile) {
-        Object iterator = getIter.execute(frame, object);
+        Object iterator = getIter.execute(frame, inliningTarget, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayBuilder<Object> internalStorage = new ArrayBuilder<>();
             while (true) {
@@ -150,22 +155,24 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     // Extracted into a node shared between PDict/PSet specializations to reduce the footprint
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class ExecutePositionalStarargsDictStorageNode extends Node {
-        abstract Object[] execute(HashingStorage storage);
+        abstract Object[] execute(Node inliningTarget, HashingStorage storage);
 
         @Specialization
-        static Object[] doIt(HashingStorage storage,
+        static Object[] doIt(Node inliningTarget, HashingStorage storage,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iteratorKey) {
-            int length = lenNode.execute(storage);
+            int length = lenNode.execute(inliningTarget, storage);
             Object[] args = new Object[length];
-            HashingStorageIterator it = getIter.execute(storage);
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
             for (int i = 0; i < args.length; i++) {
-                boolean hasNext = iterNext.execute(storage, it);
+                boolean hasNext = iterNext.execute(inliningTarget, storage, it);
                 assert hasNext;
-                args[i] = iteratorKey.execute(storage, it);
+                args[i] = iteratorKey.execute(inliningTarget, storage, it);
             }
             return args;
         }

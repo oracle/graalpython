@@ -274,7 +274,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                     Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
                     PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
                 }
-                GetSubclassesNode.getUncached().execute(base).add(this);
+                GetSubclassesNode.executeUncached(base).add(this);
             }
         }
     }
@@ -283,13 +283,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public final void setSuperClass(PythonAbstractClass... newBaseClasses) {
         ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
         for (PythonAbstractClass newBase : newBaseClasses) {
-            newBasesSubclasses.add(GetSubclassesNode.getUncached().execute(newBase));
+            newBasesSubclasses.add(GetSubclassesNode.executeUncached(newBase));
         }
 
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         PythonAbstractClass[] oldMRO = (PythonAbstractClass[]) this.methodResolutionOrder.getInternalArray();
 
-        Set<PythonAbstractClass> subclasses = GetSubclassesNode.getUncached().execute(this);
+        Set<PythonAbstractClass> subclasses = GetSubclassesNode.executeUncached(this);
         PythonAbstractClass[] subclassesArray = subclasses.toArray(new PythonAbstractClass[subclasses.size()]);
         PythonAbstractClass[][] oldSubClasssMROs = new PythonAbstractClass[subclasses.size()][];
         for (int i = 0; i < subclassesArray.length; i++) {
@@ -316,12 +316,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 // take no action if bases were replaced through reentrance
                 for (PythonAbstractClass base : oldBaseClasses) {
                     if (base instanceof PythonManagedClass) {
-                        GetSubclassesNode.getUncached().execute(base).remove(this);
+                        GetSubclassesNode.executeUncached(base).remove(this);
                     }
                 }
                 for (PythonAbstractClass base : newBaseClasses) {
                     if (base instanceof PythonManagedClass) {
-                        GetSubclassesNode.getUncached().execute(base).add(this);
+                        GetSubclassesNode.executeUncached(base).add(this);
                     }
                 }
             }
@@ -331,7 +331,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             for (int i = 0; i < newBaseClasses.length; i++) {
                 PythonAbstractClass base = newBaseClasses[i];
                 if (base != null) {
-                    Set<PythonAbstractClass> s = GetSubclassesNode.getUncached().execute(base);
+                    Set<PythonAbstractClass> s = GetSubclassesNode.executeUncached(base);
                     s.clear();
                     s.addAll(newBasesSubclasses.get(i));
                 }

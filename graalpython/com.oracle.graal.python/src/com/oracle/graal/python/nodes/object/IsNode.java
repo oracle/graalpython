@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -71,6 +69,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -81,6 +80,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
 public abstract class IsNode extends Node implements BinaryOp {
 
     protected abstract boolean executeInternal(Object left, Object right);
@@ -263,11 +263,12 @@ public abstract class IsNode extends Node implements BinaryOp {
     // pstring (may be interned)
     @Specialization
     static boolean doPString(PString left, PString right,
+                    @Bind("this") Node inliningTarget,
                     @Cached StringNodes.StringMaterializeNode materializeNode,
                     @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                     @Cached TruffleString.EqualNode equalNode) {
-        if (isInternedStringNode.execute(left) && isInternedStringNode.execute(right)) {
-            return equalNode.execute(materializeNode.execute(left), materializeNode.execute(right), TS_ENCODING);
+        if (isInternedStringNode.execute(inliningTarget, left) && isInternedStringNode.execute(inliningTarget, right)) {
+            return equalNode.execute(materializeNode.execute(inliningTarget, left), materializeNode.execute(inliningTarget, right), TS_ENCODING);
         }
         return left == right;
     }
@@ -275,12 +276,13 @@ public abstract class IsNode extends Node implements BinaryOp {
     // everything else
     @Fallback
     static boolean doOther(Object left, Object right,
+                    @Bind("this") Node inliningTarget,
                     @Cached IsForeignObjectNode isForeignObjectNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (left == right) {
             return true;
         }
-        if (isForeignObjectNode.execute(left)) {
+        if (isForeignObjectNode.execute(inliningTarget, left)) {
             return lib.isIdentical(left, right, lib);
         }
         return false;

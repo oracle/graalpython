@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,10 +49,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
     @Specialization
@@ -62,8 +64,9 @@ public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
 
     @Specialization
     static Object[] doTuple(PTuple t,
+                    @Bind("this") Node inliningTarget,
                     @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
-        return getInternalArrayNode.execute(t.getSequenceStorage());
+        return getInternalArrayNode.execute(inliningTarget, t.getSequenceStorage());
     }
 
     @Fallback

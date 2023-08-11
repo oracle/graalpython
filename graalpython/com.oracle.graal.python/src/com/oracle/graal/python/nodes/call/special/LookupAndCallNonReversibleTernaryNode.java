@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,11 +49,14 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 // cpython://Objects/abstract.c#ternary_op
@@ -69,13 +72,13 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
         super(slot);
     }
 
-    protected static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(receiver);
+    protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(inliningTarget, receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    protected static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
-        return getClassNode.execute(receiver) == clazz;
+    protected static boolean isClazz(Node inliningTarget, PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(inliningTarget, receiver) == clazz;
     }
 
     protected final PythonTernaryBuiltinNode getTernaryBuiltin(PythonBuiltinClassType clazz) {
@@ -97,29 +100,34 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
         return null;
     }
 
-    @Specialization(guards = {"clazz != null", "function != null", "isClazz(clazz, v, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, v, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectBuiltin(VirtualFrame frame, Object v, Object w, Object z,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltinClass(v, getClassNode)") PythonBuiltinClassType clazz,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, v, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getTernaryBuiltin(clazz)") PythonTernaryBuiltinNode function) {
         return function.execute(frame, v, w, z);
     }
 
     @Specialization(guards = "arg1.getClass() == cachedArg1Class", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
+    static Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
-        Object klass = getClassNode.execute(arg1);
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Exclusive @Cached CallTernaryMethodNode dispatchNode) {
+        Object klass = getClassNode.execute(inliningTarget, arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
 
     @Specialization(replaces = "callObject")
     @Megamorphic
-    Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
-        Object klass = getClassNode.execute(arg1);
+    static Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Exclusive @Cached CallTernaryMethodNode dispatchNode) {
+        Object klass = getClassNode.execute(inliningTarget, arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
 }

@@ -47,19 +47,20 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -121,52 +122,54 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
     }
 
     @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    @SuppressWarnings("truffle-static-method")
     Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                    @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
-                    @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
-                    @Cached InlinedGetClassNode getLeftClassNode,
-                    @Cached InlinedGetClassNode getRightClassNode,
-                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached InlinedConditionProfile hasLeftCallable,
-                    @Cached InlinedConditionProfile hasRightCallable,
-                    @Cached InlinedConditionProfile notImplementedProfile,
-                    @Cached InlinedBranchProfile noLeftBuiltinClassType,
-                    @Cached InlinedBranchProfile noRightBuiltinClassType,
-                    @Cached InlinedBranchProfile gotResultBranch,
-                    @Cached AreSameCallables areSameCallables,
-                    @Cached GetEnclosingType getEnclosingType) {
+                    @Exclusive @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
+                    @Exclusive @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
+                    @Exclusive @Cached GetClassNode getLeftClassNode,
+                    @Exclusive @Cached GetClassNode getRightClassNode,
+                    @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached InlinedConditionProfile hasLeftCallable,
+                    @Exclusive @Cached InlinedConditionProfile hasRightCallable,
+                    @Exclusive @Cached InlinedConditionProfile notImplementedProfile,
+                    @Exclusive @Cached InlinedBranchProfile noLeftBuiltinClassType,
+                    @Exclusive @Cached InlinedBranchProfile noRightBuiltinClassType,
+                    @Exclusive @Cached InlinedBranchProfile gotResultBranch,
+                    @Exclusive @Cached AreSameCallables areSameCallables,
+                    @Exclusive @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, inliningTarget, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable,
                         notImplementedProfile, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
     @Specialization(replaces = "callObjectGenericR")
     @Megamorphic
+    @SuppressWarnings("truffle-static-method")
     Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Bind("this") Node inliningTarget,
-                    @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
-                    @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
-                    @Cached InlinedGetClassNode getLeftClassNode,
-                    @Cached InlinedGetClassNode getRightClassNode,
-                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached InlinedConditionProfile hasLeftCallable,
-                    @Cached InlinedConditionProfile hasRightCallable,
-                    @Cached InlinedConditionProfile notImplementedProfile,
-                    @Cached InlinedBranchProfile noLeftBuiltinClassType,
-                    @Cached InlinedBranchProfile noRightBuiltinClassType,
-                    @Cached InlinedBranchProfile gotResultBranch,
-                    @Cached AreSameCallables areSameCallables,
-                    @Cached GetEnclosingType getEnclosingType) {
+                    @Exclusive @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
+                    @Exclusive @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
+                    @Exclusive @Cached GetClassNode getLeftClassNode,
+                    @Exclusive @Cached GetClassNode getRightClassNode,
+                    @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached InlinedConditionProfile hasLeftCallable,
+                    @Exclusive @Cached InlinedConditionProfile hasRightCallable,
+                    @Exclusive @Cached InlinedConditionProfile notImplementedProfile,
+                    @Exclusive @Cached InlinedBranchProfile noLeftBuiltinClassType,
+                    @Exclusive @Cached InlinedBranchProfile noRightBuiltinClassType,
+                    @Exclusive @Cached InlinedBranchProfile gotResultBranch,
+                    @Exclusive @Cached AreSameCallables areSameCallables,
+                    @Exclusive @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, inliningTarget, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable,
                         notImplementedProfile, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
     private Object doCallObjectR(VirtualFrame frame, Node inliningTarget, Object left, Object right, LookupSpecialMethodSlotNode getattr, LookupSpecialMethodSlotNode getattrR,
-                    InlinedGetClassNode getLeftClassNode, InlinedGetClassNode getRightClassNode, TypeNodes.InlinedIsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype,
+                    GetClassNode getLeftClassNode, GetClassNode getRightClassNode, IsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype,
                     InlinedConditionProfile hasLeftCallable, InlinedConditionProfile hasRightCallable, InlinedConditionProfile notImplementedProfile, InlinedBranchProfile noLeftBuiltinClassType,
                     InlinedBranchProfile noRightBuiltinClassType, InlinedBranchProfile gotResultBranch, AreSameCallables areSameCallables, GetEnclosingType getEnclosingType) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
@@ -238,7 +241,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         // see descrobject.c/wrapperdescr_call()
         Object enclosing = getEnclosingType.execute(inliningTarget, callable);
         if (enclosing != null && !isSubtype.execute(leftClass, enclosing)) {
-            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), ensureGetNameNode().execute(leftClass), leftValue);
+            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), ensureGetNameNode().executeCached(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }

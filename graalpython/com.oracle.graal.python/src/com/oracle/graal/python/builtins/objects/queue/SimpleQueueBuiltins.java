@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,11 +69,13 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleQueue)
 public final class SimpleQueueBuiltins extends PythonBuiltins {
@@ -176,7 +178,9 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "withTimeout(block, timeout)")
+        @SuppressWarnings("truffle-static-method")
         Object doTimeout(VirtualFrame frame, PSimpleQueue self, boolean block, Object timeout,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
                         @Cached CastToJavaDoubleNode castToDouble) {
             assert block;
@@ -184,10 +188,10 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
             // convert timeout object (given in seconds) to a Java long in microseconds
             long ltimeout;
             try {
-                ltimeout = (long) (castToDouble.execute(timeout) * 1000000.0);
+                ltimeout = (long) (castToDouble.execute(inliningTarget, timeout) * 1000000.0);
             } catch (CannotCastException e) {
                 try {
-                    ltimeout = PythonUtils.multiplyExact(asLongNode.execute(frame, timeout), 1000000);
+                    ltimeout = PythonUtils.multiplyExact(asLongNode.execute(frame, inliningTarget, timeout), 1000000);
                 } catch (OverflowException oe) {
                     throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
                 }

@@ -52,11 +52,13 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
@@ -71,9 +73,10 @@ public final class HashObjectBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, DigestObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);
             return simpleTruffleStringFormatNode.format("<%s %s object @ 0x%s>", self.getAlgorithm(), fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
     }

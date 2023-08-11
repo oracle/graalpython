@@ -40,36 +40,67 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
 @GenerateUncached
-@Deprecated // TODO: DSL inlining
+@GenerateInline(inlineByDefault = true)
 public abstract class GetClassNode extends PNodeWithContext {
-    @NeverDefault
-    public static GetClassNode create() {
-        return GetClassNodeGen.create();
-    }
 
     public static GetClassNode getUncached() {
         return GetClassNodeGen.getUncached();
     }
 
-    @Deprecated // TODO: DSL inlining - replace calls with GetPythonObjectClassNode
-    public abstract Object execute(Object object);
+    @NeverDefault
+    public static GetClassNode create() {
+        return GetClassNodeGen.create();
+    }
+
+    public abstract Object execute(Node inliningTarget, Object object);
+
+    public final Object executeCached(Object object) {
+        return execute(this, object);
+    }
+
+    public static Object executeUncached(Object object) {
+        return GetClassNodeGen.getUncached().execute(null, object);
+    }
 
     @SuppressWarnings("static-method")
     public final Object execute(@SuppressWarnings("unused") int i) {
@@ -81,23 +112,157 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PFloat;
     }
 
+    @Specialization
+    static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
+        return PythonBuiltinClassType.Boolean;
+    }
+
+    @Specialization
+    static Object getInt(@SuppressWarnings("unused") Integer object) {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    @Specialization
+    static Object getLong(@SuppressWarnings("unused") Long object) {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    @Specialization
+    static Object getDouble(@SuppressWarnings("unused") Double object) {
+        return PythonBuiltinClassType.PFloat;
+    }
+
+    @Specialization
+    static Object getString(@SuppressWarnings("unused") TruffleString object) {
+        return PythonBuiltinClassType.PString;
+    }
+
+    @Specialization
+    static Object getNone(@SuppressWarnings("unused") PNone object) {
+        return PythonBuiltinClassType.PNone;
+    }
+
+    @Specialization
+    static Object getBuiltinClass(PythonBuiltinClass object) {
+        return object.getInitialPythonClass();
+    }
+
+    @Specialization
+    static Object getFunction(@SuppressWarnings("unused") PFunction object) {
+        return object.getInitialPythonClass();
+    }
+
+    @Specialization
+    static Object getBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction object) {
+        return object.getInitialPythonClass();
+    }
+
+    // GetPythonObjectClassNode needs 3 references, so we do not inline it here, to save footprint
+    // if only the fast-path specializations are activated
+
+    @Specialization(guards = "isPythonObject(object) || isNativeObject(object)")
+    static Object getPythonObjectOrNative(PythonAbstractObject object,
+                    @Cached(inline = false) GetPythonObjectClassNode getClassNode) {
+        return getClassNode.executeCached(object);
+    }
+
     /*
      * Many nodes already specialize on Python[Abstract]Object subclasses, like PTuple. Add
      * shortcuts that avoid interpreter overhead of testing the object for all the primitive types
      * when not necessary.
      */
-    @Deprecated // TODO: DSL inlining - replace calls with GetPythonObjectClassNode
-    public abstract Object execute(PythonAbstractObject object);
+    @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    public abstract static class GetPythonObjectClassNode extends PNodeWithContext {
+        public static Object executeUncached(PythonObject object) {
+            return GetClassNodeGen.getUncached().execute(null, object);
+        }
 
-    @Deprecated // TODO: DSL inlining - replace calls with GetPythonObjectClassNode
-    public abstract Object execute(PythonAbstractNativeObject object);
+        // Intended only for internal usage in this node. The caller must make sure that the object
+        // is of one of the expected Java types.
+        final Object executeCached(PythonAbstractObject object) {
+            assert object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
+            return executeImpl(this, object);
+        }
 
-    @Deprecated // TODO: replace calls with GetPythonObjectClassNode
-    public abstract Object execute(PythonObject object);
+        abstract Object executeImpl(Node inliningTarget, PythonAbstractObject object);
+
+        public abstract Object execute(Node inliningTarget, PythonObject object);
+
+        public abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
+
+        @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
+        static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached(value = "object.getShape()") Shape cachedShape,
+                        @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {
+            return klass;
+        }
+
+        @Specialization(guards = "hasInitialClass(object.getShape())")
+        static Object getPythonObject(@SuppressWarnings("unused") PythonObject object,
+                        @Bind("object.getInitialPythonClass()") Object klass) {
+            assert klass != null;
+            return klass;
+        }
+
+        @InliningCutoff
+        @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "getPythonObjectConstantClass")
+        static Object getPythonObject(PythonObject object,
+                        @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+            return dylib.getOrDefault(object, CLASS, object.getInitialPythonClass());
+        }
+
+        @InliningCutoff
+        @Specialization
+        static Object getNativeObject(PythonAbstractNativeObject object,
+                        @Cached(inline = false) CExtNodes.GetNativeClassNode getNativeClassNode) {
+            return getNativeClassNode.execute(object);
+        }
+
+        @Idempotent
+        protected static boolean hasInitialClass(Shape shape) {
+            return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
+        }
+    }
 
     @Specialization
-    Object doIt(Object object,
-                    @Cached InlinedGetClassNode getClassNode) {
-        return getClassNode.execute(this, object);
+    static Object getPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    static Object getNotImplemented(@SuppressWarnings("unused") PNotImplemented object) {
+        return PythonBuiltinClassType.PNotImplemented;
+    }
+
+    @Specialization
+    static Object getEllipsis(@SuppressWarnings("unused") PEllipsis object) {
+        return PythonBuiltinClassType.PEllipsis;
+    }
+
+    @Specialization
+    static Object getCell(@SuppressWarnings("unused") PCell object) {
+        return PythonBuiltinClassType.PCell;
+    }
+
+    @Specialization
+    static Object getNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    @Specialization
+    static Object getTruffleException(@SuppressWarnings("unused") AbstractTruffleException object) {
+        /*
+         * Special case: if Python code asks for the class of a foreign exception, we return a
+         * Python type that inherits from BaseException. We do this because Python users usually
+         * expect that every exception inherits from BaseException.
+         */
+        assert !(object instanceof PException);
+        return PythonBuiltinClassType.PForeignException;
+    }
+
+    @Fallback
+    static Object getForeign(@SuppressWarnings("unused") Object object) {
+        return PythonBuiltinClassType.ForeignObject;
     }
 }

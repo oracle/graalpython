@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,5 +93,18 @@ public interface IndirectCallNode extends NodeInterface {
             }
             pythonCallNode = pythonCallNode.getParent();
         }
+    }
+
+    /**
+     * Useful for {@code static} specializations that need an {@link IndirectCallNode}.
+     *
+     * <pre>
+     *      &#64;Bind("getThisIndirectCallNode()") IndirectCallNode indirectCallNode
+     * </pre>
+     *
+     * @return this
+     */
+    default IndirectCallNode getThisAsIndirectCallNode() {
+        return this;
     }
 }

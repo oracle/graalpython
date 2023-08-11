@@ -71,12 +71,14 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "mmap")
@@ -156,6 +158,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
         PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+                        @Bind("this") Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport) {
             checkLength(lengthIn);
@@ -190,7 +193,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
             }
 
-            auditNode.audit("mmap.__new__", fd, lengthIn, access, offset);
+            auditNode.audit(inliningTarget, "mmap.__new__", fd, lengthIn, access, offset);
 
             // For file mappings we use fstat to validate the length or to initialize the length if
             // it is 0 meaning that we should find it out for the user

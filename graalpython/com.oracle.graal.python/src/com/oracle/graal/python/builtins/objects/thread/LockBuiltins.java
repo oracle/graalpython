@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -258,7 +258,7 @@ public final class LockBuiltins extends PythonBuiltins {
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<%s %s object at %d>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
+                            GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)),
                             self.hashCode());
         }
 
@@ -267,7 +267,7 @@ public final class LockBuiltins extends PythonBuiltins {
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<%s %s object owner=%d count=%d at %d>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
+                            GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

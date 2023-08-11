@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -84,6 +84,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendCodePointNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.ToStringNode;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVReader)
@@ -124,7 +126,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         @Cached AppendNode appendNode,
                         @Cached GetNextNode getNextNode,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
             PList fields = factory().createList();
             CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) getContext().lookupBuiltinModule(T__CSV).getBuiltins();
@@ -141,7 +143,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                             throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
                         } else {
                             try {
-                                parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                                parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                             } catch (AbstractTruffleException ignored) {
                                 throw e;
                             }
@@ -154,7 +156,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
                 TruffleString line;
                 try {
-                    line = castToStringNode.execute(lineObj);
+                    line = castToStringNode.execute(inliningTarget, lineObj);
                 } catch (CannotCastException e) {
                     throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
                 }
@@ -172,16 +174,16 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
                 while (tsi.hasNext()) {
                     final int codepoint = nextNode.execute(tsi);
-                    parseProcessCodePoint(self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
+                    parseProcessCodePoint(inliningTarget, self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
                 }
-                parseProcessCodePoint(self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
+                parseProcessCodePoint(inliningTarget, self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
 
             } while (self.state != START_RECORD);
             return fields;
         }
 
         @SuppressWarnings("fallthrough")
-        private void parseProcessCodePoint(CSVReader self, PList fields, int codePoint, TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.ToStringNode toStringNode,
+        private void parseProcessCodePoint(Node inliningTarget, CSVReader self, PList fields, int codePoint, AppendCodePointNode appendCodePointNode, ToStringNode toStringNode,
                         PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
             CSVDialect dialect = self.dialect;
 
@@ -203,7 +205,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     /* expecting field */
                     if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                         /* save empty field - return [fields] */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                         self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                     } else if (codePoint == dialect.quoteCharCodePoint &&
                                     dialect.quoting != QUOTE_NONE) {
@@ -216,7 +218,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         /* ignore space at start of field */
                     } else if (codePoint == dialect.delimiterCodePoint) {
                         /* save empty field */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                     } else {
                         /* begin new unquoted field */
                         if (dialect.quoting == QUOTE_NONNUMERIC) {
@@ -251,7 +253,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     /* in unquoted field */
                     if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                         /* end of line - return [fields] */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
 
                         self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                     } else if (codePoint == dialect.escapeCharCodePoint) {
@@ -259,7 +261,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         self.state = ESCAPED_CHAR;
                     } else if (codePoint == dialect.delimiterCodePoint) {
                         /* save field - wait for new field */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                         self.state = START_FIELD;
                     } else {
                         /* normal character - save in field */
@@ -306,11 +308,11 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         self.state = IN_QUOTED_FIELD;
                     } else if (codePoint == dialect.delimiterCodePoint) {
                         /* save field - wait for new field */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                         self.state = START_FIELD;
                     } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                         /* end of line - return [fields] */
-                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                         self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                     } else if (!dialect.strict) {
                         parseAddCodePoint(self, codePoint, appendCodePointNode);
@@ -333,12 +335,12 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             }
         }
 
-        private static void parseSaveField(CSVReader self, PList fields, TruffleStringBuilder.ToStringNode toStringNode, PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
+        private static void parseSaveField(Node inliningTarget, CSVReader self, PList fields, ToStringNode toStringNode, PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
             TruffleString field = toStringNode.execute(self.field);
             self.field = TruffleStringBuilder.create(TS_ENCODING);
             if (self.numericField) {
                 self.numericField = false;
-                appendNode.execute(fields, pyNumberFloatNode.execute(field));
+                appendNode.execute(fields, pyNumberFloatNode.execute(inliningTarget, field));
             } else {
                 appendNode.execute(fields, field);
             }

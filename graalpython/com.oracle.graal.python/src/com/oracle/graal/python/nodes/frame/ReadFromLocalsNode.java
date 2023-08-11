@@ -48,9 +48,10 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,8 +60,14 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class ReadFromLocalsNode extends PNodeWithContext implements AccessNameNode {
-    public abstract Object execute(VirtualFrame frame, Object locals, TruffleString name);
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object locals, TruffleString name);
+
+    public final Object executeCached(VirtualFrame frame, Object locals, TruffleString name) {
+        return execute(frame, this, locals, name);
+    }
 
     @Specialization(guards = "locals == null")
     @SuppressWarnings("unused")
@@ -69,9 +76,9 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
     }
 
     @Specialization(guards = "isBuiltinDict(locals)")
-    static Object readFromLocalsDict(PDict locals, TruffleString name,
+    static Object readFromLocalsDict(Node inliningTarget, PDict locals, TruffleString name,
                     @Cached HashingStorageNodes.HashingStorageGetItem getItem) {
-        Object result = getItem.execute(locals.getDictStorage(), name);
+        Object result = getItem.execute(inliningTarget, locals.getDictStorage(), name);
         if (result == null) {
             return PNone.NO_VALUE;
         } else {
@@ -80,12 +87,11 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
     }
 
     @Fallback
-    static Object readFromLocals(VirtualFrame frame, Object locals, TruffleString name,
-                    @Bind("this") Node inliningTarget,
+    static Object readFromLocals(VirtualFrame frame, Node inliningTarget, Object locals, TruffleString name,
                     @Cached PyObjectGetItem getItem,
                     @Cached IsBuiltinObjectProfile errorProfile) {
         try {
-            return getItem.execute(frame, locals, name);
+            return getItem.execute(frame, inliningTarget, locals, name);
         } catch (PException e) {
             e.expect(inliningTarget, PythonBuiltinClassType.KeyError, errorProfile);
             return PNone.NO_VALUE;
@@ -97,6 +103,7 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
         return ReadFromLocalsNodeGen.create();
     }
 
+    @NeverDefault
     public static ReadFromLocalsNode getUncached() {
         return ReadFromLocalsNodeGen.getUncached();
     }

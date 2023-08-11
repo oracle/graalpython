@@ -85,6 +85,7 @@ public final class RLockBuiltins extends PythonBuiltins {
     abstract static class AcquireRestoreRLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object acquireRestore(PRLock self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Cached GilNode gil,
                         @Cached CastToJavaUnsignedLongNode castLong,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
@@ -97,7 +98,7 @@ public final class RLockBuiltins extends PythonBuiltins {
                 }
             }
             // ignore owner, we use the Java lock and cannot set it
-            long count = castLong.execute(getItemNode.execute(state.getSequenceStorage(), 0));
+            long count = castLong.execute(inliningTarget, getItemNode.execute(inliningTarget, state.getSequenceStorage(), 0));
             long actualCount = self.getCount();
             while (count > actualCount) {
                 self.acquireBlocking(this); // we already own it at this point

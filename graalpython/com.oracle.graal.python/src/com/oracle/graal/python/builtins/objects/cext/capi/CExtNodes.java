@@ -146,8 +146,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -340,7 +340,7 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, Object object, InlinedGetClassNode getClass, IsSubtypeNode isSubtype) {
+        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {
             return isSubtype.execute(frame, getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
         }
 
@@ -460,12 +460,13 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doPString(PString str, boolean allocatePyMem,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleString.CopyToByteArrayNode toBytes,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
-            TruffleString value = castToStringNode.execute(str);
+            TruffleString value = castToStringNode.execute(inliningTarget, str);
             byte[] bytes = toBytes.execute(switchEncoding.execute(value, Encoding.UTF_8), Encoding.UTF_8);
             Object mem = alloc.alloc(bytes.length + 1, allocatePyMem);
             write.writeByteArray(mem, bytes);
@@ -486,18 +487,20 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doBytes(PBytes bytes, boolean allocatePyMem,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
-            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), allocatePyMem, alloc, write);
+            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()), allocatePyMem, alloc, write);
         }
 
         @Specialization
         static Object doBytes(PByteArray bytes, boolean allocatePyMem,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteByteNode write) {
-            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), allocatePyMem, alloc, write);
+            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()), allocatePyMem, alloc, write);
         }
 
         @Specialization
@@ -565,10 +568,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object getNativeClass(PythonAbstractNativeObject object,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode callGetObTypeNode,
                         @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile(callGetObTypeNode.readFromObj(object, PyObject__ob_type));
+            return classProfile.profile(inliningTarget, callGetObTypeNode.readFromObj(object, PyObject__ob_type));
         }
     }
 
@@ -852,6 +856,7 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         PComplex runGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached LookupAndCallUnaryDynamicNode callComplex,
                         @Cached PythonObjectFactory factory,
@@ -866,7 +871,7 @@ public abstract class CExtNodes {
                     throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
                 }
             } else {
-                return factory.createComplex(asDoubleNode.execute(null, value), 0.0);
+                return factory.createComplex(asDoubleNode.execute(null, inliningTarget, value), 0.0);
             }
         }
     }
@@ -1105,18 +1110,18 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isSpecialHeapSlot(cls, managedMemberName)")
         static Object doSingleContext(Object cls, CFields nativeMemberName, HiddenKey managedMemberName,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                         @Cached CStructAccess.ReadPointerNode getTypeMemberNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
 
-            MroSequenceStorage mroStorage = getMroNode.execute(cls);
+            MroSequenceStorage mroStorage = getMroNode.execute(inliningTarget, cls);
             int n = mroStorage.length();
 
             for (int i = 0; i < n; i++) {
-                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
-
+                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(inliningTarget, mroStorage, i);
                 if (PGuards.isManagedClass(mroCls)) {
                     Object result = readAttrNode.execute(mroCls, managedMemberName);
                     if (result != PNone.NO_VALUE) {
@@ -1176,6 +1181,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMemberName, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
@@ -1183,18 +1189,18 @@ public abstract class CExtNodes {
                         @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
-            MroSequenceStorage mroStorage = getMroNode.execute(cls);
+            MroSequenceStorage mroStorage = getMroNode.execute(inliningTarget, cls);
             int n = mroStorage.length();
 
             for (int i = 0; i < n; i++) {
-                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
+                PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(inliningTarget, mroStorage, i);
 
                 if (builtinCallback != null && mroCls instanceof PythonBuiltinClass builtinClass) {
                     return builtinCallback.apply(builtinClass.getType());
                 } else if (PGuards.isManagedClass(mroCls)) {
                     Object attr = readAttrNode.execute(mroCls, managedMemberName);
                     if (attr != PNone.NO_VALUE) {
-                        return asSizeNode.executeExact(null, attr);
+                        return asSizeNode.executeExact(null, inliningTarget, attr);
                     }
                 } else {
                     assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
@@ -1222,11 +1228,12 @@ public abstract class CExtNodes {
 
         @Specialization
         static void setCurrentException(Frame frame, PException e,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
-            getCurrentFrameRef.execute(frame).markAsEscaped();
-            getThreadStateNode.setCurrentException(e);
+            getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
+            getThreadStateNode.setCurrentException(inliningTarget, e);
         }
     }
 
@@ -1488,9 +1495,10 @@ public abstract class CExtNodes {
 
         @Fallback
         static long doOther(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             try {
-                return sizeNode.execute(null, object);
+                return sizeNode.execute(null, inliningTarget, object);
             } catch (PException e) {
                 return -1;
             }
@@ -1765,7 +1773,7 @@ public abstract class CExtNodes {
 
         @TruffleBoundary
         private static Object callBuiltin(PythonContext context, TruffleString builtinName, Object object) {
-            Object attribute = PyObjectLookupAttr.getUncached().execute(null, context.getBuiltins(), builtinName);
+            Object attribute = PyObjectLookupAttr.executeUncached(context.getBuiltins(), builtinName);
             return CastToJavaStringNodeGen.getUncached().execute(CallNode.getUncached().execute(null, attribute, object));
         }
     }
@@ -1937,6 +1945,7 @@ public abstract class CExtNodes {
         @Specialization
         @TruffleBoundary
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
+                        @Bind("this") Node inliningTarget,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @Cached CStructAccess.AllocateNode alloc,
@@ -1947,7 +1956,7 @@ public abstract class CExtNodes {
             InteropLibrary U = InteropLibrary.getUncached();
             // call to type the pointer
 
-            TruffleString mName = getNameNode.execute(module);
+            TruffleString mName = getNameNode.execute(inliningTarget, module);
             long mSize = readI64.read(moduleDef, PyModuleDef__m_size);
 
             try {

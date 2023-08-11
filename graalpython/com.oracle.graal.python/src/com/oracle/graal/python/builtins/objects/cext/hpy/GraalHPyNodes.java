@@ -302,11 +302,12 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
-            getCurrentFrameRef.execute(frame).markAsEscaped();
-            getThreadStateNode.setCurrentException(nativeContext.getContext(), e);
+            getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
+            getThreadStateNode.setCurrentException(inliningTarget, nativeContext.getContext(), e);
         }
     }
 
@@ -490,7 +491,7 @@ public abstract class GraalHPyNodes {
             try {
                 for (int i = 0; i < nModuleDefines; i++) {
                     Object moduleDefine = ptrLib.readArrayElement(moduleDefinesPtr, i);
-                    int kind = castToJavaIntNode.execute(callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                    int kind = castToJavaIntNode.execute(inliningTarget, callGetterNode.call(hpyContext, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
                     switch (kind) {
                         case GraalHPyDef.HPY_DEF_KIND_METH:
                             methodDefs[nMethodDefs++] = moduleDefine;
@@ -718,6 +719,7 @@ public abstract class GraalHPyNodes {
         static PBuiltinFunction doIt(GraalHPyContext context, Object enclosingType, Object methodDef,
                         @CachedLibrary("methodDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -727,7 +729,7 @@ public abstract class GraalHPyNodes {
                         @Cached PRaiseNode raiseNode) {
             assert checkLayout(methodDef);
 
-            TruffleString methodName = castToTruffleStringNode.execute(callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_ML_NAME, methodDef));
+            TruffleString methodName = castToTruffleStringNode.execute(inliningTarget, callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
@@ -811,6 +813,7 @@ public abstract class GraalHPyNodes {
         static GetSetDescriptor doGeneric(GraalHPyContext context, Object owner, Object legacyGetSetDef,
                         @CachedLibrary("legacyGetSetDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached PCallHPyFunction callGetNameNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -820,7 +823,7 @@ public abstract class GraalHPyNodes {
 
             assert checkLayout(legacyGetSetDef) : "provided pointer has unexpected structure";
 
-            TruffleString getSetDescrName = castToTruffleStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
+            TruffleString getSetDescrName = castToTruffleStringNode.execute(inliningTarget, callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
 
             // note: 'doc' may be NULL; in this case, we would store 'None'
             Object getSetDescrDoc = PNone.NONE;
@@ -972,7 +975,6 @@ public abstract class GraalHPyNodes {
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
@@ -2408,7 +2410,7 @@ public abstract class GraalHPyNodes {
                 PDict namespace;
                 Object doc = ptrLib.readMember(typeSpec, "doc");
                 if (!ptrLib.isNull(doc)) {
-                    TruffleString docString = castToTruffleStringNode.execute(fromCharPointerNode.execute(doc));
+                    TruffleString docString = castToTruffleStringNode.execute(inliningTarget, fromCharPointerNode.execute(doc));
                     namespace = factory.createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, docString)});
                 } else {
                     namespace = factory.createDict();
@@ -2416,7 +2418,7 @@ public abstract class GraalHPyNodes {
 
                 HPyTypeSpecParam[] typeSpecParams;
                 try {
-                    typeSpecParams = extractTypeSpecParams(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                    typeSpecParams = extractTypeSpecParams(inliningTarget, context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
                 } catch (InteropException | OverflowException e) {
                     throw raiseNode.raise(SystemError, ErrorMessages.FAILED_TO_EXTRACT_BASES_FROM_TYPE_SPEC_PARAMS, specName);
                 }
@@ -2427,7 +2429,7 @@ public abstract class GraalHPyNodes {
                 Object metatype = getMetatype(typeSpecParams, raiseNode);
 
                 if (metatype != null) {
-                    if (!isTypeNode.execute(metatype)) {
+                    if (!isTypeNode.execute(inliningTarget, metatype)) {
                         throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, metatype);
                     }
                     if (!hasSameConstructorNode.execute(inliningTarget, metatype, PythonBuiltinClassType.PythonClass)) {
@@ -2437,7 +2439,7 @@ public abstract class GraalHPyNodes {
 
                 // create the type object
                 PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(BuiltinNames.T___GRAALPYTHON__);
-                PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
+                PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, inliningTarget, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
                 // allocate additional memory for the metatype and set it
                 long metaBasicSize = 0;
@@ -2497,7 +2499,7 @@ public abstract class GraalHPyNodes {
                     for (long i = 0; i < nDefines; i++) {
                         Object moduleDefine = ptrLib.readArrayElement(defines, i);
                         HPyProperty property = null;
-                        int kind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                        int kind = castToJavaIntNode.execute(inliningTarget, callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
                         switch (kind) {
                             case GraalHPyDef.HPY_DEF_KIND_METH:
                                 Object methodDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
@@ -2573,7 +2575,7 @@ public abstract class GraalHPyNodes {
                  * it determines which Java object we need to allocate (e.g. PInt, PythonObject,
                  * PFloat, etc.).
                  */
-                Object baseClass = getSuperClassNode.execute(newType);
+                Object baseClass = getSuperClassNode.execute(inliningTarget, newType);
                 if (!seenNew && (basicSize > 0 || newType.getHPyDefaultCallFunc() != null)) {
                     Object inheritedConstructor = null;
 
@@ -2615,7 +2617,7 @@ public abstract class GraalHPyNodes {
          * </pre>
          */
         @TruffleBoundary
-        private static HPyTypeSpecParam[] extractTypeSpecParams(GraalHPyContext context, Object typeSpecParamArray,
+        private static HPyTypeSpecParam[] extractTypeSpecParams(Node inliningTarget, GraalHPyContext context, Object typeSpecParamArray,
                         InteropLibrary ptrLib,
                         CastToJavaIntLossyNode castToJavaIntNode,
                         PCallHPyFunction callHelperFunctionNode,
@@ -2630,7 +2632,7 @@ public abstract class GraalHPyNodes {
             HPyTypeSpecParam[] result = new HPyTypeSpecParam[nSpecParam];
             for (int i = 0; i < nSpecParam; i++) {
                 Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
-                int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
+                int specParamKind = castToJavaIntNode.execute(inliningTarget, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
                 Object specParamObject = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
 
                 result[i] = new HPyTypeSpecParam(specParamKind, specParamObject);
@@ -2658,7 +2660,7 @@ public abstract class GraalHPyNodes {
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASE:
                         // In this case, the 'specParamObject' is a single handle. We add it to
                         // the list of bases.
-                        assert PGuards.isClass(typeSpecParam.object(), IsTypeNode.getUncached()) : "base object is not a Python class";
+                        assert PGuards.isClassUncached(typeSpecParam.object()) : "base object is not a Python class";
                         basesList.add(typeSpecParam.object());
                         break;
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASES_TUPLE:
@@ -2690,7 +2692,7 @@ public abstract class GraalHPyNodes {
                             throw raiseNode.raise(ValueError, ErrorMessages.HPY_METACLASS_SPECIFIED_MULTIPLE_TIMES);
                         }
                         result = typeSpecParam.object();
-                        if (!IsTypeNode.getUncached().execute(result)) {
+                        if (!IsTypeNode.executeUncached(result)) {
                             throw raiseNode.raise(TypeError, ErrorMessages.HPY_METACLASS_IS_NOT_A_TYPE, result);
                         }
                     }
@@ -2785,12 +2787,13 @@ public abstract class GraalHPyNodes {
 
         @Fallback
         static Object doOther(Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getName,
                         @Cached ReadAttributeFromObjectNode readModuleNameNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleString baseName = getName.execute(type);
+            TruffleString baseName = getName.execute(inliningTarget, type);
             TruffleString name;
             if (type instanceof PythonClass pythonClass && pythonClass.isHPyType()) {
                 // Types that originated from HPy: although they are ordinary managed
@@ -3011,8 +3014,9 @@ public abstract class GraalHPyNodes {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
         int subtuple(GraalHPyContext context, Object err, Object exc,
+                        @Bind("this") Node inliningTarget,
                         @Cached RecursiveExceptionMatches recExcMatch,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -3021,7 +3025,7 @@ public abstract class GraalHPyNodes {
                         @Cached CastToJavaIntExactNode cast,
                         @Cached PInteropSubscriptNode getItemNode,
                         @Cached LoopConditionProfile loopProfile) {
-            int len = cast.execute(callBuiltinFunction(context, BuiltinNames.T_LEN, new Object[]{exc}, readAttr, callNode));
+            int len = cast.execute(inliningTarget, callBuiltinFunction(context, BuiltinNames.T_LEN, new Object[]{exc}, readAttr, callNode));
             for (int i = 0; loopProfile.profile(i < len); i++) {
                 Object e = getItemNode.execute(exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {
@@ -3031,8 +3035,9 @@ public abstract class GraalHPyNodes {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
         int others(GraalHPyContext context, Object err, Object exc,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached ReadAttributeFromObjectNode readAttr,
@@ -3047,39 +3052,39 @@ public abstract class GraalHPyNodes {
                             new Object[]{err, PythonBuiltinClassType.PBaseException},
                             readAttr, callNode);
             Object e = err;
-            if (isTrueNode.execute(null, isInstance)) {
+            if (isTrueNode.execute(null, inliningTarget, isInstance)) {
                 isBaseExceptionProfile.enter();
-                e = getClassNode.execute(err);
+                e = getClassNode.execute(inliningTarget, err);
             }
             if (isExceptionProfile.profile(
-                            isExceptionClass(context, e, isTypeNode, readAttr, callNode, isTrueNode) &&
-                                            isExceptionClass(context, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
-                return isSubClass(context, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
+                            isExceptionClass(context, inliningTarget, e, isTypeNode, readAttr, callNode, isTrueNode) &&
+                                            isExceptionClass(context, inliningTarget, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
+                return isSubClass(context, inliningTarget, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
             } else {
                 return isNode.execute(exc, e) ? 1 : 0;
             }
         }
 
-        protected boolean isTupleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+        protected boolean isTupleSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
         }
 
-        static boolean isSubClass(GraalHPyContext graalHPyContext, Object derived, Object cls,
+        static boolean isSubClass(GraalHPyContext graalHPyContext, Node inliningTarget, Object derived, Object cls,
                         ReadAttributeFromObjectNode readAttr,
                         CallNode callNode,
                         PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, callBuiltinFunction(graalHPyContext,
+            return isTrueNode.execute(null, inliningTarget, callBuiltinFunction(graalHPyContext,
                             BuiltinNames.T_ISSUBCLASS,
                             new Object[]{derived, cls}, readAttr, callNode));
 
         }
 
-        private static boolean isExceptionClass(GraalHPyContext nativeContext, Object obj,
+        private static boolean isExceptionClass(GraalHPyContext nativeContext, Node inliningTarget, Object obj,
                         IsTypeNode isTypeNode,
                         ReadAttributeFromObjectNode readAttr,
                         CallNode callNode,
                         PyObjectIsTrueNode isTrueNode) {
-            return isTypeNode.execute(obj) && isSubClass(nativeContext, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
+            return isTypeNode.execute(inliningTarget, obj) && isSubClass(nativeContext, inliningTarget, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
         }
     }
 
@@ -3095,7 +3100,7 @@ public abstract class GraalHPyNodes {
                         @Cached PyTupleSizeNode sizeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached InlinedLoopConditionProfile loopProfile) {
-            int nkw = sizeNode.execute(kwnames);
+            int nkw = sizeNode.execute(inliningTarget, kwnames);
             loopProfile.profileCounted(inliningTarget, nkw);
             if (nkw == 0) {
                 return PKeyword.EMPTY_KEYWORDS;
@@ -3103,7 +3108,7 @@ public abstract class GraalHPyNodes {
             PKeyword[] result = new PKeyword[nkw];
             SequenceStorage storage = kwnames.getSequenceStorage();
             for (int i = 0; loopProfile.inject(inliningTarget, i < nkw); i++) {
-                TruffleString name = (TruffleString) getItemNode.execute(storage, i);
+                TruffleString name = (TruffleString) getItemNode.execute(inliningTarget, storage, i);
                 result[i] = new PKeyword(name, kwvalues[i]);
             }
             return result;

@@ -100,8 +100,9 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PGenerator self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
-            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
+            return setName(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
         }
     }
 
@@ -121,8 +122,9 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PGenerator self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
-            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
+            return setQualname(self, cast.cast(inliningTarget, value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
         }
     }
 
@@ -141,9 +143,10 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PGenerator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode) {
             checkResumable(this, self);
-            return resumeGeneratorNode.execute(frame, self, null);
+            return resumeGeneratorNode.execute(frame, inliningTarget, self, null);
         }
     }
 

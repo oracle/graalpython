@@ -75,9 +75,12 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -152,15 +155,22 @@ public final class PythonCextModuleBuiltins {
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object getName(Object o,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode) {
-            return lookupAttrNode.execute(null, o, T___NAME__);
+            return lookupAttrNode.execute(null, inliningTarget, o, T___NAME__);
         }
     }
 
+    static boolean isModuleSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PythonModule);
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
-        @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         static Object addObject(Object m, TruffleString k, Object o,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
@@ -169,22 +179,21 @@ public final class PythonCextModuleBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        @Specialization(guards = "!isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         Object pop(Object m, Object key, Object defaultValue,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
-
-        protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(null, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
-        }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct)
+    @ImportStatic(PythonCextModuleBuiltins.class)
     abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
-        @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        @Specialization(guards = "isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         Object addObject(Object m, TruffleString k, long o,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
@@ -192,15 +201,12 @@ public final class PythonCextModuleBuiltins {
             return 0;
         }
 
-        @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        @Specialization(guards = "!isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");
-        }
-
-        protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(null, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
         }
     }
 

@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
 public abstract class ValidExceptionNode extends Node {
     public abstract boolean execute(Frame frame, Object type);
 
@@ -90,8 +92,9 @@ public abstract class ValidExceptionNode extends Node {
         return isExceptionType;
     }
 
-    @Specialization(guards = "isTypeNode.execute(type)", limit = "1", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
+    @Specialization(guards = "isTypeNode.execute(inliningTarget, type)", limit = "1", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
     static boolean isPythonException(VirtualFrame frame, Object type,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached IsSubtypeNode isSubtype) {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);

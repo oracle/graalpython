@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -18,7 +18,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -29,8 +28,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class StringFormatProcessor extends FormatProcessor<String> {
     private final String formatText;
 
-    public StringFormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
-        super(core, raiseNode, getItemNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
+    public StringFormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
+        super(core, raiseNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
         index = 0;
         this.formatText = format;
     }
@@ -67,7 +66,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
     @Override
     protected boolean isMapping(Object obj) {
         // unicodeobject.c PyUnicode_Format()
-        return !(obj instanceof PTuple || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.getUncached().execute(obj);
+        return !(obj instanceof PTuple || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.executeUncached(obj);
     }
 
     private static boolean isOneCharacter(String str) {
@@ -103,13 +102,13 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         TruffleString result;
         switch (spec.type) {
             case 'a': // repr as ascii
-                result = PyObjectAsciiNode.getUncached().execute(null, arg);
+                result = PyObjectAsciiNode.executeUncached(arg);
                 break;
             case 's': // String: converts any object using __str__(), __unicode__() ...
-                result = PyObjectStrAsTruffleStringNode.getUncached().execute(null, arg);
+                result = PyObjectStrAsTruffleStringNode.executeUncached(arg);
                 break;
             case 'r': // ... or repr().
-                result = PyObjectReprAsTruffleStringNode.getUncached().execute(null, arg);
+                result = PyObjectReprAsTruffleStringNode.executeUncached(arg);
                 break;
             default:
                 return null;

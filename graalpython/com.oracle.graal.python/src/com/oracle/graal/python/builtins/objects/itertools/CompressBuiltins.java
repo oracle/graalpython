@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -97,7 +97,7 @@ public final class CompressBuiltins extends PythonBuiltins {
             do {
                 nextItem = nextNode.execute(frame, self.getData(), PNone.NO_VALUE);
                 nextSelector = nextNode.execute(frame, self.getSelectors(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, nextSelector)));
+            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, inliningTarget, nextSelector)));
             return nextItem;
         }
     }
@@ -108,7 +108,7 @@ public final class CompressBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PCompress self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getData(), self.getSelectors()});
             return factory().createTuple(new Object[]{type, tuple});

@@ -220,7 +220,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         PythonModule warnings = PythonContext.get(null).lookupBuiltinModule(T__WARNINGS);
         for (DeprecationWarning warning : deprecationWarnings) {
             try {
-                PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
+                PyObjectCallMethodObjArgs.executeUncached(warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
                                 warning.message, warning.type, getFilename(source), warning.sourceRange.startLine);
             } catch (PException e) {
                 e.expect(null, warning.type, IsBuiltinObjectProfile.getUncached());

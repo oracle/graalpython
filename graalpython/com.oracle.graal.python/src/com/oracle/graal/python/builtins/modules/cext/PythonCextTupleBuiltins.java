@@ -69,10 +69,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonCextTupleBuiltins {
@@ -133,6 +136,7 @@ public final class PythonCextTupleBuiltins {
     abstract static class _PyTuple_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PTuple tuple, long index, Object element,
+                        @Bind("this") Node inliningTarget,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
                         @Cached ConditionProfile generalizedProfile) {
@@ -143,8 +147,8 @@ public final class PythonCextTupleBuiltins {
             // times
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             checkBounds(sequenceStorage, index);
-            SequenceStorage newStorage = generalizationNode.execute(sequenceStorage, element);
-            setItemNode.execute(newStorage, (int) index, element);
+            SequenceStorage newStorage = generalizationNode.execute(inliningTarget, sequenceStorage, element);
+            setItemNode.execute(inliningTarget, newStorage, (int) index, element);
             if (generalizedProfile.profile(tuple.getSequenceStorage() != newStorage)) {
                 tuple.setSequenceStorage(newStorage);
             }
@@ -182,18 +186,19 @@ public final class PythonCextTupleBuiltins {
 
         @Specialization
         Object doPTuple(PTuple tuple, long key,
+                        @Bind("this") Node inliningTarget,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
-                        @Shared("setItem") @Cached SetItemScalarNode setItemNode,
-                        @Shared("getItem") @Cached GetItemScalarNode getItemNode) {
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(key, sequenceStorage);
-            Object result = getItemNode.execute(sequenceStorage, index);
+            Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
             Object promotedValue = promoteNode.execute(result);
             if (promotedValue != null) {
-                sequenceStorage = generalizationNode.execute(sequenceStorage, promotedValue);
+                sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
-                setItemNode.execute(sequenceStorage, index, promotedValue);
+                setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
             }
             return result;
@@ -201,16 +206,17 @@ public final class PythonCextTupleBuiltins {
 
         @Specialization
         Object doNative(PythonAbstractNativeObject tuple, long key,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNativeTupleStorage asNativeStorage,
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Shared("setItem") @Cached SetItemScalarNode setItemNode,
-                        @Shared("getItem") @Cached GetItemScalarNode getItemNode) {
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(key, sequenceStorage);
-            Object result = getItemNode.execute(sequenceStorage, index);
+            Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
             Object promotedValue = promoteNode.execute(result);
             if (promotedValue != null) {
-                setItemNode.execute(sequenceStorage, index, promotedValue);
+                setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
                 return promotedValue;
             }
             return result;
@@ -234,8 +240,9 @@ public final class PythonCextTupleBuiltins {
     abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
         public static int size(Object tuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {
-            return pyTupleSizeNode.execute(tuple);
+            return pyTupleSizeNode.execute(inliningTarget, tuple);
         }
     }
 
@@ -243,17 +250,19 @@ public final class PythonCextTupleBuiltins {
     abstract static class PyTuple_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         static Object getSlice(PTuple tuple, Object iLow, Object iHigh,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("newSlice") @Cached PySliceNew sliceNode) {
-            return doGetSlice(tuple.getSequenceStorage(), iLow, iHigh, getItemNode, sliceNode);
+            return doGetSlice(tuple.getSequenceStorage(), inliningTarget, iLow, iHigh, getItemNode, sliceNode);
         }
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject tuple, Object iLow, Object iHigh,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("newSlice") @Cached PySliceNew sliceNode,
                         @Cached GetNativeTupleStorage asNativeStorage) {
-            return doGetSlice(asNativeStorage.execute(tuple), iLow, iHigh, getItemNode, sliceNode);
+            return doGetSlice(asNativeStorage.execute(tuple), inliningTarget, iLow, iHigh, getItemNode, sliceNode);
         }
 
         @SuppressWarnings("unused")
@@ -262,8 +271,8 @@ public final class PythonCextTupleBuiltins {
             throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
         }
 
-        private static Object doGetSlice(SequenceStorage storage, Object iLow, Object iHigh, GetItemNode getItemNode, PySliceNew sliceNode) {
-            return getItemNode.execute(null, storage, sliceNode.execute(iLow, iHigh, PNone.NONE));
+        private static Object doGetSlice(SequenceStorage storage, Node inliningTarget, Object iLow, Object iHigh, GetItemNode getItemNode, PySliceNew sliceNode) {
+            return getItemNode.execute(null, storage, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
         }
     }
 }

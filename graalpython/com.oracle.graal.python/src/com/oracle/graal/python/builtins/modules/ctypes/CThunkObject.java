@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -128,7 +128,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Bind("$node") Node inliningTarget,
-                        @Cached InlinedIsSameTypeNode isSameTypeNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached SetFuncNode setFuncNode,
                         @Cached GetFuncNode getFuncNode,

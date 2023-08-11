@@ -42,15 +42,15 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -62,7 +62,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -106,7 +106,7 @@ public final class DropwhileBuiltins extends PythonBuiltins {
 
             while (loopProfile.profile(inliningTarget, !self.isDoneDropping())) {
                 Object n = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-                if (!isTrue.execute(frame, callNode.execute(self.getPredicate(), n))) {
+                if (!isTrue.execute(frame, inliningTarget, callNode.execute(self.getPredicate(), n))) {
                     doneDroppingProfile.enter(inliningTarget);
                     self.setDoneDropping(true);
                     return n;
@@ -122,7 +122,7 @@ public final class DropwhileBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PDropwhile self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getPredicate(), self.getIterable()});
             return factory().createTuple(new Object[]{type, tuple, self.isDoneDropping()});
@@ -134,9 +134,10 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object setState(PDropwhile self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBooleanNode castToBoolean) {
             try {
-                self.setDoneDropping(castToBoolean.execute(state));
+                self.setDoneDropping(castToBoolean.execute(inliningTarget, state));
             } catch (CannotCastException e) {
                 throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }

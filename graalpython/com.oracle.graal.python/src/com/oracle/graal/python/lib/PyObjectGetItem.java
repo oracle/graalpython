@@ -59,11 +59,13 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -75,43 +77,52 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyObject_GetItem}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class PyObjectGetItem extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object object, Object key);
+    public static Object executeUncached(Object receiver, Object key) {
+        return PyObjectGetItemNodeGen.getUncached().execute(null, null, receiver, key);
+    }
+
+    public final Object executeCached(Frame frame, Object object, Object key) {
+        return execute(frame, this, object, key);
+    }
+
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object key);
 
     @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    Object doList(VirtualFrame frame, PList object, Object key,
+    static Object doList(VirtualFrame frame, PList object, Object key,
                     @Cached ListBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    Object doTuple(VirtualFrame frame, PTuple object, Object key,
+    static Object doTuple(VirtualFrame frame, PTuple object, Object key,
                     @Cached TupleBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @InliningCutoff // TODO: inline this probably?
     @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    Object doDict(VirtualFrame frame, PDict object, Object key,
+    static Object doDict(VirtualFrame frame, PDict object, Object key,
                     @Cached DictBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @InliningCutoff // no point inlining the complex case
     @Specialization(replaces = {"doList", "doTuple", "doDict"})
-    static Object doGeneric(VirtualFrame frame, Object object, Object key,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
-                    @Cached CallBinaryMethodNode callGetItem,
-                    @Cached PyObjectGetItemClass getItemClass,
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object object, Object key,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "GetItem", inline = false) LookupSpecialMethodSlotNode lookupGetItem,
+                    @Cached(inline = false) CallBinaryMethodNode callGetItem,
+                    @Cached(inline = false) LazyPyObjectGetItemClass getItemClass,
                     @Cached PRaiseNode.Lazy raise) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object getItem = lookupGetItem.execute(frame, type, object);
         if (getItem != PNone.NO_VALUE) {
             return callGetItem.executeObject(frame, getItem, object, key);
         }
-        Object item = getItemClass.execute(frame, object, key);
+        Object item = getItemClass.get(inliningTarget).execute(frame, object, key);
         if (item != PNone.NO_VALUE) {
             return item;
         }
@@ -119,19 +130,36 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateCached
+    @GenerateInline(false)
+    abstract static class LazyPyObjectGetItemClass extends Node {
+        public final PyObjectGetItemClass get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract PyObjectGetItemClass execute(Node inliningTarget);
+
+        @Specialization
+        static PyObjectGetItemClass doIt(@Cached PyObjectGetItemClass node) {
+            return node;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false) // used only lazily
     abstract static class PyObjectGetItemClass extends PNodeWithContext {
         public abstract Object execute(Frame frame, Object maybeType, Object key);
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object type, Object key,
+        static Object doGeneric(VirtualFrame frame, Object type, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callClassGetItem) {
-            if (isTypeNode.execute(type)) {
-                Object classGetitem = lookupClassGetItem.execute(frame, type, T___CLASS_GETITEM__);
+            if (isTypeNode.execute(inliningTarget, type)) {
+                Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, type, T___CLASS_GETITEM__);
                 if (classGetitem != PNone.NO_VALUE) {
                     return callClassGetItem.execute(frame, classGetitem, key);
                 }

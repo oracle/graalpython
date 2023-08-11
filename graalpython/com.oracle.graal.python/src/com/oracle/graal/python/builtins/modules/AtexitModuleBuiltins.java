@@ -96,8 +96,8 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 PythonContext context = PythonContext.get(this);
-                getThreadStateNode.setTopFrameInfo(context, PFrame.Reference.EMPTY);
-                getThreadStateNode.setCaughtException(context, PException.NO_EXCEPTION);
+                getThreadStateNode.setTopFrameInfoCached(context, PFrame.Reference.EMPTY);
+                getThreadStateNode.setCaughtExceptionCached(context, PException.NO_EXCEPTION);
 
                 Object callable = frame.getArguments()[0];
                 Object[] arguments = (Object[]) frame.getArguments()[1];
@@ -111,21 +111,21 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
                     handleException(context, e);
                     throw e;
                 } finally {
-                    getThreadStateNode.clearTopFrameInfo(context);
-                    getThreadStateNode.setCaughtException(context, null);
+                    getThreadStateNode.clearTopFrameInfoCached(context);
+                    getThreadStateNode.setCaughtExceptionCached(context, null);
                 }
             }
 
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
                 Object pythonException = e.getEscapedException();
-                if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
+                if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.executeUncached(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
-                    callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));
+                    callWrite.execute(null, null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));
                     try {
                         ExceptionUtils.printExceptionTraceback(context, pythonException);
                     } catch (PException pe) {
-                        callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Failed to print traceback\n"));
+                        callWrite.execute(null, null, context.getStderr(), T_WRITE, toTruffleStringUncached("Failed to print traceback\n"));
                     }
                 }
             }

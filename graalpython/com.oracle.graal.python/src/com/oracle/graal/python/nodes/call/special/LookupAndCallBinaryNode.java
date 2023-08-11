@@ -135,7 +135,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected static Object getMethod(Object receiver, TruffleString methodName) {
-        return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver);
+        return LookupSpecialMethodNode.Dynamic.executeUncached(null, GetClassNode.executeUncached(receiver), methodName, receiver);
     }
 
     @ImportStatic(PGuards.class)

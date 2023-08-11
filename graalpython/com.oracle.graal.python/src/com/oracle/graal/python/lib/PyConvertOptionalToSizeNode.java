@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,18 +46,21 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code _Py_convert_optional_to_ssize_t} function. If value is
  * {@code None}, {@code defaultValue} is returned.
  */
-@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyConvertOptionalToSizeNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, Object object, int defaultValue);
+    public abstract int execute(Frame frame, Node inliningTarget, Object object, int defaultValue);
 
     @Specialization(guards = "isNone(value)")
     int doOptional(@SuppressWarnings("unused") PNone value, int defaultValue) {
@@ -65,15 +68,15 @@ public abstract class PyConvertOptionalToSizeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isNone(value)", "!isNoValue(value)"})
-    int doObject(VirtualFrame frame, Object value, @SuppressWarnings("unused") int defaultValue,
-                    @Cached PRaiseNode raiseNode,
+    static int doObject(VirtualFrame frame, Node inliningTarget, Object value, @SuppressWarnings("unused") int defaultValue,
+                    @Cached PRaiseNode.Lazy raiseNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberAsSizeNode asSizeNode) {
         int limit;
-        if (indexCheckNode.execute(value)) {
-            limit = asSizeNode.executeExact(frame, value);
+        if (indexCheckNode.execute(inliningTarget, value)) {
+            limit = asSizeNode.executeExact(frame, inliningTarget, value);
         } else {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
         }
         return limit;
     }

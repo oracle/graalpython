@@ -61,13 +61,13 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -102,6 +102,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
+        @SuppressWarnings("truffle-static-method")
         Object next(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
@@ -151,18 +152,18 @@ public final class IsliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNone(self.getIterable())")
         Object reduceNoIterable(VirtualFrame frame, PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Exclusive GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter) {
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{getIter.execute(frame, factory().createList()), 0});
+            PTuple tuple = factory().createTuple(new Object[]{getIter.execute(frame, inliningTarget, factory().createList()), 0});
             return factory().createTuple(new Object[]{type, tuple, 0});
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
         Object reduce(PIslice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Exclusive GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
             PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
@@ -175,9 +176,10 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object setState(PIslice self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntLossyNode castInt) {
             try {
-                self.setCnt(castInt.execute(state));
+                self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {
                 throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }

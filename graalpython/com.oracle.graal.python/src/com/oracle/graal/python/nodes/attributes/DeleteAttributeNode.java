@@ -47,30 +47,29 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class DeleteAttributeNode extends PNodeWithContext {
-    @NeverDefault
-    public static DeleteAttributeNode create() {
-        return DeleteAttributeNodeGen.create();
-    }
-
-    public abstract void execute(VirtualFrame frame, Object object, Object key);
+    public abstract void execute(VirtualFrame frame, Node inliningTarget, Object object, Object key);
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object key,
-                    @Cached("create(DelAttr)") LookupAndCallBinaryNode call) {
+                    @Cached(value = "create(DelAttr)", inline = false) LookupAndCallBinaryNode call) {
         call.executeObject(frame, object, key);
     }
 
     @Specialization(replaces = "doIt")
     protected void doItUncached(VirtualFrame frame, Object object, Object key) {
         PythonUtils.assertUncached();
-        Object klass = GetClassNode.getUncached().execute(object);
+        Object klass = GetClassNode.executeUncached(object);
         Object method = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.DelAttr).execute(klass);
         CallBinaryMethodNode.getUncached().executeObject(frame, method, object, key);
     }

@@ -131,11 +131,13 @@ public abstract class FunctionNodes {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetKeywordDefaultsNode extends PNodeWithContext {
 
-        public abstract PKeyword[] execute(Object function);
+        public abstract PKeyword[] execute(Node inliningTarget, Object function);
 
-        public abstract PKeyword[] execute(PMethodBase method);
+        public abstract PKeyword[] execute(Node inliningTarget, PMethodBase method);
 
         /**
          * Fast-path if method is a partial evaluation constant.
@@ -194,7 +196,7 @@ public abstract class FunctionNodes {
 
         public abstract PCode execute(Node inliningTarget, PFunction function);
 
-        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = "cachedSelf.getCodeStableAssumption()")
+        @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = "cachedSelf.getCodeStableAssumption()", limit = "3")
         static PCode getCodeCached(@SuppressWarnings("unused") PFunction self,
                         @SuppressWarnings("unused") @Cached("self") PFunction cachedSelf,
                         @Cached("self.getCode()") PCode cachedCode) {
@@ -279,6 +281,7 @@ public abstract class FunctionNodes {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false) // used lazily
     public abstract static class GetCallTargetNode extends PNodeWithContext {
 
         public abstract RootCallTarget execute(Object function);

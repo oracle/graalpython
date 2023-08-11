@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -93,7 +93,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     @ExportMessage
     Object readMember(String key,
                     @Bind("$node") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached PythonToNativeNode toSulongNode) {
         Object result = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,14 +46,23 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class NarrowBigIntegerNode extends PNodeWithContext {
 
-    public abstract Object execute(BigInteger x);
+    public abstract Object execute(Node inliningTarget, BigInteger x);
+
+    public static Object executeUncached(BigInteger x) {
+        return NarrowBigIntegerNodeGen.getUncached().execute(null, x);
+    }
 
     @Specialization(guards = "x.signum() == 0")
     static Object narrowBigInteger0(@SuppressWarnings("unused") BigInteger x) {
@@ -61,14 +70,14 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "x.signum() != 0")
-    static Object narrowBigInteger(BigInteger x,
-                    @Cached ConditionProfile fitsIntProfile,
-                    @Cached ConditionProfile fitsLongProfile,
-                    @Cached PythonObjectFactory factory) {
-        if (fitsIntProfile.profile(PInt.fitsIn(x, PInt.MIN_INT, PInt.MAX_INT))) {
+    static Object narrowBigInteger(Node inliningTarget, BigInteger x,
+                    @Cached InlinedConditionProfile fitsIntProfile,
+                    @Cached InlinedConditionProfile fitsLongProfile,
+                    @Cached(inline = false) PythonObjectFactory factory) {
+        if (fitsIntProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_INT, PInt.MAX_INT))) {
             return PInt.intValue(x);
         }
-        if (fitsLongProfile.profile(PInt.fitsIn(x, PInt.MIN_LONG, PInt.MAX_LONG))) {
+        if (fitsLongProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_LONG, PInt.MAX_LONG))) {
             return PInt.longValue(x);
         }
         return factory.createInt(x);

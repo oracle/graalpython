@@ -47,17 +47,24 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
 public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
 
-    public abstract PKeyword[] execute(VirtualFrame frame, Object starargs);
+    public abstract PKeyword[] execute(VirtualFrame frame, Node inliningTarget, Object starargs);
 
-    public final PKeyword[] execute(Object starargs) {
-        return execute(null, starargs);
+    public final PKeyword[] executeCached(Object starargs) {
+        return execute(null, this, starargs);
+    }
+
+    public final PKeyword[] execute(Node inliningTarget, Object starargs) {
+        return execute(null, inliningTarget, starargs);
     }
 
     @Specialization(guards = "isNoValue(starargs)")
@@ -66,15 +73,15 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isNoValue(starargs)")
-    static PKeyword[] convert(VirtualFrame frame, Object starargs,
+    static PKeyword[] convert(VirtualFrame frame, Node inliningTarget, Object starargs,
                     @Cached MappingToKeywordsNode convertNode,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return convertNode.execute(frame, starargs);
+            return convertNode.execute(frame, inliningTarget, starargs);
         } catch (SameDictKeyException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, e.getKey());
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, e.getKey());
         } catch (NonMappingException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_ISNT_MAPPING, starargs);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_ISNT_MAPPING, starargs);
         }
     }
 

@@ -51,18 +51,22 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyTupleSizeNode extends PNodeWithContext {
-    public abstract int execute(Object tuple);
+    public abstract int execute(Node inliningTarget, Object tuple);
 
     @Specialization
     static int size(PTuple tuple) {
@@ -70,22 +74,23 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isTupleSubtype(tuple, inliningTarget, getClassNode, isSubtypeNode)", limit = "1")
-    static int sizeNative(PythonAbstractNativeObject tuple,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CStructAccess.ReadI64Node getSize) {
+    @InliningCutoff
+    static int sizeNative(Node inliningTarget, PythonAbstractNativeObject tuple,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached(inline = false) CStructAccess.ReadI64Node getSize) {
         return PythonUtils.toIntError(getSize.readFromObj(tuple, PyVarObject__ob_size));
     }
 
     @SuppressWarnings("unused")
     @Fallback
+    @InliningCutoff
     static int size(Object obj,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached(inline = false) PRaiseNode raiseNode) {
         throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
     }
 
-    protected boolean isTupleSubtype(Object obj, Node inliningTarget, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+    protected boolean isTupleSubtype(Object obj, Node inliningTarget, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
     }
 }

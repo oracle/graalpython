@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,11 +63,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTupleGetter)
 public final class TupleGetterBuiltins extends PythonBuiltins {
@@ -81,9 +83,10 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PTupleGetter self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
             PTuple args = factory().createTuple(new Object[]{self.getIndex(), self.getDoc()});
-            return factory().createTuple(new Object[]{getClassNode.execute(self), args});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -91,11 +94,13 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
         @Specialization()
+        @SuppressWarnings("truffle-static-method")
         Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
             final int index = self.getIndex();
-            if (index >= sizeNode.execute(frame, instance)) {
+            if (index >= sizeNode.execute(frame, inliningTarget, instance)) {
                 throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
 

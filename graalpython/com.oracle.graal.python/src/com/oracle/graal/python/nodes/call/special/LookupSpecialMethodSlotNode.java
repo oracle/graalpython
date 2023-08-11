@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,13 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * The same as {@link LookupSpecialMethodNode}, but this searches the special slots first. On top of
@@ -66,9 +68,10 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
 
         @Specialization
         Object lookup(VirtualFrame frame, Object type, Object receiver,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "slot") LookupCallableSlotInMRONode lookupSlot,
                         @Cached MaybeBindDescriptorNode bind) {
-            return bind.execute(frame, lookupSlot.execute(type), receiver, type);
+            return bind.execute(frame, inliningTarget, lookupSlot.execute(type), receiver, type);
         }
     }
 
@@ -91,7 +94,7 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
 
         @TruffleBoundary
         private Object executeImpl(Object type, Object receiver) {
-            return MaybeBindDescriptorNode.getUncached().execute(null, lookup.execute(type), receiver, type);
+            return MaybeBindDescriptorNode.executeUncached(null, lookup.execute(type), receiver, type);
         }
 
         @Override

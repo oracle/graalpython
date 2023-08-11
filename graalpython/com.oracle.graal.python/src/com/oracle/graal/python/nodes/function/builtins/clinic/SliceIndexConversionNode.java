@@ -49,10 +49,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForN
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
@@ -61,13 +64,15 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
     }
 
     @Specialization(guards = "!isHandledPNone(value)")
-    int doOthers(VirtualFrame frame, Object value,
+    static int doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyIndexCheckNode indexCheckNode,
-                    @Cached PyNumberAsSizeNode asSizeNode) {
-        if (indexCheckNode.execute(value)) {
-            return asSizeNode.executeLossy(frame, value);
+                    @Cached PyNumberAsSizeNode asSizeNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        if (indexCheckNode.execute(inliningTarget, value)) {
+            return asSizeNode.executeLossy(frame, inliningTarget, value);
         }
-        throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

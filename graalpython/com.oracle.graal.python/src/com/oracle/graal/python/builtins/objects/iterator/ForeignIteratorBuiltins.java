@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -47,6 +48,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PForeignArrayIterator)
 public final class ForeignIteratorBuiltins extends PythonBuiltins {
@@ -61,11 +63,12 @@ public final class ForeignIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object next(PForeignArrayIterator foreignIter,
+                        @Bind("this") Node inliningTarget,
                         @Cached PForeignToPTypeNode fromForeignNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") InteropLibrary interop,
                         @Cached GilNode gil) {
-            if (foreignIter.getCursor() >= foreignIter.getSize(interop, asSizeNode)) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop, inliningTarget, asSizeNode)) {
                 throw raiseStopIteration();
             }
 

@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -155,8 +156,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
 
         // Equivalent of union_repr_item in CPython
         private static void reprItem(TruffleStringBuilder sb, Object obj) {
-            TypeNodes.IsSameTypeNode sameType = TypeNodes.IsSameTypeNode.getUncached();
-            if (sameType.execute(obj, PythonBuiltinClassType.PNone)) {
+            if (IsSameTypeNode.executeUncached(obj, PythonBuiltinClassType.PNone)) {
                 sb.appendStringUncached(StringLiterals.T_NONE);
                 return;
             }
@@ -173,7 +173,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
             PFrozenSet argSet = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
-            return hashNode.execute(frame, argSet);
+            return hashNode.execute(frame, inliningTarget, argSet);
         }
     }
 
@@ -183,6 +183,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getattribute(VirtualFrame frame, PUnionType self, Object nameObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetClassNode getClassNode,
@@ -190,12 +191,12 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached ObjectBuiltins.GetAttributeNode genericGetAttribute) {
             TruffleString name;
             try {
-                name = cast.execute(nameObj);
+                name = cast.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
                 return genericGetAttribute.execute(frame, self, nameObj);
             }
             if (equalNode.execute(name, T___MODULE__, TS_ENCODING)) {
-                return getAttr.execute(frame, getClassNode.execute(self), name);
+                return getAttr.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, self), name);
             }
             return genericGetAttribute.execute(frame, self, nameObj);
         }
@@ -206,12 +207,13 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean check(VirtualFrame frame, PUnionType self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode) {
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
-                Object arg = getItem.execute(argsStorage, i);
+                Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
                     throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
@@ -229,16 +231,17 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean check(VirtualFrame frame, PUnionType self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode) {
-            if (!isTypeNode.execute(other)) {
+            if (!isTypeNode.execute(inliningTarget, other)) {
                 throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
             }
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
-                Object arg = getItem.execute(argsStorage, i);
+                Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
                     throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
@@ -255,13 +258,14 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             PFrozenSet argSet1 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
             PFrozenSet argSet2 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
-            return eqNode.execute(frame, argSet1, argSet2);
+            return eqNode.compare(frame, inliningTarget, argSet1, argSet2);
         }
 
         @Fallback

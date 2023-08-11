@@ -193,7 +193,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         private static HPyMode getHPyModeFromEnviron(TruffleString moduleName, Object env) throws CannotCastException {
             Object result;
             try {
-                result = PyObjectGetItem.getUncached().execute(null, env, PythonUtils.tsLiteral("HPY"));
+                result = PyObjectGetItem.executeUncached(env, PythonUtils.tsLiteral("HPY"));
             } catch (PException e) {
                 e.expect(null, PythonBuiltinClassType.KeyError, IsBuiltinObjectProfile.getUncached());
                 // this is not an error; it just means that the key was not present in 'env'

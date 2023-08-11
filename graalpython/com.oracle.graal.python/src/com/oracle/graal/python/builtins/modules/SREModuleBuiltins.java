@@ -49,6 +49,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import org.graalvm.collections.EconomicMap;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -92,6 +94,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -115,7 +119,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
 public final class SREModuleBuiltins extends PythonBuiltins {
@@ -198,7 +201,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             String patternStr;
             boolean binary = true;
             try {
-                patternStr = CastToTruffleStringNode.getUncached().execute(pattern).toJavaStringUncached();
+                patternStr = CastToTruffleStringNode.executeUncached(pattern).toJavaStringUncached();
                 binary = false;
             } catch (CannotCastException ce) {
                 Object buffer;
@@ -419,7 +422,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             SourceSection sourceSection = lib.getSourceLocation(e);
                             int position = sourceSection.getCharIndex();
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
-                            Object errorConstructor = PyObjectLookupAttr.getUncached().execute(null, module, T_ERROR);
+                            Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
                             PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, originalPattern, position);
                             return PRaiseNode.getUncached().raiseExceptionObject(exception);
                         }
@@ -466,9 +469,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(VirtualFrame frame, Object patternObject, Object pattern, Object flags,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode flagsToIntNode,
                         @Cached WriteAttributeToObjectNode writeCacheNode) {
-            int flagsStr = flagsToIntNode.execute(frame, flags);
+            int flagsStr = flagsToIntNode.execute(frame, inliningTarget, flags);
             TRegexCache tRegexCache = new TRegexCache(pattern, flagsStr);
             writeCacheNode.execute(patternObject, TREGEX_CACHE, tRegexCache);
             return PNone.NONE;
@@ -515,14 +519,16 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
+        @SuppressWarnings("truffle-static-method")
         Object localeSensitive(Object pattern, PythonMethod method, boolean mustAdvance,
+                        @Bind("this") Node inliningTarget,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") boolean cachedMustAdvance,
                         @Cached("lookupGetLocaleFunction()") Object getLocale,
                         @Cached CallNode callGetLocale,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TRegexCache tRegexCache = getTRegexCache(pattern);
-            TruffleString locale = castToTruffleStringNode.execute(callGetLocale.execute(getLocale));
+            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(getLocale));
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(method, mustAdvance, locale);
             if (tRegex != null) {
                 return tRegex;
@@ -535,7 +541,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @NeverDefault
         protected Object lookupGetLocaleFunction() {
             PythonModule module = getContext().lookupBuiltinModule(BuiltinNames.T__SRE);
-            return PyObjectLookupAttr.getUncached().execute(null, module, T__GETLOCALE);
+            return PyObjectLookupAttr.executeUncached(module, T__GETLOCALE);
         }
 
         protected TRegexCache getTRegexCache(Object pattern) {
@@ -580,24 +586,25 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class CreateMatchFromTRegexResultNode extends PNodeWithContext {
 
         private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
         private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
 
-        public abstract Object execute(VirtualFrame frame, Object pattern, int pos, int endPos, Object regexResult, Object input);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object pattern, int pos, int endPos, Object regexResult, Object input);
 
         @Specialization
-        protected Object createMatch(VirtualFrame frame, Object pattern, int pos, int endPos, Object regexResult, Object input,
-                        @Bind("this") Node inliningTarget,
+        static Object createMatch(VirtualFrame frame, Node inliningTarget, Object pattern, int pos, int endPos, Object regexResult, Object input,
                         @Cached("lookupMatchConstructor()") Object matchConstructor,
                         @Cached InlinedConditionProfile matchProfile,
                         @CachedLibrary(limit = "1") InteropLibrary libResult,
                         @Cached PyObjectLookupAttr lookupIndexGroupNode,
-                        @Cached CallNode constructResultNode) {
+                        @Cached(inline = false) CallNode constructResultNode) {
             try {
                 if (matchProfile.profile(inliningTarget, (boolean) libResult.readMember(regexResult, "isMatch"))) {
-                    Object indexGroup = lookupIndexGroupNode.execute(frame, pattern, T__PATTERN__INDEXGROUP);
+                    Object indexGroup = lookupIndexGroupNode.execute(frame, inliningTarget, pattern, T__PATTERN__INDEXGROUP);
                     return constructResultNode.execute(matchConstructor, pattern, pos, endPos, regexResult, input, indexGroup);
                 } else {
                     return PNone.NONE;
@@ -611,7 +618,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @NeverDefault
         protected Object lookupMatchConstructor() {
             PythonModule module = getContext().lookupBuiltinModule(BuiltinNames.T__SRE);
-            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH_CONSTRUCTOR);
+            return PyObjectLookupAttr.executeUncached(module, T_MATCH_CONSTRUCTOR);
         }
     }
 
@@ -633,10 +640,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         protected Object doCached(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
                         @Bind("this") Node inliningTarget,
-                        @Cached(value = "pattern", weak = true) Object cachedPattern,
-                        @Cached("method") PythonMethod cachedMethod,
-                        @Cached("mustAdvance") boolean cachedMustAdvance,
-                        @Cached @Shared TRegexCompile tRegexCompileNode,
+                        @SuppressWarnings("unused") @Cached(value = "pattern", weak = true) Object cachedPattern,
+                        @SuppressWarnings("unused") @Cached("method") PythonMethod cachedMethod,
+                        @SuppressWarnings("unused") @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @SuppressWarnings("unused") @Cached @Shared TRegexCompile tRegexCompileNode,
                         @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache tRegexCache,
                         @Cached(value = "tRegexCompileNode.execute(frame, pattern, method, mustAdvance)") Object compiledRegex,
                         @Cached @Shared InlinedConditionProfile fallbackProfile,
@@ -649,9 +656,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("create(method.getMethodName())") GetAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
-            int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
-            int length = lengthNode.execute(frame, input);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, posArg));
+            int endPos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, endPosArg));
+            int length = lengthNode.execute(frame, inliningTarget, input);
             if (pos < 0) {
                 pos = 0;
             } else if (pos > length) {
@@ -672,11 +679,11 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
             Object truncatedInput = input;
             if (truncatingInputProfile.profile(inliningTarget, endPos != length)) {
-                truncatedInput = getGetItemNode().execute(frame, input, getCreateSliceNode().execute(0, endPos, 1));
+                truncatedInput = getGetItemNode().executeCached(frame, input, getCreateSliceNode().execute(0, endPos, 1));
             }
             Object regexResult = tRegexCallExec.execute(frame, compiledRegex, truncatedInput, pos);
 
-            return createMatchFromTRegexResultNode.execute(frame, pattern, pos, endPos, regexResult, input);
+            return createMatchFromTRegexResultNode.execute(frame, inliningTarget, pattern, pos, endPos, regexResult, input);
         }
 
         @Specialization(guards = {"tRegexCompileNode.execute(frame, pattern, method, mustAdvance) == compiledRegex", "method == cachedMethod",
@@ -797,7 +804,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             try {
                 try {
                     // This would materialize the string if it was native
-                    input = cast.execute(inputStringOrBytes);
+                    input = cast.execute(inliningTarget, inputStringOrBytes);
                 } catch (CannotCastException e1) {
                     binaryProfile.enter(inliningTarget);
                     // It's bytes or other buffer object

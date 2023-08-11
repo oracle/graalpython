@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -96,7 +97,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
-                        @Cached SSLOperationNode sslOperationNode) {
+                        @Shared @Cached SSLOperationNode sslOperationNode) {
             if (len == 0) {
                 return factory().createBytes(new byte[0]);
             } else if (len < 0) {
@@ -112,7 +113,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached SSLOperationNode sslOperationNode) {
+                        @Shared @Cached SSLOperationNode sslOperationNode) {
             Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, this);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
@@ -135,7 +136,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 PythonUtils.flipBuffer(output);
                 int readBytes = PythonUtils.getBufferRemaining(output);
                 if (!directWrite) {
-                    bufferLib.readIntoByteArray(buffer, 0, bytes, 0, readBytes);
+                    bufferLib.writeFromByteArray(buffer, 0, bytes, 0, readBytes);
                 }
                 return readBytes;
             } finally {

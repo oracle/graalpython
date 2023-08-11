@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -129,7 +129,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
         @Specialization(guards = "hasFunc(self)")
         Object reduce(VirtualFrame frame, PAccumulate self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared GetClassNode getClassNode,
                         @Cached @Shared InlinedBranchProfile hasInitialProfile,
                         @Cached @Shared InlinedBranchProfile totalNoneProfile,
                         @Cached @Shared InlinedBranchProfile totalMarkerProfile,
@@ -141,7 +141,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
         @Specialization(guards = "!hasFunc(self)")
         Object reduceNoFunc(VirtualFrame frame, PAccumulate self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared GetClassNode getClassNode,
                         @Cached @Shared InlinedBranchProfile hasInitialProfile,
                         @Cached @Shared InlinedBranchProfile totalNoneProfile,
                         @Cached @Shared InlinedBranchProfile totalMarkerProfile,
@@ -150,7 +150,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
             return reduce(inliningTarget, self, PNone.NONE, hasInitialProfile, getClassNode, totalNoneProfile, getIter, frame, totalMarkerProfile, elseProfile);
         }
 
-        private Object reduce(Node inliningTarget, PAccumulate self, Object func, InlinedBranchProfile hasInitialProfile, InlinedGetClassNode getClassNode, InlinedBranchProfile totalNoneProfile,
+        private Object reduce(Node inliningTarget, PAccumulate self, Object func, InlinedBranchProfile hasInitialProfile, GetClassNode getClassNode, InlinedBranchProfile totalNoneProfile,
                         PyObjectGetIter getIter, VirtualFrame frame,
                         InlinedBranchProfile totalMarkerProfile, InlinedBranchProfile elseProfile) {
             if (self.getInitial() != null) {
@@ -158,9 +158,9 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
                 Object type = getClassNode.execute(inliningTarget, self);
                 PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
-                chain.setSource(getIter.execute(frame, factory().createList(new Object[]{self.getIterable()})));
+                chain.setSource(getIter.execute(frame, inliningTarget, factory().createList(new Object[]{self.getIterable()})));
                 PTuple initialTuple = factory().createTuple(new Object[]{self.getInitial()});
-                chain.setActive(getIter.execute(frame, initialTuple));
+                chain.setActive(getIter.execute(frame, inliningTarget, initialTuple));
 
                 PTuple tuple = factory().createTuple(new Object[]{chain, func});
                 return factory().createTuple(new Object[]{type, tuple, PNone.NONE});
@@ -169,8 +169,8 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
                 PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
                 PList noneList = factory().createList(new Object[]{PNone.NONE});
-                Object noneIter = getIter.execute(frame, noneList);
-                chain.setSource(getIter.execute(frame, factory().createList(new Object[]{noneIter, self.getIterable()})));
+                Object noneIter = getIter.execute(frame, inliningTarget, noneList);
+                chain.setSource(getIter.execute(frame, inliningTarget, factory().createList(new Object[]{noneIter, self.getIterable()})));
                 chain.setActive(PNone.NONE);
                 PAccumulate accumulate = factory().createAccumulate(PythonBuiltinClassType.PAccumulate);
                 accumulate.setIterable(chain);

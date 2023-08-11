@@ -56,16 +56,21 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
@@ -122,10 +127,12 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     }
 
     @Specialization(guards = "isBinaryOrTernaryBuiltinDescriptor(info)", replaces = {"callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
+    @InliningCutoff
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object arg1, Object arg2,
-                    @Cached ConditionProfile invalidArgsProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached InlinedConditionProfile invalidArgsProfile,
                     @Cached GenericInvokeNode invokeNode) {
-        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(hasAllowedArgsNum(info)), info);
+        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(inliningTarget, hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(2);
         PArguments.setArgument(arguments, 0, arg1);
@@ -168,7 +175,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
@@ -185,7 +192,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callMethodSelf(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 3)") PythonBuiltinBaseNode builtinNode) {
@@ -195,10 +202,12 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     @Specialization(guards = "!isBinaryOrTernaryBuiltinDescriptor(func)", //
                     replaces = {"callObjectSingleContext", "callObject", "callMethodSingleContext", "callMethod", "callMethodSingleContextSelf", "callMethodSelf"})
     @Megamorphic
+    @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallNode callNode,
-                    @Cached ConditionProfile isBoundProfile) {
-        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+                    @Exclusive @Cached InlinedConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {
             return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[]{arg2}, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);

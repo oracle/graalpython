@@ -58,7 +58,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -72,6 +72,7 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class SetNodes {
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 116 -> 98
     public abstract static class ConstructSetNode extends PNodeWithContext {
         public abstract PSet execute(Frame frame, Object cls, Object value);
 
@@ -82,8 +83,8 @@ public abstract class SetNodes {
         @Specialization
         static PSet setString(VirtualFrame frame, Object cls, TruffleString arg,
                         @Bind("this") Node inliningTarget,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("setItem") @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode) {
@@ -99,20 +100,20 @@ public abstract class SetNodes {
 
         @Specialization(guards = "emptyArguments(none)")
         static PSet set(Object cls, @SuppressWarnings("unused") PNone none,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached PythonObjectFactory factory) {
             return factory.createSet(cls);
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
         static PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("setItem") @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             PSet set = factory.createSet(cls);
-            Object iterator = getIter.execute(frame, iterable);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
                 try {
                     setItemNode.execute(frame, inliningTarget, set, nextNode.execute(frame, iterator), PNone.NONE);
@@ -140,6 +141,7 @@ public abstract class SetNodes {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
     public abstract static class AddNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PSet self, Object o);
 
@@ -166,10 +168,11 @@ public abstract class SetNodes {
 
         @Specialization
         boolean discard(VirtualFrame frame, PSet self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
                         @Cached HashingStorageDelItem delItem) {
-            Object checkedKey = conv.execute(key);
-            Object found = delItem.executePop(frame, self.getDictStorage(), checkedKey, self);
+            Object checkedKey = conv.execute(inliningTarget, key);
+            Object found = delItem.executePop(frame, inliningTarget, self.getDictStorage(), checkedKey, self);
             return found != null;
         }
     }

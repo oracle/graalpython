@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,11 +45,14 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -58,19 +61,29 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
  * Equivalent of CPython's PyObject_ASCII.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class PyObjectAsciiNode extends PNodeWithContext {
-    public abstract TruffleString execute(Frame frame, Object object);
+    public static TruffleString executeUncached(Object object) {
+        return PyObjectAsciiNodeGen.getUncached().execute(null, null, object);
+    }
+
+    public final TruffleString executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
+    }
+
+    public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static TruffleString ascii(VirtualFrame frame, Object obj,
+    static TruffleString ascii(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsTruffleStringNode reprNode,
-                    @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                    @Cached TruffleStringIterator.NextNode nextNode,
-                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                    @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
+                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
         // TODO GR-37220: rewrite using TruffleStringBuilder?
-        TruffleString repr = reprNode.execute(frame, obj);
+        TruffleString repr = reprNode.execute(frame, inliningTarget, obj);
         byte[] bytes = new byte[codePointLengthNode.execute(repr, TS_ENCODING) * 10];
         TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
         int j = 0;

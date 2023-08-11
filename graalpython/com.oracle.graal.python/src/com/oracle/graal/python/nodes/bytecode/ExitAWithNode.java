@@ -47,19 +47,24 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(false) // Used in BCI
 public abstract class ExitAWithNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop, boolean rootNodeVisible);
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectIsTrueNode isTrueNode,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
@@ -69,7 +74,7 @@ public abstract class ExitAWithNode extends PNodeWithContext {
         virtualFrame.setObject(stackTop--, null);
         PException savedExcState = PArguments.getException(virtualFrame);
         try {
-            if (!isTrueNode.execute(virtualFrame, result) && exception != PNone.NONE) {
+            if (!isTrueNode.execute(virtualFrame, inliningTarget, result) && exception != PNone.NONE) {
                 if (exception instanceof PException) {
                     throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
                 } else if (exception instanceof AbstractTruffleException) {

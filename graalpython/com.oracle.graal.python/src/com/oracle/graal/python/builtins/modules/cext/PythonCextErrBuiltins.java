@@ -113,7 +113,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -125,6 +124,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -203,9 +203,9 @@ public final class PythonCextErrBuiltins {
         Object run(
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached MaterializeLazyTracebackNode materializeTraceback) {
-            PException currentException = getThreadStateNode.getCurrentException();
+            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
             Object result;
             if (currentException == null) {
                 result = getNativeNull();
@@ -213,13 +213,13 @@ public final class PythonCextErrBuiltins {
                 Object exception = currentException.getEscapedException();
                 Object traceback = null;
                 if (currentException.getTraceback() != null) {
-                    traceback = materializeTraceback.execute(currentException.getTraceback());
+                    traceback = materializeTraceback.execute(inliningTarget, currentException.getTraceback());
                 }
                 if (traceback == null) {
                     traceback = getNativeNull();
                 }
                 result = factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
-                getThreadStateNode.setCurrentException(null);
+                getThreadStateNode.setCurrentException(inliningTarget, null);
             }
             return result;
         }
@@ -229,12 +229,13 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_Occurred extends CApiNullaryBuiltinNode {
         @Specialization
         Object run(
+                        @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached GetClassNode getClassNode) {
-            PException currentException = getThreadStateNode.getCurrentException();
+            PException currentException = getThreadStateNode.getCurrentException(inliningTarget);
             if (currentException != null) {
                 // getClassNode acts as a branch profile
-                return getClassNode.execute(currentException.getUnreifiedException());
+                return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
             }
             return getNativeNull();
         }
@@ -244,10 +245,11 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyErr_Occurred extends CApiUnaryBuiltinNode {
         @Specialization
         Object run(PThreadState state,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
             PException currentException = state.getThreadState().getCurrentException();
             if (currentException != null) {
-                return getClassNode.execute(currentException.getUnreifiedException());
+                return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
             }
             return getNativeNull();
         }
@@ -303,15 +305,17 @@ public final class PythonCextErrBuiltins {
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "!isExceptionClass(type, isTypeNode, isSubClassNode)")
+        @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         Object create(Object type, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode) {
             throw raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
-        @Specialization(guards = "isExceptionClass(type, isTypeNode, isSubClassNode)")
+        @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         Object create(Object type, Object value,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsInstanceNode isInstanceNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
@@ -320,8 +324,8 @@ public final class PythonCextErrBuiltins {
             throw PRaiseNode.raiseExceptionObject(this, exception);
         }
 
-        protected static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
-            return isTypeNode.execute(obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
+        protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
+            return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
         }
     }
 
@@ -343,6 +347,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         Object newEx(TruffleString name, Object base, Object dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -364,7 +369,7 @@ public final class PythonCextErrBuiltins {
                 notDotProfile.enter();
                 throw raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
-            if (getItem.execute(null, ((PDict) dict).getDictStorage(), base) == null) {
+            if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
                 notModuleProfile.enter();
                 setItemNode.execute(null, dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }
@@ -404,7 +409,7 @@ public final class PythonCextErrBuiltins {
         Object info(
                         @Bind("this") Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached BranchProfile noExceptionProfile) {
             PException currentException = getCaughtExceptionNode.executeFromNative();
@@ -426,9 +431,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
         public abstract int executeInt(Object err, Object exc);
 
-        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"isPTuple(exc) || isTupleSubtype(this, exc, getClassNode, isSubtypeNode)"})
         static int matches(Object err, Object exc,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
@@ -445,9 +450,10 @@ public final class PythonCextErrBuiltins {
             return 0;
         }
 
-        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(inliningTarget, exc, getClassNode, isSubtypeNode)"})
         static int matches(Object errArg, Object exc,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached IsTypeNode isTypeNode,
@@ -462,21 +468,21 @@ public final class PythonCextErrBuiltins {
             Object err = errArg;
             if (isInstanceNode.executeWith(null, errArg, PythonBuiltinClassType.PBaseException)) {
                 isBaseExceptionProfile.enter();
-                err = getClassNode.execute(err);
+                err = getClassNode.execute(inliningTarget, err);
             }
-            if (isExceptionProfile.profile(isExceptionClass(err, isTypeNode, isSubClassNode) && isExceptionClass(exc, isTypeNode, isSubClassNode))) {
+            if (isExceptionProfile.profile(isExceptionClass(inliningTarget, err, isTypeNode, isSubClassNode) && isExceptionClass(inliningTarget, exc, isTypeNode, isSubClassNode))) {
                 return intValue(isSubClassNode.executeWith(null, err, exc));
             } else {
                 return intValue(isNode.execute(exc, err));
             }
         }
 
-        protected boolean isTupleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+        protected boolean isTupleSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
         }
 
-        private static boolean isExceptionClass(Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
-            return isTypeNode.execute(obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
+        private static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
+            return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
         }
     }
 
@@ -484,6 +490,7 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization
         Object write(Object msg, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTruffleErr_Fetch fetchNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
@@ -512,7 +519,7 @@ public final class PythonCextErrBuiltins {
             }
             writeAttrNode.execute(val, T___TRACEBACK__, tb);
             writeUnraisableNode.execute((PBaseException) val, m, (obj instanceof PNone) ? PNone.NONE : obj);
-            getThreadStateNode.setCaughtException(PException.NO_EXCEPTION);
+            getThreadStateNode.setCaughtException(inliningTarget, PException.NO_EXCEPTION);
             return PNone.NONE;
         }
     }
@@ -556,14 +563,14 @@ public final class PythonCextErrBuiltins {
             if (tb == nativeNull) {
                 tb = PNone.NONE;
             }
-            if (PyObjectLookupAttr.getUncached().execute(null, val, T___TRACEBACK__) == PNone.NONE) {
+            if (PyObjectLookupAttr.executeUncached(val, T___TRACEBACK__) == PNone.NONE) {
                 WriteAttributeToObjectNode.getUncached().execute(val, T___TRACEBACK__, tb);
             }
 
             if (set_sys_last_vars != 0) {
                 writeLastVars(sys, type, val, tb, restoreNode);
             }
-            Object exceptHook = PyObjectLookupAttr.getUncached().execute(null, sys, T_EXCEPTHOOK);
+            Object exceptHook = PyObjectLookupAttr.executeUncached(sys, T_EXCEPTHOOK);
             if (exceptHook != PNone.NO_VALUE) {
                 handleExceptHook(exceptHook, type, val, tb, excInfoNode, getItemNode, sys, errDisplayNode);
             }
@@ -593,12 +600,12 @@ public final class PythonCextErrBuiltins {
                 Object tb1 = getItemNode.execute(null, sysInfo, 2);
                 // not quite the same as 'PySys_WriteStderr' but close
                 Object stdErr = ((SysModuleBuiltins) sys.getBuiltins()).getStdErr();
-                Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdErr, T_WRITE);
+                Object writeMethod = PyObjectGetAttr.executeUncached(stdErr, T_WRITE);
                 CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
                 errDisplayNode.execute(type1, val1, tb1);
                 CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
                 errDisplayNode.execute(type, val, tb);
-                PyObjectCallMethodObjArgs.getUncached().execute(null, stdErr, T_FLUSH);
+                PyObjectCallMethodObjArgs.executeUncached(stdErr, T_FLUSH);
             }
         }
 
@@ -609,7 +616,7 @@ public final class PythonCextErrBuiltins {
             int rc = 0;
             Object returnObject = null;
             Object val = getItemNode.execute(null, sysInfo, 1);
-            Object codeAttr = PyObjectLookupAttr.getUncached().execute(null, val, T_CODE);
+            Object codeAttr = PyObjectLookupAttr.executeUncached(val, T_CODE);
             if (val != PNone.NONE && !(codeAttr instanceof PNone)) {
                 returnObject = codeAttr;
             }
@@ -622,9 +629,9 @@ public final class PythonCextErrBuiltins {
                     writeFileNode.execute(returnObject, stdErr, 1);
                 } else {
                     Object stdOut = sys.getStdOut();
-                    Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdOut, T_WRITE);
+                    Object writeMethod = PyObjectGetAttr.executeUncached(stdOut, T_WRITE);
                     CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
-                    PyObjectCallMethodObjArgs.getUncached().execute(null, stdOut, T_FLUSH);
+                    PyObjectCallMethodObjArgs.executeUncached(stdOut, T_FLUSH);
                 }
             }
             exitNode.execute(null, rc);
@@ -635,8 +642,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetCause extends CApiBinaryBuiltinNode {
         @Specialization
         Object setCause(Object exc, Object cause,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(exc, T___CAUSE__, cause);
+            setAttrNode.execute(inliningTarget, exc, T___CAUSE__, cause);
             return PNone.NONE;
         }
     }
@@ -645,8 +653,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_GetCause extends CApiUnaryBuiltinNode {
         @Specialization
         Object getCause(Object exc,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode) {
-            return getAttrNode.execute(exc, T___CAUSE__);
+            return getAttrNode.execute(inliningTarget, exc, T___CAUSE__);
         }
     }
 
@@ -654,8 +663,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object setCause(Object exc,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode) {
-            return getAttrNode.execute(exc, T___CONTEXT__);
+            return getAttrNode.execute(inliningTarget, exc, T___CONTEXT__);
         }
     }
 
@@ -663,8 +673,9 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         Object setContext(Object exc, Object context,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(exc, T___CONTEXT__, context);
+            setAttrNode.execute(inliningTarget, exc, T___CONTEXT__, context);
             return PNone.NONE;
         }
     }
@@ -674,8 +685,9 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         Object setTraceback(Object exc, Object traceback,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(exc, T___TRACEBACK__, traceback);
+            setAttrNode.execute(inliningTarget, exc, T___TRACEBACK__, traceback);
             return 0;
         }
     }

@@ -111,21 +111,24 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, T_READALL);
+            return callMethod.execute(frame, inliningTarget, self, T_READALL);
         }
 
         @Specialization(guards = "size >= 0")
+        @SuppressWarnings("truffle-static-method")
         Object read(VirtualFrame frame, Object self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
-            Object res = callMethodReadInto.execute(frame, self, T_READINTO, b);
+            Object res = callMethodReadInto.execute(frame, inliningTarget, self, T_READINTO, b);
             if (res == PNone.NONE) {
                 return res;
             }
-            int n = asSizeNode.executeExact(frame, res, ValueError);
+            int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n == 0) {
                 return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
@@ -154,7 +157,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
-                Object data = callMethodRead.execute(frame, self, T_READ, DEFAULT_BUFFER_SIZE);
+                Object data = callMethodRead.execute(frame, inliningTarget, self, T_READ, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
                 if (dataNoneProfile.profile(inliningTarget, data == PNone.NONE)) {
                     if (chunksSize0Profile.profile(inliningTarget, chunks.size() == 0)) {

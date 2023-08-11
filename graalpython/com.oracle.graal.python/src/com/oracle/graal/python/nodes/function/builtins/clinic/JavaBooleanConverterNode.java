@@ -46,10 +46,12 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Implements the {@code bool} argument clinic conversion, which in CPython calls to
@@ -91,8 +93,9 @@ public abstract class JavaBooleanConverterNode extends ArgumentCastNode {
 
     @Specialization(guards = "!isPNone(value)")
     static Object doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectIsTrueNode isTrueNode) {
-        return isTrueNode.execute(frame, value);
+        return isTrueNode.execute(frame, inliningTarget, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)

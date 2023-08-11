@@ -47,6 +47,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,7 +74,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PGroupBy})
 public final class GroupByBuiltins extends PythonBuiltins {
@@ -118,7 +120,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
                 return false;
             } else {
                 eqProfile.enter(inliningTarget);
-                if (!eqNode.execute(frame, self.getTgtKey(), self.getCurrKey())) {
+                if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), self.getCurrKey())) {
                     return false;
                 }
             }
@@ -131,36 +133,40 @@ public final class GroupByBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"!valuesSet(self)", "isNull(self.getKeyFunc())"})
         Object reduce(PGroupBy self,
-                        @Cached GetClassNode getClassNode) {
-            return reduce(self, PNone.NONE, getClassNode);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode) {
+            return reduce(inliningTarget, self, PNone.NONE, getClassNode);
         }
 
         @Specialization(guards = {"!valuesSet(self)", "!isNull(self.getKeyFunc())"})
         Object reduceNoFunc(PGroupBy self,
-                        @Cached GetClassNode getClassNode) {
-            return reduce(self, self.getKeyFunc(), getClassNode);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode) {
+            return reduce(inliningTarget, self, self.getKeyFunc(), getClassNode);
         }
 
-        private Object reduce(PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+        private Object reduce(Node inliningTarget, PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getIt(), keyFunc});
             return factory().createTuple(new Object[]{type, tuple});
         }
 
         @Specialization(guards = {"valuesSet(self)", "isNull(self.getKeyFunc())"})
         Object reduceMarkerNotSet(PGroupBy self,
-                        @Cached GetClassNode getClassNode) {
-            return reduceOther(self, PNone.NONE, getClassNode);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode) {
+            return reduceOther(inliningTarget, self, PNone.NONE, getClassNode);
         }
 
         @Specialization(guards = {"valuesSet(self)", "!isNull(self.getKeyFunc())"})
         Object reduceMarkerNotSetNoFunc(PGroupBy self,
-                        @Cached GetClassNode getClassNode) {
-            return reduceOther(self, self.getKeyFunc(), getClassNode);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode) {
+            return reduceOther(inliningTarget, self, self.getKeyFunc(), getClassNode);
         }
 
-        private Object reduceOther(PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+        private Object reduceOther(Node inliningTarget, PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple1 = factory().createTuple(new Object[]{self.getIt(), keyFunc});
             PTuple tuple2 = factory().createTuple(new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
             return factory().createTuple(new Object[]{type, tuple1, tuple2});

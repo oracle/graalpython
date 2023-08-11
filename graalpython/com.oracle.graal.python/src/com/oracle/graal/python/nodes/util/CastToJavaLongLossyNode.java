@@ -42,6 +42,8 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -50,10 +52,12 @@ import com.oracle.truffle.api.dsl.Specialization;
  * isn't possible, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
 
-    public static CastToJavaLongLossyNode getUncached() {
-        return CastToJavaLongLossyNodeGen.getUncached();
+    public static long executeUncached(Object x) throws CannotCastException {
+        return CastToJavaLongLossyNodeGen.getUncached().execute(null, x);
     }
 
     @Specialization(rewriteOn = OverflowException.class)

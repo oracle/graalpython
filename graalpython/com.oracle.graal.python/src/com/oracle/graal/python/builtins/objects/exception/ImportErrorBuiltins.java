@@ -67,8 +67,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -126,7 +126,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 splitArgsNode = insert(SplitArgsNode.create());
             }
-            Object[] argsWithoutSelf = splitArgsNode.execute(arguments);
+            Object[] argsWithoutSelf = splitArgsNode.executeCached(arguments);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
@@ -184,18 +184,18 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
-        private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem, HashingStorageCopy copyStorageNode,
+        private Object getState(Node inliningTarget, PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem, HashingStorageCopy copyStorageNode,
                         BaseExceptionAttrNode attrNode) {
             PDict dict = getDictIfExistsNode.execute(self);
             final Object name = attrNode.get(self, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
             final Object path = attrNode.get(self, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
             if (name != null || path != null) {
-                HashingStorage storage = (dict != null) ? copyStorageNode.execute(dict.getDictStorage()) : EmptyStorage.INSTANCE;
+                HashingStorage storage = (dict != null) ? copyStorageNode.execute(inliningTarget, dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 if (name != null) {
-                    storage = setHashingStorageItem.execute(storage, T_NAME, name);
+                    storage = setHashingStorageItem.execute(inliningTarget, storage, T_NAME, name);
                 }
                 if (path != null) {
-                    storage = setHashingStorageItem.execute(storage, T_PATH, path);
+                    storage = setHashingStorageItem.execute(inliningTarget, storage, T_PATH, path);
                 }
                 return factory().createDict(storage);
             } else if (dict != null) {
@@ -209,14 +209,14 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         Object reduce(PBaseException self,
                         @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached HashingStorageCopy copyStorageNode) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object args = getArgsNode.execute(inliningTarget, self);
-            Object state = getState(self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode);
+            Object state = getState(inliningTarget, self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode);
             if (state == PNone.NONE) {
                 return factory().createTuple(new Object[]{clazz, args});
             }
@@ -229,11 +229,12 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     public abstract static class ImportErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode exStrNode,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
             final Object msg = attrNode.get(self, IDX_MSG, IMPORT_ERROR_ATTR_FACTORY);
-            if (msg != PNone.NONE && unicodeCheckExactNode.execute(msg)) {
+            if (msg != PNone.NONE && unicodeCheckExactNode.execute(inliningTarget, msg)) {
                 return msg;
             } else {
                 return exStrNode.execute(frame, self);

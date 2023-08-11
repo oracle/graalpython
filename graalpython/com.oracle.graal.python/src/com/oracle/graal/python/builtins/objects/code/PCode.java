@@ -528,7 +528,7 @@ public final class PCode extends PythonBuiltinObject {
             return factory.createTuple(objects.clone());
         }
         // Ensure no conversion is missing
-        assert !IsForeignObjectNode.getUncached().execute(o);
+        assert !IsForeignObjectNode.executeUncached(o);
         return o;
     }
 

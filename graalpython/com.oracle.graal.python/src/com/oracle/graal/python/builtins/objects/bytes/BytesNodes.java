@@ -93,7 +93,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -105,6 +105,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -172,13 +173,13 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] join(VirtualFrame frame, Node inliningTarget, byte[] sep, Object iterable,
-                        @Cached(inline = false) PyObjectGetIter getIter,
+                        @Cached PyObjectGetIter getIter,
                         @Cached(inline = false) GetNextNode getNextNode,
                         @Cached(inline = false) ToBytesNode toBytesNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = getIter.execute(frame, iterable);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
@@ -296,16 +297,16 @@ public abstract class BytesNodes {
     public abstract static class NeedleToBytesNode extends PNodeWithContext {
         public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, Object needle);
 
-        @Specialization(guards = "indexCheck.execute(needle)")
-        static byte[] number(VirtualFrame frame, Object needle,
-                        @SuppressWarnings("unused") @Shared @Cached(inline = false) PyIndexCheckNode indexCheck,
+        @Specialization(guards = "indexCheck.execute(inliningTarget, needle)")
+        static byte[] number(VirtualFrame frame, Node inliningTarget, Object needle,
+                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheck,
                         @Cached(inline = false) CastToByteNode castToByteNode) {
             return new byte[]{castToByteNode.execute(frame, needle)};
         }
 
-        @Specialization(guards = "!indexCheck.execute(needle)", limit = "3")
-        static byte[] bytesLike(Object needle,
-                        @SuppressWarnings("unused") @Shared @Cached(inline = false) PyIndexCheckNode indexCheck,
+        @Specialization(guards = "!indexCheck.execute(inliningTarget, needle)", limit = "3")
+        static byte[] bytesLike(Node inliningTarget, Object needle,
+                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheck,
                         @CachedLibrary("needle") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             Object buffer = acquireLib.acquireReadonly(needle);
@@ -334,10 +335,11 @@ public abstract class BytesNodes {
         static int find(VirtualFrame frame, Node inliningTarget, Object self, Object needle, int start, int end, boolean reverse,
                         @Cached NeedleToBytesNode needleToBytesNode,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Cached(inline = false) GetInternalByteArrayNode getInternalArray) {
+                        @Cached GetInternalByteArrayNode getInternalArray) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
-            return find(getInternalArray.execute(storage), storage.length(), needleToBytesNode.execute(frame, inliningTarget, needle), adjustStartIndex(start, len), adjustEndIndex(end, len), reverse);
+            return find(getInternalArray.execute(inliningTarget, storage), storage.length(), needleToBytesNode.execute(frame, inliningTarget, needle), adjustStartIndex(start, len),
+                            adjustEndIndex(end, len), reverse);
         }
 
         public static int find(byte[] haystack, int len1, byte needle, int start, int end, boolean reverse) {
@@ -448,7 +450,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "!isPBytes(obj)")
         static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             return isSubtypeNode.execute(null, type, PythonBuiltinClassType.PBytes) || isSubtypeNode.execute(null, type, PythonBuiltinClassType.PByteArray);
@@ -509,8 +511,9 @@ public abstract class BytesNodes {
 
         @Specialization
         static Object str(PString str,
+                        @Bind("this") Node inliningTarget,
                         @Cached StringNodes.StringMaterializeNode toStr) {
-            return toStr.execute(str);
+            return toStr.execute(inliningTarget, str);
         }
 
         @Fallback
@@ -582,17 +585,16 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
-        static byte[] fromObject(VirtualFrame frame, @SuppressWarnings("unused") Node node, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Bind("this") Node inliningTarget,
-                        @Cached(inline = false) PyIndexCheckNode indexCheckNode,
+        static byte[] fromObject(VirtualFrame frame, Node inliningTarget, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached PyIndexCheckNode indexCheckNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached(inline = false) BytesFromObject bytesFromObject,
                         // Exclusive as a workaround for GR-44836
                         @Cached @Exclusive PRaiseNode.Lazy raiseNode) {
-            if (indexCheckNode.execute(source)) {
+            if (indexCheckNode.execute(inliningTarget, source)) {
                 try {
-                    int size = asSizeNode.executeExact(frame, source);
+                    int size = asSizeNode.executeExact(frame, inliningTarget, source);
                     if (size < 0) {
                         throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
                     }
@@ -611,17 +613,17 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
-        static byte[] fromString(Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached(inline = false) @Shared CastToTruffleStringNode castStr,
+        static byte[] fromString(Node inliningTarget, Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached @Shared CastToTruffleStringNode castStr,
                         @Cached(inline = false) @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
-            return encodeNode.execute(source, castStr.execute(encoding), T_STRICT);
+            return encodeNode.execute(source, castStr.execute(inliningTarget, encoding), T_STRICT);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
-        static byte[] fromString(Object source, Object encoding, Object errors,
-                        @Cached(inline = false) @Shared CastToTruffleStringNode castStr,
+        static byte[] fromString(Node inliningTarget, Object source, Object encoding, Object errors,
+                        @Cached @Shared CastToTruffleStringNode castStr,
                         @Cached(inline = false) @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
-            return encodeNode.execute(source, castStr.execute(encoding), castStr.execute(errors));
+            return encodeNode.execute(source, castStr.execute(inliningTarget, encoding), castStr.execute(inliningTarget, errors));
         }
 
         @Specialization(guards = "isString(source)")
@@ -762,8 +764,8 @@ public abstract class BytesNodes {
                         @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
                         @Cached PyObjectGetIter getIter) {
-            Object it = getIter.execute(frame, iterable);
-            int len = lenghtHintNode.execute(frame, iterable);
+            Object it = getIter.execute(frame, inliningTarget, iterable);
+            int len = lenghtHintNode.execute(frame, inliningTarget, iterable);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
@@ -794,11 +796,12 @@ public abstract class BytesNodes {
         TruffleString doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached PyOSFSPathNode fsPath,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            Object path = fsPath.execute(frame, value);
+            Object path = fsPath.execute(frame, inliningTarget, value);
             if (bufferAcquireLib.hasBuffer(path)) {
                 Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
                 try {
@@ -813,7 +816,7 @@ public abstract class BytesNodes {
                     bufferLib.release(buffer, frame, this);
                 }
             }
-            return toString.execute(path);
+            return toString.execute(inliningTarget, path);
         }
     }
 
@@ -919,6 +922,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
+        @InliningCutoff
         SequenceStorage getNative(PythonAbstractNativeObject bytes,
                         @Cached(inline = false) GetNativeBytesStorage getNativeTupleStorage) {
             return getNativeTupleStorage.execute(bytes);
@@ -966,7 +970,7 @@ public abstract class BytesNodes {
                 return shortcutLengthResult();
             }
             for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
-                compareResult = Byte.compare(selfArray[i], otherArray[i]);
+                compareResult = Byte.compareUnsigned(selfArray[i], otherArray[i]);
                 if (compareResult != 0) {
                     break;
                 }

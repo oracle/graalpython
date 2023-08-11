@@ -74,7 +74,7 @@ public abstract class PyFloatCheckNode extends Node {
     @Specialization
     static boolean doNative(PythonAbstractNativeObject obj,
                     @Cached(inline = false) PyObjectTypeCheck check) {
-        return check.execute(obj, PythonBuiltinClassType.PFloat);
+        return check.executeCached(obj, PythonBuiltinClassType.PFloat);
     }
 
     @Fallback

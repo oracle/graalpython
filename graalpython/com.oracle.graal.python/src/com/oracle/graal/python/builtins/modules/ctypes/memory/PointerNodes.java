@@ -794,7 +794,7 @@ public abstract class PointerNodes {
         public abstract Pointer execute(Node inliningTarget, Object value);
 
         @Specialization
-        Pointer doNativeVoidPtr(PythonNativeVoidPtr value) {
+        static Pointer doNativeVoidPtr(PythonNativeVoidPtr value) {
             Object pointerObject = value.getPointerObject();
             if (pointerObject instanceof Pointer pointer) {
                 return pointer;
@@ -803,9 +803,9 @@ public abstract class PointerNodes {
         }
 
         @Fallback
-        Pointer doLong(Object value,
-                        @Cached(inline = false) CastToJavaUnsignedLongNode cast) {
-            long pointer = cast.execute(value);
+        static Pointer doLong(Node inliningTarget, Object value,
+                        @Cached CastToJavaUnsignedLongNode cast) {
+            long pointer = cast.execute(inliningTarget, value);
             return Pointer.nativeMemory(pointer);
         }
     }

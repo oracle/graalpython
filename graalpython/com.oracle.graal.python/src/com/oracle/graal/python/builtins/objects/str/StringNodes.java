@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Read
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -71,7 +72,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -83,13 +84,16 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -104,14 +108,16 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class StringNodes {
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(StringNodes.class)
     public abstract static class StringMaterializeNode extends Node {
 
         public static TruffleString executeUncached(PString s) {
-            return StringMaterializeNodeGen.getUncached().execute(s);
+            return StringMaterializeNodeGen.getUncached().execute(null, s);
         }
 
-        public abstract TruffleString execute(PString materialize);
+        public abstract TruffleString execute(Node inliningTarget, PString materialize);
 
         @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
         static TruffleString doMaterializedNative(PString x) {
@@ -119,9 +125,10 @@ public abstract class StringNodes {
         }
 
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
+        @InliningCutoff
         static TruffleString doNative(PString x,
-                        @Cached ReadUnicodeArrayNode readArray,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
+                        @Cached(inline = false) ReadUnicodeArrayNode readArray,
+                        @Cached(inline = false) TruffleString.FromIntArrayUTF32Node fromArray) {
             NativeCharSequence sequence = x.getNativeCharSequence();
             assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
             TruffleString materialized = fromArray.execute(readArray.execute(sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
@@ -133,56 +140,55 @@ public abstract class StringNodes {
         static TruffleString doMaterialized(PString x) {
             return x.getMaterialized();
         }
-
-        @NeverDefault
-        public static StringMaterializeNode create() {
-            return StringNodesFactory.StringMaterializeNodeGen.create();
-        }
     }
 
     @GenerateUncached
     @ImportStatic(StringNodes.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
     public abstract static class StringLenNode extends PNodeWithContext {
 
         public abstract int execute(Object str);
 
         @Specialization
         static int doString(TruffleString str,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
         @Specialization(guards = "x.isMaterialized()")
         static int doMaterialized(PString x,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return doString(x.getMaterialized(), codePointLengthNode);
         }
 
         @Specialization(guards = "x.isNativeCharSequence()")
         static int doNativeCharSequence(PString x,
+                        @Bind("this") Node inliningTarget,
                         @Cached StringMaterializeNode materializeNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return doString(materializeNode.execute(x), codePointLengthNode);
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
         }
 
         @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
         static int nativeString(PString x,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return doString(x.getNativeCharSequence().getMaterialized(), codePointLengthNode);
         }
 
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isNativeMaterialized()"}, replaces = "nativeString", limit = "3")
         static int nativeStringMat(@SuppressWarnings("unused") PString x,
+                        @Bind("this") Node inliningTarget,
                         @Bind("x.getNativeCharSequence()") NativeCharSequence ncs,
                         @CachedLibrary("ncs") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return ncs.length(lib, castToJavaIntNode);
+            return ncs.length(inliningTarget, lib, castToJavaIntNode);
         }
 
         @Specialization
+        @InliningCutoff
         static int doNativeObject(PythonNativeObject x,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached PythonToNativeNode toSulongNode,
@@ -204,38 +210,42 @@ public abstract class StringNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CastToJavaStringCheckedNode extends PNodeWithContext {
-        public final String cast(Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
-            return executeInternal(object, errMsgFormat, errMsgArgs);
+        public final String cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
+            return executeInternal(inliningTarget, object, errMsgFormat, errMsgArgs);
         }
 
-        protected abstract String executeInternal(Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
+        protected abstract String executeInternal(Node inliningTarget, Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
 
         @Specialization
         static String doConvert(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
             return toJavaStringNode.execute(self);
         }
 
         @Specialization(guards = "!isTruffleString(self)")
-        static String doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached PRaiseNode raiseNode) {
+        static String doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
+                        @Cached(inline = false) CastToJavaStringNode castToJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return castToJavaStringNode.execute(self);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CastToTruffleStringCheckedNode extends PNodeWithContext {
-        public final TruffleString cast(Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
-            return execute(object, errMsgFormat, errMsgArgs);
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
+            return execute(inliningTarget, object, errMsgFormat, errMsgArgs);
         }
 
-        public abstract TruffleString execute(Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
+        public abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
 
         @Specialization
         static TruffleString doTruffleString(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs) {
@@ -243,18 +253,19 @@ public abstract class StringNodes {
         }
 
         @Specialization(guards = "!isTruffleString(self)")
-        static TruffleString doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return castToTruffleStringNode.execute(self);
+                return castToTruffleStringNode.execute(inliningTarget, self);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 37
     public abstract static class JoinInternalNode extends PNodeWithContext {
         public abstract TruffleString execute(VirtualFrame frame, TruffleString self, Object iterable);
 
@@ -262,9 +273,9 @@ public abstract class StringNodes {
         static TruffleString doString(TruffleString self, TruffleString arg,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             if (arg.isEmpty()) {
                 return T_EMPTY_STRING;
             }
@@ -285,17 +296,17 @@ public abstract class StringNodes {
         @Specialization(guards = "isExactlyListOrTuple(inliningTarget, getClassNode, sequence)", limit = "1")
         static TruffleString doPSequence(TruffleString self, PSequence sequence,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached InlinedConditionProfile isEmptyProfile,
                         @Cached InlinedConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PRaiseNode raise,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
 
-            SequenceStorage storage = getSequenceStorageNode.execute(sequence);
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
 
             // shortcut
@@ -310,47 +321,47 @@ public abstract class StringNodes {
             try {
                 // shortcut
                 if (isSingleItemProfile.profile(inliningTarget, len == 1)) {
-                    return castToStringNode.execute(item);
+                    return castToStringNode.execute(inliningTarget, item);
                 }
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                appendStringNode.execute(sb, castToStringNode.execute(item));
+                appendStringNode.execute(sb, castToStringNode.execute(inliningTarget, item));
 
                 for (i = 1; i < len; i++) {
                     appendStringNode.execute(sb, self);
                     item = getItemNode.execute(storage, i);
-                    appendStringNode.execute(sb, castToStringNode.execute(item));
+                    appendStringNode.execute(sb, castToStringNode.execute(inliningTarget, item));
                 }
                 return toStringNode.execute(sb);
             } catch (OutOfMemoryError e) {
-                throw raise.raise(MemoryError);
+                throw raise.get(inliningTarget).raise(MemoryError);
             } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
             }
         }
 
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
+                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile0,
                         @Cached IsBuiltinObjectProfile errorProfile1,
                         @Cached IsBuiltinObjectProfile errorProfile2,
-                        @Cached CastToTruffleStringNode castStrNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object iterator;
             try {
-                iterator = getIter.execute(frame, iterable);
+                iterator = getIter.execute(frame, inliningTarget, iterable);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile0);
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 try {
-                    appendStringNode.execute(sb, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
+                    appendStringNode.execute(sb, checkItem(inliningTarget, nextNode.execute(frame, iterator), 0, castToStringNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, errorProfile1);
                     return T_EMPTY_STRING;
@@ -365,28 +376,29 @@ public abstract class StringNodes {
                         return toStringNode.execute(sb);
                     }
                     appendStringNode.execute(sb, string);
-                    appendStringNode.execute(sb, checkItem(value, i++, castStrNode, raise));
+                    appendStringNode.execute(sb, checkItem(inliningTarget, value, i++, castToStringNode, raise));
                 }
             } catch (OutOfMemoryError e) {
-                throw raise.raise(MemoryError);
+                throw raise.get(inliningTarget).raise(MemoryError);
             }
         }
 
-        private static TruffleString checkItem(Object item, int pos, CastToTruffleStringNode castNode, PRaiseNode raise) {
+        private static TruffleString checkItem(Node inliningTarget, Object item, int pos, CastToTruffleStringNode castNode, PRaiseNode.Lazy raise) {
             try {
-                return castNode.execute(item);
+                return castNode.execute(inliningTarget, item);
             } catch (CannotCastException e) {
-                throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
+                throw raise.get(inliningTarget).raise(TypeError, INVALID_SEQ_ITEM, pos, item);
             }
         }
 
-        static boolean isExactlyListOrTuple(Node inliningTarget, InlinedGetClassNode getClassNode, PSequence sequence) {
+        static boolean isExactlyListOrTuple(Node inliningTarget, GetClassNode getClassNode, PSequence sequence) {
             Object clazz = getClassNode.execute(inliningTarget, sequence);
             return clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple;
         }
     }
 
     @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
     public abstract static class SpliceNode extends PNodeWithContext {
 
         public abstract void execute(TruffleStringBuilder sb, Object translated);
@@ -399,7 +411,7 @@ public abstract class StringNodes {
         @Specialization
         static void doInt(TruffleStringBuilder sb, int translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             if (Character.isValidCodePoint(translated)) {
                 appendCodePointNode.execute(sb, translated, 1, true);
             } else {
@@ -410,7 +422,7 @@ public abstract class StringNodes {
         @Specialization
         static void doLong(TruffleStringBuilder sb, long translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
                 doInt(sb, PInt.intValueExact(translated), raise, appendCodePointNode);
             } catch (OverflowException e) {
@@ -421,7 +433,7 @@ public abstract class StringNodes {
         @Specialization
         static void doPInt(TruffleStringBuilder sb, PInt translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
                 doInt(sb, translated.intValueExact(), raise, appendCodePointNode);
             } catch (OverflowException e) {
@@ -431,18 +443,19 @@ public abstract class StringNodes {
 
         @Specialization
         static void doString(TruffleStringBuilder sb, TruffleString translated,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
             appendStringNode.execute(sb, translated);
         }
 
         @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
         static void doObject(TruffleStringBuilder sb, Object translated,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
 
             try {
-                TruffleString translatedStr = castToStringNode.execute(translated);
+                TruffleString translatedStr = castToStringNode.execute(inliningTarget, translated);
                 doString(sb, translatedStr, appendStringNode);
             } catch (CannotCastException e) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
@@ -456,23 +469,28 @@ public abstract class StringNodes {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class InternStringNode extends Node {
-        public abstract PString execute(Object string);
+        public abstract PString execute(Node inliningTarget, Object string);
+
+        public static PString executeUncached(Object string) {
+            return StringNodesFactory.InternStringNodeGen.getUncached().execute(null, string);
+        }
 
         @Specialization
         static PString doString(TruffleString string,
-                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("writeNode") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode,
+                        @Cached(inline = false) PythonObjectFactory factory) {
             final PString interned = factory.createString(string);
             writeNode.execute(interned, PString.INTERNED, true);
             return interned;
         }
 
         @Specialization
-        static PString doPString(PString string,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
+        static PString doPString(Node inliningTarget, PString string,
+                        @Cached GetClassNode getClassNode,
+                        @Shared("writeNode") @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
             if (cannotBeOverridden(getClassNode.execute(inliningTarget, string))) {
                 writeNode.execute(string, PString.INTERNED, true);
                 return string;
@@ -484,26 +502,29 @@ public abstract class StringNodes {
         static PString doOthers(@SuppressWarnings("unused") Object string) {
             return null;
         }
-
-        public static InternStringNode getUncached() {
-            return StringNodesFactory.InternStringNodeGen.getUncached();
-        }
     }
 
-    @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
     public abstract static class IsInternedStringNode extends Node {
-        public abstract boolean execute(PString string);
+        public abstract boolean execute(Node inliningTarget, PString string);
+
+        public static boolean executeUncached(PString string) {
+            return IsInternedStringNodeGen.getUncached().execute(null, string);
+        }
 
         @Specialization
         static boolean doIt(PString string,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode) {
             final Object isInterned = readNode.execute(string, PString.INTERNED);
             return isInterned instanceof Boolean && (boolean) isInterned;
         }
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 52 -> 33
     public abstract static class StringReplaceNode extends Node {
         public abstract TruffleString execute(TruffleString str, TruffleString old, TruffleString with, int maxCount);
 
@@ -580,6 +601,7 @@ public abstract class StringNodes {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
     public abstract static class StringReprNode extends Node {
         public abstract TruffleString execute(TruffleString self);
 

@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -182,7 +183,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             handleSystemExit(managedException);
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
-            Object type = GetClassNode.getUncached().execute(pythonException);
+            Object type = GetClassNode.executeUncached(pythonException);
             Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
             PythonModule sys = getContext().lookupBuiltinModule(T_SYS);
@@ -209,7 +210,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private static boolean isSystemExit(PBaseException pythonException) {
-        return InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit);
+        return InlineIsBuiltinClassProfile.profileClassSlowPath(GetPythonObjectClassNode.executeUncached(pythonException), SystemExit);
     }
 
     @TruffleBoundary
@@ -271,7 +272,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         if (exceptionAttributes != null) {
             final Object code = exceptionAttributes[0];
             if (code != PNone.NONE) {
-                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(code);
+                exitcode = (int) CastToJavaLongLossyNode.executeUncached(code);
             }
         }
         return exitcode;
@@ -283,7 +284,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             // If we failed to dig out the exit code we just print and leave
             Object stderr = theContext.getStderr();
             Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
-            PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, T_WRITE, message);
+            PyObjectCallMethodObjArgs.executeUncached(stderr, T_WRITE, message);
             return true;
         }
         return false;
@@ -301,7 +302,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setGlobals(arguments, pythonContext.factory().createDict());
         } else {
             mainModule = pythonContext.getMainModule();
-            PDict mainDict = GetOrCreateDictNode.getUncached().execute(mainModule);
+            PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);

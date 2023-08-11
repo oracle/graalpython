@@ -41,18 +41,35 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_Size} and {@code PyObject_Length} (alias of the former).
@@ -60,18 +77,81 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * have any. Coerces the result to size integer using {@link PyNumberAsSizeNode}.
  */
 @GenerateUncached
-public abstract class PyObjectSizeNode extends GraalPyObjectSizeNode {
-    public abstract int execute(Frame frame, Object object);
+@GenerateInline(inlineByDefault = true)
+@GenerateCached()
+public abstract class PyObjectSizeNode extends PNodeWithContext {
+    public static int executeUncached(Frame frame, Object object) {
+        return PyObjectSizeNodeGen.getUncached().execute(frame, null, object);
+    }
 
-    public abstract int execute(Frame frame, PTuple object);
+    public static int executeUncached(Object object) {
+        return PyObjectSizeNodeGen.getUncached().execute(null, null, object);
+    }
 
-    protected abstract Object executeObject(Frame frame, Object object);
+    public final int executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
+    }
 
-    // Fast-path specializations for builtins are inherited
+    public abstract int execute(Frame frame, Node inliningTarget, Object object);
+
+    public abstract int execute(Frame frame, Node inliningTarget, PTuple object);
+
+    protected abstract Object executeObject(Frame frame, Node inliningTarget, Object object);
+
+    // Note: these fast-paths are duplicated in IteratorNodes$GetLength, because there is no simple
+    // way to share them effectively without unnecessary indirections and overhead in the
+    // interpreter
+
+    @Specialization
+    static int doTruffleString(TruffleString str,
+                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+        return codePointLengthNode.execute(str, TS_ENCODING);
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doList(Node inliningTarget, PList object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        return object.getSequenceStorage().length();
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doTuple(Node inliningTarget, PTuple object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        return object.getSequenceStorage().length();
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doDict(Node inliningTarget, PDict object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doSet(Node inliningTarget, PSet object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @InliningCutoff
+    static int doPString(Node inliningTarget, PString object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Cached(inline = false) StringNodes.StringLenNode lenNode) {
+        return lenNode.execute(object);
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doPBytes(Node inliningTarget, PBytesLike object,
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        return object.getSequenceStorage().length();
+    }
 
     @Fallback
+    @InliningCutoff
     static int doOthers(VirtualFrame frame, Object object,
-                    @Cached PyObjectSizeGenericNode genericNode) {
+                    @Cached(inline = false) PyObjectSizeGenericNode genericNode) {
         return genericNode.execute(frame, object);
     }
 
@@ -82,11 +162,12 @@ public abstract class PyObjectSizeNode extends GraalPyObjectSizeNode {
         return len;
     }
 
-    public static int convertAndCheckLen(VirtualFrame frame, Object result, PyNumberIndexNode indexNode, CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
+    public static int convertAndCheckLen(VirtualFrame frame, Node inliningTarget, Object result, PyNumberIndexNode indexNode,
+                    CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
         int len;
-        Object index = indexNode.execute(frame, result);
+        Object index = indexNode.execute(frame, inliningTarget, result);
         try {
-            len = asSizeNode.executeExact(frame, index);
+            len = asSizeNode.executeExact(frame, inliningTarget, index);
         } catch (PException e) {
             /*
              * CPython first checks whether the number is negative before converting it to an
@@ -94,7 +175,7 @@ public abstract class PyObjectSizeNode extends GraalPyObjectSizeNode {
              * conversion overflowed, we need to do the negativity check before raising the overflow
              * error.
              */
-            len = castLossy.execute(index);
+            len = castLossy.execute(inliningTarget, index);
             checkLen(raiseNode, len);
             throw e;
         }

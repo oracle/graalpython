@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,28 +47,35 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
+@GenerateInline(false) // used in BCI root node
 abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContext {
 
     public abstract HashingStorage execute(Frame virtualFrame, SequenceStorage sequenceStorage);
 
     @Specialization
     HashingStorage doIt(VirtualFrame frame, SequenceStorage sequenceStorage,
+                    @Bind("this") Node inliningTarget,
                     @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                     @Cached HashingStorageSetItem setItem,
-                    @Cached LoopConditionProfile loopConditionProfile) {
+                    @Cached InlinedLoopConditionProfile loopConditionProfile) {
         HashingStorage setStorage = EmptyStorage.INSTANCE;
         int length = sequenceStorage.length();
-        loopConditionProfile.profileCounted(length);
-        for (int i = 0; loopConditionProfile.inject(i < length); ++i) {
+        loopConditionProfile.profileCounted(inliningTarget, length);
+        LoopNode.reportLoopCount(inliningTarget, length);
+        for (int i = 0; loopConditionProfile.inject(inliningTarget, i < length); ++i) {
             Object o = getItemNode.execute(sequenceStorage, i);
-            setStorage = setItem.execute(frame, setStorage, o, PNone.NONE);
+            setStorage = setItem.execute(frame, inliningTarget, setStorage, o, PNone.NONE);
         }
         return setStorage;
     }

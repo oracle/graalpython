@@ -51,21 +51,30 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Bind the descriptor to the receiver unless it's one of the descriptor types that our method call
  * nodes handle unbound.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
 
-    public abstract Object execute(Frame frame, Object descriptor, Object receiver, Object receiverType);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object descriptor, Object receiver, Object receiverType);
+
+    public static Object executeUncached(Frame frame, Object descriptor, Object receiver, Object receiverType) {
+        return MaybeBindDescriptorNodeGen.getUncached().execute(frame, null, descriptor, receiver, receiverType);
+    }
 
     @Specialization(guards = "isNoValue(descriptor)")
     static Object doNoValue(Object descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
@@ -101,19 +110,15 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "needsToBind(descriptor)")
-    static Object doBind(VirtualFrame frame, Object descriptor, Object receiver, Object receiverType,
+    static Object doBind(VirtualFrame frame, Node inliningTarget, Object descriptor, Object receiver, Object receiverType,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
-                    @Cached CallTernaryMethodNode callGet) {
-        Object getMethod = lookupGet.execute(getClassNode.execute(descriptor));
+                    @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
+                    @Cached(inline = false) CallTernaryMethodNode callGet) {
+        Object getMethod = lookupGet.execute(getClassNode.execute(inliningTarget, descriptor));
         if (getMethod != PNone.NO_VALUE) {
             return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, receiverType));
         }
         // CPython considers non-descriptors already bound
         return new BoundDescriptor(descriptor);
-    }
-
-    public static MaybeBindDescriptorNode getUncached() {
-        return MaybeBindDescriptorNodeGen.getUncached();
     }
 }

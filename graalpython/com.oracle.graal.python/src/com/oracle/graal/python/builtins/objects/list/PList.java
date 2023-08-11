@@ -185,13 +185,14 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
+                    @Bind("$node") Node inliningTarget,
                     @Cached PForeignToPTypeNode convert,
                     @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                setItem.execute(store, PInt.intValueExact(index), convert.executeConvert(value));
+                setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

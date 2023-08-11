@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ import com.oracle.graal.python.util.Consumer;
  */
 public class SharedEngineMultithreadingTestBase extends PythonTests {
     // To increase the chances of hitting concurrency issues, we run each test repeatedly.
-    protected static final int RUNS_COUNT_FACTOR = 4;
+    protected static final int RUNS_COUNT_FACTOR = Integer.getInteger("com.oracle.graal.python.test.SharedEngineMultithreadingRunCountFactor", 4);
     protected static final int THREADS_COUNT = Runtime.getRuntime().availableProcessors();
     private static final boolean LOG = false;
 

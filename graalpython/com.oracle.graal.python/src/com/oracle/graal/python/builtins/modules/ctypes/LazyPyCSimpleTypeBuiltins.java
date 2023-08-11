@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
@@ -146,6 +148,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(value)")
         Object c_wchar_p_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -183,7 +186,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
             if (as_parameter != PNone.NO_VALUE) {
                 return cwCharPFromParamNode.execute(frame, type, as_parameter);
             }
@@ -203,12 +206,13 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        protected static boolean isLong(Object value, PyLongCheckNode longCheckNode) {
-            return value instanceof PythonNativeVoidPtr || longCheckNode.execute(value); // PyLong_Check
+        protected static boolean isLong(Node inliningTarget, Object value, PyLongCheckNode longCheckNode) {
+            return value instanceof PythonNativeVoidPtr || longCheckNode.execute(inliningTarget, value); // PyLong_Check
         }
 
-        @Specialization(guards = "isLong(value, longCheckNode)")
+        @Specialization(guards = "isLong(this, value, longCheckNode)")
         Object voidPtr(@SuppressWarnings("unused") Object type, Object value,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached SetFuncNode setFuncNode) {
             /* int, long */
@@ -247,8 +251,9 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return parg;
         }
 
-        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(value, longCheckNode)"})
+        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(this, value, longCheckNode)"})
         Object c_void_p_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached IsInstanceNode isInstanceNode,
@@ -300,7 +305,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
             if (as_parameter != PNone.NO_VALUE) {
                 return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
@@ -334,6 +339,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNone(value)", "!isBytes(value)"})
         Object c_char_p_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -362,7 +368,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
             if (as_parameter != PNone.NO_VALUE) {
                 return cCharPFromParamNode.execute(frame, type, as_parameter);
             }

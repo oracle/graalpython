@@ -52,6 +52,8 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -69,13 +71,23 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Then, when requested, this node copies PFrame locals to a dict.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class GetFrameLocalsNode extends Node {
-    public abstract Object execute(PFrame pyFrame);
+    public abstract Object execute(Node inliningTarget, PFrame pyFrame);
+
+    public final Object executeCached(PFrame pyFrame) {
+        return execute(this, pyFrame);
+    }
+
+    public static Object executeUncached(PFrame pyFrame) {
+        return GetFrameLocalsNodeGen.getUncached().execute(null, pyFrame);
+    }
 
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
     static Object doLoop(PFrame pyFrame,
-                    @Cached PythonObjectFactory factory,
-                    @Cached CopyLocalsToDict copyLocalsToDict) {
+                    @Cached(inline = false) PythonObjectFactory factory,
+                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict) {
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();
@@ -95,12 +107,14 @@ public abstract class GetFrameLocalsNode extends Node {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 104 -> 86
     abstract static class CopyLocalsToDict extends Node {
         abstract void execute(MaterializedFrame locals, PDict dict);
 
         @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "count < 32"}, limit = "1")
         @ExplodeLoop
         void doCachedFd(MaterializedFrame locals, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
                         @Bind("info.getVariableCount()") int count,
@@ -109,12 +123,13 @@ public abstract class GetFrameLocalsNode extends Node {
             CodeUnit co = info.getRootNode().getCodeUnit();
             int regularVarCount = co.varnames.length;
             for (int i = 0; i < count; i++) {
-                copyItem(locals, info, dict, setItem, delItem, i, i >= regularVarCount);
+                copyItem(inliningTarget, locals, info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
         @Specialization(replaces = "doCachedFd")
         void doGeneric(MaterializedFrame locals, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Shared("setItem") @Cached PyDictSetItem setItem,
                         @Shared("delItem") @Cached PyDictDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
@@ -122,20 +137,20 @@ public abstract class GetFrameLocalsNode extends Node {
             CodeUnit co = info.getRootNode().getCodeUnit();
             int regularVarCount = co.varnames.length;
             for (int i = 0; i < count; i++) {
-                copyItem(locals, info, dict, setItem, delItem, i, i >= regularVarCount);
+                copyItem(inliningTarget, locals, info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
-        private static void copyItem(MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
+        private static void copyItem(Node inliningTarget, MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
             TruffleString name = info.getVariableName(i);
             Object value = locals.getValue(i);
             if (deref && value != null) {
                 value = ((PCell) value).getRef();
             }
             if (value == null) {
-                delItem.execute(dict, name);
+                delItem.execute(inliningTarget, dict, name);
             } else {
-                setItem.execute(dict, name, value);
+                setItem.execute(inliningTarget, dict, name, value);
             }
         }
 
@@ -160,7 +175,7 @@ public abstract class GetFrameLocalsNode extends Node {
     private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
         for (int i = 0; i < namesArray.length; i++) {
             TruffleString varname = namesArray[i];
-            Object value = PyDictGetItem.getUncached().execute(null, localsDict, varname);
+            Object value = PyDictGetItem.executeUncached(localsDict, varname);
             if (deref) {
                 PCell cell = (PCell) localFrame.getObject(offset + i);
                 cell.setRef(value);
@@ -173,9 +188,5 @@ public abstract class GetFrameLocalsNode extends Node {
     @NeverDefault
     public static GetFrameLocalsNode create() {
         return GetFrameLocalsNodeGen.create();
-    }
-
-    public static GetFrameLocalsNode getUncached() {
-        return GetFrameLocalsNodeGen.getUncached();
     }
 }

@@ -127,7 +127,7 @@ public class BufferedWriterNodes {
 
             /* First write the current buffer */
             try {
-                flushUnlockedNode.execute(frame, inliningTarget, self);
+                flushUnlockedNode.execute(frame, self);
             } catch (PException e) {
                 e.expect(inliningTarget, BlockingIOError, isBuiltinClassProfile);
                 if (self.isReadable()) {
@@ -156,7 +156,7 @@ public class BufferedWriterNodes {
 
                 Object pythonException = e.getUnreifiedException();
                 PTuple args = getArgsNode.execute(inliningTarget, pythonException);
-                Object errno = getItemScalarNode.execute(args.getSequenceStorage(), 0);
+                Object errno = getItemScalarNode.execute(inliningTarget, args.getSequenceStorage(), 0);
                 throw raiseBlockingIOError.get(inliningTarget).raise(errno, WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, avail);
             }
             /*
@@ -167,7 +167,7 @@ public class BufferedWriterNodes {
              */
             long offset = rawOffset(self);
             if (offset != 0) {
-                rawSeekNode.execute(frame, inliningTarget, self, -offset, 1);
+                rawSeekNode.execute(frame, self, -offset, 1);
                 self.setRawPos(self.getRawPos() - offset);
             }
 
@@ -224,18 +224,18 @@ public class BufferedWriterNodes {
         @Specialization
         static int bufferedwriterRawWrite(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
                         @Cached(inline = false) PythonObjectFactory factory,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
-                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
             PBytes memobj = factory.createBytes(buf, len);
-            Object res = callMethod.execute(frame, self.getRaw(), T_WRITE, memobj);
+            Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_WRITE, memobj);
             if (res == PNone.NONE) {
                 /*
                  * Non-blocking stream would have blocked. Special return code!
                  */
                 return -2;
             }
-            int n = asSizeNode.executeExact(frame, res, ValueError);
+            int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n < 0 || n > len) {
                 throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
             }
@@ -246,17 +246,17 @@ public class BufferedWriterNodes {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    @GenerateInline(false) // Used lazily
     abstract static class FlushUnlockedNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
+        public abstract void execute(VirtualFrame frame, PBuffered self);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedwriter_flush_unlocked
          */
         @Specialization
-        protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, Node inliningTarget, PBuffered self,
+        protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached AbstractBufferedIOBuiltins.LazyRaiseBlockingIOError raiseBlockingIOError,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode) {
@@ -267,7 +267,7 @@ public class BufferedWriterNodes {
             /* First, rewind */
             long rewind = rawOffset(self) + (self.getPos() - self.getWritePos());
             if (rewind != 0) {
-                rawSeekNode.execute(frame, inliningTarget, self, -rewind, SEEK_CUR);
+                rawSeekNode.execute(frame, self, -rewind, SEEK_CUR);
                 self.incRawPos(-rewind);
             }
             while (self.getWritePos() < self.getWriteEnd()) {

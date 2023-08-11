@@ -79,7 +79,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -159,7 +158,7 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
@@ -186,19 +185,20 @@ public final class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            Object[] array = getArray.execute(args.getSequenceStorage());
+            Object[] array = getArray.execute(inliningTarget, args.getSequenceStorage());
             if (array.length < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
                 throw raise(TypeError);
             }
             PDict dict = (PDict) array[0];
             Object data = array[1];
-            int len = asSizeNode.executeExact(frame, array[2]);
+            int len = asSizeNode.executeExact(frame, inliningTarget, array[2]);
             // PyArg_ParseTuple(args, "O!s#",&PyDict_Type, &dict, &data, &len))
 
             if (len > self.b_size) {
@@ -208,11 +208,11 @@ public final class CDataBuiltins extends PythonBuiltins {
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
                 throw raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
-                                getNameNode.execute(getClassNode.execute(self)),
-                                getNameNode.execute(getClassNode.execute(mydict)));
+                                getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
+                                getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
             }
             PDict selfDict = (PDict) mydict;
-            addAllToOtherNode.execute(frame, dict.getDictStorage(), selfDict);
+            addAllToOtherNode.execute(frame, inliningTarget, dict.getDictStorage(), selfDict);
             return PNone.NONE;
         }
 

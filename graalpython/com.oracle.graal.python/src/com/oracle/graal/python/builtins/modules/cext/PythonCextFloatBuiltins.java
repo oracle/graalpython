@@ -54,9 +54,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFloatBuiltins {
 
@@ -91,8 +93,9 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization(guards = {"!isLong(object)", "!isDouble(object)"})
         static double doGenericErr(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return asDoubleNode.execute(null, object);
+            return asDoubleNode.execute(null, inliningTarget, object);
         }
     }
 
@@ -101,8 +104,9 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization
         static Object fromString(TruffleString string,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatFromString pyFloatFromString) {
-            return pyFloatFromString.execute(null, string);
+            return pyFloatFromString.execute(null, inliningTarget, string);
         }
     }
 }

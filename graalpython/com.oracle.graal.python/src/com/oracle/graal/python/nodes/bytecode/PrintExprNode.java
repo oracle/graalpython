@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,22 +51,27 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class PrintExprNode extends PNodeWithContext {
     public abstract void execute(Frame frame, Object object);
 
     @Specialization
     void print(VirtualFrame frame, Object object,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached CallNode callNode) {
         PythonModule sysModule = getContext().getSysModule();
-        Object displayhook = lookupAttr.execute(frame, sysModule, BuiltinNames.T_DISPLAYHOOK);
+        Object displayhook = lookupAttr.execute(frame, inliningTarget, sysModule, BuiltinNames.T_DISPLAYHOOK);
         if (displayhook == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.LOST_SYSDISPLAYHOOK);

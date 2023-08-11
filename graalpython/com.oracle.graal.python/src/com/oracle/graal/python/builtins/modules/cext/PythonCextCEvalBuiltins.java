@@ -140,9 +140,10 @@ public final class PythonCextCEvalBuiltins {
     abstract static class PyEval_GetFrame extends CApiNullaryBuiltinNode {
         @Specialization
         Object getFrame(
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
-            PFrame.Reference reference = getCurrentFrameRef.execute(null);
+            PFrame.Reference reference = getCurrentFrameRef.execute(null, inliningTarget);
             return readCallerFrameNode.executeWith(reference, 0);
         }
     }
@@ -173,7 +174,7 @@ public final class PythonCextCEvalBuiltins {
 
             PKeyword[] keywords = PKeyword.create(kws.length / 2);
             for (int i = 0; i < kws.length / 2; i += 2) {
-                TruffleString keywordName = castToStringNode.execute(kws[i]);
+                TruffleString keywordName = castToStringNode.execute(inliningTarget, kws[i]);
                 keywords[i] = new PKeyword(keywordName, kws[i + 1]);
             }
 
@@ -216,7 +217,7 @@ public final class PythonCextCEvalBuiltins {
 
         @TruffleBoundary
         private static PException raiseRecursionError(Node node, Object where) {
-            TruffleString msg = CastToTruffleStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(where));
+            TruffleString msg = CastToTruffleStringNode.executeUncached(FromCharPointerNodeGen.getUncached().execute(where));
             TruffleString.ConcatNode.getUncached().execute(ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, msg, TS_ENCODING, false);
             throw PRaiseNode.raiseUncached(node, RecursionError, msg);
         }

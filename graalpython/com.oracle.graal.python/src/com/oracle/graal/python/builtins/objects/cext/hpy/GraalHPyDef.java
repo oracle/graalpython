@@ -512,7 +512,7 @@ public abstract class GraalHPyDef {
         if (object instanceof PythonClass pythonClass) {
             return pythonClass.getBuiltinShape();
         } else if (object instanceof PythonAbstractNativeObject) {
-            assert IsTypeNode.getUncached().execute(object);
+            assert IsTypeNode.executeUncached(object);
             return HPyType_BUILTIN_SHAPE_LEGACY;
         }
         return -2; // error

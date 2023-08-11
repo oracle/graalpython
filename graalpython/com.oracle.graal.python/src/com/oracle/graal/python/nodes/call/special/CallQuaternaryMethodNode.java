@@ -47,14 +47,17 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
@@ -103,10 +106,12 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     }
 
     @Specialization(replaces = {"callSingle", "call", "callMethodSingle", "callMethod"})
+    @InliningCutoff
     Object generic(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3, Object arg4,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallNode callNode,
-                    @Cached ConditionProfile isBoundProfile) {
-        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+                    @Cached InlinedConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {
             return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[]{arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);

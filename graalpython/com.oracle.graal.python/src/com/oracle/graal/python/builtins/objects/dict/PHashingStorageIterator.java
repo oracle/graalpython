@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PHashingStorageIterator extends PBuiltinIterator {
@@ -67,8 +68,8 @@ public abstract class PHashingStorageIterator extends PBuiltinIterator {
         return storage;
     }
 
-    public final boolean checkSizeChanged(HashingStorageLen lenNode) {
-        return lenNode.execute(getHashingStorage()) != size;
+    public final boolean checkSizeChanged(Node inliningTarget, HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, getHashingStorage()) != size;
     }
 
     public final int getSize() {

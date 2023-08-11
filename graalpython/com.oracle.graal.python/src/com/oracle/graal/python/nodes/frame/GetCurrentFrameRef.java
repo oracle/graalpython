@@ -48,6 +48,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,9 +63,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * regardless if a frame is available or not.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class GetCurrentFrameRef extends Node {
 
-    public abstract Reference execute(Frame frame);
+    public abstract Reference execute(Frame frame, Node inliningTarget);
 
     @Specialization(guards = "frame != null")
     static Reference doWithFrame(Frame frame) {

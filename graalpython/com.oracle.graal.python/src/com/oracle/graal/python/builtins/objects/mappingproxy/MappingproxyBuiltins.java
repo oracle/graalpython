@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -73,11 +73,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMappingproxy)
@@ -105,8 +107,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object iter(VirtualFrame frame, @SuppressWarnings("unused") PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter) {
-            return getIter.execute(frame, self.getMapping());
+            return getIter.execute(frame, inliningTarget, self.getMapping());
         }
     }
 
@@ -116,8 +119,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object items(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_KEYS);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_KEYS);
         }
     }
 
@@ -127,8 +131,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object items(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_ITEMS);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_ITEMS);
         }
     }
 
@@ -138,8 +143,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object values(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_VALUES);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_VALUES);
         }
     }
 
@@ -149,14 +155,16 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(defaultValue)")
         public Object get(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue,
+                        @Bind("this") Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_GET, key);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_GET, key);
         }
 
         @Specialization(guards = "!isNoValue(defaultValue)")
         public Object get(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue,
+                        @Bind("this") Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_GET, key, defaultValue);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_GET, key, defaultValue);
         }
     }
 
@@ -165,8 +173,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getItem(VirtualFrame frame, PMappingproxy self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode) {
-            return getItemNode.execute(frame, self.getMapping(), key);
+            return getItemNode.execute(frame, inliningTarget, self.getMapping(), key);
         }
     }
 
@@ -185,8 +194,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(frame, self.getMapping());
+            return sizeNode.execute(frame, inliningTarget, self.getMapping());
         }
     }
 
@@ -196,8 +206,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object copy(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T_COPY);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T_COPY);
         }
     }
 
@@ -206,8 +217,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object eq(VirtualFrame frame, PMappingproxy self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return eqNode.execute(frame, self.getMapping(), other);
+            return eqNode.compare(frame, inliningTarget, self.getMapping(), other);
         }
     }
 
@@ -216,8 +228,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strNode) {
-            return strNode.execute(frame, self.getMapping());
+            return strNode.execute(frame, inliningTarget, self.getMapping());
         }
     }
 
@@ -226,9 +239,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString mappingRepr = reprNode.execute(frame, self.getMapping());
+            TruffleString mappingRepr = reprNode.execute(frame, inliningTarget, self.getMapping());
             return simpleTruffleStringFormatNode.format("mappingproxy(%s)", mappingRepr);
         }
     }
@@ -274,8 +288,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reversed(VirtualFrame frame, PMappingproxy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getMapping(), T___REVERSED__);
+            return callMethod.execute(frame, inliningTarget, self.getMapping(), T___REVERSED__);
         }
     }
 }

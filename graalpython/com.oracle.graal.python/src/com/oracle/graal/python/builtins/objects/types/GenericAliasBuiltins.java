@@ -206,10 +206,11 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         long hash(VirtualFrame frame, PGenericAlias self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashOrigin,
                         @Cached PyObjectHashNode hashArgs) {
-            long h0 = hashOrigin.execute(frame, self.getOrigin());
-            long h1 = hashArgs.execute(frame, self.getArgs());
+            long h0 = hashOrigin.execute(frame, inliningTarget, self.getOrigin());
+            long h1 = hashArgs.execute(frame, inliningTarget, self.getArgs());
             return h0 ^ h1;
         }
     }
@@ -226,7 +227,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile attributeErrorProfile) {
             Object result = callNode.execute(frame, self.getOrigin(), args, kwargs);
             try {
-                setAttr.execute(frame, result, T___ORIG_CLASS__, self);
+                setAttr.execute(frame, inliningTarget, result, T___ORIG_CLASS__, self);
             } catch (PException e) {
                 if (!typeErrorProfile.profileException(inliningTarget, e, TypeError) && !attributeErrorProfile.profileException(inliningTarget, e, PythonBuiltinClassType.AttributeError)) {
                     throw e;
@@ -243,13 +244,14 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         Object getattribute(VirtualFrame frame, PGenericAlias self, Object nameObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached ObjectBuiltins.GetAttributeNode genericGetAttribute) {
             TruffleString name;
             try {
-                name = cast.execute(nameObj);
+                name = cast.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
                 return genericGetAttribute.execute(frame, self, nameObj);
             }
@@ -258,7 +260,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                     return genericGetAttribute.execute(frame, self, nameObj);
                 }
             }
-            return getAttr.execute(frame, self.getOrigin(), name);
+            return getAttr.execute(frame, inliningTarget, self.getOrigin(), name);
         }
     }
 
@@ -267,9 +269,10 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean eq(VirtualFrame frame, PGenericAlias self, PGenericAlias other,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqOrigin,
                         @Cached PyObjectRichCompareBool.EqNode eqArgs) {
-            return eqOrigin.execute(frame, self.getOrigin(), other.getOrigin()) && eqArgs.execute(frame, self.getArgs(), other.getArgs());
+            return eqOrigin.compare(frame, inliningTarget, self.getOrigin(), other.getOrigin()) && eqArgs.compare(frame, inliningTarget, self.getArgs(), other.getArgs());
         }
 
         @Fallback
@@ -313,9 +316,10 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PGenericAlias self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
             Object args = factory().createTuple(new Object[]{self.getOrigin(), self.getArgs()});
-            return factory().createTuple(new Object[]{getClassNode.execute(self), args});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -325,12 +329,13 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object dir(PGenericAlias self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectDir dir,
                         @Cached PySequenceContainsNode containsNode,
                         @Cached ListNodes.AppendNode appendNode) {
-            PList list = dir.execute(null, self.getOrigin());
+            PList list = dir.execute(null, inliningTarget, self.getOrigin());
             for (int i = 0; i < ATTR_EXCEPTIONS.length; i++) {
-                if (!containsNode.execute(null, list, ATTR_EXCEPTIONS[i])) {
+                if (!containsNode.execute(null, inliningTarget, list, ATTR_EXCEPTIONS[i])) {
                     appendNode.execute(list, ATTR_EXCEPTIONS[i]);
                 }
             }

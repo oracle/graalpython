@@ -131,9 +131,9 @@ public abstract class SortNodes {
                 Object[] arguments = frame.getArguments();
                 Object a = arguments[PArguments.USER_ARGUMENTS_OFFSET];
                 Object b = arguments[PArguments.USER_ARGUMENTS_OFFSET + 1];
-                if (isTrueNode.execute(frame, ltNodeA.executeObject(frame, a, b))) {
+                if (isTrueNode.executeCached(frame, ltNodeA.executeObject(frame, a, b))) {
                     return Result.LT;
-                } else if (isTrueNode.execute(frame, ltNodeB.executeObject(frame, b, a))) {
+                } else if (isTrueNode.executeCached(frame, ltNodeB.executeObject(frame, b, a))) {
                     return Result.GT;
                 } else {
                     return Result.EQ;
@@ -288,7 +288,9 @@ public abstract class SortNodes {
         }
 
         @Fallback
+        @SuppressWarnings("truffle-static-method")
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CallContext callContext,
                         @Shared @Cached CallNode callNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
@@ -296,7 +298,7 @@ public abstract class SortNodes {
             int len = storage.length();
             Object[] array = new Object[len];
             for (int i = 0; i < len; i++) {
-                array[i] = getItemScalarNode.execute(storage, i);
+                array[i] = getItemScalarNode.execute(inliningTarget, storage, i);
             }
             if (keyfunc instanceof PNone) {
                 sortWithoutKey(frame, array, len, reverse, callContext);
@@ -304,7 +306,7 @@ public abstract class SortNodes {
                 sortWithKey(frame, array, len, keyfunc, reverse, callNode, callContext);
             }
             for (int i = 0; i < len; i++) {
-                setItemScalarNode.execute(storage, i, array[i]);
+                setItemScalarNode.execute(inliningTarget, storage, i, array[i]);
             }
         }
 

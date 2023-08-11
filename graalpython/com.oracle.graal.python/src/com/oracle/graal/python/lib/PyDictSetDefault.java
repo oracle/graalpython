@@ -46,8 +46,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -56,27 +57,28 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyDictSetDefault extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object dict, Object key, Object defaultValue);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object dict, Object key, Object defaultValue);
 
     @TruffleBoundary
     public static Object executeUncached(Object dict, Object key, Object defaultValue) {
-        return PyDictSetDefaultNodeGen.getUncached().execute(null, dict, key, defaultValue);
+        return PyDictSetDefaultNodeGen.getUncached().execute(null, null, dict, key, defaultValue);
     }
 
     @Specialization
-    public Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
-                    @Bind("this") Node inliningTarget,
+    public static Object doIt(VirtualFrame frame, Node inliningTarget, PDict dict, Object key, Object defaultValue,
                     @Cached PyObjectHashNode hashNode,
                     @Cached HashingStorageGetItemWithHash getItem,
                     @Cached HashingStorageSetItemWithHash setItem,
                     @Cached InlinedConditionProfile hasValue) {
-        long keyHash = hashNode.execute(frame, key);
-        Object value = getItem.execute(frame, dict.getDictStorage(), key, keyHash);
+        long keyHash = hashNode.execute(frame, inliningTarget, key);
+        Object value = getItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keyHash);
         if (hasValue.profile(inliningTarget, value != null)) {
             return value;
         }
-        HashingStorage newStorage = setItem.execute(frame, dict.getDictStorage(), key, keyHash, defaultValue);
+        HashingStorage newStorage = setItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keyHash, defaultValue);
         dict.setDictStorage(newStorage);
         return defaultValue;
     }

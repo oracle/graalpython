@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,9 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         this.unconsumedTail = null;
     }
 
+    // Note: some IDEs mark this class as inaccessible in PythonObjectFactory, but changing this to
+    // public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
+    // initialized
     protected static class NativeZlibCompObject extends ZLibCompObject {
 
         private NFIZlibSupport.Pointer pointer;
@@ -315,11 +318,11 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         return new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
     }
 
-    public static JavaZlibCompObject createJava(Object cls, Shape instanceShape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
+    public static ZLibCompObject createJava(Object cls, Shape instanceShape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
         return new JavaZlibCompObject(cls, instanceShape, stream, level, wbits, strategy, zdict);
     }
 
-    public static JavaZlibCompObject createJava(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
+    public static ZLibCompObject createJava(Object cls, Shape instanceShape, Object stream, int wbits, byte[] zdict) {
         return new JavaZlibCompObject(cls, instanceShape, stream, wbits, zdict);
     }
 }

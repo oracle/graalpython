@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,15 +45,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public class PContextVarsContext extends PythonBuiltinObject {
     Hamt contextVarValues;
     private PContextVarsContext previousContext = null;
 
-    public void enter(PythonContext.PythonThreadState threadState, PRaiseNode raise) {
+    public void enter(Node inliningTarget, PythonContext.PythonThreadState threadState, PRaiseNode.Lazy raise) {
         if (previousContext != null) {
-            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
         }
         previousContext = threadState.getContextVarsContext();
         assert previousContext != null : "ThreadState had null Context. This should not happen";

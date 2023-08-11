@@ -43,9 +43,10 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -54,8 +55,10 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyComplex_Check}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyComplexCheckNode extends Node {
-    public abstract boolean execute(Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doPComplex(@SuppressWarnings("unused") PComplex pComplex) {
@@ -63,10 +66,9 @@ public abstract class PyComplexCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         return isSubtypeNode.execute(type, PythonBuiltinClassType.PComplex);
     }

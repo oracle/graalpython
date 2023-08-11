@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,7 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -416,14 +417,14 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
+    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
         PythonContext context = getContext();
         if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
 
-        PythonThreadState threadState = getThreadStateNode.execute(context);
+        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
         Object savedState = IndirectCallContext.enter(frame, threadState, caller);
         try {
             triggerGC(context, size, caller);
@@ -640,7 +641,7 @@ public final class CApiContext extends CExtContext {
              * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
              * must do it here because 'CreateModuleNode' should just ignore this case.
              */
-            Object clazz = InlinedGetClassNodeGen.getUncached().execute(null, result);
+            Object clazz = GetClassNodeGen.getUncached().execute(null, result);
             if (clazz == PNone.NO_VALUE) {
                 throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
@@ -695,7 +696,8 @@ public final class CApiContext extends CExtContext {
                 LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
-                e.printStackTrace();
+                // this is a fatal error, so print it to stderr:
+                e.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
                 throw new RuntimeException(e);
             }
         }

@@ -447,7 +447,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     private Object createBuiltinsConstant() {
-        return createConstant(GetOrCreateDictNode.getUncached().execute(context.getContext().getBuiltins()));
+        return createConstant(GetOrCreateDictNode.executeUncached(context.getContext().getBuiltins()));
     }
 
     private static Object createSingletonConstant(Object value, int handle) {

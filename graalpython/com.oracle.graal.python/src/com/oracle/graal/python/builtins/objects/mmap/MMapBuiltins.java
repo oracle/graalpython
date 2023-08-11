@@ -124,7 +124,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -229,8 +229,9 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode) {
-            long i = asLongNode.execute(frame, idxObj);
+            long i = asLongNode.execute(frame, inliningTarget, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
             if (idx < 0 || idx >= len) {
@@ -244,6 +245,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
@@ -252,8 +254,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode) {
             try {
-                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(self.getLength()));
-                int len = sliceLenNode.len(info);
+                SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(self.getLength()));
+                int len = sliceLenNode.len(inliningTarget, info);
                 if (emptyProfile.profile(inliningTarget, len == 0)) {
                     return createEmptyBytes(factory());
                 }
@@ -275,8 +277,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Cached InlinedConditionProfile outOfRangeProfile) {
-            long i = asLongNode.execute(frame, idxObj);
+                        @Exclusive @Cached InlinedConditionProfile outOfRangeProfile) {
+            long i = asLongNode.execute(frame, inliningTarget, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
             if (outOfRangeProfile.profile(inliningTarget, idx < 0 || idx >= len)) {
@@ -288,22 +290,23 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PBytesLike val,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached ToByteArrayNode toByteArrayNode,
-                        @Cached InlinedConditionProfile invalidStepProfile,
+                        @Exclusive @Cached InlinedConditionProfile invalidStepProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
             try {
                 long len = self.getLength();
-                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(len));
+                SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(len));
                 if (invalidStepProfile.profile(inliningTarget, info.step != 1)) {
                     throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
-                byte[] bytes = toByteArrayNode.execute(val.getSequenceStorage());
-                writeBuffer(frame, posixSupportLib, self, info.start, bytes, sliceLen.len(info));
+                byte[] bytes = toByteArrayNode.execute(inliningTarget, val.getSequenceStorage());
+                writeBuffer(frame, posixSupportLib, self, info.start, bytes, sliceLen.len(inliningTarget, info));
                 return PNone.NONE;
             } catch (OverflowException e) {
                 throw raise(PythonBuiltinClassType.OverflowError, e);
@@ -436,25 +439,26 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization
         PBytes readUnlimited(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") PNone n,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile emptyProfile,
+                        @Exclusive @Cached InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
             return readBytes(frame, inliningTarget, self, posixLib, self.getRemaining(), emptyProfile);
         }
 
         @Specialization(guards = "!isNoValue(n)")
+        @SuppressWarnings("truffle-static-method")
         PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile emptyProfile,
+                        @Exclusive @Cached InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached InlinedConditionProfile negativeProfile) {
+                        @Exclusive @Cached InlinedConditionProfile negativeProfile) {
             // _Py_convert_optional_to_ssize_t:
-            if (!indexCheckNode.execute(n)) {
+            if (!indexCheckNode.execute(inliningTarget, n)) {
                 throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
             }
-            long nread = asSizeNode.executeExact(frame, n);
+            long nread = asSizeNode.executeExact(frame, inliningTarget, n);
 
             if (negativeProfile.profile(inliningTarget, nread < 0)) {
                 return readUnlimited(frame, self, PNone.NO_VALUE, inliningTarget, emptyProfile, posixLib);
@@ -487,6 +491,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization
         Object readline(VirtualFrame frame, PMMap self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.AppendNode appendNode) {
             // Posix abstraction is leaking here a bit: with read mmapped memory, we'd just read
             // byte by byte, but that would be very inefficient with emulated mmap, so we use a
@@ -502,7 +507,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
                 for (int i = 0; i < nread; i++) {
                     byte b = buffer[i];
-                    appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
+                    appendNode.execute(inliningTarget, res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
                     if (b == '\n') {
                         self.setPos(self.getPos() + i + 1);
                         break outer;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,12 +73,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDefaultDict)
@@ -93,14 +95,15 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reprFunction(VirtualFrame frame, PDefaultDict self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached DictReprBuiltin.ReprNode dictReprNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            final Object klass = getClassNode.execute(self);
-            final TruffleString name = getNameNode.execute(klass);
-            final TruffleString factoryRepr = reprNode.execute(frame, self.getDefaultFactory());
+            final Object klass = getClassNode.execute(inliningTarget, self);
+            final TruffleString name = getNameNode.execute(inliningTarget, klass);
+            final TruffleString factoryRepr = reprNode.execute(frame, inliningTarget, self.getDefaultFactory());
             final TruffleString dictRepr = dictReprNode.execute(frame, self);
             return simpleTruffleStringFormatNode.format("%s(%s, %s)", name, factoryRepr, dictRepr);
         }
@@ -111,12 +114,13 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PDefaultDict self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached DictBuiltins.ItemsNode itemsNode) {
             final Object defaultFactory = self.getDefaultFactory();
             PTuple args = (defaultFactory == PNone.NONE) ? factory().createEmptyTuple() : factory().createTuple(new Object[]{defaultFactory});
-            return factory().createTuple(new Object[]{getClassNode.execute(self), args, PNone.NONE, PNone.NONE, getIter.execute(frame, itemsNode.items(self))});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, PNone.NONE, PNone.NONE, getIter.execute(frame, inliningTarget, itemsNode.items(self))});
         }
     }
 
@@ -126,8 +130,9 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         public PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode) {
-            return factory().createDefaultDict(self.getDefaultFactory(), copyNode.execute(self.getDictStorage()));
+            return factory().createDefaultDict(self.getDefaultFactory(), copyNode.execute(inliningTarget, self.getDictStorage()));
         }
     }
 
@@ -140,11 +145,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(self.getDefaultFactory())")
-        Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
+        static Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyDictSetItem setItem) {
             final Object value = callNode.execute(frame, self.getDefaultFactory());
-            setItem.execute(frame, self, key, value);
+            setItem.execute(frame, inliningTarget, self, key, value);
             return value;
         }
     }
@@ -154,13 +160,14 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached DictBuiltins.InitNode dictInitNode,
                         @Cached PyCallableCheckNode callableCheckNode) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
-                if (newDefault != PNone.NONE && !callableCheckNode.execute(newDefault)) {
+                if (newDefault != PNone.NONE && !callableCheckNode.execute(inliningTarget, newDefault)) {
                     throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
@@ -193,11 +200,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object or(VirtualFrame frame, PDict self, PDict other,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CallNode callNode,
                         @Cached DictNodes.UpdateNode updateNode) {
             PDefaultDict dd = (PDefaultDict) (self instanceof PDefaultDict ? self : other);
-            Object type = getClassNode.execute(dd);
+            Object type = getClassNode.execute(inliningTarget, dd);
             Object result = callNode.execute(frame, type, dd.getDefaultFactory(), self);
             if (result instanceof PDefaultDict) {
                 updateNode.execute(frame, (PDefaultDict) result, other);

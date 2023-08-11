@@ -87,7 +87,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
         /**
          * @see ClassmethodBuiltins.GetNode#getCached
          */
-        @Specialization(guards = {"isSingleContext()", "cachedSelf == self"})
+        @Specialization(guards = {"isSingleContext()", "cachedSelf == self"}, limit = "3")
         protected static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
@@ -127,10 +127,11 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TruffleStringBuilder.AppendStringNode append,
                         @Cached TruffleStringBuilder.ToStringNode toString) {
-            TruffleString callableRepr = repr.execute(frame, self.getCallable());
+            TruffleString callableRepr = repr.execute(frame, inliningTarget, self.getCallable());
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, PREFIX_LEN + callableRepr.byteLength(TS_ENCODING) + SUFFIX_LEN);
             append.execute(sb, PREFIX);
             append.execute(sb, callableRepr);

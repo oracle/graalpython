@@ -61,7 +61,9 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
@@ -101,6 +103,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextLongBuiltins {
 
@@ -171,24 +174,26 @@ public final class PythonCextLongBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
         static Object signNative(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(obj,getClassNode,isSubtypeNode)"})
+        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(inliningTarget, obj,getClassNode,isSubtypeNode)"})
         static Object sign(@SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        protected boolean isPIntSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PInt);
+        protected boolean isPIntSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PInt);
         }
     }
 
@@ -226,6 +231,7 @@ public final class PythonCextLongBuiltins {
 
         @Specialization
         Object doGeneric(Object object, int mode, long targetTypeSize,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
@@ -236,7 +242,7 @@ public final class PythonCextLongBuiltins {
                  * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
-                if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
+                if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
@@ -456,6 +462,15 @@ public final class PythonCextLongBuiltins {
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
             write.writeByteArray(bytes, array);
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, Int}, call = Direct)
+    abstract static class PyLong_FromUnicodeObject extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object convert(TruffleString s, int base,
+                        @Cached IntNode intNode) {
+            return intNode.executeWith(null, s, base);
         }
     }
 }

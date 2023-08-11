@@ -49,12 +49,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.nodes.Node;
  * never raises {@code StopIteration}.
  */
 @GenerateUncached
+@GenerateInline(false)
 public abstract class PyIterNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
 
@@ -93,7 +95,7 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     @Specialization
     static Object doGeneric(VirtualFrame frame, Object iterator,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached IsBuiltinObjectProfile stopIterationProfile,

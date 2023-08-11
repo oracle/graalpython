@@ -352,7 +352,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             }
 
             int flags = processMode(self, mode);
-            auditNode.audit(J_OPEN, nameobj, mode.mode, flags);
+            auditNode.audit(inliningTarget, J_OPEN, nameobj, mode.mode, flags);
 
             try {
                 boolean fdIsOwn = false;
@@ -370,11 +370,11 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         self.setFD(open(frame, name, flags, 0666, ctxt, inliningTarget, posixLib, gil, exceptionProfile, fromJavaStringNode), ctxt);
                     } else {
                         Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
-                        if (!indexCheckNode.execute(fdobj)) {
+                        if (!indexCheckNode.execute(inliningTarget, fdobj)) {
                             throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
                         }
 
-                        self.setFD(asSizeNode.executeExact(frame, fdobj), ctxt);
+                        self.setFD(asSizeNode.executeExact(frame, inliningTarget, fdobj), ctxt);
                         if (self.getFD() < 0) {
                             /*
                              * The opener returned a negative but didn't set an exception. See issue
@@ -621,7 +621,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             }
 
             multipleReadsProfile.enter(inliningTarget);
-            byte[] buffer = getBytes.execute(b.getSequenceStorage());
+            byte[] buffer = getBytes.execute(inliningTarget, b.getSequenceStorage());
             ByteArrayOutputStream result = createOutputStream();
             append(result, buffer, bytesRead);
 
@@ -640,7 +640,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
-                    buffer = getBytes.execute(b.getSequenceStorage());
+                    buffer = getBytes.execute(inliningTarget, b.getSequenceStorage());
                     n = buffer.length;
                     if (n == 0) {
                         break;
@@ -731,7 +731,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("e") @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
                 return posixWrite.write(self.getFD(), toBytes.execute(frame, data),
@@ -746,15 +746,16 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "self.isUTF8Write()"})
+        @SuppressWarnings("truffle-static-method")
         Object utf8write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
                         @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached CastToTruffleStringNode castStr,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("e") @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
-            byte[] bytes = encode.execute(castStr.execute(data), T_UTF8, T_STRICT);
+            byte[] bytes = encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
             try {
                 return posixWrite.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
             } catch (PosixException e) {
@@ -892,10 +893,12 @@ public final class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isCloseFD()")
+        @SuppressWarnings("truffle-static-method")
         Object simple(VirtualFrame frame, PFileIO self,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             try {
-                callClose.execute(frame, getContext().lookupType(PRawIOBase), T_CLOSE, self);
+                callClose.execute(frame, inliningTarget, getContext().lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 self.setClosed();
                 throw e;
@@ -911,7 +914,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose,
                         @Shared @Cached PyErrChainExceptions chainExceptions) {
             try {
-                callSuperClose.execute(frame, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
+                callSuperClose.execute(frame, inliningTarget, PythonContext.get(inliningTarget).lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 try {
                     internalClose(frame, self, posixClose);
@@ -934,7 +937,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             PException rawIOException = null;
             PythonContext context = PythonContext.get(inliningTarget);
             try {
-                callSuperClose.execute(frame, context.lookupType(PRawIOBase), T_CLOSE, self);
+                callSuperClose.execute(frame, inliningTarget, context.lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
                 rawIOException = e;
             }
@@ -1123,8 +1126,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(v)")
         static Object doit(VirtualFrame frame, PFileIO self, Object v,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            self.setBlksize(asSizeNode.executeExact(frame, v));
+            self.setBlksize(asSizeNode.executeExact(frame, inliningTarget, v));
             return PNone.NONE;
         }
     }
@@ -1139,8 +1143,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(v)")
         static Object doit(VirtualFrame frame, PFileIO self, Object v,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            self.setFinalizing(isTrueNode.execute(frame, v));
+            self.setFinalizing(isTrueNode.execute(frame, inliningTarget, v));
             return PNone.NONE;
         }
     }
@@ -1157,14 +1162,16 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isClosed()")
+        @SuppressWarnings("truffle-static-method")
         TruffleString doit(VirtualFrame frame, PFileIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupName,
                         @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString mode = ModeNode.modeString(self);
             TruffleString closefd = self.isCloseFD() ? T_TRUE : T_FALSE;
-            Object nameobj = lookupName.execute(frame, self, T_NAME);
+            Object nameobj = lookupName.execute(frame, inliningTarget, self, T_NAME);
             if (nameobj instanceof PNone) {
                 return simpleTruffleStringFormatNode.format("<_io.FileIO fd=%d mode='%s' closefd=%s>", self.getFD(), mode, closefd);
             }
@@ -1172,7 +1179,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
             }
             try {
-                TruffleString name = castToTruffleStringNode.execute(repr.executeObject(frame, nameobj));
+                TruffleString name = castToTruffleStringNode.execute(inliningTarget, repr.executeObject(frame, nameobj));
                 return simpleTruffleStringFormatNode.format("<_io.FileIO name=%s mode='%s' closefd=%s>", name, mode, closefd);
             } finally {
                 getContext().reprLeave(self);

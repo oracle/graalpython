@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -58,8 +57,7 @@ public abstract class ArrayNodes {
         public abstract Object execute(Node inliningTarget, PArray array, int index);
 
         @Specialization
-        static Object get(Node node, PArray array, int index,
-                        @Bind("this") Node inliningTarget,
+        static Object get(Node inliningTarget, PArray array, int index,
                         @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
             return unpackValueNode.execute(inliningTarget, array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
         }

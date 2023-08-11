@@ -52,8 +52,11 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -61,27 +64,29 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@code OverflowError} on overflow.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
-    public abstract int execute(Object object, long lindex);
+    public abstract int execute(Node inliningTarget, Object object, long lindex);
 
     @Specialization
-    int doGeneric(Object type, long lindex,
+    static int doGeneric(Node inliningTarget, Object type, long lindex,
                     @Cached CastToTruffleStringNode castToStringNode,
-                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            TruffleString s = castToStringNode.execute(type);
+            TruffleString s = castToStringNode.execute(inliningTarget, type);
             int index = PInt.intValueExact(lindex);
             // avoid StringIndexOutOfBoundsException
             if (index < 0 || index >= codePointLengthNode.execute(s, TS_ENCODING)) {
-                throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
             return codePointAtIndexNode.execute(s, index, TS_ENCODING);
         } catch (CannotCastException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         } catch (OverflowException e) {
-            throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+            throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
         }
     }
 }

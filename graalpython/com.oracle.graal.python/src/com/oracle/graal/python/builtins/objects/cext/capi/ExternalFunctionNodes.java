@@ -109,7 +109,6 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
@@ -300,7 +299,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class ToPythonStringNode extends CExtToJavaNode {
-        @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNodeGen.create();
+        @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.create();
         @Child private NativeToPythonNode nativeToPythonNode = NativeToPythonNodeGen.create();
 
         @Override
@@ -309,7 +308,7 @@ public abstract class ExternalFunctionNodes {
             if (result instanceof TruffleString) {
                 return result;
             } else if (result instanceof PString) {
-                return castToStringNode.execute(result);
+                return castToStringNode.executeCached(result);
             } else if (result == PNone.NO_VALUE) {
                 return result;
             } else {
@@ -806,7 +805,7 @@ public abstract class ExternalFunctionNodes {
             }
 
             PythonContext ctx = PythonContext.get(this);
-            PythonThreadState threadState = getThreadStateNode.execute(ctx);
+            PythonThreadState threadState = getThreadStateNode.executeCached(ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -2076,17 +2075,18 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization(limit = "3")
         static Object doGeneric(PythonContext context, @SuppressWarnings("unused") TruffleString name, Object result,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @CachedLibrary("result") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             if (lib.isNull(result)) {
-                PException currentException = getThreadStateNode.getCurrentException(context);
+                PException currentException = getThreadStateNode.getCurrentException(inliningTarget, context);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
                     throw raiseNode.raiseStopIteration();
                 } else {
                     // consume exception
-                    getThreadStateNode.setCurrentException(context, null);
+                    getThreadStateNode.setCurrentException(inliningTarget, context, null);
                     // re-raise exception
                     throw currentException.getExceptionForReraise(false);
                 }

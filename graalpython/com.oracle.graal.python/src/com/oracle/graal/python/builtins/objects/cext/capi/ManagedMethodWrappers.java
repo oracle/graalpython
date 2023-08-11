@@ -57,12 +57,14 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Wrappers for methods used by native code.
@@ -112,6 +114,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached NativeToPythonNode toJavaNode,
                         @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
@@ -139,7 +142,7 @@ public abstract class ManagedMethodWrappers {
                     } else {
                         pArgs = new Object[]{receiver};
                     }
-                    PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
 
                     // execute
                     return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,9 +47,11 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRaise {
@@ -66,9 +68,10 @@ public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRai
 
     @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
     Object doOthers(Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode) {
         try {
-            return castToStringNode.execute(value);
+            return castToStringNode.execute(inliningTarget, value);
         } catch (CannotCastException ex) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
         }

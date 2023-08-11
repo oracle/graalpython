@@ -113,7 +113,7 @@ public class PDict extends PHashingCollection {
     }
 
     public void update(PDict other) {
-        HashingStorageAddAllToOther.getUncached().execute(null, other.getDictStorage(), this);
+        HashingStorageAddAllToOther.executeUncached(other.getDictStorage(), this);
     }
 
     @Override
@@ -129,11 +129,12 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static long getHashSize(PDict self,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Cached HashingStorageLen lenNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lenNode.execute(self.getDictStorage());
+            return lenNode.execute(inliningTarget, self.getDictStorage());
         } finally {
             gil.release(mustRelease);
         }
@@ -143,12 +144,13 @@ public class PDict extends PHashingCollection {
     @ExportMessage(name = "isHashEntryModifiable")
     @ExportMessage(name = "isHashEntryRemovable")
     static boolean isHashEntryReadable(PDict self, Object key,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return getItem.hasKey(null, self.getDictStorage(), convertNode.executeConvert(key));
+            return getItem.hasKey(null, inliningTarget, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -156,13 +158,14 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static Object readHashValue(PDict self, Object key,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
+                    @Exclusive @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
         try {
-            value = getItem.execute(null, self.getDictStorage(), convertNode.executeConvert(key));
+            value = getItem.execute(null, inliningTarget, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -175,19 +178,20 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static boolean isHashEntryInsertable(PDict self, Object key,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Cached PyObjectHashNode hashNode,
-                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
+                    @Exclusive @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (getItem.hasKey(null, self.getDictStorage(), pKey)) {
+            if (getItem.hasKey(null, inliningTarget, self.getDictStorage(), pKey)) {
                 return false;
             } else {
                 // we can only insert hashable types
                 try {
-                    hashNode.execute(null, pKey);
+                    hashNode.execute(null, inliningTarget, pKey);
                 } catch (AbstractTruffleException e) {
                     return false;
                 }
@@ -209,7 +213,7 @@ public class PDict extends PHashingCollection {
         boolean mustRelease = gil.acquire();
         Object pKey = convertNodeKey.executeConvert(key);
         try {
-            HashingStorage newStorage = setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            HashingStorage newStorage = setItem.execute(null, inliningTarget, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
             self.setDictStorage(newStorage);
         } catch (PException e) {
             e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
@@ -221,13 +225,14 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static void removeHashEntry(PDict self, Object key,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Cached HashingStorageDelItem delItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            Object found = delItem.executePop(null, self.getDictStorage(), pKey, self);
+            Object found = delItem.executePop(null, inliningTarget, self.getDictStorage(), pKey, self);
             if (found == null) {
                 throw UnknownKeyException.create(key);
             }
@@ -238,13 +243,14 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static Object getHashEntriesIterator(PDict self,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictItems = callMethod.execute(null, self, T_ITEMS);
-            return getIter.execute(null, dictItems);
+            Object dictItems = callMethod.execute(null, inliningTarget, self, T_ITEMS);
+            return getIter.execute(null, inliningTarget, dictItems);
         } finally {
             gil.release(mustRelease);
         }
@@ -252,13 +258,14 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static Object getHashKeysIterator(PDict self,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictKeys = callMethod.execute(null, self, T_KEYS);
-            return getIter.execute(null, dictKeys);
+            Object dictKeys = callMethod.execute(null, inliningTarget, self, T_KEYS);
+            return getIter.execute(null, inliningTarget, dictKeys);
         } finally {
             gil.release(mustRelease);
         }
@@ -266,13 +273,14 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static Object getHashValuesIterator(PDict self,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictValues = callMethod.execute(null, self, T_VALUES);
-            return getIter.execute(null, dictValues);
+            Object dictValues = callMethod.execute(null, inliningTarget, self, T_VALUES);
+            return getIter.execute(null, inliningTarget, dictValues);
         } finally {
             gil.release(mustRelease);
         }

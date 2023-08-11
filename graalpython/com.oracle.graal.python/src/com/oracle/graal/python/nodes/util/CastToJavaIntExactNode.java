@@ -48,22 +48,44 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Casts a Python integer to a Java int without coercion. <b>ATTENTION:</b> If the cast isn't
  * possible, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
+
+    public static int executeUncached(long x) {
+        return CastToJavaIntExactNodeGen.getUncached().execute(null, x);
+    }
+
+    public static int executeUncached(Object x) {
+        return CastToJavaIntExactNodeGen.getUncached().execute(null, x);
+    }
+
+    public final int executeCached(long x) {
+        return execute(this, x);
+    }
+
+    public final int executeCached(Object x) {
+        return execute(this, x);
+    }
 
     @NeverDefault
     public static CastToJavaIntExactNode create() {
         return CastToJavaIntExactNodeGen.create();
     }
 
+    @NeverDefault
     public static CastToJavaIntExactNode getUncached() {
         return CastToJavaIntExactNodeGen.getUncached();
     }
@@ -79,22 +101,22 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
     }
 
     @Specialization(replaces = "longToInt")
-    static int longToIntOverflow(long x,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+    static int longToIntOverflow(Node inliningTarget, long x,
+                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return PInt.intValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
     @Specialization(replaces = "pIntToInt")
-    static int pIntToIntOverflow(PInt x,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+    static int pIntToIntOverflow(Node inliningTarget, PInt x,
+                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return x.intValueExact();
         } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 }

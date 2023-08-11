@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PForeignArrayIterator extends PythonBuiltinObject {
@@ -61,10 +62,10 @@ public final class PForeignArrayIterator extends PythonBuiltinObject {
         return foreignArray;
     }
 
-    public int getSize(InteropLibrary lib, PyNumberAsSizeNode asSizeNode) {
+    public int getSize(InteropLibrary lib, Node inliningTarget, PyNumberAsSizeNode asSizeNode) {
         try {
             final long size = lib.getArraySize(foreignArray);
-            return asSizeNode.executeExact(null, size);
+            return asSizeNode.executeExact(null, inliningTarget, size);
         } catch (UnsupportedMessageException ex) {
             return 0;
         }

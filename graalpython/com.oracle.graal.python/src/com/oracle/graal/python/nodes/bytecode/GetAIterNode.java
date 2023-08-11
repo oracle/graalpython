@@ -54,15 +54,19 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@GenerateInline(false) // used in bytecode root node
 public abstract class GetAIterNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object receiver);
 
@@ -76,25 +80,26 @@ public abstract class GetAIterNode extends PNodeWithContext {
 
     @Specialization
     Object doGeneric(Frame frame, Object receiver,
+                    @Bind("this") Node inliningTarget,
                     @Cached(parameters = "AIter") LookupSpecialMethodSlotNode getAIter,
                     @Cached GetClassNode getAsyncIterType,
-                    @Cached PRaiseNode raiseNoAIter,
+                    @Cached PRaiseNode.Lazy raiseNoAIter,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached InlinedBranchProfile errorProfile,
                     @Cached CallUnaryMethodNode callAIter,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupANext) {
 
-        Object type = getAsyncIterType.execute(receiver);
+        Object type = getAsyncIterType.execute(inliningTarget, receiver);
         Object getter = getAIter.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(type));
+            throw raiseNoAIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(inliningTarget, type));
         }
         Object asyncIterator = callAIter.executeObject(frame, getter, receiver);
-        Object anext = lookupANext.execute(asyncIterator, T___ANEXT__);
+        Object anext = lookupANext.execute(inliningTarget, asyncIterator, T___ANEXT__);
         if (anext == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(type));
+            throw raiseNoAIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(inliningTarget, type));
         }
         return asyncIterator;
     }

@@ -123,10 +123,11 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Array_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetItem pySequenceSetItem) {
             int n = args.length;
             for (int i = 0; i < n; ++i) {
-                pySequenceSetItem.execute(frame, self, i, args[i]);
+                pySequenceSetItem.execute(frame, inliningTarget, self, i, args[i]);
             }
             return PNone.NONE;
         }
@@ -156,12 +157,13 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPNone(value)", "!isPSlice(item)"})
         Object Array_ass_subscript(VirtualFrame frame, CDataObject self, Object item, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSint,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyCDataSetNode pyCDataSetNode) {
-            if (indexCheckNode.execute(item)) {
-                int i = asSint.executeExact(frame, item, IndexError);
+            if (indexCheckNode.execute(inliningTarget, item)) {
+                int i = asSint.executeExact(frame, inliningTarget, item, IndexError);
                 if (i < 0) {
                     i += self.b_length;
                 }
@@ -177,24 +179,25 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPNone(value)")
         Object Array_ass_subscript(VirtualFrame frame, CDataObject self, PSlice slice, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode pySequenceLength,
                         @Cached PyObjectGetItem pySequenceGetItem,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyCDataSetNode pyCDataSetNode) {
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.b_length, sliceUnpack.execute(slice));
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.b_length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start, stop = sliceInfo.stop, step = sliceInfo.step;
             int slicelen = sliceInfo.sliceLength;
             // if ((step < 0 && start < stop) || (step > 0 && start > stop))
             // stop = start;
 
-            int otherlen = pySequenceLength.execute(frame, value);
+            int otherlen = pySequenceLength.execute(frame, inliningTarget, value);
             if (otherlen != slicelen) {
                 throw raise(ValueError, CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE);
             }
             for (int cur = start, i = 0; i < otherlen; cur += step, i++) {
-                Array_ass_item(frame, self, cur, pySequenceGetItem.execute(frame, value, i),
+                Array_ass_item(frame, self, cur, pySequenceGetItem.execute(frame, inliningTarget, value, i),
                                 pyObjectStgDictNode,
                                 pyCDataSetNode);
             }
@@ -231,6 +234,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object Array_subscript(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -245,7 +249,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
             assert itemdict != null : "proto is the item type of the array, a ctypes type, so this cannot be NULL";
 
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.b_length, sliceUnpack.execute(slice));
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.b_length, sliceUnpack.execute(inliningTarget, slice));
             int slicelen = sliceInfo.sliceLength;
             if (itemdict.getfunc == FieldDesc.c.getfunc) {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -292,16 +296,17 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(item)")
         Object Array_item(VirtualFrame frame, CDataObject self, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            if (!indexCheckNode.execute(item)) {
+            if (!indexCheckNode.execute(inliningTarget, item)) {
                 throw raise(TypeError, INDICES_MUST_BE_INTEGERS);
             }
-            Object idx = indexNode.execute(frame, item);
-            int index = asSizeNode.executeExact(frame, idx);
+            Object idx = indexNode.execute(frame, inliningTarget, item);
+            int index = asSizeNode.executeExact(frame, inliningTarget, idx);
             if (index < 0) {
                 index += self.b_length;
             }

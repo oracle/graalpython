@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -129,64 +131,71 @@ public final class PThreadLocal extends PythonBuiltinObject {
     }
 
     @Ignore
-    private Object readMember(String member, HashingStorageGetItem getItem, TruffleString.FromJavaStringNode fromJavaStringNode) {
+    private Object readMember(Node inliningTarget, String member, HashingStorageGetItem getItem, TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict == null ? null : getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
+        return localDict == null ? null : getItem.execute(inliningTarget, localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
     }
 
     @ExportMessage
     public boolean isMemberReadable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return readMember(member, getItem, fromJavaStringNode) != null;
+        return readMember(inliningTarget, member, getItem, fromJavaStringNode) != null;
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return readMember(member, getItem, fromJavaStringNode) != null;
+        return readMember(inliningTarget, member, getItem, fromJavaStringNode) != null;
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return !isMemberReadable(member, getItem, fromJavaStringNode);
+        return !isMemberReadable(member, inliningTarget, getItem, fromJavaStringNode);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict != null && PGuards.isCallable(getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
+        return localDict != null && PGuards.isCallable(getItem.execute(inliningTarget, localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return isMemberReadable(member, getItem, fromJavaStringNode);
+        return isMemberReadable(member, inliningTarget, getItem, fromJavaStringNode);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("getClassGeneric") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet) {
-        Object attr = readMember(member, getItem, fromJavaStringNode);
-        return attr != null && lookupGet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
+        Object attr = readMember(inliningTarget, member, getItem, fromJavaStringNode);
+        return attr != null && lookupGet.execute(getClassNode.executeCached(attr)) != PNone.NO_VALUE;
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("getClassGeneric") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet) {
-        Object attr = readMember(member, getItem, fromJavaStringNode);
-        return attr != null && lookupSet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
+        Object attr = readMember(inliningTarget, member, getItem, fromJavaStringNode);
+        return attr != null && lookupSet.execute(getClassNode.executeCached(attr)) != PNone.NO_VALUE;
     }
 }

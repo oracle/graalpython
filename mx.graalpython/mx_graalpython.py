@@ -311,6 +311,12 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
+def node_footprint_analyzer(args, **kwargs):
+    main_class = 'com.oracle.graal.python.test.advance.NodeFootprintAnalyzer'
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
+    return mx.run_java(vm_args + [main_class] + args, **kwargs)
+
+
 def _pythonhome_context():
     return set_env(GRAAL_PYTHONHOME=_pythonhome())
 
@@ -627,7 +633,7 @@ def update_unittest_tags(args):
         # Transiently fails because it's dependent on timings
         ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
         ('test_int.txt', '*graalpython.lib-python.3.test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str'),
-        # The whole suite sometimes transiently crashes because of hanging thread at the end, not sure which test causes this
+        # The whole suite transiently times out (GR-47822)
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations'),
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods'),
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking'),
@@ -636,7 +642,101 @@ def update_unittest_tags(args):
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape'),
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods'),
         ('test_docxmlrpc.txt', '*graalpython.lib-python.3.test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response'),
-        # Transiently hang
+        # The whole suite transiently times out (GR-47822)
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_decode'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_default'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.BinaryTestCase.test_string'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.CGIHandlerTestCase.test_cgi_get'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.CGIHandlerTestCase.test_cgi_xmlrpc_response'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_comparison'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_datetime_datetime'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_decode'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_default'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_repr'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_struct'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_tuple'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_basic'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_no_info'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_with_info'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_dotted_attribute'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_dump_fault'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_repr'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_bad_gzip_request'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_gzip_request'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipServerTestCase.test_gzip_response'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.GzipUtilTestCase.test_gzip_decode_limit'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_empty'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_items'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_many'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HeadersServerTestCase.test_header_tuple'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.HelperTestCase.test_escape'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase1.test_two'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_close'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_transport'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_fragment'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_query'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_invalid_path'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path1'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path2'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path3'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_fragment'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query_fragment'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_root_path'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_close'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_transport'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerEncodingTestCase.test_server_encoding'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_404'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_allow_dotted_names_true'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_client_encoding'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_context_manager'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_context_manager_method_error'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_dotted_attribute'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection1'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection2'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection3'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_introspection4'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_multicall'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_non_existing_multicall'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_nonascii_methodname'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_partial_post'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleServerTestCase.test_unicode_host'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_dispatch_func'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_instance_func'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_call_registered_func'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_cannot_locate_func'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_instance_has_no_func'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.SimpleXMLRPCDispatcherTestCase.test_registered_func_is_none'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.TestMain.test_main'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_cgihandler_has_use_builtin_types_flag'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_use_builtin_types'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.UseBuiltinTypesTestCase.test_xmlrpcserver_has_use_builtin_types_flag'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_bug_1164912'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_datetime_before_1900'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bad_dict'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bare_datetime'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_big_int'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_big_long'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_bytes'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_double'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_encoding'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_load'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_none'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_dict'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_seq'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_get_host_info'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_keepalive_disconnect'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_limit_int'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_extension_types'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_standard_types'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_loads_unsupported'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_newstyle_class'),
+        ('test_xmlrpc.txt', '*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_ssl_presence'),
+        # The whole suite transiently times out (GR-47822)
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_command'),
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_error_content_length'),
         ('test_httpservers.txt', '*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_handler'),
@@ -720,8 +820,6 @@ class GraalPythonTags(object):
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
-    shared_object = 'python-so'
-    shared_object_sandboxed = 'python-so-sandboxed'
     graalvm = 'python-graalvm'
     embedding = 'python-standalone-embedding'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
@@ -1399,14 +1497,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             python_checkcopyrights([])
 
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
-        if task and not WIN32:
-            run_shared_lib_test(python_so())
-
-    with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
-        if task:
-            run_shared_lib_test(python_managed_so(), ("sandboxed",))
-
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm], report=True) as task:
         if task:
             svm_image = python_svm()
@@ -1540,147 +1630,6 @@ def graalpython_gate_runner(args, tasks):
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
-
-
-def run_shared_lib_test(home, args=()):
-    svm_lib_path = os.path.abspath(os.path.join(home, "lib", "polyglot"))
-    fd = name = progname = None
-    try:
-        fd, name = tempfile.mkstemp(suffix='.c')
-        os.write(fd, b"""
-        #include "stdio.h"
-        #include "polyglot_api.h"
-
-        #define assert_ok(msg, f) { if (!(f)) { \\
-             const poly_extended_error_info* error_info; \\
-             poly_get_last_error_info(isolate_thread, &error_info); \\
-             fprintf(stderr, "%%s\\n", error_info->error_message); \\
-             return fprintf(stderr, "%%s\\n", msg); } } while (0)
-
-        poly_isolate global_isolate;
-        poly_thread isolate_thread;
-        poly_engine engine;
-        poly_context context;
-
-        static poly_status create_context() {
-            poly_status status;
-
-            if (poly_attach_thread(global_isolate, &isolate_thread)) {
-                return poly_generic_failure;
-            }
-
-            poly_engine_builder engine_builder;
-            const char* permitted_languages[] = {"python"};
-            status = poly_create_engine_builder(isolate_thread, permitted_languages, 1, &engine_builder);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_engine_builder_build(isolate_thread, engine_builder, &engine);
-            if (status != poly_ok) {
-                return status;
-            }
-            poly_context_builder builder;
-            status = poly_create_context_builder(isolate_thread, NULL, 0, &builder);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_engine(isolate_thread, builder, engine);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
-            if (status != poly_ok) {
-                return status;
-            }
-        #if %s
-            status = poly_context_builder_option(isolate_thread, builder, "llvm.managed", "true");
-            if (status != poly_ok) {
-                return status;
-            }
-        #endif
-            status = poly_context_builder_allow_io(isolate_thread, builder, true);
-            if (status != poly_ok) {
-                return status;
-            }
-            status = poly_context_builder_build(isolate_thread, builder, &context);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            return poly_ok;
-        }
-
-        static poly_status tear_down_context() {
-            poly_status status = poly_context_close(isolate_thread, context, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            status = poly_engine_close(isolate_thread, engine, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            if (poly_detach_thread(isolate_thread)) {
-                return poly_ok;
-            }
-
-            return poly_ok;
-        }
-
-        static int test_basic_python_function() {
-            assert_ok("Context creation failed.", create_context() == poly_ok);
-
-            poly_value func;
-            assert_ok("function eval failed", poly_context_eval(isolate_thread, context, "python", "test_func", "def test_func(x):\\n  return x * x\\ntest_func", &func) == poly_ok);
-            int32_t arg_value = 42;
-            poly_value primitive_object;
-            assert_ok("create argument failed", poly_create_int32(isolate_thread, context, arg_value, &primitive_object) == poly_ok);
-            poly_value arg[1] = {primitive_object};
-            poly_value value;
-            assert_ok("invocation was unsuccessful", poly_value_execute(isolate_thread, func, arg, 1, &value) == poly_ok);
-
-            int32_t result_value;
-            poly_value_as_int32(isolate_thread, value, &result_value);
-
-            assert_ok("value computation was incorrect", result_value == 42 * 42);
-            assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
-            return 0;
-        }
-
-        int32_t main(int32_t argc, char **argv) {
-            poly_isolate_params isolate_params = {};
-            if (poly_create_isolate(&isolate_params, &global_isolate, &isolate_thread)) {
-                return 1;
-            }
-            return test_basic_python_function();
-        }
-        """ % (b"1" if "sandboxed" in args else b"0"))
-        os.close(fd)
-        progname = os.path.join(SUITE.dir, "graalpython-embedded-tool")
-        cc = "clang" if shutil.which("clang") else "gcc"
-        cmdline = [cc, "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"]
-        mx.log(" ".join(["Running"] + cmdline))
-        mx.run(cmdline, nonZeroIsFatal=True)
-        mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
-        mx.run(["ls", "-l", progname])
-        mx.run(["ls", "-l", svm_lib_path])
-        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.path.join(home, "languages", "python")}
-        mx.log(repr(run_env))
-        mx.run([progname], env=run_env)
-    finally:
-        try:
-            os.unlink(progname)
-        except:
-            pass
-        try:
-            os.close(fd)
-        except:
-            pass
-        try:
-            os.unlink(name)
-        except:
-            pass
 
 
 class ArchiveProject(mx.ArchivableProject):
@@ -3007,6 +2956,7 @@ mx.update_commands(SUITE, {
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
+    'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'python-capi-forwards': [generate_capi_forwards, ''],
 })

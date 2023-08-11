@@ -69,7 +69,7 @@ import com.oracle.truffle.api.object.HiddenKey;
  * for a given class.
  */
 @GenerateUncached
-@GenerateInline
+@GenerateInline(inlineByDefault = true)
 public abstract class GetMethodsFlagsNode extends Node {
 
     public abstract long execute(Node inliningTarget, Object cls);
@@ -94,7 +94,7 @@ public abstract class GetMethodsFlagsNode extends Node {
     }
 
     protected static long getMethodsFlags(PythonAbstractNativeObject cls) {
-        return doNative(cls, CStructAccessFactory.ReadObjectNodeGen.getUncached(), HashingStorageGetItemNodeGen.getUncached());
+        return doNative(null, cls, CStructAccessFactory.ReadObjectNodeGen.getUncached(), HashingStorageGetItemNodeGen.getUncached());
     }
 
     // The assumption should hold unless `PyType_Modified` is called.
@@ -110,12 +110,12 @@ public abstract class GetMethodsFlagsNode extends Node {
     }
 
     @Specialization(replaces = "doNativeCached")
-    static long doNative(PythonAbstractNativeObject cls,
-                    @Cached CStructAccess.ReadObjectNode getTpDictNode,
+    static long doNative(Node inliningTarget, PythonAbstractNativeObject cls,
+                    @Cached(inline = false) CStructAccess.ReadObjectNode getTpDictNode,
                     @Cached HashingStorageGetItem getItem) {
         // classes must have tp_dict since they are set during PyType_Ready
         PDict dict = (PDict) getTpDictNode.readFromObj(cls, PyTypeObject__tp_dict);
-        Object f = getItem.execute(null, dict.getDictStorage(), METHODS_FLAGS);
+        Object f = getItem.execute(inliningTarget, dict.getDictStorage(), METHODS_FLAGS);
         if (f == null) {
             return populateMethodsFlags(cls, dict);
         }

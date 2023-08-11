@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -70,29 +71,38 @@ public abstract class SequenceNodes {
     @ImportStatic(PGuards.class)
     public abstract static class LenNode extends Node {
 
-        public abstract int execute(Node node, PSequence seq);
+        public abstract int execute(Node inliningTarget, PSequence seq);
 
         public static int executeUncached(PSequence seq) {
             return SequenceNodesFactory.LenNodeGen.getUncached().execute(null, seq);
         }
 
         @Specialization
-        int doPString(PString str,
+        static int doPString(PString str,
                         @Cached(inline = false) StringNodes.StringLenNode lenNode) {
             return lenNode.execute(str);
         }
 
         @Specialization(guards = "!isPString(seq)")
-        int doWithStorage(PSequence seq,
+        static int doWithStorage(Node inliningTarget, PSequence seq,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
-            return getStorage.execute(seq).length();
+            return getStorage.execute(inliningTarget, seq).length();
         }
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
     public abstract static class GetSequenceStorageNode extends Node {
 
-        public abstract SequenceStorage execute(Object seq);
+        public abstract SequenceStorage execute(Node inliningTarget, Object seq);
+
+        public static SequenceStorage executeUncached(Object seq) {
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.getUncached().execute(null, seq);
+        }
+
+        public final SequenceStorage executeCached(Object seq) {
+            return execute(this, seq);
+        }
 
         @Specialization(guards = {"seq.getClass() == cachedClass"}, limit = "2")
         static SequenceStorage doSequenceCached(PSequence seq,
@@ -120,6 +130,7 @@ public abstract class SequenceNodes {
             return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }
 
+        @NeverDefault
         public static GetSequenceStorageNode getUncached() {
             return SequenceNodesFactory.GetSequenceStorageNodeGen.getUncached();
         }
@@ -130,18 +141,33 @@ public abstract class SequenceNodes {
     @GenerateCached(false)
     public abstract static class GetObjectArrayNode extends Node {
 
-        public abstract Object[] execute(Node node, Object seq);
+        public abstract Object[] execute(Node inliningTarget, Object seq);
 
         public static Object[] executeUncached(Object seq) {
             return GetObjectArrayNodeGen.getUncached().execute(null, seq);
         }
 
         @Specialization
-        static Object[] doGeneric(@SuppressWarnings("unused") Node node, Object seq,
-                        @Bind("this") Node inliningTarget,
+        static Object[] doGeneric(Node inliningTarget, Object seq,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            return toArrayNode.execute(inliningTarget, getSequenceStorageNode.execute(seq));
+            return toArrayNode.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, seq));
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class CachedGetObjectArrayNode extends Node {
+        public abstract Object[] execute(Object seq);
+
+        @Specialization
+        Object[] doIt(Object seq,
+                        @Cached GetObjectArrayNode node) {
+            return node.execute(this, seq);
+        }
+
+        public static CachedGetObjectArrayNode create() {
+            return CachedGetObjectArrayNodeGen.create();
         }
     }
 
@@ -150,7 +176,7 @@ public abstract class SequenceNodes {
     @GenerateCached(false)
     public abstract static class SetSequenceStorageNode extends Node {
 
-        public abstract void execute(Node node, PSequence s, SequenceStorage storage);
+        public abstract void execute(Node inliningTarget, PSequence s, SequenceStorage storage);
 
         @Specialization(guards = "s.getClass() == cachedClass", limit = "1")
         static void doSpecial(PSequence s, SequenceStorage storage,
@@ -171,8 +197,9 @@ public abstract class SequenceNodes {
 
         @Specialization
         void check(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheckNode) {
-            if (!sequenceCheckNode.execute(obj)) {
+            if (!sequenceCheckNode.execute(inliningTarget, obj)) {
                 throw raise(TypeError, IS_NOT_A_SEQUENCE, obj);
             }
         }

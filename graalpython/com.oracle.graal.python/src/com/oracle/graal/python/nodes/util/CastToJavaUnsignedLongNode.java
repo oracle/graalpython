@@ -54,10 +54,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Casts a Python {@code int} to Java {@code long}. This method follows the semantics of CPython's
@@ -72,45 +74,45 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
  */
 @TypeSystemReference(PythonArithmeticTypes.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class CastToJavaUnsignedLongNode extends PNodeWithContext {
-
-    @NeverDefault
-    public static CastToJavaUnsignedLongNode create() {
-        return CastToJavaUnsignedLongNodeGen.create();
+    public static long executeUncached(Object arg) {
+        return CastToJavaUnsignedLongNodeGen.getUncached().execute(null, arg);
     }
 
-    public abstract long execute(Object x);
+    public abstract long execute(Node inliningTarget, Object x);
 
     @Specialization
-    long toUnsignedLong(long x,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        checkNegative(x < 0, raiseNode);
+    static long toUnsignedLong(Node inliningTarget, long x,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+        checkNegative(x < 0, inliningTarget, raiseNode);
         return x;
     }
 
     @Specialization
-    long toUnsignedLong(PInt x,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        checkNegative(x.isNegative(), raiseNode);
-        return convertBigInt(x.getValue(), raiseNode);
+    static long toUnsignedLong(Node inliningTarget, PInt x,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+        checkNegative(x.isNegative(), inliningTarget, raiseNode);
+        return convertBigInt(x.getValue(), inliningTarget);
     }
 
     @Fallback
-    long doUnsupported(@SuppressWarnings("unused") Object x,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+    static long doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object x,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 
-    private void checkNegative(boolean negative, PRaiseNode raiseNode) {
+    private static void checkNegative(boolean negative, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (negative) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
     }
 
     @TruffleBoundary
-    private long convertBigInt(BigInteger bi, PRaiseNode raiseNode) {
+    private static long convertBigInt(BigInteger bi, Node nodeForRaise) {
         if (bi.bitLength() > 64) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "unsigned long");
+            throw PRaiseNode.raiseUncached(nodeForRaise, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "unsigned long");
         }
         return bi.longValue();
     }

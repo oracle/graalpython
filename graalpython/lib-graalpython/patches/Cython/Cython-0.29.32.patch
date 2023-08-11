@@ -111,6 +111,19 @@ index 202dea7..1e83e66 100644
      # Extract the start, stop and step data members from a slice object as C
      # integers. Silently reduce values larger than PY_SSIZE_T_MAX to
      # PY_SSIZE_T_MAX, silently boost the start and stop values less than
+diff --git a/Cython/Utility/Complex.c b/Cython/Utility/Complex.c
+index 28062a0..c51d6bc 100644
+--- a/Cython/Utility/Complex.c
++++ b/Cython/Utility/Complex.c
+@@ -102,7 +102,7 @@ static {{type}} __Pyx_PyComplex_As_{{type_name}}(PyObject*);
+ 
+ static {{type}} __Pyx_PyComplex_As_{{type_name}}(PyObject* o) {
+     Py_complex cval;
+-#if !CYTHON_COMPILING_IN_PYPY
++#if !CYTHON_COMPILING_IN_PYPY && !defined(GRAALVM_PYTHON)
+     if (PyComplex_CheckExact(o))
+         cval = ((PyComplexObject *)o)->cval;
+     else
 diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
 index 474e6d2..4aeb19c 100644
 --- a/Cython/Utility/Coroutine.c
@@ -196,7 +209,7 @@ index f8bf885..94d0ca6 100644
          main_interpreter_id = current_id;
          return (unlikely(current_id == -1)) ? -1 : 0;
 diff --git a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
-index 864b658..119f363 100644
+index 6e7153c..6d766a1 100644
 --- a/Cython/Utility/ObjectHandling.c
 +++ b/Cython/Utility/ObjectHandling.c
 @@ -717,7 +717,7 @@ bad:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,13 +52,16 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -101,44 +104,49 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
         return null;
     }
 
-    protected static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(receiver);
+    protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(inliningTarget, receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    protected static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
-        return getClassNode.execute(receiver) == clazz;
+    protected static boolean isClazz(Node inliningTarget, PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(inliningTarget, receiver) == clazz;
     }
 
     // Object, Object
 
-    @Specialization(guards = {"clazz != null", "function != null", "isClazz(clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltinClass(left, getClassNode)") PythonBuiltinClassType clazz,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, left, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
         return function.execute(frame, left, right);
     }
 
     @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    @SuppressWarnings("truffle-static-method")
     Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
-        return doCallObject(frame, left, right, getClassNode, getattr);
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
     @Specialization(replaces = "callObjectGeneric")
     @Megamorphic
+    @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
-        return doCallObject(frame, left, right, getClassNode, getattr);
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached("createLookup()") LookupSpecialBaseNode getattr) {
+        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
     }
 
-    private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
-        Object leftClass = getClassNode.execute(left);
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
+        Object leftClass = getClassNode.execute(inliningTarget, left);
         Object leftCallable;
         try {
             leftCallable = getattr.execute(frame, leftClass, left);

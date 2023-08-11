@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -69,6 +69,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateInline(false) // Needs to be an indirect call
 public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
 
@@ -111,7 +113,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
                     @Cached CallNode callNode,
@@ -145,7 +147,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                 strides = PMemoryView.initStridesFromShape(cBuffer.getDims(), cBuffer.getItemSize(), shape);
             }
             int[] suboffsets = cBuffer.getSuboffsets();
-            int flags = initFlagsNode.execute(cBuffer.getDims(), cBuffer.getItemSize(), shape, strides, suboffsets);
+            int flags = initFlagsNode.execute(inliningTarget, cBuffer.getDims(), cBuffer.getItemSize(), shape, strides, suboffsets);
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = NativeByteSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), false);
             TruffleString format = cBuffer.getFormat();

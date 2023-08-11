@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,10 +51,12 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallInplaceNode extends PNodeWithContext implements BinaryOp {
 
@@ -123,10 +125,11 @@ public abstract class LookupAndCallInplaceNode extends PNodeWithContext implemen
 
     @Specialization
     Object doBinary(VirtualFrame frame, Object left, Object right, Object z,
+                    @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached("createInplaceLookup()") LookupInMROBaseNode lookupInplace) {
         Object result;
-        Object inplaceCallable = lookupInplace.execute(getClassNode.execute(left));
+        Object inplaceCallable = lookupInplace.execute(getClassNode.execute(inliningTarget, left));
         if (inplaceCallable != PNone.NO_VALUE) {
             // nb.: The only ternary in-place operator is '__ipow__' but according to 'typeobject.c:
             // slot_nb_inplace_power', this is always called as binary.

@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyTraceModuleBuiltins;
@@ -159,6 +158,10 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2bObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Blake2sObjectBuiltins;
@@ -281,7 +284,6 @@ import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
-import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -303,7 +305,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.partial.PartialBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
@@ -456,8 +457,6 @@ public abstract class Python3Core {
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
-                        new KeyWrapperBuiltins(),
-                        new PartialBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),
@@ -580,7 +579,13 @@ public abstract class Python3Core {
 
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
+
+                        // _functools
+                        new KeyWrapperBuiltins(),
+                        new PartialBuiltins(),
+                        new LruCacheWrapperBuiltins(),
                         new FunctoolsModuleBuiltins(),
+
                         new ErrnoModuleBuiltins(),
                         new CodecsModuleBuiltins(),
                         new CodecsTruffleModuleBuiltins(),
@@ -871,22 +876,22 @@ public abstract class Python3Core {
             loadFile(toTruffleStringUncached("importlib/_bootstrap"), getContext().getStdlibHome(), bootstrap);
         } else {
             bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB_EXTERNAL, true);
-            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
-            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
+            setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
+            setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB + "' # <frozen>");
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB_EXTERNAL + "' # <frozen>");
         }
-        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB, bootstrap);
-        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB_EXTERNAL, bootstrapExternal);
+        setItem.execute(null, null, sysModules, T__FROZEN_IMPORTLIB, bootstrap);
+        setItem.execute(null, null, sysModules, T__FROZEN_IMPORTLIB_EXTERNAL, bootstrapExternal);
 
         // __package__ needs to be set and doesn't get set by _bootstrap setup
         writeNode.execute(bootstrap, T___PACKAGE__, T_IMPORTLIB);
         writeNode.execute(bootstrapExternal, T___PACKAGE__, T_IMPORTLIB);
 
-        callNode.execute(null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
+        callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
         writeNode.execute(getBuiltins(), T___IMPORT__, readNode.execute(bootstrap, T___IMPORT__));
         // see CPython's init_importlib_external
-        callNode.execute(null, bootstrap, toTruffleStringUncached("_install_external_importers"));
+        callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install_external_importers"));
         if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             // see CPython's _PyImportZip_Init
             Object pathHooks = readNode.execute(sysModule, toTruffleStringUncached("path_hooks"));
@@ -907,7 +912,7 @@ public abstract class Python3Core {
                         removeBuiltinModule(t_zipimport);
                     }
                 } else {
-                    setItem.execute(null, sysModules, t_zipimport, zipimport);
+                    setItem.execute(null, null, sysModules, t_zipimport, zipimport);
                     LOGGER.log(Level.FINE, () -> "import 'zipimport' # <frozen>");
                 }
                 if (zipimport == null) {
@@ -977,6 +982,7 @@ public abstract class Python3Core {
             if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
                 if (getContext().getEnv().isPolyglotBindingsAccessAllowed()) {
                     getContext().getEnv().exportSymbol("PollPythonAsyncActions", getContext().getEnv().asGuestValue(new Runnable() {
+                        @Override
                         public void run() {
                             getContext().pollAsyncActions();
                         }
@@ -1050,7 +1056,7 @@ public abstract class Python3Core {
      */
     public final Object getStderr() {
         try {
-            return PyObjectLookupAttr.getUncached().execute(null, sysModule, T_STDERR);
+            return PyObjectLookupAttr.executeUncached(sysModule, T_STDERR);
         } catch (PException e) {
             try {
                 getContext().getEnv().err().write("lost sys.stderr\n".getBytes());

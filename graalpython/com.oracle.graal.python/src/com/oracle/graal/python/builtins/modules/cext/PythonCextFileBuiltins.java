@@ -53,8 +53,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFileBuiltins {
 
@@ -63,6 +65,7 @@ public final class PythonCextFileBuiltins {
 
         @Specialization
         int writeStr(Object obj, Object f, int flags,
+                        @Bind("this") Node inliningTarget,
                         @Cached StrNode strNode,
                         @Cached ReprNode reprNode,
                         @Cached PyObjectGetAttr getAttr,
@@ -77,7 +80,7 @@ public final class PythonCextFileBuiltins {
             } else {
                 value = reprNode.execute(null, obj);
             }
-            Object writeCallable = getAttr.execute(f, T_WRITE);
+            Object writeCallable = getAttr.execute(inliningTarget, f, T_WRITE);
             callNode.execute(writeCallable, value);
             return 0;
         }

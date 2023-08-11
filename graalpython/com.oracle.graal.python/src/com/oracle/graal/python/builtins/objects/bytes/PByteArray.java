@@ -151,12 +151,13 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
+                    @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                setItem.execute(store, PInt.intValueExact(index), value);
+                setItem.execute(inliningTarget, store, PInt.intValueExact(index), value);
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

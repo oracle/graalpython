@@ -51,17 +51,18 @@ import static com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.GetMethodsFlagsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -91,47 +92,49 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         }
 
         @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        @SuppressWarnings("truffle-static-method")
         Object addC(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                         @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached InlinedConditionProfile p3,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            return add(frame, left, right, node, getClassNode, getattr, getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return add(frame, left, right, inliningTarget, getClassNode, getattr, getMethodsFlagsNode,
                             getlClassNode, getrClassNode, p1, p2, p3,
                             binaryOp1Node, slot1BINFULLNode);
         }
 
         @Specialization(replaces = "addC")
+        @SuppressWarnings("truffle-static-method")
         Object add(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached InlinedConditionProfile p3,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            Object lClass = getlClassNode.execute(node, left);
-            Object rClass = getrClassNode.execute(node, right);
-            long lFlags = getMethodsFlagsNode.execute(node, lClass);
-            long rFlags = getMethodsFlagsNode.execute(node, rClass);
-            if (p1.profile(node, ((lFlags | rFlags) & NB_ADD) != 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            Object lClass = getlClassNode.execute(inliningTarget, left);
+            Object rClass = getrClassNode.execute(inliningTarget, right);
+            long lFlags = getMethodsFlagsNode.execute(inliningTarget, lClass);
+            long rFlags = getMethodsFlagsNode.execute(inliningTarget, rClass);
+            if (p1.profile(inliningTarget, ((lFlags | rFlags) & NB_ADD) != 0)) {
                 Object result;
                 SpecialMethodSlot slot = SpecialMethodSlot.Add;
                 SpecialMethodSlot rslot = SpecialMethodSlot.RAdd;
-                if (p2.profile(node, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
+                if (p2.profile(inliningTarget, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
                     result = slot1BINFULLNode.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
                 } else {
                     result = binaryOp1Node.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
@@ -140,8 +143,8 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                     return result;
                 }
             }
-            if (p3.profile(node, (lFlags & SQ_CONCAT) != 0)) {
-                Object seqClass = getClassNode.execute(node, left);
+            if (p3.profile(inliningTarget, (lFlags & SQ_CONCAT) != 0)) {
+                Object seqClass = getClassNode.execute(inliningTarget, left);
                 Object callable = getattr.execute(frame, seqClass, left);
                 return ensureDispatch().executeObject(frame, callable, left, right);
             }
@@ -166,46 +169,48 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         }
 
         @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        @SuppressWarnings("truffle-static-method")
         Object mulC(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                         @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached InlinedConditionProfile p3,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            return mul(frame, left, right, node, getClassNode, getattr, getMethodsFlagsNode, getlClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return mul(frame, left, right, inliningTarget, getClassNode, getattr, getMethodsFlagsNode, getlClassNode,
                             getrClassNode, p1, p2, p3, binaryOp1Node, slot1BINFULLNode);
         }
 
         @Specialization(replaces = "mulC")
+        @SuppressWarnings("truffle-static-method")
         Object mul(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached InlinedConditionProfile p3,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            Object lClass = getlClassNode.execute(node, left);
-            Object rClass = getrClassNode.execute(node, right);
-            long lFlags = getMethodsFlagsNode.execute(node, lClass);
-            long rFlags = getMethodsFlagsNode.execute(node, rClass);
-            if (p1.profile(node, ((lFlags | rFlags) & NB_MULTIPLY) != 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            Object lClass = getlClassNode.execute(inliningTarget, left);
+            Object rClass = getrClassNode.execute(inliningTarget, right);
+            long lFlags = getMethodsFlagsNode.execute(inliningTarget, lClass);
+            long rFlags = getMethodsFlagsNode.execute(inliningTarget, rClass);
+            if (p1.profile(inliningTarget, ((lFlags | rFlags) & NB_MULTIPLY) != 0)) {
                 Object result;
                 SpecialMethodSlot slot = SpecialMethodSlot.Mul;
                 SpecialMethodSlot rslot = SpecialMethodSlot.RMul;
-                if (p2.profile(node, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
+                if (p2.profile(inliningTarget, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
                     result = slot1BINFULLNode.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
                 } else {
                     result = binaryOp1Node.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
@@ -214,9 +219,9 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                     return result;
                 }
             }
-            if (p3.profile(node, ((lFlags | rFlags) & SQ_REPEAT) != 0)) {
+            if (p3.profile(inliningTarget, ((lFlags | rFlags) & SQ_REPEAT) != 0)) {
                 Object seqObj = (lFlags & SQ_REPEAT) != 0 ? left : right;
-                Object seqClass = getClassNode.execute(node, seqObj);
+                Object seqClass = getClassNode.execute(inliningTarget, seqObj);
                 Object callable = getattr.execute(frame, seqClass, seqObj);
                 return ensureDispatch().executeObject(frame, callable, seqObj, seqObj == right ? left : right);
             }
@@ -249,38 +254,40 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         }
 
         @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+        @SuppressWarnings("truffle-static-method")
         Object binaryOpC(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                         @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            return binaryOp(frame, left, right, node, getMethodsFlagsNode, getlClassNode, getrClassNode, p1, p2,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            return binaryOp(frame, left, right, inliningTarget, getMethodsFlagsNode, getlClassNode, getrClassNode, p1, p2,
                             binaryOp1Node, slot1BINFULLNode);
         }
 
         @Specialization(replaces = "binaryOpC")
+        @SuppressWarnings("truffle-static-method")
         Object binaryOp(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node node,
-                        @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Cached InlinedGetClassNode getlClassNode,
-                        @Cached InlinedGetClassNode getrClassNode,
-                        @Cached InlinedConditionProfile p1,
-                        @Cached InlinedConditionProfile p2,
-                        @Cached BinaryOp1Node binaryOp1Node,
-                        @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            Object lClass = getlClassNode.execute(node, left);
-            Object rClass = getrClassNode.execute(node, right);
-            long lFlags = getMethodsFlagsNode.execute(node, lClass);
-            long rFlags = getMethodsFlagsNode.execute(node, rClass);
-            if (p1.profile(node, ((lFlags | rFlags) & slot.getMethodsFlag()) != 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                        @Exclusive @Cached GetClassNode getlClassNode,
+                        @Exclusive @Cached GetClassNode getrClassNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
+                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
+            Object lClass = getlClassNode.execute(inliningTarget, left);
+            Object rClass = getrClassNode.execute(inliningTarget, right);
+            long lFlags = getMethodsFlagsNode.execute(inliningTarget, lClass);
+            long rFlags = getMethodsFlagsNode.execute(inliningTarget, rClass);
+            if (p1.profile(inliningTarget, ((lFlags | rFlags) & slot.getMethodsFlag()) != 0)) {
                 Object result;
-                if (p2.profile(node, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
+                if (p2.profile(inliningTarget, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
                     result = slot1BINFULLNode.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
                 } else {
                     result = binaryOp1Node.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
@@ -303,7 +310,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         }
     }
 
-    @GenerateInline
+    @GenerateInline(inlineByDefault = true)
     abstract static class DispatchSpecialMethodSlotNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Node inliningTarget, Object callable,
@@ -313,20 +320,21 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         static Object dispatch(VirtualFrame frame, Node inliningTarget, Object callable,
                         Object leftValue, Object rightValue, Object lClass, SpecialMethodSlot op,
                         @Cached InlinedConditionProfile isEnclosingProfile,
-                        @Cached CallBinaryMethodNode dispatch,
-                        @Cached IsSubtypeNode isSubtype,
+                        @Cached(inline = false) CallBinaryMethodNode dispatch,
+                        @Cached(inline = false) IsSubtypeNode isSubtype,
                         @Cached GetEnclosingType getEnclosingType,
-                        @Cached PRaiseNode raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached GetNameNode getNameNode) {
             // see descrobject.c/wrapperdescr_call()
             Object enclosing = getEnclosingType.execute(inliningTarget, callable);
             if (isEnclosingProfile.profile(inliningTarget, enclosing != null && !isSubtype.execute(lClass, enclosing))) {
-                throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), getNameNode.execute(lClass), leftValue);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), getNameNode.execute(inliningTarget, lClass), leftValue);
             }
             return dispatch.executeObject(frame, callable, leftValue, rightValue);
         }
     }
 
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 38
     protected abstract static class BinaryOp1Node extends Node {
 
         abstract Object execute(VirtualFrame frame, Object left, Object right,
@@ -348,14 +356,15 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                         "canDoOp(slot, vMethodsFlags)",
                         "!canDoOp(slot, wMethodsFlags)",
         })
+        @SuppressWarnings("truffle-static-method")
         Object binaryOp1vOnlySlot(VirtualFrame frame, Object v, Object w,
                         SpecialMethodSlot slot, @SuppressWarnings("unused") SpecialMethodSlot rslot,
                         @SuppressWarnings("unused") long vMethodsFlags, @SuppressWarnings("unused") long wMethodsFlags,
                         Object vClass, @SuppressWarnings("unused") Object wClass,
                         @Bind("this") Node node,
-                        @Shared @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p1,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opSlot,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
             Object slotv = lookupAttrId(frame, v, vClass, opSlot);
             if (p1.profile(node, slotv != PNone.NO_VALUE)) {
                 // x = slotv(v, w);
@@ -369,14 +378,15 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                         "!canDoOp(slot, vMethodsFlags)",
                         "canDoOp(slot, wMethodsFlags)",
         })
+        @SuppressWarnings("truffle-static-method")
         Object binaryOp1wOnlySlot(VirtualFrame frame, Object v, Object w,
                         SpecialMethodSlot slot, @SuppressWarnings("unused") SpecialMethodSlot rslot,
                         @SuppressWarnings("unused") long vMethodsFlags, @SuppressWarnings("unused") long wMethodsFlags,
                         @SuppressWarnings("unused") Object vClass, Object wClass,
                         @Bind("this") Node node,
-                        @Shared @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p2,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opSlot,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
             Object slotw = lookupAttrId(frame, w, wClass, opSlot);
             if (p2.profile(node, slotw != PNone.NO_VALUE)) {
                 // x = slotw(v, w);
@@ -392,20 +402,21 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                         "canDoOp(slot, vMethodsFlags)",
                         "canDoOp(slot, wMethodsFlags)",
         })
+        @SuppressWarnings("truffle-static-method")
         Object binaryOp1fullSlots(VirtualFrame frame, Object v, Object w,
                         SpecialMethodSlot slot, @SuppressWarnings("unused") SpecialMethodSlot rslot,
                         @SuppressWarnings("unused") long vMethodsFlags, @SuppressWarnings("unused") long wMethodsFlags,
                         Object vClass, Object wClass,
                         @Bind("this") Node node,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opSlot,
-                        @Shared @Cached InlinedConditionProfile p1,
-                        @Shared @Cached InlinedConditionProfile p2,
-                        @Shared @Cached InlinedConditionProfile p3,
-                        @Shared @Cached InlinedConditionProfile p4,
-                        @Shared @Cached IsSubtypeNode isSubtype,
-                        @Shared @Cached AreSameCallables areSameCallables,
-                        @Shared @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached InlinedConditionProfile p4,
+                        @Exclusive @Cached IsSubtypeNode isSubtype,
+                        @Exclusive @Cached AreSameCallables areSameCallables,
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
             Object slotv = lookupAttrId(frame, v, vClass, opSlot);
             Object slotw = PNone.NO_VALUE;
             if (!isSameTypeNode.execute(node, wClass, vClass)) {
@@ -454,25 +465,26 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                         "canDoOp(slot, vMethodsFlags)",
                         "canDoOp(slot, wMethodsFlags)",
         })
+        @SuppressWarnings("truffle-static-method")
         Object binaryOp1full(VirtualFrame frame, Object v, Object w,
                         SpecialMethodSlot slot, SpecialMethodSlot rslot,
                         long vMethodsFlags, long wMethodsFlags,
                         Object vClass, Object wClass,
                         @Bind("this") Node node,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opSlot,
-                        @Shared @Cached InlinedConditionProfile p1,
-                        @Shared @Cached InlinedConditionProfile p2,
-                        @Shared @Cached InlinedConditionProfile p3,
-                        @Shared @Cached InlinedConditionProfile p4,
-                        @Cached InlinedConditionProfile p5,
-                        @Cached InlinedConditionProfile p6,
-                        @Cached InlinedConditionProfile p7,
-                        @Cached InlinedConditionProfile p8,
-                        @Shared @Cached IsSubtypeNode isSubtype,
-                        @Shared @Cached AreSameCallables areSameCallables,
-                        @Shared @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached InlinedConditionProfile p4,
+                        @Exclusive @Cached InlinedConditionProfile p5,
+                        @Exclusive @Cached InlinedConditionProfile p6,
+                        @Exclusive @Cached InlinedConditionProfile p7,
+                        @Exclusive @Cached InlinedConditionProfile p8,
+                        @Exclusive @Cached IsSubtypeNode isSubtype,
+                        @Exclusive @Cached AreSameCallables areSameCallables,
+                        @Exclusive @Cached IsSameTypeNode isSameTypeNode,
                         @Cached Slot1BINFULLNode slot1BINFULLNode,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
             long op = slot.getMethodsFlag();
             boolean slotvIsBinFullOp = (vMethodsFlags & SLOT1BINFULL) != 0;
             boolean slotwIsBinFullOp = (wMethodsFlags & SLOT1BINFULL) != 0;
@@ -552,6 +564,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
     }
 
     // This specialization implements the logic in cpython://Objects/typeobject.c#SLOT1BINFULL
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 31
     protected abstract static class Slot1BINFULLNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Object left, Object right,
@@ -564,77 +577,77 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
         }
 
         @Specialization(guards = {"isSLOT1BINFULL(lFlags)", "!isSLOT1BINFULL(rFlags)"})
-        Object slot1binfullLeftOnly(VirtualFrame frame, Object left, Object right,
+        static Object slot1binfullLeftOnly(VirtualFrame frame, Object left, Object right,
                         SpecialMethodSlot slot, @SuppressWarnings("unused") SpecialMethodSlot rslot,
                         long lFlags, @SuppressWarnings("unused") long rFlags,
                         Object lClass, @SuppressWarnings("unused") Object rClass,
-                        @Bind("this") Node node,
-                        @Shared @Cached InlinedConditionProfile p1,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached InlinedConditionProfile p1,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opId,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
-            if (p1.profile(node, (lFlags & SLOT1BINFULL) != 0)) {
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+            if (p1.profile(inliningTarget, (lFlags & SLOT1BINFULL) != 0)) {
                 Object leftCallable = lookupAttrId(frame, left, lClass, opId);
-                return dispatchNode.execute(frame, node, leftCallable, left, right, lClass, slot);
+                return dispatchNode.execute(frame, inliningTarget, leftCallable, left, right, lClass, slot);
             }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = {"!isSLOT1BINFULL(lFlags)", "isSLOT1BINFULL(rFlags)"})
-        Object slot1binfullRightOnly(VirtualFrame frame, Object left, Object right,
+        static Object slot1binfullRightOnly(VirtualFrame frame, Object left, Object right,
                         @SuppressWarnings("unused") SpecialMethodSlot slot, SpecialMethodSlot rslot,
                         @SuppressWarnings("unused") long lFlags, @SuppressWarnings("unused") long rFlags,
                         @SuppressWarnings("unused") Object lClass, Object rClass,
-                        @Bind("this") Node node,
-                        @Shared @Cached InlinedConditionProfile p2,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached InlinedConditionProfile p2,
                         @Shared @Cached("create(rslot)") LookupSpecialMethodSlotNode ropId,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
             Object rOpRightCallable = lookupAttrId(frame, right, rClass, ropId);
-            if (p2.profile(node, rOpRightCallable != PNone.NO_VALUE)) {
-                return dispatchNode.execute(frame, node, rOpRightCallable, right, left, rClass, rslot);
+            if (p2.profile(inliningTarget, rOpRightCallable != PNone.NO_VALUE)) {
+                return dispatchNode.execute(frame, inliningTarget, rOpRightCallable, right, left, rClass, rslot);
             }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = {"isSLOT1BINFULL(lFlags)", "isSLOT1BINFULL(rFlags)"})
-        Object slot1binfull(VirtualFrame frame, Object left, Object right,
+        static Object slot1binfull(VirtualFrame frame, Object left, Object right,
                         SpecialMethodSlot slot, SpecialMethodSlot rslot,
                         long lFlags, long rFlags,
                         Object lClass, Object rClass,
-                        @Bind("this") Node node,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached("create(slot)") LookupSpecialMethodSlotNode opId,
                         @Shared @Cached("create(rslot)") LookupSpecialMethodSlotNode ropId,
-                        @Shared @Cached InlinedConditionProfile p1,
-                        @Shared @Cached InlinedConditionProfile p2,
-                        @Cached InlinedConditionProfile p3,
-                        @Cached InlinedConditionProfile p4,
-                        @Cached InlinedConditionProfile p5,
-                        @Cached InlinedConditionProfile p6,
-                        @Cached InlinedConditionProfile p7,
-                        @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
+                        @Exclusive @Cached InlinedConditionProfile p1,
+                        @Exclusive @Cached InlinedConditionProfile p2,
+                        @Exclusive @Cached InlinedConditionProfile p3,
+                        @Exclusive @Cached InlinedConditionProfile p4,
+                        @Exclusive @Cached InlinedConditionProfile p5,
+                        @Exclusive @Cached InlinedConditionProfile p6,
+                        @Exclusive @Cached InlinedConditionProfile p7,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached AreSameCallables areSameCallables,
-                        @Shared @Cached DispatchSpecialMethodSlotNode dispatchNode) {
-            boolean pyIsType = isSameTypeNode.execute(node, lClass, rClass);
+                        @Exclusive @Cached DispatchSpecialMethodSlotNode dispatchNode) {
+            boolean pyIsType = isSameTypeNode.execute(inliningTarget, lClass, rClass);
             boolean doRight = !pyIsType && (rFlags & SLOT1BINFULL) != 0;
             Object rOpRightCallable = null;
-            if (p1.profile(node, (lFlags & SLOT1BINFULL) != 0)) {
+            if (p1.profile(inliningTarget, (lFlags & SLOT1BINFULL) != 0)) {
                 Object r;
-                if (p3.profile(node, doRight && isSubtype.execute(frame, rClass, lClass))) {
+                if (p3.profile(inliningTarget, doRight && isSubtype.execute(frame, rClass, lClass))) {
                     // method_is_overloaded inlined
                     boolean isOverloaded;
                     rOpRightCallable = lookupAttrId(frame, right, rClass, ropId);
-                    if (p2.profile(node, rOpRightCallable != PNone.NO_VALUE)) {
+                    if (p2.profile(inliningTarget, rOpRightCallable != PNone.NO_VALUE)) {
                         Object rOpLeftCallable = lookupAttrId(frame, left, lClass, ropId);
-                        if (p4.profile(node, rOpLeftCallable == PNone.NO_VALUE)) {
+                        if (p4.profile(inliningTarget, rOpLeftCallable == PNone.NO_VALUE)) {
                             isOverloaded = true;
                         } else {
-                            isOverloaded = !areSameCallables.execute(node, rOpLeftCallable, rOpRightCallable);
+                            isOverloaded = !areSameCallables.execute(inliningTarget, rOpLeftCallable, rOpRightCallable);
                         }
                     } else {
                         isOverloaded = false;
                     }
-                    if (p5.profile(node, isOverloaded)) {
-                        r = dispatchNode.execute(frame, node, rOpRightCallable, right, left, rClass, rslot);
+                    if (p5.profile(inliningTarget, isOverloaded)) {
+                        r = dispatchNode.execute(frame, inliningTarget, rOpRightCallable, right, left, rClass, rslot);
                         if (r != PNotImplemented.NOT_IMPLEMENTED) {
                             return r;
                         }
@@ -642,19 +655,19 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                     }
                 }
                 Object leftCallable = lookupAttrId(frame, left, lClass, opId);
-                if (p7.profile(node, leftCallable != PNone.NO_VALUE)) {
-                    r = dispatchNode.execute(frame, node, leftCallable, left, right, lClass, slot);
+                if (p7.profile(inliningTarget, leftCallable != PNone.NO_VALUE)) {
+                    r = dispatchNode.execute(frame, inliningTarget, leftCallable, left, right, lClass, slot);
                     if (r != PNotImplemented.NOT_IMPLEMENTED || pyIsType) {
                         return r;
                     }
                 }
             }
-            if (p6.profile(node, doRight)) {
+            if (p6.profile(inliningTarget, doRight)) {
                 if (rOpRightCallable == null) {
                     rOpRightCallable = lookupAttrId(frame, right, rClass, ropId);
                 }
-                if (p2.profile(node, rOpRightCallable != PNone.NO_VALUE)) {
-                    return dispatchNode.execute(frame, node, rOpRightCallable, right, left, rClass, rslot);
+                if (p2.profile(inliningTarget, rOpRightCallable != PNone.NO_VALUE)) {
+                    return dispatchNode.execute(frame, inliningTarget, rOpRightCallable, right, left, rClass, rslot);
                 }
             }
             return PNotImplemented.NOT_IMPLEMENTED;

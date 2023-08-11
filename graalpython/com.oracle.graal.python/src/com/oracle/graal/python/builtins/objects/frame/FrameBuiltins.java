@@ -205,9 +205,10 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        static Object doSet(PFrame self, Object v, @Cached PRaiseNode raise, @Cached CastToJavaBooleanNode cast) {
+        static Object doSet(PFrame self, Object v, @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raise, @Cached CastToJavaBooleanNode cast) {
             try {
-                self.setTraceLine(cast.execute(v));
+                self.setTraceLine(cast.execute(inliningTarget, v));
             } catch (CannotCastException e) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
             }
@@ -250,7 +251,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 PFrame pyFrame = materializeNode.execute(false, true, frame);
                 assert pyFrame == self;
             }
-            return getFrameLocalsNode.execute(self);
+            return getFrameLocalsNode.execute(inliningTarget, self);
         }
     }
 

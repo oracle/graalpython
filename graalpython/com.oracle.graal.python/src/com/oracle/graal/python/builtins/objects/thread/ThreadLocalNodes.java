@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,17 +46,21 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class ThreadLocalNodes {
 
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 49
     public abstract static class GetThreadLocalDict extends PNodeWithContext {
         public abstract PDict execute(VirtualFrame frame, PThreadLocal self);
 
         @Specialization
         PDict get(VirtualFrame frame, PThreadLocal self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
@@ -64,7 +68,7 @@ public abstract class ThreadLocalNodes {
             if (dict == null) {
                 dict = factory.createDict();
                 self.setThreadLocalDict(dict);
-                Object initMethod = lookup.execute(frame, self, SpecialMethodNames.T___INIT__);
+                Object initMethod = lookup.execute(frame, inliningTarget, self, SpecialMethodNames.T___INIT__);
                 callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());
             }
             return dict;

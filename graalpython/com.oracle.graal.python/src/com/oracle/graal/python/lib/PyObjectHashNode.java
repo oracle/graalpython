@@ -54,16 +54,18 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,8 +76,16 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 public abstract class PyObjectHashNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+    public static long executeUncached(Object value) {
+        return PyObjectHashNodeGen.getUncached().execute(null, null, value);
+    }
+
+    public abstract long execute(Frame frame, Node inliningTarget, Object object);
+
+    public abstract long execute(Frame frame, Node inliningTarget, TruffleString object);
 
     private static long avoidNegative1(long hash) {
         // CPython uses -1 to signify error status
@@ -83,18 +93,19 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     }
 
     @Specialization
+    @InliningCutoff
     public static long hash(TruffleString object,
-                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
+                    @Shared @Cached(inline = false) TruffleString.HashCodeNode hashCodeNode) {
         return avoidNegative1(hashCodeNode.execute(object, TS_ENCODING));
     }
 
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static long hash(PString object,
-                    @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
+    @InliningCutoff
+    static long hash(@SuppressWarnings("unused") Node inliningTarget, PString object,
+                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Cached CastToTruffleStringNode cast,
-                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
-        return hash(cast.execute(object), hashCodeNode);
+                    @Shared @Cached(inline = false) TruffleString.HashCodeNode hashCodeNode) {
+        return hash(cast.execute(inliningTarget, object), hashCodeNode);
     }
 
     @Specialization
@@ -150,32 +161,32 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     }
 
     @Fallback
-    static long hash(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "Hash") LookupCallableSlotInMRONode lookupHash,
+    @InliningCutoff
+    static long hash(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
                     @Cached MaybeBindDescriptorNode bindDescriptorNode,
-                    @Cached CallUnaryMethodNode callHash,
+                    @Cached(inline = false) CallUnaryMethodNode callHash,
                     @Cached CastUnsignedToJavaLongHashNode cast,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         /* This combines the logic from abstract.c:PyObject_Hash and typeobject.c:slot_tp_hash */
         Object type = getClassNode.execute(inliningTarget, object);
         // We have to do the lookup and bind steps separately to avoid binding possible None
         Object hashDescr = lookupHash.execute(type);
         if (hashDescr != PNone.NO_VALUE && hashDescr != PNone.NONE) {
             try {
-                hashDescr = bindDescriptorNode.execute(frame, hashDescr, object, type);
+                hashDescr = bindDescriptorNode.execute(frame, inliningTarget, hashDescr, object, type);
             } catch (PException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
             }
             Object result = callHash.executeObject(frame, hashDescr, object);
             try {
-                return avoidNegative1(cast.execute(result));
+                return avoidNegative1(cast.execute(inliningTarget, result));
             } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
             }
         }
-        throw raiseNode.raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
     }
 
     public static PyObjectHashNode getUncached() {

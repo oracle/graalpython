@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -113,6 +114,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CExtCommonNodes {
@@ -236,11 +238,12 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
-                TruffleString s = castToTruffleStringNode.execute(unicodeObject);
+                TruffleString s = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
                 return doString(charset, s, errors, eqNode, raiseNode);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
@@ -459,10 +462,11 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = "!isNativeWrapper(value)")
         static double runGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
-            return asDoubleNode.execute(null, value);
+            return asDoubleNode.execute(null, inliningTarget, value);
         }
 
         @Specialization(guards = "!object.isDouble()")
@@ -777,12 +781,13 @@ public abstract class CExtCommonNodes {
                                         "doVoidPtrToI64", //
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
                         @Cached CallUnaryMethodNode call,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
-            Object type = getClassNode.execute(obj);
+            Object type = getClassNode.execute(inliningTarget, obj);
             Object indexDescr = lookupIndex.execute(null, type, obj);
 
             Object result;
@@ -1107,10 +1112,11 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte doGeneric(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
+                return (byte) PInt.intValue(castToJavaBooleanNode.execute(inliningTarget, value));
             } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
@@ -1144,31 +1150,26 @@ public abstract class CExtCommonNodes {
     /**
      * Implements semantics of function {@code typeobject.c: getindex}.
      */
-    public static final class GetIndexNode extends Node {
+    public abstract static class GetIndexNode extends Node {
+        public abstract int execute(Object self, Object indexObj);
 
-        @Child private PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNode.create();
-        @Child private PyObjectSizeNode sizeNode;
-        @Child private NormalizeIndexNode normalizeIndexNode;
-
-        public int execute(Object self, Object indexObj) {
-            int index = asSizeNode.executeExact(null, indexObj);
+        @Specialization
+        static int doIt(Object self, Object indexObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile indexLt0Branch,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached NormalizeIndexNode normalizeIndexNode) {
+            int index = asSizeNode.executeExact(null, inliningTarget, indexObj);
             if (index < 0) {
-                // 'selfLib' acts as an implicit profile for 'index < 0'
-                if (sizeNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    sizeNode = insert(PyObjectSizeNode.create());
-                }
-                if (normalizeIndexNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
-                }
-                return normalizeIndexNode.execute(index, sizeNode.execute(null, self));
+                indexLt0Branch.enter(inliningTarget);
+                return normalizeIndexNode.execute(index, sizeNode.execute(null, inliningTarget, self));
             }
             return index;
         }
 
         public static GetIndexNode create() {
-            return new GetIndexNode();
+            return GetIndexNodeGen.create();
         }
     }
 }

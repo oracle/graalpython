@@ -71,12 +71,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__ASYNCIO)
@@ -169,13 +171,14 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class EnterTask extends PythonBuiltinNode {
         @Specialization
         public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyDictSetItem set,
                         @Cached PyDictGetItem get,
                         @Cached PRaiseNode raise) {
             PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
-            Object item = get.execute(frame, dict, loop);
+            Object item = get.execute(frame, inliningTarget, dict, loop);
             if (item == null) {
-                set.execute(frame, dict, loop, task);
+                set.execute(frame, inliningTarget, dict, loop, task);
             } else {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANT_ENTER_TASK_ALREADY_RUNNING, task, item);
             }
@@ -188,18 +191,19 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class LeaveTask extends PythonBuiltinNode {
         @Specialization
         public Object leaveTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyDictDelItem del,
                         @Cached PyDictGetItem get,
                         @Cached PRaiseNode raise) {
             PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
-            Object item = get.execute(frame, dict, loop);
+            Object item = get.execute(frame, inliningTarget, dict, loop);
             if (item == null) {
                 item = PNone.NONE;
             }
             if (item != task) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TASK_NOT_ENTERED, task, item);
             }
-            del.execute(frame, dict, loop);
+            del.execute(frame, inliningTarget, dict, loop);
             return PNone.NONE;
         }
     }
@@ -211,9 +215,10 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object registerTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callmethod) {
             Object weakset = self.getAttribute(ALL_TASKS_ATTR);
-            callmethod.execute(frame, weakset, T_ADD, task);
+            callmethod.execute(frame, inliningTarget, weakset, T_ADD, task);
             return PNone.NONE;
         }
     }
@@ -224,9 +229,10 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object unregisterTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object weakset = self.getAttribute(ALL_TASKS_ATTR);
-            callMethod.execute(frame, weakset, T_DISCARD, task);
+            callMethod.execute(frame, inliningTarget, weakset, T_DISCARD, task);
             return PNone.NONE;
         }
     }
@@ -242,7 +248,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
         PythonModule self = core.lookupBuiltinModule(T__ASYNCIO);
         self.setAttribute(CURRENT_TASKS_ATTR, factory.createDict());
         Object weakref = AbstractImportNode.importModule(WEAKREF);
-        Object weakSetCls = PyObjectGetAttr.getUncached().execute(null, weakref, WEAKSET);
+        Object weakSetCls = PyObjectGetAttr.executeUncached(weakref, WEAKSET);
         Object weakSet = CallNode.getUncached().execute(weakSetCls);
         self.setAttribute(ALL_TASKS_ATTR, weakSet);
     }

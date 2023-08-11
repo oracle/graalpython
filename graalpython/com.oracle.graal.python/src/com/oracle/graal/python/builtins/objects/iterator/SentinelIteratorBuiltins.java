@@ -76,7 +76,7 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
                 iterator.markSentinelReached();
                 throw e;
             }
-            boolean iteratorDone = eqNode.execute(frame, nextValue, iterator.getSentinel());
+            boolean iteratorDone = eqNode.compare(frame, inliningTarget, nextValue, iterator.getSentinel());
             if (iteratorDone) {
                 iterator.markSentinelReached();
                 throw raiseStopIteration();

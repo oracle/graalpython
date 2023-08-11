@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,37 +86,34 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 public abstract class GenericTypeNodes {
     static void reprItem(TruffleStringBuilder sb, Object obj) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
-        PyObjectReprAsTruffleStringNode repr = PyObjectReprAsTruffleStringNode.getUncached();
         PyObjectStrAsTruffleStringNode str = PyObjectStrAsTruffleStringNode.getUncached();
-        PyUnicodeCheckNode unicodeCheck = PyUnicodeCheckNode.getUncached();
-        PyObjectRichCompareBool.EqNode eq = PyObjectRichCompareBool.EqNode.getUncached();
-        Object origin = lookup.execute(null, obj, T___ORIGIN__);
+        Object origin = lookup.execute(null, null, obj, T___ORIGIN__);
         if (origin != PNone.NO_VALUE) {
-            Object args = lookup.execute(null, obj, T___ARGS__);
+            Object args = lookup.execute(null, null, obj, T___ARGS__);
             if (args != PNone.NO_VALUE) {
                 // It looks like a GenericAlias
-                sb.appendStringUncached(repr.execute(null, obj));
+                sb.appendStringUncached(PyObjectReprAsTruffleStringNode.executeUncached(obj));
                 return;
             }
         }
-        Object qualname = lookup.execute(null, obj, T___QUALNAME__);
+        Object qualname = lookup.execute(null, null, obj, T___QUALNAME__);
         if (qualname != PNone.NO_VALUE) {
-            Object module = lookup.execute(null, obj, T___MODULE__);
+            Object module = lookup.execute(null, null, obj, T___MODULE__);
             if (!(module instanceof PNone)) {
                 // Looks like a class
-                if (unicodeCheck.execute(module) && eq.execute(null, module, BuiltinNames.T_BUILTINS)) {
+                if (PyUnicodeCheckNode.executeUncached(module) && PyObjectRichCompareBool.EqNode.compareUncached(module, BuiltinNames.T_BUILTINS)) {
                     // builtins don't need a module name
-                    sb.appendStringUncached(str.execute(null, qualname));
+                    sb.appendStringUncached(str.execute(null, null, qualname));
                     return;
                 } else {
-                    sb.appendStringUncached(str.execute(null, module));
+                    sb.appendStringUncached(str.execute(null, null, module));
                     sb.appendCodePointUncached('.');
-                    sb.appendStringUncached(str.execute(null, qualname));
+                    sb.appendStringUncached(str.execute(null, null, qualname));
                     return;
                 }
             }
         }
-        sb.appendStringUncached(repr.execute(null, obj));
+        sb.appendStringUncached(PyObjectReprAsTruffleStringNode.executeUncached(obj));
     }
 
     // Equivalent of _Py_make_parameters
@@ -130,7 +128,7 @@ public abstract class GenericTypeNodes {
             if (isTypeVar(t)) {
                 addUnique(parameters, t);
             }
-            Object subparams = lookup.execute(null, t, T___PARAMETERS__);
+            Object subparams = lookup.execute(null, null, t, T___PARAMETERS__);
             if (subparams instanceof PTuple) {
                 SequenceStorage storage2 = ((PTuple) subparams).getSequenceStorage();
                 for (int j = 0; j < storage2.length(); j++) {
@@ -145,11 +143,11 @@ public abstract class GenericTypeNodes {
     @TruffleBoundary
     static boolean isTypeVar(Object obj) {
         // isinstance(obj, TypeVar) without importing typing.py.
-        Object type = GetClassNode.getUncached().execute(obj);
-        TruffleString typeName = TypeNodes.GetNameNode.getUncached().execute(type);
+        Object type = GetClassNode.executeUncached(obj);
+        TruffleString typeName = TypeNodes.GetNameNode.executeUncached(type);
         if (T_TYPE_VAR.equalsUncached(typeName, TS_ENCODING)) {
-            Object module = PyObjectLookupAttr.getUncached().execute(null, type, T___MODULE__);
-            return PyUnicodeCheckNode.getUncached().execute(module) && PyObjectRichCompareBool.EqNode.getUncached().execute(null, module, T_TYPING);
+            Object module = PyObjectLookupAttr.executeUncached(type, T___MODULE__);
+            return PyUnicodeCheckNode.executeUncached(module) && PyObjectRichCompareBool.EqNode.compareUncached(module, T_TYPING);
         }
         return false;
     }
@@ -175,15 +173,14 @@ public abstract class GenericTypeNodes {
     // Equivalent of _Py_subs_parameters
     @TruffleBoundary
     static Object[] subsParameters(Node node, Object self, PTuple args, PTuple parameters, Object item) {
-        PyObjectReprAsTruffleStringNode repr = PyObjectReprAsTruffleStringNode.getUncached();
         SequenceStorage paramsStorage = parameters.getSequenceStorage();
         int nparams = paramsStorage.length();
         if (nparams == 0) {
-            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.THERE_ARE_NO_TYPE_VARIABLES_LEFT_IN_S, repr.execute(null, self));
+            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.THERE_ARE_NO_TYPE_VARIABLES_LEFT_IN_S, PyObjectReprAsTruffleStringNode.executeUncached(self));
         }
         Object[] argitems = item instanceof PTuple ? ((PTuple) item).getSequenceStorage().getCopyOfInternalArray() : new Object[]{item};
         if (argitems.length != nparams) {
-            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S, argitems.length > nparams ? "many" : "few", repr.execute(null, self));
+            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S, argitems.length > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self));
         }
         SequenceStorage argsStorage = args.getSequenceStorage();
         Object[] newargs = new Object[argsStorage.length()];
@@ -205,8 +202,7 @@ public abstract class GenericTypeNodes {
     }
 
     private static Object subsTvars(Object obj, SequenceStorage parameters, Object[] argitems) {
-        PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
-        Object subparams = lookup.execute(null, obj, T___PARAMETERS__);
+        Object subparams = PyObjectLookupAttr.executeUncached(obj, T___PARAMETERS__);
         if (subparams instanceof PTuple) {
             SequenceStorage subparamsStorage = ((PTuple) subparams).getSequenceStorage();
             int nparams = parameters.length();
@@ -224,17 +220,19 @@ public abstract class GenericTypeNodes {
                     }
                 }
                 PTuple subargsTuple = PythonObjectFactory.getUncached().createTuple(subargs);
-                obj = PyObjectGetItem.getUncached().execute(null, obj, subargsTuple);
+                obj = PyObjectGetItem.executeUncached(obj, subargsTuple);
             }
         }
         return obj;
     }
 
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
     public abstract static class UnionTypeOrNode extends PNodeWithContext {
         public abstract Object execute(Object self, Object other);
 
-        @Specialization(guards = {"isUnionable(typeCheck, self)", "isUnionable(typeCheck, other)"}, limit = "1")
+        @Specialization(guards = {"isUnionable(inliningTarget, typeCheck, self)", "isUnionable(inliningTarget, typeCheck, other)"}, limit = "1")
         static Object union(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectTypeCheck typeCheck,
                         @Cached PythonObjectFactory factory) {
             Object[] args = dedupAndFlattenArgs(new Object[]{self, other});
@@ -251,9 +249,9 @@ public abstract class GenericTypeNodes {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        protected static boolean isUnionable(PyObjectTypeCheck typeCheck, Object obj) {
-            return obj == PNone.NONE || typeCheck.execute(obj, PythonBuiltinClassType.PythonClass) || typeCheck.execute(obj, PythonBuiltinClassType.PGenericAlias) ||
-                            typeCheck.execute(obj, PythonBuiltinClassType.PUnionType);
+        protected static boolean isUnionable(Node inliningTarget, PyObjectTypeCheck typeCheck, Object obj) {
+            return obj == PNone.NONE || typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PythonClass) || typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PGenericAlias) ||
+                            typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PUnionType);
         }
     }
 
@@ -270,7 +268,7 @@ public abstract class GenericTypeNodes {
                 Object jElement = newArgs[j];
                 boolean isGA = iElement instanceof PGenericAlias && jElement instanceof PGenericAlias;
                 // RichCompare to also deduplicate GenericAlias types (slower)
-                isDuplicate = isGA ? eq.execute(null, iElement, jElement) : IsNode.getUncached().execute(iElement, jElement);
+                isDuplicate = isGA ? eq.compare(null, null, iElement, jElement) : IsNode.getUncached().execute(iElement, jElement);
                 if (isDuplicate) {
                     break;
                 }

@@ -57,7 +57,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -91,27 +91,27 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
         @Specialization(guards = "hasFunc(self)")
         static Object next(VirtualFrame frame, PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached PyObjectIsTrueNode isTrue,
-                        @Cached @Shared InlinedLoopConditionProfile loopConditionProfile) {
+                        @Shared @Cached PyObjectIsTrueNode isTrue,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile) {
             Object n;
             do {
                 n = nextNode.execute(frame, self.getSequence(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, callNode.execute(self.getFunc(), n))));
+            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, inliningTarget, callNode.execute(self.getFunc(), n))));
             return n;
         }
 
         @Specialization(guards = "!hasFunc(self)")
         static Object nextNoFunc(VirtualFrame frame, PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached PyObjectIsTrueNode isTrue,
-                        @Cached @Shared InlinedLoopConditionProfile loopConditionProfile) {
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached PyObjectIsTrueNode isTrue,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile) {
             Object n;
             do {
                 n = nextNode.execute(frame, self.getSequence(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, n)));
+            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, inliningTarget, n)));
             return n;
         }
 
@@ -126,7 +126,7 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
         @Specialization(guards = "hasFunc(self)")
         Object reduce(PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getFunc(), self.getSequence()});
             return factory().createTuple(new Object[]{type, tuple});
@@ -135,7 +135,7 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
         @Specialization(guards = "!hasFunc(self)")
         Object reduceNoFunc(PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{PNone.NONE, self.getSequence()});
             return factory().createTuple(new Object[]{type, tuple});

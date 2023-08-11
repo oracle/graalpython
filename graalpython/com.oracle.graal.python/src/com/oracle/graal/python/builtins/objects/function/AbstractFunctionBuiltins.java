@@ -140,7 +140,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
             // see the make_globals_function from lib-graalpython/functions.py
             PythonObject globals = self.getGlobals();
             if (moduleGlobals.profile(inliningTarget, globals instanceof PythonModule)) {
-                return getDict.execute(globals);
+                return getDict.execute(inliningTarget, globals);
             } else {
                 return globals;
             }
@@ -158,6 +158,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         static Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readObject,
                         @Cached ReadAttributeFromObjectNode readGlobals,
                         @Cached PyObjectGetItem getItem,
@@ -173,7 +174,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
                     }
                 } else {
                     try {
-                        module = getItem.execute(frame, globals, T___NAME__);
+                        module = getItem.execute(frame, inliningTarget, globals, T___NAME__);
                     } catch (PException pe) {
                         module = PNone.NONE;
                     }
@@ -210,7 +211,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getModule(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached ReadAttributeFromObjectNode readObject,
-                        @Cached WriteAttributeToObjectNode writeObject) {
+                        @Shared @Cached WriteAttributeToObjectNode writeObject) {
             Object annotations = readObject.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
                 annotations = factory().createDict();
@@ -221,7 +222,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)"})
         static Object getModule(PFunction self, Object value,
-                        @Cached WriteAttributeToObjectNode writeObject) {
+                        @Shared @Cached WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, T___ANNOTATIONS__, value);
             return PNone.NONE;
         }
@@ -238,15 +239,17 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PNone dict(PFunction self, PDict mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
-            setDict.execute(self, mapping);
+            setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(mapping)")
-        Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
+        static Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})

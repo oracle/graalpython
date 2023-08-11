@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.36.0",
+    "mxversion": "6.40.1",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -86,11 +86,11 @@ suite = {
     "repositories": {
         "python-public-snapshots": {
             "url": "https://curio.ssw.jku.at/nexus/content/repositories/snapshots",
-            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT"]
+            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT", "PSF-License"]
         },
         "python-local-snapshots": {
             "url": "http://localhost",
-            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT"]
+            "licenses": ["GPLv2-CPE", "UPL", "BSD-new", "MIT", "PSF-License"]
         },
     },
 
@@ -854,6 +854,10 @@ suite = {
             ],
             "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-launcher",
+            },
         },
 
         "GRAALPYTHON_NATIVE_LIBS": {
@@ -930,25 +934,23 @@ suite = {
             "requires": [
                 "java.base",
             ],
+            "description": "GraalPython runtime resources",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
             },
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
         },
 
         "GRAALPYTHON": {
             "moduleInfo": {
                 "name": "org.graalvm.py",
                 "exports": [
-                    "com.oracle.graal.python.builtins to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.builtins.objects.* to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.lib to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes.function to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.nodes.function.builtins to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.runtime.exception to org.graalvm.py.enterprise",
-                    "com.oracle.graal.python.util to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.* to org.graalvm.py.enterprise",
                 ],
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
@@ -990,11 +992,35 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "description": "GraalPython engine",
+            "description": "GraalPython language",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
             },
+            "noMavenJavadoc": True,
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
+        },
+
+        "GRAALPYTHON_COMMUNITY": {
+            "type": "pom",
+            "runtimeDependencies": [
+                "GRAALPYTHON",
+                "truffle:TRUFFLE_RUNTIME",
+            ],
+            "description": "GraalPython engine.",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-community",
+            },
+            "license": [
+                "UPL",
+                "MIT",
+                "PSF-License",
+            ],
         },
 
         "GRAALPYTHON_PROCESSOR": {

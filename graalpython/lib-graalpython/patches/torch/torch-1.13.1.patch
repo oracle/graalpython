@@ -527,14 +527,13 @@ index a1d6de21..4a8e6487 100644
    py::class_<torch::autograd::SavedVariable>(m, "SavedTensor")
        .def(py::init([]() -> torch::autograd::SavedVariable {
 diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
-index 8c9ed1d7..5183a325 100644
+index 8c9ed1d7..69ecb4ca 100644
 --- a/torch/csrc/autograd/python_variable_indexing.cpp
 +++ b/torch/csrc/autograd/python_variable_indexing.cpp
-@@ -141,26 +141,28 @@ static inline void checkUnpackSlice(
- }
+@@ -142,25 +142,28 @@ static inline void checkUnpackSlice(
  
  static inline void recordSliceTrace(PyObject* obj) {
--  PySliceObject* sliceobj = (PySliceObject*)obj;
+   PySliceObject* sliceobj = (PySliceObject*)obj;
 -  if (THPVariable_Check(sliceobj->start)) {
 +  PyObject* slicestart = PySlice_Start(sliceobj);
 +  if (THPVariable_Check(slicestart)) {

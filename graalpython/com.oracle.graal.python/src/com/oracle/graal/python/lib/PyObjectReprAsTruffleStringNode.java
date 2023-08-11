@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,14 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -59,22 +62,33 @@ import com.oracle.truffle.api.strings.TruffleString;
  * @see PyObjectReprAsObjectNode
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
-    public abstract TruffleString execute(Frame frame, Object object);
+    public static TruffleString executeUncached(Object object) {
+        return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(null, null, object);
+    }
+
+    // TODO: calling this with VirtualFrame that may not be null is likely a bug, review the usages
+    public static TruffleString executeUncached(Frame frame, Object object) {
+        return PyObjectReprAsTruffleStringNodeGen.getUncached().execute(frame, null, object);
+    }
+
+    public final TruffleString executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
+    }
+
+    public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static TruffleString repr(VirtualFrame frame, Object obj,
+    static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object obj,
                     @Cached PyObjectReprAsObjectNode reprNode,
                     @Cached CastToTruffleStringNode cast) {
-        return cast.execute(reprNode.execute(frame, obj));
+        return cast.execute(inliningTarget, reprNode.execute(frame, inliningTarget, obj));
     }
 
     @NeverDefault
     public static PyObjectReprAsTruffleStringNode create() {
         return PyObjectReprAsTruffleStringNodeGen.create();
-    }
-
-    public static PyObjectReprAsTruffleStringNode getUncached() {
-        return PyObjectReprAsTruffleStringNodeGen.getUncached();
     }
 }

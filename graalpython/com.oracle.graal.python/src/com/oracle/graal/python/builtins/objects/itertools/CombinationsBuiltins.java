@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -70,6 +70,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -109,7 +110,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         Object nextNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared PythonObjectFactory factory,
-                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
+                        @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
             // On the first pass, initialize result tuple using the indices
             Object[] result = new Object[self.getR()];
             loopConditionProfile.profileCounted(inliningTarget, self.getR());
@@ -191,7 +192,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNull(self)")
         Object reduceNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
 
             Object[] obj = new Object[self.getIndices().length];
@@ -205,7 +206,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNull(self)")
         Object reduce(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
 
             Object[] obj = new Object[self.getIndices().length];
@@ -250,7 +251,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             int[] intIndices = new int[obj.length];
             indicesProfile.profileCounted(inliningTarget, obj.length);
             for (int i = 0; indicesProfile.inject(inliningTarget, i < obj.length); i++) {
-                intIndices[i] = catsToIntNode.execute(obj[i]);
+                intIndices[i] = catsToIntNode.execute(inliningTarget, obj[i]);
             }
             self.setIndices(intIndices);
 

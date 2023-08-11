@@ -134,12 +134,12 @@ public final class CharmapNodes {
             Arrays.fill(level1, (byte) 0xFF);
             Arrays.fill(level2, (byte) 0xFF);
             if (codePointAtIndexNode.execute(map, 0, TS_ENCODING, ErrorHandling.BEST_EFFORT) != 0) {
-                return doDict(frame, map, len, codePointAtIndexNode, setItemNode, factory);
+                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
             }
             for (int i = 1; i < len; ++i) {
                 int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                 if (cp == 0 || cp > 0xFFFF) {
-                    return doDict(frame, map, len, codePointAtIndexNode, setItemNode, factory);
+                    return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
                 }
                 if (cp == 0xFFFE) {
                     continue;
@@ -154,7 +154,7 @@ public final class CharmapNodes {
                 }
             }
             if (count2 >= 0xFF || count3 >= 0xFF) {
-                return doDict(frame, map, len, codePointAtIndexNode, setItemNode, factory);
+                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
             }
 
             byte[] level23 = new byte[16 * count2 + 128 * count3];
@@ -179,12 +179,12 @@ public final class CharmapNodes {
             return factory.createEncodingMap(count2, count3, level1, level23);
         }
 
-        private static Object doDict(VirtualFrame frame, TruffleString map, int len, TruffleString.CodePointAtIndexNode codePointAtIndexNode, HashingStorageSetItem setItemNode,
+        private static Object doDict(VirtualFrame frame, Node inliningTarget, TruffleString map, int len, TruffleString.CodePointAtIndexNode codePointAtIndexNode, HashingStorageSetItem setItemNode,
                         PythonObjectFactory factory) {
             HashingStorage store = PDict.createNewStorage(len);
             for (int i = 0; i < len; ++i) {
                 int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
-                store = setItemNode.execute(frame, store, cp, i);
+                store = setItemNode.execute(frame, inliningTarget, store, cp, i);
             }
             return factory.createDict(store);
         }
@@ -237,7 +237,7 @@ public final class CharmapNodes {
 
         @Specialization
         static int doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString src, int pos, int len, TruffleString errors, Object mapping, ByteArrayBuilder builder,
-                        @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
@@ -269,7 +269,7 @@ public final class CharmapNodes {
                 appendBytesNode.execute(frame, builder, result.replacement);
                 return result.newPos;
             }
-            TruffleString replacement = castToTruffleStringNode.execute(result.replacement);
+            TruffleString replacement = castToTruffleStringNode.execute(inliningTarget, result.replacement);
             int repLen = codePointLengthNode.execute(replacement, TS_ENCODING);
             for (int i = 0; i < repLen; ++i) {
                 int cp = codePointAtIndexNode.execute(replacement, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
@@ -325,15 +325,15 @@ public final class CharmapNodes {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, int cp, Object mapping,
-                        @Cached(inline = false) PyObjectGetItem pyObjectGetItemNode,
+                        @Cached PyObjectGetItem pyObjectGetItemNode,
                         @Cached IsBuiltinSubtypeObjectProfile isLookupErrorProfile,
-                        @Cached(inline = false) PyLongCheckNode pyLongCheckNode,
-                        @Cached(inline = false) PyLongAsLongNode pyLongAsLongNode,
+                        @Cached PyLongCheckNode pyLongCheckNode,
+                        @Cached PyLongAsLongNode pyLongAsLongNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object item;
             try {
-                item = pyObjectGetItemNode.execute(frame, mapping, cp);
+                item = pyObjectGetItemNode.execute(frame, inliningTarget, mapping, cp);
             } catch (PException e) {
                 e.expectSubclass(frame, inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
                 return PNone.NONE;
@@ -341,8 +341,8 @@ public final class CharmapNodes {
             if (item == PNone.NONE) {
                 return item;
             }
-            if (pyLongCheckNode.execute(item)) {
-                long value = pyLongAsLongNode.execute(frame, item);
+            if (pyLongCheckNode.execute(inliningTarget, item)) {
+                long value = pyLongAsLongNode.execute(frame, inliningTarget, item);
                 if (value < 0 || value > 255) {
                     raiseNode.get(inliningTarget).raise(TypeError, CHARACTER_MAPPING_MUST_BE_IN_RANGE_256);
                 }
@@ -386,14 +386,14 @@ public final class CharmapNodes {
                         @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @SuppressWarnings("unused") @Cached @Shared IsBuiltinObjectProfile mappingClassProfile,
-                        @Cached @Shared CastToTruffleStringNode castToTruffleStringNode,
+                        @SuppressWarnings("unused") @Cached @Exclusive IsBuiltinObjectProfile mappingClassProfile,
+                        @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached @Shared TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached @Shared TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached @Shared CallDecodingErrorHandlerNode callErrorHandlerNode) {
+                        @Cached @Exclusive CallDecodingErrorHandlerNode callErrorHandlerNode) {
             // equivalent of charmap_decode_string
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = PythonLanguage.get(inliningTarget);
@@ -401,7 +401,7 @@ public final class CharmapNodes {
             ErrorHandlerCache cache = new ErrorHandlerCache();
             Object srcObj = data;
             int pos = 0;
-            TruffleString mapping = castToTruffleStringNode.execute(mappingObj);
+            TruffleString mapping = castToTruffleStringNode.execute(inliningTarget, mappingObj);
             int mappingLen = codePointLengthNode.execute(mapping, TS_ENCODING);
             TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
             int errorStartPos;
@@ -445,19 +445,19 @@ public final class CharmapNodes {
                         @Bind("getIndirectCallNode()") IndirectCallNode indirectCallNode,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @SuppressWarnings("unused") @Cached @Shared IsBuiltinObjectProfile mappingClassProfile,
+                        @SuppressWarnings("unused") @Cached @Exclusive IsBuiltinObjectProfile mappingClassProfile,
                         @Cached PyObjectGetItem pyObjectGetItemNode,
                         @Cached @Exclusive IsBuiltinSubtypeObjectProfile isLookupErrorProfile,
                         @Cached PyLongCheckNode pyLongCheckNode,
                         @Cached PyLongAsLongNode pyLongAsLongNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
-                        @Cached @Shared CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached @Shared TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached @Shared TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached @Shared CallDecodingErrorHandlerNode callErrorHandlerNode,
+                        @Cached @Exclusive CallDecodingErrorHandlerNode callErrorHandlerNode,
                         @Cached InlinedConditionProfile longValuesProfile,
                         @Cached InlinedConditionProfile strValuesProfile,
                         @Cached InlinedConditionProfile errProfile,
@@ -482,7 +482,7 @@ public final class CharmapNodes {
                         int key = src[pos] & 0xff;
                         Object item;
                         try {
-                            item = pyObjectGetItemNode.execute(frame, mappingObj, key);
+                            item = pyObjectGetItemNode.execute(frame, inliningTarget, mappingObj, key);
                         } catch (PException e) {
                             e.expectSubclass(frame, inliningTarget, PythonBuiltinClassType.LookupError, isLookupErrorProfile);
                             errorStartPos = pos;
@@ -492,8 +492,8 @@ public final class CharmapNodes {
                             errorStartPos = pos;
                             break;
                         }
-                        if (longValuesProfile.profile(inliningTarget, pyLongCheckNode.execute(item))) {
-                            long value = pyLongAsLongNode.execute(frame, item);
+                        if (longValuesProfile.profile(inliningTarget, pyLongCheckNode.execute(inliningTarget, item))) {
+                            long value = pyLongAsLongNode.execute(frame, inliningTarget, item);
                             if (value == UNDEFINED_MAPPING) {
                                 errorStartPos = pos;
                                 break;
@@ -503,8 +503,8 @@ public final class CharmapNodes {
                             } else {
                                 appendCodePointNode.execute(tsb, (int) value, 1, true);
                             }
-                        } else if (strValuesProfile.profile(inliningTarget, pyUnicodeCheckNode.execute(item))) {
-                            TruffleString ts = castToTruffleStringNode.execute(item);
+                        } else if (strValuesProfile.profile(inliningTarget, pyUnicodeCheckNode.execute(inliningTarget, item))) {
+                            TruffleString ts = castToTruffleStringNode.execute(inliningTarget, item);
                             if (codePointLengthNode.execute(ts, TS_ENCODING) == 1) {
                                 int cp = codePointAtIndexNode.execute(ts, 0, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                                 if (cp == UNDEFINED_MAPPING) {
@@ -513,7 +513,7 @@ public final class CharmapNodes {
                                 }
                                 appendCodePointNode.execute(tsb, cp, 1, true);
                             } else {
-                                appendStringNode.execute(tsb, castToTruffleStringNode.execute(item));
+                                appendStringNode.execute(tsb, castToTruffleStringNode.execute(inliningTarget, item));
                             }
                         } else {
                             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);

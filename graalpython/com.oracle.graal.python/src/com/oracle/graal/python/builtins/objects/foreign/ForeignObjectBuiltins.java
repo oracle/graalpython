@@ -26,9 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -128,10 +125,13 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -249,8 +249,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             boolean leftBoolean;
             gil.release(true);
             try {
@@ -271,8 +271,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.fitsInLong(left)")
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             assert !lib.isBoolean(left);
             long leftLong;
             gil.release(true);
@@ -293,8 +293,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             assert !lib.isBoolean(left);
             double leftDouble;
             gil.release(true);
@@ -315,9 +315,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             assert !lib.isBoolean(left);
             TruffleString leftString;
             gil.release(true);
@@ -392,12 +392,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "!lib.isString(left)", "lib.hasArrayElements(left)", "lib.fitsInLong(right)"})
         static Object doForeignArray(Object left, Object right,
-                        @Cached PRaiseNode raise,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PForeignToPTypeNode convert,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode cast,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             gil.release(true);
             try {
                 long rightLong;
@@ -407,7 +408,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
                 }
-                return doMulArray(left, cast.execute(rightLong), raise, factory, convert, lib);
+                return doMulArray(left, cast.execute(inliningTarget, rightLong), raise, factory, convert, lib);
             } finally {
                 gil.acquire();
             }
@@ -415,11 +416,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "!lib.isString(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
-                        @Cached PRaiseNode raise,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PForeignToPTypeNode convert,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             gil.release(true);
             try {
                 boolean rightBoolean;
@@ -535,8 +536,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             boolean leftBoolean;
             gil.release(true);
             try {
@@ -552,8 +553,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             long leftLong;
             gil.release(true);
             try {
@@ -569,8 +570,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached GilNode gil) {
             double leftDouble;
             gil.release(true);
             try {
@@ -586,7 +587,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isNull(left)")
         Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
             return comparisonNode.executeObject(frame, PNone.NONE, right);
         }
 
@@ -666,6 +667,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         Object contains(VirtualFrame frame, Object self, Object arg,
                         // accesses both self and iterator
                         @CachedLibrary(limit = "3") InteropLibrary library,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached StringBuiltins.ContainsNode containsNode,
@@ -679,7 +681,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     for (int i = 0; i < library.getArraySize(self); i++) {
                         if (library.isArrayElementReadable(self, i)) {
                             Object element = convertNode.executeConvert(library.readArrayElement(self, i));
-                            if (eqNode.execute(frame, arg, element)) {
+                            if (eqNode.compare(frame, inliningTarget, arg, element)) {
                                 return true;
                             }
                         }
@@ -698,7 +700,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     try {
                         while (library.hasIteratorNextElement(iterator)) {
                             Object next = convertNode.executeConvert(library.getIteratorNextElement(iterator));
-                            if (eqNode.execute(frame, arg, next)) {
+                            if (eqNode.compare(frame, inliningTarget, arg, next)) {
                                 return true;
                             }
                         }
@@ -789,8 +791,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.a
          */
-        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
@@ -826,8 +830,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
@@ -1179,7 +1185,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 defaultReprNode = insert(ObjectNodes.DefaultObjectReprNode.create());
             }
-            return defaultReprNode.execute(frame, object);
+            return defaultReprNode.executeCached(frame, object);
         }
     }
 

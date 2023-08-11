@@ -48,7 +48,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -57,6 +56,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
 public abstract class BaseExceptionAttrNode extends Node {
     public interface StorageFactory {
         Object[] create(Object[] args, PythonObjectFactory factory);
@@ -90,21 +90,21 @@ public abstract class BaseExceptionAttrNode extends Node {
         return self.getExceptionAttributes() != null;
     }
 
-    @GenerateInline
-    @GenerateCached(false)
+    @GenerateInline(false) // used lazily (only in some specializations)
     @GenerateUncached
     abstract static class EnsureAttrStorageNode extends Node {
-        abstract Object[] execute(Node inliningTarget, PBaseException self, StorageFactory storageFactory);
+        abstract Object[] execute(PBaseException self, StorageFactory storageFactory);
 
         @Specialization
-        static Object[] ensure(Node inliningTarget, PBaseException self, StorageFactory storageFactory,
+        static Object[] ensure(PBaseException self, StorageFactory storageFactory,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         @Cached PythonObjectFactory factory) {
             Object[] attributes = self.getExceptionAttributes();
             if (attributes == null) {
                 PTuple argsTuple = getArgsNode.execute(inliningTarget, self);
-                Object[] args = getInternalObjectArrayNode.execute(argsTuple.getSequenceStorage());
+                Object[] args = getInternalObjectArrayNode.execute(inliningTarget, argsTuple.getSequenceStorage());
                 attributes = storageFactory.create(args, factory);
                 self.setExceptionAttributes(attributes);
             }
@@ -123,9 +123,8 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"isNoValue(none)", "!withAttributes(self)"})
     public Object getAttrNoStorage(PBaseException self, @SuppressWarnings("unused") PNone none, int index, StorageFactory factory,
-                    @Bind("this") Node inliningTarget,
                     @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
-        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
+        Object[] attributes = ensureAttrStorageNode.execute(self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return getAttrWithStorage(self, none, index, factory);
     }
@@ -141,9 +140,8 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!withAttributes(self)"})
     public Object setAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
-                    @Bind("this") Node inliningTarget,
                     @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
-        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
+        Object[] attributes = ensureAttrStorageNode.execute(self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return setAttrWithStorage(self, value, index, factory);
     }
@@ -159,9 +157,8 @@ public abstract class BaseExceptionAttrNode extends Node {
 
     @Specialization(guards = {"!isNoValue(value)", "isDeleteMarker(value)", "!withAttributes(self)"})
     public Object delAttrNoStorage(PBaseException self, Object value, int index, StorageFactory factory,
-                    @Bind("this") Node inliningTarget,
                     @Shared @Cached EnsureAttrStorageNode ensureAttrStorageNode) {
-        Object[] attributes = ensureAttrStorageNode.execute(inliningTarget, self, factory);
+        Object[] attributes = ensureAttrStorageNode.execute(self, factory);
         assert attributes != null : "PBaseException attributes field is null";
         return delAttrWithStorage(self, value, index, factory);
     }

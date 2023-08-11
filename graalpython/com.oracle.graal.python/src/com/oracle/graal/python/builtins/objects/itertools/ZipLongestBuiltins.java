@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -98,26 +98,18 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
             throw raiseStopIteration();
         }
 
-        @Specialization(guards = {"!zeroSize(self)", "isNullFillValue(self)"})
-        Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
-                        @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached BuiltinFunctions.NextNode nextNode,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
-                        /* @Shared */ @Cached InlinedConditionProfile noItProfile,
-                        /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
-            return next(frame, inliningTarget, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
-        }
-
-        @Specialization(guards = {"!zeroSize(self)", "!isNullFillValue(self)"})
+        @Specialization(guards = "!zeroSize(self)")
+        @SuppressWarnings("truffle-static-method")
         Object next(VirtualFrame frame, PZipLongest self,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached BuiltinFunctions.NextNode nextNode,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
-                        /* @Shared */ @Cached InlinedConditionProfile noItProfile,
-                        /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
-            return next(frame, inliningTarget, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached InlinedConditionProfile noItProfile,
+                        @Cached InlinedConditionProfile noActiveProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedConditionProfile isNullFillProfile) {
+            Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
+            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
         private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
@@ -167,7 +159,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNullFillValue(self)")
         Object reduceNoFillValue(PZipLongest self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared GetClassNode getClass,
                         @Cached @Shared InlinedLoopConditionProfile loopProfile,
                         @Cached @Shared InlinedConditionProfile noItProfile) {
             return reduce(inliningTarget, getClass, self, PNone.NONE, loopProfile, noItProfile);
@@ -176,13 +168,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNullFillValue(self)")
         Object reducePos(PZipLongest self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared GetClassNode getClass,
                         @Cached @Shared InlinedLoopConditionProfile loopProfile,
                         @Cached @Shared InlinedConditionProfile noItProfile) {
             return reduce(inliningTarget, getClass, self, self.getFillValue(), loopProfile, noItProfile);
         }
 
-        private Object reduce(Node inliningTarget, InlinedGetClassNode getClass, PZipLongest self, Object fillValue, InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile) {
+        private Object reduce(Node inliningTarget, GetClassNode getClass, PZipLongest self, Object fillValue, InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile) {
             Object type = getClass.execute(inliningTarget, self);
             Object[] its = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, its.length);

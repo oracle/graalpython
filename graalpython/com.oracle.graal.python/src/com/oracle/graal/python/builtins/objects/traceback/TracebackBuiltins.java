@@ -58,6 +58,10 @@ import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -90,19 +94,21 @@ public final class TracebackBuiltins extends PythonBuiltins {
      *
      * @see MaterializeLazyTracebackNode
      */
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class MaterializeTruffleStacktraceNode extends Node {
-        public abstract void execute(PTraceback tb);
+        public abstract void execute(Node inliningTarget, PTraceback tb);
 
         @Specialization(guards = "tb.isMaterialized()")
-        void doExisting(@SuppressWarnings("unused") PTraceback tb) {
+        static void doExisting(@SuppressWarnings("unused") PTraceback tb) {
         }
 
         @TruffleBoundary
         @Specialization(guards = "!tb.isMaterialized()")
-        void doMaterialize(PTraceback tb,
-                        @Cached MaterializeFrameNode materializeFrameNode,
+        static void doMaterialize(Node inliningTarget, PTraceback tb,
+                        @Cached(inline = false) MaterializeFrameNode materializeFrameNode,
                         @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             /*
              * Truffle stacktrace consists of the frames captured during the unwinding and the
              * frames that are now on the Java stack. We don't want the frames from the stack to
@@ -115,7 +121,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PTraceback next = null;
             LazyTraceback lazyTraceback = tb.getLazyTraceback();
             if (lazyTraceback.getNextChain() != null) {
-                next = materializeLazyTracebackNode.execute(lazyTraceback.getNextChain());
+                next = materializeLazyTracebackNode.execute(inliningTarget, lazyTraceback.getNextChain());
             }
             /*
              * The logic of skipping and cutting off frames here and in MaterializeLazyTracebackNode
@@ -165,7 +171,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "hasPFrame(tb)")
-        PFrame getExisting(PTraceback tb) {
+        static PFrame getExisting(PTraceback tb) {
             return tb.getFrame();
         }
 
@@ -173,7 +179,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // no
         // longer on the stack) and the frame has already been materialized
         @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
-        PFrame doMaterializedFrame(PTraceback tb) {
+        static PFrame doMaterializedFrame(PTraceback tb) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
             PFrame escapedFrame = frameInfo.getPyFrame();
@@ -186,7 +192,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // case 2: on stack: the PFrame is not yet available so the frame must still be on the
         // stack
         @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "!isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
-        PFrame doOnStack(VirtualFrame frame, PTraceback tb,
+        static PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Bind("this") Node inliningTarget,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
@@ -222,9 +228,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // case 3: there is no PFrame[Ref], we need to take the top frame from the Truffle
         // stacktrace instead
         @Specialization(guards = "!hasVisibleFrame(tb)")
-        PFrame doFromTruffle(PTraceback tb,
+        static PFrame doFromTruffle(PTraceback tb,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
-            materializeTruffleStacktraceNode.execute(tb);
+            materializeTruffleStacktraceNode.execute(inliningTarget, tb);
             return tb.getFrame();
         }
 
@@ -249,17 +256,19 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object get(PTraceback self, @SuppressWarnings("unused") PNone none,
-                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
-            materializeTruffleStacktraceNode.execute(self);
+        static Object get(PTraceback self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+            materializeTruffleStacktraceNode.execute(inliningTarget, self);
             return (self.getNext() != null) ? self.getNext() : PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(next)")
+        @SuppressWarnings("truffle-static-method")
         Object set(PTraceback self, PTraceback next,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+                        @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             // Check for loops
             PTraceback tb = next;
             while (loopProfile.profile(inliningTarget, tb != null)) {
@@ -270,17 +279,18 @@ public final class TracebackBuiltins extends PythonBuiltins {
             }
             // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
             // user-set next later
-            materializeTruffleStacktraceNode.execute(self);
+            materializeTruffleStacktraceNode.execute(inliningTarget, self);
             self.setNext(next);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNone(next)")
-        Object clear(PTraceback self, @SuppressWarnings("unused") PNone next,
-                        @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
+        static Object clear(PTraceback self, @SuppressWarnings("unused") PNone next,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             // Realize whatever was in the truffle stacktrace, so that we don't overwrite the
             // user-set next later
-            materializeTruffleStacktraceNode.execute(self);
+            materializeTruffleStacktraceNode.execute(inliningTarget, self);
             self.setNext(null);
             return PNone.NONE;
         }
@@ -305,8 +315,9 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization
         Object get(PTraceback self,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
-            materializeTruffleStacktraceNode.execute(self);
+            materializeTruffleStacktraceNode.execute(inliningTarget, self);
             return self.getLineno();
         }
     }

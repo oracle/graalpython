@@ -61,17 +61,20 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -80,17 +83,18 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     @Specialization
     static PList doObject(VirtualFrame frame, Object value,
-                    @Cached CastToListNode castToListNode) {
+                    @Cached(inline = false) CastToListNode castToListNode) {
         return castToListNode.execute(frame, value);
     }
 
     @ImportStatic(PGuards.class)
     public abstract static class CastToListNode extends Node implements IndirectCallNode {
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
@@ -110,75 +114,73 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return PythonLanguage.get(this);
         }
 
-        @Specialization(guards = {"cannotBeOverridden(v, getClassNode)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
+        @Specialization(guards = {"cannotBeOverridden(v, inliningTarget, getClassNode)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
-        protected PList starredTupleCachedLength(PTuple v,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached("getLength(v)") int cachedLength) {
+        protected static PList starredTupleCachedLength(PTuple v,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClassNode,
+                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Cached("getLength(v)") int cachedLength,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = v.getSequenceStorage();
             Object[] array = new Object[cachedLength];
             for (int i = 0; i < cachedLength; i++) {
-                array[i] = getGetItemNode().execute(s, i);
+                array[i] = getItemNode.execute(s, i);
             }
             return factory.createList(array);
         }
 
-        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, getClassNode)", limit = "1")
-        protected PList starredTuple(PTuple v,
+        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, inliningTarget, getClassNode)", limit = "1")
+        protected static PList starredTuple(PTuple v,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
+                        @Exclusive @Cached PythonObjectFactory factory,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
-        @Specialization(guards = "cannotBeOverridden(v, getClassNode)", limit = "1")
-        protected PList starredList(PList v,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+        @Specialization(guards = "cannotBeOverridden(v, inliningTarget, getClassNode)")
+        protected static PList starredList(PList v,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClassNode) {
             return v;
         }
 
         @Specialization(rewriteOn = PException.class)
-        protected PList starredIterable(VirtualFrame frame, PythonObject value,
-                        @Cached ConstructListNode constructListNode) {
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, PythonContext.get(this), this);
+        protected static PList starredIterable(VirtualFrame frame, PythonObject value,
+                        @Bind("this") Node inliningTarget,
+                        @Bind("getThisAsIndirectCallNode()") IndirectCallNode indirectCallNode,
+                        @Shared @Cached ConstructListNode constructListNode) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, PythonContext.get(inliningTarget), indirectCallNode);
             try {
                 return constructListNode.execute(frame, value);
             } finally {
-                IndirectCallContext.exit(frame, language, PythonContext.get(this), state);
+                IndirectCallContext.exit(frame, language, PythonContext.get(inliningTarget), state);
             }
         }
 
         @Specialization
-        protected PList starredGeneric(VirtualFrame frame, Object v,
+        protected static PList starredGeneric(VirtualFrame frame, Object v,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConstructListNode constructListNode,
+                        @Bind("getThisAsIndirectCallNode()") IndirectCallNode indirectCallNode,
+                        @Shared @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinObjectProfile attrProfile,
                         @Cached PRaiseNode raise) {
-            PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, PythonContext.get(this), this);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, PythonContext.get(inliningTarget), indirectCallNode);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
-                IndirectCallContext.exit(frame, language, PythonContext.get(this), state);
+                IndirectCallContext.exit(frame, language, PythonContext.get(inliningTarget), state);
             }
         }
 
         protected int getLength(PTuple t) {
             return t.getSequenceStorage().length();
-        }
-
-        protected SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
-            }
-            return getItemNode;
         }
 
         @NeverDefault
@@ -222,8 +224,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         public PList executeWithGlobalState(Object list) {
             Object builtins = PythonContext.get(this).getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
-            LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
-            return (PList) CallNode.getUncached().execute(null, getCall.execute(listType, SpecialMethodNames.T___CALL__), listType, list);
+            return (PList) CallNode.getUncached().execute(null, LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
         }
 
         @Override

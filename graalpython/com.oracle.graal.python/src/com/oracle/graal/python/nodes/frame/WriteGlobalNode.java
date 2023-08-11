@@ -60,6 +60,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 42
 public abstract class WriteGlobalNode extends PNodeWithContext {
     public static WriteGlobalNode getUncached() {
         return WriteGlobalNodeGen.getUncached();
@@ -99,8 +100,9 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
 
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
     void writeGenericDict(VirtualFrame frame, PDict globals, TruffleString attributeId, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectSetItem storeNode) {
-        storeNode.execute(frame, globals, attributeId, value);
+        storeNode.execute(frame, inliningTarget, globals, attributeId, value);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")

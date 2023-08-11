@@ -86,7 +86,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -148,6 +148,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached IsInstanceNode isInstanceNode) {
@@ -171,10 +172,11 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
             }
 
-            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
 
             if (as_parameter != PNone.NO_VALUE) {
-                return CDataType_from_param(frame, type, as_parameter, pyTypeStgDictNode, lookupAttr, isInstanceNode);
+                return CDataType_from_param(frame, type, as_parameter, inliningTarget,
+                                pyTypeStgDictNode, lookupAttr, isInstanceNode);
             }
             throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
         }
@@ -218,6 +220,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object CDataType_from_buffer(VirtualFrame frame, Object type, Object obj, int offset,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCDataAtAddress atAddress,
@@ -243,7 +246,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
             }
 
-            auditNode.audit("ctypes.cdata/buffer", mv, mv.getLength(), offset);
+            auditNode.audit(inliningTarget, "ctypes.cdata/buffer", mv, mv.getLength(), offset);
 
             CDataObject result = atAddress.execute(type, Pointer.memoryView(mv).withOffset(offset));
 
@@ -287,7 +290,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 }
 
                 // This prints the raw pointer in C, so just print 0
-                auditNode.audit("ctypes.cdata/buffer", 0, bufferLen, offset);
+                auditNode.audit(inliningTarget, "ctypes.cdata/buffer", 0, bufferLen, offset);
 
                 CDataObject result = pyCDataNewNode.execute(inliningTarget, type, dict);
                 byte[] slice = new byte[dict.size];
@@ -321,9 +324,9 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached CtypesDlSymNode dlSymNode) {
-            auditNode.audit("ctypes.dlsym", dll, name);
+            auditNode.audit(inliningTarget, "ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);
-            if (!longCheckNode.execute(obj)) {
+            if (!longCheckNode.execute(inliningTarget, obj)) {
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             Pointer handlePtr;
@@ -381,7 +384,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         Object withoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, CDataObject src, int index, int size, Pointer adr,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached InlinedIsSameTypeNode isSameTypeNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached GetFuncNode getFuncNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -563,6 +566,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(keep)")
         void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
@@ -575,7 +579,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
             }
             PDict dict = (PDict) ob.b_objects;
             Object key = unique_key(target, index, getRaiseNode(), appendStringNode, toStringNode, fromJavaStringNode);
-            dict.setDictStorage(setItem.execute(frame, dict.getDictStorage(), key, keep));
+            dict.setDictStorage(setItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keep));
         }
     }
 

@@ -181,14 +181,14 @@ abstract class Obj2SstBase {
     static boolean isInstanceOf(Object o, PythonAbstractClass cls) {
         Object check = lookupAttr(cls, SpecialMethodNames.T___INSTANCECHECK__);
         Object result = CallNode.getUncached().execute(check, o);
-        return CastToJavaBooleanNode.getUncached().execute(result);
+        return CastToJavaBooleanNode.executeUncached(result);
     }
 
     int obj2int(Object o) {
-        if (!PyLongCheckNode.getUncached().execute(o)) {
+        if (!PyLongCheckNode.executeUncached(o)) {
             throw raiseValueError(INVALID_INTEGER_VALUE, repr(o));
         }
-        return PyLongAsIntNode.getUncached().execute(null, o);
+        return PyLongAsIntNode.executeUncached(o);
     }
 
     boolean obj2boolean(Object o) {
@@ -203,7 +203,7 @@ abstract class Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        if (PyBytesCheckExactNode.getUncached().execute(obj)) {
+        if (PyBytesCheckExactNode.executeUncached(obj)) {
             PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getUncached();
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
             Object buf = acquireLib.acquireReadonly(obj);
@@ -213,7 +213,7 @@ abstract class Obj2SstBase {
                 accessLib.release(buf);
             }
         }
-        if (PyUnicodeCheckExactNode.getUncached().execute(obj)) {
+        if (PyUnicodeCheckExactNode.executeUncached(obj)) {
             return CastToJavaStringNode.getUncached().execute(obj);
         }
         throw raiseTypeError(ErrorMessages.AST_STRING_MUST_BE_OF_TYPE_STR);
@@ -261,7 +261,7 @@ abstract class Obj2SstBase {
         if (obj instanceof Double) {
             return ConstantValue.ofDouble((Double) obj);
         }
-        if (obj instanceof PFloat && PyFloatCheckExactNode.getUncached().execute(obj)) {
+        if (obj instanceof PFloat && PyFloatCheckExactNode.executeUncached(obj)) {
             return ConstantValue.ofDouble(((PFloat) obj).getValue());
         }
         if (obj instanceof PComplex && PyComplexCheckExactNode.executeUncached(obj)) {
@@ -271,10 +271,10 @@ abstract class Obj2SstBase {
         if (obj instanceof TruffleString) {
             return ConstantValue.ofRaw(obj);
         }
-        if (obj instanceof PString && PyUnicodeCheckExactNode.getUncached().execute(obj)) {
+        if (obj instanceof PString && PyUnicodeCheckExactNode.executeUncached(obj)) {
             return ConstantValue.ofRaw(((PString) obj).getValueUncached());
         }
-        if (obj instanceof PBytes && PyBytesCheckExactNode.getUncached().execute(obj)) {
+        if (obj instanceof PBytes && PyBytesCheckExactNode.executeUncached(obj)) {
             Object buf = PythonBufferAcquireLibrary.getUncached().acquireReadonly(obj);
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getFactory().getUncached(buf);
             try {
@@ -283,9 +283,9 @@ abstract class Obj2SstBase {
                 accessLib.release(buf);
             }
         }
-        boolean isTuple = PyTupleCheckExactNode.getUncached().execute(obj);
-        if (isTuple || PyFrozenSetCheckExactNode.getUncached().execute(obj)) {
-            Object iter = PyObjectGetIter.getUncached().execute(null, obj);
+        boolean isTuple = PyTupleCheckExactNode.executeUncached(obj);
+        if (isTuple || PyFrozenSetCheckExactNode.executeUncached(obj)) {
+            Object iter = PyObjectGetIter.executeUncached(obj);
             GetNextNode nextNode = GetNextNode.getUncached();
             ArrayList<ConstantValue> list = new ArrayList<>();
             while (true) {
@@ -309,11 +309,11 @@ abstract class Obj2SstBase {
     }
 
     private static Object lookupAttr(Object o, TruffleString attrName) {
-        return PyObjectLookupAttr.getUncached().execute(null, o, attrName);
+        return PyObjectLookupAttr.executeUncached(o, attrName);
     }
 
     private static TruffleString repr(Object o) {
-        return PyObjectReprAsTruffleStringNode.getUncached().execute(null, o);
+        return PyObjectReprAsTruffleStringNode.executeUncached(o);
     }
 
     private static PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {

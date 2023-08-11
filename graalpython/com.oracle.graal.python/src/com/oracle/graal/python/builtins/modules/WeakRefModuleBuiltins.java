@@ -76,7 +76,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -293,7 +294,8 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PStringIO -> 112; // _io.StringIO
             case PBufferedReader, // _io.BufferedReader
                     PBufferedWriter, // _io.BufferedWriter
-                    PBufferedRandom // _io.BufferedRandom
+                    PBufferedRandom, // _io.BufferedRandom
+                    PLruCacheWrapper
                     -> 144;
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
 
@@ -382,7 +384,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode setAttrNode) {
             Object obj = object;
@@ -417,7 +419,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Exclusive @Cached GetClassNode getClassNode,
                         @Cached InlineIsBuiltinClassProfile profile,
                         @Cached GetMroNode getMroNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;
@@ -430,7 +432,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             } else {
                 // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
                 if (PGuards.isNativeClass(clazz) || clazz instanceof PythonClass && ((PythonClass) clazz).needsNativeAllocation()) {
-                    for (Object base : getMroNode.execute(clazz)) {
+                    for (Object base : getMroNode.execute(inliningTarget, clazz)) {
                         if (PGuards.isNativeClass(base)) {
                             if (getTpWeaklistoffsetNode == null) {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();

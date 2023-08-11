@@ -57,6 +57,9 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.functools.LruCacheObject;
+import com.oracle.graal.python.builtins.modules.functools.PKeyWrapper;
+import com.oracle.graal.python.builtins.modules.functools.PPartial;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
@@ -152,7 +155,6 @@ import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
-import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.builtins.objects.map.PMap;
@@ -166,7 +168,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -228,8 +229,10 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -262,10 +265,13 @@ import com.oracle.truffle.api.strings.TruffleString;
  * </li>
  * </ul>
  */
-
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
+@GenerateInline(false) // Footprint reduction 28 -> 9
 public abstract class PythonObjectFactory extends Node {
+    // Note: we're keeping this not inlined for now because:
+    // - overwhelming number of usages of non-execute entry points to refactor
+    // - often used lazily and as a @Child, most notably in all the builtins
 
     @NeverDefault
     public static PythonObjectFactory create() {
@@ -290,10 +296,15 @@ public abstract class PythonObjectFactory extends Node {
     static AllocationReporter doTrace(Object o, long size,
                     @Cached(value = "getAllocationReporter()", allowUncached = true) AllocationReporter reporter) {
         if (reporter.isActive()) {
-            reporter.onEnter(null, 0, size);
-            reporter.onReturnValue(o, 0, size);
+            doTraceImpl(o, size, reporter);
         }
         return null;
+    }
+
+    @InliningCutoff
+    private static void doTraceImpl(Object o, long size, AllocationReporter reporter) {
+        reporter.onEnter(null, 0, size);
+        reporter.onReturnValue(o, 0, size);
     }
 
     @NeverDefault
@@ -544,7 +555,7 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, PythonAbstractClass[] bases) {
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
+        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.executeUncached(result), language);
         result.initializeMroShape(language);
         return result;
     }
@@ -831,6 +842,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
         return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
+    }
+
+    public LruCacheObject createLruCacheObject(Object cls) {
+        return trace(new LruCacheObject(cls, getShape(cls)));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

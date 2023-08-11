@@ -285,12 +285,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode) {
-            TruffleString name = castToTruffleStringNode.execute(readNameNode.execute(moduleSpec, T_NAME));
-            TruffleString path = castToTruffleStringNode.execute(readOriginNode.execute(moduleSpec, T_ORIGIN));
+            TruffleString name = castToTruffleStringNode.execute(inliningTarget, readNameNode.execute(moduleSpec, T_NAME));
+            TruffleString path = castToTruffleStringNode.execute(inliningTarget, readOriginNode.execute(moduleSpec, T_ORIGIN));
 
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
@@ -404,9 +405,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public int run(PString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString) {
             try {
-                return run(toString.execute(name));
+                return run(toString.execute(inliningTarget, name));
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -426,17 +428,18 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(VirtualFrame frame, PythonObject moduleSpec,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached("create(T___LOADER__)") SetAttributeNode setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
-            Object name = lookup.execute(frame, moduleSpec, T_NAME);
-            PythonModule builtinModule = getCore().lookupBuiltinModule(toStringNode.execute(name));
+            Object name = lookup.execute(frame, inliningTarget, moduleSpec, T_NAME);
+            PythonModule builtinModule = getCore().lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
                 // set during bootstrap); this, however, should be handled be the builtin module
                 // reinitialization (if reinit is possible)
-                Object loader = lookup.execute(frame, moduleSpec, T_LOADER);
+                Object loader = lookup.execute(frame, inliningTarget, moduleSpec, T_LOADER);
                 if (loader != PNone.NO_VALUE) {
                     setAttributeNode.execute(frame, builtinModule, loader);
                 }
@@ -794,8 +797,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PCode code, PString path,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode) {
-            code.setFilename(castToStringNode.execute(path));
+            code.setFilename(castToStringNode.execute(inliningTarget, path));
             return PNone.NONE;
         }
 
@@ -829,7 +833,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             Object fileName = fileNameIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(fileNameIn)) ? PNone.NONE : fileNameIn;
             PythonContext ctx = getContext();
             TruffleString oldPackageContext = ctx.getPyPackageContext();
-            ctx.setPyPackageContext(asStringNode.execute(frame, lookupAttr.execute(frame, moduleSpec, T_NAME)));
+            ctx.setPyPackageContext(asStringNode.execute(frame, inliningTarget, lookupAttr.execute(frame, inliningTarget, moduleSpec, T_NAME)));
             try {
                 return createDynamicNode.execute(frame, moduleSpec, fileName);
             } finally {

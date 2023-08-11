@@ -53,19 +53,20 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CoerceToComplexNode extends PNodeWithRaise {
     @Child private LookupAndCallUnaryNode callComplexFunc;
-    @Child private PyFloatAsDoubleNode asDoubleNode;
 
     public abstract PComplex execute(VirtualFrame frame, Object x);
 
@@ -82,10 +83,13 @@ public abstract class CoerceToComplexNode extends PNodeWithRaise {
     }
 
     @Specialization
+    @SuppressWarnings("truffle-static-method")
     PComplex toComplex(VirtualFrame frame, Object x,
-                    @Cached ConditionProfile complexProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile complexProfile,
+                    @Cached PyFloatAsDoubleNode asDoubleNode,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
-        if (complexProfile.profile(x instanceof PComplex)) {
+        if (complexProfile.profile(inliningTarget, x instanceof PComplex)) {
             return (PComplex) x;
         }
         // TODO taken from BuiltinConstructors, should probably be refactored somehow
@@ -106,10 +110,6 @@ public abstract class CoerceToComplexNode extends PNodeWithRaise {
                 throw raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
-        if (asDoubleNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            asDoubleNode = insert(PyFloatAsDoubleNode.create());
-        }
-        return factory.createComplex(asDoubleNode.execute(frame, x), 0);
+        return factory.createComplex(asDoubleNode.execute(frame, inliningTarget, x), 0);
     }
 }

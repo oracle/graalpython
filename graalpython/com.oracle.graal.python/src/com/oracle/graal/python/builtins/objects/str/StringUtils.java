@@ -57,6 +57,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -339,14 +341,16 @@ public final class StringUtils {
      * are identifiers as well.
      */
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(value = false)
     public abstract static class IsIdentifierNode extends Node {
 
-        public abstract boolean execute(TruffleString str);
+        public abstract boolean execute(Node inliningTarget, TruffleString str);
 
         @Specialization
-        boolean doString(TruffleString str,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode) {
+        static boolean doString(TruffleString str,
+                        @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached(inline = false) TruffleStringIterator.NextNode nextNode) {
             if (str.isEmpty()) {
                 return false;
             }
@@ -368,15 +372,6 @@ public final class StringUtils {
         static boolean hasProperty(int codePoint, int property) {
             return UCharacter.hasBinaryProperty(codePoint, property);
         }
-
-        public static IsIdentifierNode getUncached() {
-            return StringUtilsFactory.IsIdentifierNodeGen.getUncached();
-        }
-    }
-
-    @TruffleBoundary
-    public static boolean isIdentifierUncached(TruffleString value) {
-        return IsIdentifierNode.getUncached().execute(value);
     }
 
     @TruffleBoundary
@@ -455,6 +450,7 @@ public final class StringUtils {
      * </ul>
      */
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 56 -> 37
     public abstract static class SimpleTruffleStringFormatNode extends Node {
 
         public final TruffleString format(TruffleString format, Object... args) {

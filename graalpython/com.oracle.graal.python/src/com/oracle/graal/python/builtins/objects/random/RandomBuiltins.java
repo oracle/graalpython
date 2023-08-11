@@ -104,7 +104,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        PNone seedLong(PRandom random, long inputSeed) {
+        static PNone seedLong(PRandom random, long inputSeed) {
             long absSeed = Math.abs(inputSeed);
             // absSeed is negative if inputSeed is Long.MIN_VALUE (-2^63), but its bit pattern
             // 0x8000000000000000 still represents positive 2^63 if interpreted as unsigned long
@@ -120,7 +120,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        PNone seedBigInteger(PRandom random, PInt inputSeed) {
+        static PNone seedBigInteger(PRandom random, PInt inputSeed) {
             byte[] bytes = inputSeed.abs().toByteArray();
             int startPos = bytes.length > 1 && bytes[0] == 0 ? 1 : 0;
             int numberOfBytes = bytes.length - startPos;
@@ -141,9 +141,10 @@ public final class RandomBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"})
-        PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
+        static PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hash) {
-            return seedLong(random, hash.execute(frame, inputSeed));
+            return seedLong(random, hash.execute(frame, inliningTarget, inputSeed));
         }
     }
 
@@ -162,10 +163,10 @@ public final class RandomBuiltins extends PythonBuiltins {
             }
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
-                long l = castNode.execute(arr[i]);
+                long l = castNode.execute(inliningTarget, arr[i]);
                 state[i] = (int) l;
             }
-            long index = castNode.execute(arr[PRandom.N]);
+            long index = castNode.execute(inliningTarget, arr[PRandom.N]);
             if (index < 0 || index > PRandom.N) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }

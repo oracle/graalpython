@@ -42,8 +42,9 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -52,8 +53,14 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyFloat_CheckExact}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyFloatCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object object) {
+        return PyFloatCheckExactNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doDouble(@SuppressWarnings("unused") Double object) {
@@ -61,8 +68,7 @@ public abstract class PyFloatCheckExactNode extends Node {
     }
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
+    static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached IsBuiltinObjectProfile isBuiltin) {
         return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PFloat);
     }

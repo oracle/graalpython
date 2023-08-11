@@ -201,7 +201,7 @@ public final class ExceptionUtils {
      */
     @TruffleBoundary
     public static void printExceptionTraceback(PythonContext context, Object pythonException) {
-        Object type = GetClassNode.getUncached().execute(pythonException);
+        Object type = GetClassNode.executeUncached(pythonException);
         Object tb = ExceptionNodes.GetTracebackNode.executeUncached(pythonException);
 
         Object hook = context.lookupBuiltinModule(T_SYS).getAttribute(BuiltinNames.T_EXCEPTHOOK);

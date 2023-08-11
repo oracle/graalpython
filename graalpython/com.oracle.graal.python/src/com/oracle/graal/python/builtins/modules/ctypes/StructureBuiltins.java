@@ -78,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Structure, PythonBuiltinClassType.Union})
 public final class StructureBuiltins extends PythonBuiltins {
@@ -108,6 +109,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -117,7 +119,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached TruffleString.EqualNode equalNode) {
             if (args.length > 0) {
-                int res = _init_pos_args(frame, self, getClassNode.execute(self), args, kwds, 0,
+                int res = _init_pos_args(frame, inliningTarget, self, getClassNode.execute(inliningTarget, self), args, kwds, 0,
                                 setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, RECURSION_LIMIT);
                 if (res < args.length) {
                     throw raise(TypeError, TOO_MANY_INITIALIZERS);
@@ -143,22 +145,22 @@ public final class StructureBuiltins extends PythonBuiltins {
          *
          * Returns -1 on error, or the index of next argument on success.
          */
-        int _init_pos_args(VirtualFrame frame, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+        int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
                         HashingStorageGetItem getItem,
                         PyTypeStgDictNode pyTypeStgDictNode,
                         GetBaseClassNode getBaseClassNode,
-                        TruffleString.EqualNode equalNode,
+                        EqualNode equalNode,
                         int recursionLimit) {
             Object fields;
             int index = idx;
 
-            Object base = getBaseClassNode.execute(type);
+            Object base = getBaseClassNode.execute(inliningTarget, type);
             if (pyTypeStgDictNode.execute(base) != null) {
                 if (recursionLimit > 0) {
-                    index = _init_pos_args(frame, self, base, args, kwds, index,
+                    index = _init_pos_args(frame, inliningTarget, self, base, args, kwds, index,
                                     setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
                                     recursionLimit - 1);
                 } else {
@@ -172,14 +174,14 @@ public final class StructureBuiltins extends PythonBuiltins {
             }
 
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            fields = getItem.execute(dict.getDictStorage(), T__FIELDS_);
+            fields = getItem.execute(inliningTarget, dict.getDictStorage(), T__FIELDS_);
             if (fields == null) {
                 return index;
             }
 
             for (int i = 0; i < dict.length && (i + index) < args.length; ++i) {
-                Object pair = getItemNode.execute(frame, fields, i);
-                TruffleString name = toString.execute(getItemNode.execute(frame, pair, 0));
+                Object pair = getItemNode.execute(frame, inliningTarget, fields, i);
+                TruffleString name = toString.execute(inliningTarget, getItemNode.execute(frame, inliningTarget, pair, 0));
                 Object val = args[i + index];
                 if (kwds.length > 0) {
                     if (KeywordsStorage.findStringKey(kwds, name, equalNode) != -1) {
@@ -196,7 +198,7 @@ public final class StructureBuiltins extends PythonBuiltins {
         int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
                         PyObjectGetItem getItemNode) {
-            return _init_pos_args(null, self, type, args, kwds, idx, setAttr,
+            return _init_pos_args(null, null, self, type, args, kwds, idx, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
                             GetBaseClassNodeGen.getUncached(), TruffleString.EqualNode.getUncached(), 0);

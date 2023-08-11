@@ -121,14 +121,14 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
              * create the new instance (which is a class, since we are a metatype!)
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
-            Object length_attr = lookupAttrLength.execute(frame, result, T__LENGTH_);
+            Object length_attr = lookupAttrLength.execute(frame, inliningTarget, result, T__LENGTH_);
             if (length_attr == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
             }
 
             int length;
             try {
-                length = asSizeNode.executeExact(frame, length_attr);
+                length = asSizeNode.executeExact(frame, inliningTarget, length_attr);
             } catch (PException e) {
                 if (e.expectTypeOrOverflowError(inliningTarget, profile)) {
                     throw raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
@@ -141,7 +141,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
             }
 
-            Object type_attr = lookupAttrType.execute(frame, result, T__TYPE_);
+            Object type_attr = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (type_attr == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
@@ -190,8 +190,8 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute((PythonObject) result, stgdict);
+            addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
+            setDict.execute(inliningTarget, (PythonObject) result, stgdict);
 
             /*
              * Special case for character arrays. A permanent annoyance: char arrays are also

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,16 +57,15 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 public abstract class PyObjectFunctionStr {
     @TruffleBoundary
     public static TruffleString execute(Object function) {
-        PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
         PyObjectStrAsTruffleStringNode asStr = PyObjectStrAsTruffleStringNode.getUncached();
-        Object qualname = lookup.execute(null, function, T___QUALNAME__);
+        Object qualname = PyObjectLookupAttr.executeUncached(function, T___QUALNAME__);
         if (qualname == PNone.NO_VALUE) {
-            return asStr.execute(function);
+            return asStr.execute(null, null, function);
         }
-        TruffleString qualnameStr = asStr.execute(null, qualname);
-        Object module = lookup.execute(null, function, T___MODULE__);
+        TruffleString qualnameStr = asStr.execute(null, null, qualname);
+        Object module = PyObjectLookupAttr.executeUncached(function, T___MODULE__);
         if (!(module instanceof PNone)) {
-            TruffleString moduleStr = asStr.execute(null, module);
+            TruffleString moduleStr = asStr.execute(null, null, module);
             if (!T_BUILTINS.equalsUncached(moduleStr, TS_ENCODING)) {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 sb.appendStringUncached(moduleStr);

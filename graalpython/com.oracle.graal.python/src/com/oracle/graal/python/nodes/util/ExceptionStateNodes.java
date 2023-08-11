@@ -101,7 +101,7 @@ public abstract class ExceptionStateNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getThreadStateNode = insert(GetThreadStateNodeGen.create());
             }
-            PythonThreadState threadState = getThreadStateNode.execute();
+            PythonThreadState threadState = getThreadStateNode.executeCached();
             PException fromContext = threadState.getCaughtException();
             if (needsStackWalkProfile.profile(fromContext == null)) {
                 fromContext = fromStackWalk();

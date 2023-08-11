@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -50,19 +48,24 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class DeleteDictNode extends PNodeWithContext {
     public abstract void execute(PythonObject object);
 
     @Specialization
     static void doPythonObject(PythonObject object,
                     @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Bind("this") Node inliningTarget,
                     @Cached HashingStorageCopy copyNode,
                     @Cached PythonObjectFactory factory) {
         /* There is no special handling for class MROs because type.__dict__ cannot be deleted. */
@@ -75,7 +78,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
                  * We have to dissociate the dict from this DynamicObject so that changes to it no
                  * longer affect this object.
                  */
-                oldDict.setDictStorage(copyNode.execute(storage));
+                oldDict.setDictStorage(copyNode.execute(inliningTarget, storage));
             }
         }
         /*

@@ -59,6 +59,8 @@ import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -132,15 +134,17 @@ public class CharsetMapping {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class NormalizeEncodingNameNode extends Node {
-        public abstract TruffleString execute(TruffleString encoding);
+        public abstract TruffleString execute(Node inliningTarget, TruffleString encoding);
 
         @Specialization
         static TruffleString normalize(TruffleString encoding,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
+                        @Cached(inline = false) TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached(inline = false) TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder str = TruffleStringBuilder.create(TS_ENCODING, encoding.byteLength(TS_ENCODING));
             boolean lastCharInvalid = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(encoding, TS_ENCODING);
@@ -165,7 +169,7 @@ public class CharsetMapping {
 
     @TruffleBoundary
     public static TruffleString normalizeUncached(TruffleString encoding) {
-        return NormalizeEncodingNameNodeGen.getUncached().execute(encoding);
+        return NormalizeEncodingNameNodeGen.getUncached().execute(null, encoding);
     }
 
     public static Charset getJavaCharset(String name) {

@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -110,7 +110,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                 currValueMarkerProfile.enter(inliningTarget);
                 gbo.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
-            if (!eqNode.execute(frame, self.getTgtKey(), gbo.getCurrKey())) {
+            if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
                 throw raiseStopIteration();
             }
@@ -126,7 +126,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
         @Specialization(guards = "currValueIsSelf(self)")
         Object reduce(PGrouper self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getParent(), self.getTgtKey()});
             return factory().createTuple(new Object[]{type, tuple});
@@ -134,9 +134,10 @@ public final class GrouperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!currValueIsSelf(self)")
         Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode) {
             PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
-            Object iterCallable = getAttrNode.execute(frame, builtins, T_ITER);
+            Object iterCallable = getAttrNode.execute(frame, inliningTarget, builtins, T_ITER);
             // return Py_BuildValue("N(())", _PyEval_GetBuiltinId(&PyId_iter));
             return factory().createTuple(new Object[]{iterCallable, factory().createTuple(new Object[]{factory().createEmptyTuple()})});
         }

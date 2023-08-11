@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,14 +56,13 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -76,8 +75,8 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
     private final int bytesLength;
 
-    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
-        super(core, raiseNode, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
+    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
+        super(core, raiseNode, getTupleItemNode, new BytesFormattingBuffer());
         this.formatBytes = formatBytes;
         this.bytesLength = bytesLength;
     }
@@ -121,7 +120,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     @Override
     protected boolean isMapping(Object obj) {
         // bytesobject.c _PyBytes_FormatEx()
-        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.getUncached().execute(obj);
+        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.executeUncached(obj);
     }
 
     @Override
@@ -207,7 +206,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
             case 'r':
             case 'a': // ascii
-                String result = PyObjectAsciiNode.getUncached().execute(null, getArg()).toJavaStringUncached();
+                String result = PyObjectAsciiNode.executeUncached(getArg()).toJavaStringUncached();
                 fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.formatAsciiString(result);
                 return fb;
@@ -239,7 +238,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     private static byte[] toBytes(PBytesLike arg) {
-        return ToByteArrayNodeGen.getUncached().execute(arg.getSequenceStorage());
+        return ToByteArrayNode.executeUncached(arg.getSequenceStorage());
     }
 
     private static byte[] byteBufferAsBytesOrNull(Object obj) {

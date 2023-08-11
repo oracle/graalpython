@@ -191,7 +191,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
             if (len > self.b_size) {
                 throw raise(ValueError, BYTE_STRING_TOO_LONG);
             }
-            byte[] bytes = getBytes.execute(storage);
+            byte[] bytes = getBytes.execute(inliningTarget, storage);
             writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
             return PNone.NONE;
         }
@@ -225,7 +225,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode) {
-            TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(value), WCHAR_T_ENCODING);
+            TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, value), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {
                 throw raise(ValueError, STRING_TOO_LONG);
