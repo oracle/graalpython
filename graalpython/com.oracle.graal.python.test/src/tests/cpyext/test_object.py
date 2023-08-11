@@ -587,6 +587,18 @@ class TestObject(object):
         assert tester.get_tp_name(int) == 'int'
         assert tester.get_tp_name(type(tester)) == 'TestTpName.TestTpName'
 
+    def test_tp_alloc(self):
+        TestTpAlloc = CPyExtType("TestTpAlloc",
+                                '''
+                                static PyObject* testslots_tp_alloc(PyObject* self) {
+                                    return (PyObject*) PyType_Type.tp_alloc(&PyType_Type, 0);
+                                }
+                                ''',
+                                tp_methods='{"get_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_NOARGS, ""}',
+                                )
+        tester = TestTpAlloc()
+        assert tester.get_tp_alloc() != None
+
     def test_slots_initialized(self):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
                               '''
