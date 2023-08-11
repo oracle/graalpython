@@ -148,6 +148,14 @@ def _reference_tailmatch(args):
     return 1 if s[start:end].startswith(substr) else 0
 
 
+def _reference_find(args):
+    s, sub, start, end, direction = args
+    if direction > 0:
+        return s.find(sub, start, end)
+    else:
+        return s.rfind(sub, start, end)
+
+
 class CustomString(str):
     pass
 
@@ -893,6 +901,32 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec='OOn',
         arguments=["PyObject* string", "PyObject* sep", "Py_ssize_t maxsplit"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Find = CPyExtFunction(
+        _reference_find,
+        lambda: (
+            ("<a> <a> <a>", "<a>", 0, -1, 1),
+            ("<a> <a> <a>", "<a>", 0, -1, -1),
+            ("<a> <a> <a>", "<a>", 2, -1, 1),
+            ("<a> <a> <a>", "<a>", 2, 5, 1),
+            ("<a> <a> <a>", "<a>", 2, 10, 1),
+            ("<a> <a> <a>", "<a>", 2, 10, -1),
+            ("<a> <a> <a>", "<>", 0, -1, 1),
+        ),
+        code="""
+        PyObject* wrap_PyUnicode_Find(PyObject* string, PyObject* sub, Py_ssize_t start, Py_ssize_t end, int direction) {
+            Py_ssize_t result = PyUnicode_Find(string, sub, start, end, direction);
+            if (result == -2)
+                return NULL;
+            return PyLong_FromLong(result);
+        }
+        """,
+        callfunction='wrap_PyUnicode_Find',
+        resultspec="O",
+        argspec='OOnni',
+        arguments=["PyObject* string", "PyObject* sub", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
         cmpfunc=unhandled_error_compare
     )
 
