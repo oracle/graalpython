@@ -1133,4 +1133,13 @@ public final class PythonCextUnicodeBuiltins {
             return result >= 0 ? result : -2;
         }
     }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
+    abstract static class PyUnicode_Count extends CApiQuaternaryBuiltinNode {
+        @Specialization
+        long count(Object string, Object sub, long start, long end,
+                        @Cached StringBuiltins.CountNode countNode) {
+            return countNode.execute(string, sub, castLong(start), castLong(end));
+        }
+    }
 }

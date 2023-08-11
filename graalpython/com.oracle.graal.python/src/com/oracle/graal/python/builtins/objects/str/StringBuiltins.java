@@ -826,6 +826,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonQuaternaryClinicBuiltinNode {
 
+        public abstract int execute(Object self, Object sub, int start, int end);
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.FindNodeClinicProviderGen.INSTANCE;
