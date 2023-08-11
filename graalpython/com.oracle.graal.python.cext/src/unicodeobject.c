@@ -566,6 +566,18 @@ Py_ssize_t _PyUnicode_get_wstr_length(PyObject* op) {
             PyCompactUnicodeObject_wstr_length(op);
 }
 
+Py_ssize_t PyUnicode_Find(PyObject *str, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction) {
+    Py_ssize_t result = GraalPyTruffle_PyUnicode_Find(str, substr, start, end, direction);
+    if (result == -1) {
+        return -2;
+    }
+    if (result == -2) {
+        return -1;
+    }
+    return result;
+}
+
+
 // from CPython unicodeobject.c:
 int
 PyUnicode_FSConverter(PyObject* arg, void* addr)

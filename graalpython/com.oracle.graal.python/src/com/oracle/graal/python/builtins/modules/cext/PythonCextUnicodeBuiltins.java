@@ -66,6 +66,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
+import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -1106,6 +1107,30 @@ public final class PythonCextUnicodeBuiltins {
                 throw raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
             return callNode.execute(UnicodeDecodeError, encoding, bytes, start, end, reason);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, call = Ignored)
+    abstract static class PyTruffle_PyUnicode_Find extends CApi5BuiltinNode {
+        @Specialization(guards = "direction > 0")
+        long find(Object string, Object sub, long start, long end, @SuppressWarnings("unused") int direction,
+                        @Cached StringBuiltins.FindNode findNode) {
+            return convertResult(findNode.execute(string, sub, castLong(start), castLong(end)));
+        }
+
+        @Specialization(guards = "direction <= 0")
+        long find(Object string, Object sub, long start, long end, @SuppressWarnings("unused") int direction,
+                        @Cached StringBuiltins.RFindNode rFindNode) {
+            return convertResult(rFindNode.execute(string, sub, castLong(start), castLong(end)));
+        }
+
+        private static int convertResult(int result) {
+            /*
+             * PyUnicode_Find should return -1 for "not found" and -2 for exception. Our int upcalls
+             * harcode -1 for exception return, so we use -2 for "not found" here and correct it on
+             * the C side.
+             */
+            return result >= 0 ? result : -2;
         }
     }
 }
