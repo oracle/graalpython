@@ -56,6 +56,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -130,6 +132,9 @@ public final class GraalHPyContext extends CExtContext {
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
     private static final long NATIVE_ARGUMENT_STACK_SIZE = 1 << 15; // 32 kB stack size
+
+    // "blah.hpy123[-310].so"
+    private static final Pattern SO_NAME_PATTERN = Pattern.compile(".*" + Pattern.quote(HPY_EXT) + "(\\d+)(?:-\\d+)?\\.so$");
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
@@ -237,25 +242,16 @@ public final class GraalHPyContext extends CExtContext {
 
     private static void validateABITag(Node location, String shortname, String soname, HPyABIVersion abiVersion) {
         // assumes format: "blah.hpy123[-310].so"
-        int hpyExtIdx = soname.lastIndexOf(HPY_EXT);
-        int start = hpyExtIdx + HPY_EXT.length();
-        int end = start;
-        while (Character.isDigit(soname.charAt(end))) {
-            end++;
-        }
-        if (hpyExtIdx != -1 && end > start) {
-            try {
-                String abiTagVersion = soname.substring(start, end);
-                int abiTag = Integer.parseInt(abiTagVersion);
-                if (abiTag != abiVersion.major) {
-                    throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
-                                    shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
-                }
-                // major version fits -> validation successful
-                return;
-            } catch (NumberFormatException e) {
-                // fall through
+        Matcher matcher = SO_NAME_PATTERN.matcher(soname);
+        if (matcher.matches()) {
+            String abiTagVersion = matcher.group(1);
+            int abiTag = Integer.parseInt(abiTagVersion);
+            if (abiTag != abiVersion.major) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
+                                shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
             }
+            // major version fits -> validation successful
+            return;
         }
         throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_NO_ABI_TAG,
                         shortname, soname, abiVersion.major, abiVersion.minor);
