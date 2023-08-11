@@ -591,7 +591,7 @@ class TestObject(object):
         TestTpAlloc = CPyExtType("TestTpAlloc",
                                 '''
                                 static PyObject* testslots_tp_alloc(PyObject* self) {
-                                    return Py_XNewRef(PyType_Type.tp_alloc(&PyType_Type, 0));
+                                    return (PyObject*) PyType_Type.tp_alloc(&PyType_Type, 0);
                                 }
                                 ''',
                                 tp_methods='{"get_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_NOARGS, ""}',
