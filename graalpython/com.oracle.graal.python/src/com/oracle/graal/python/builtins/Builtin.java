@@ -108,4 +108,5 @@ public @interface Builtin {
 
     String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
 
+    boolean forceSplitDirectCalls() default false;
 }
