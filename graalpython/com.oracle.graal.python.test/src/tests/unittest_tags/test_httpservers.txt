@@ -15,4 +15,6 @@
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_0
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_1
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_rejected
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_accept
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_cgi_path_in_sub_directories
 *graalpython.lib-python.3.test.test_httpservers.MiscTestCase.test_all
