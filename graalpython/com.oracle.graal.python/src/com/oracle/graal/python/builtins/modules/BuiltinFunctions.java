@@ -191,6 +191,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -1055,9 +1056,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int PyCF_ALLOW_INCOMPLETE_INPUT = 0x4000;
         private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT;
 
-        private static final TruffleString T_SINGLE = tsLiteral("single");
-        private static final TruffleString T_FUNC_TYPE = tsLiteral("func_type");
-
         /**
          * Decides whether this node should attempt to map the filename to a URI for the benefit of
          * Truffle tooling
@@ -1237,9 +1235,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return InputType.FILE;
             } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
                 return InputType.EVAL;
-            } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
+            } else if (mode.equalsUncached(StringLiterals.T_SINGLE, TS_ENCODING)) {
                 return InputType.SINGLE;
-            } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
+            } else if (mode.equalsUncached(StringLiterals.T_FUNC_TYPE, TS_ENCODING)) {
                 return InputType.FUNCTION_TYPE;
             } else {
                 if ((flags & PyCF_ONLY_AST) != 0) {

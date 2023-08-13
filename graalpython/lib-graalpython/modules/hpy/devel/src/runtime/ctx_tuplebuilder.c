@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,16 +26,16 @@
 #include <Python.h>
 #include "hpy.h"
 
-#ifdef HPY_UNIVERSAL_ABI
+#ifndef HPY_ABI_CPYTHON
    // for _h2py and _py2h
 #  include "handles.h"
 #endif
 
 
 _HPy_HIDDEN HPyTupleBuilder
-ctx_TupleBuilder_New(HPyContext *ctx, HPy_ssize_t initial_size)
+ctx_TupleBuilder_New(HPyContext *ctx, HPy_ssize_t size)
 {
-    PyObject *tup = PyTuple_New(initial_size);
+    PyObject *tup = PyTuple_New(size);
     if (tup == NULL) {
         PyErr_Clear();   /* delay the MemoryError */
         /* note: it's done this way so that the caller doesn't need to

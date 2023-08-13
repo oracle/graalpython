@@ -194,7 +194,7 @@ public abstract class BuiltinNames {
     public static final String J_BOOL = "bool";
 
     public static final String J_EXEC = "exec";
-    public static final TruffleString T_EXEC = tsLiteral(J_EXEC);
+    public static final TruffleString T_EXEC = StringLiterals.T_EXEC;
 
     public static final String J_ISINSTANCE = "isinstance";
     public static final TruffleString T_ISINSTANCE = tsLiteral(J_ISINSTANCE);

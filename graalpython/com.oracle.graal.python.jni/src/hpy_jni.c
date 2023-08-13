@@ -42,6 +42,7 @@
 #include "hpy_jni.h"
 #include "hpy_log.h"
 #include "hpy_native_cache.h"
+#include "hpy_trace.h"
 
 #include <wchar.h>
 #include <assert.h>
@@ -97,6 +98,7 @@ CUSTOM_UPCALLS
 #undef UPCALL
 
 static jmethodID jniMethod_hpy_debug_get_context;
+static jmethodID jniMethod_hpy_trace_get_context;
 
 
 #define MAX_UNCLOSED_HANDLES 32
@@ -236,7 +238,7 @@ _HPy_HIDDEN HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
             load_global_native_data_pointer(ctx, bits, new_handle);
             return toPtr(new_handle);
         }
-        return DO_UPCALL_HPY(hpyContext, ctx_Global_Load, bits);
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ctx_Global_Load, bits);
     } else {
         return toPtr(bits);
     }
@@ -408,6 +410,12 @@ CUSTOM_UPCALLS
         return PTR_UP(NULL);
     }
 
+    jniMethod_hpy_trace_get_context = (*env)->GetMethodID(env, clazz, "getHPyTraceContext", "()" SIG_PTR);
+    if (jniMethod_hpy_trace_get_context == NULL) {
+        LOGS("ERROR: jni method getHPyTraceContext not found found !\n");
+        return PTR_UP(NULL);
+    }
+
     return PTR_UP(ctx);
 }
 
@@ -428,7 +436,7 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugContext)(JNIEnv *env, jclass claz
     HPyContext *dctx = (HPyContext *) malloc(sizeof(HPyContext));
     dctx->name = "HPy Debug Mode ABI";
     dctx->_private = NULL;
-    dctx->ctx_version = 1;
+    dctx->abi_version = HPY_ABI_VERSION;
 
     hpy_debug_ctx_init(dctx, uctx);
     return PTR_UP(dctx);
@@ -444,7 +452,33 @@ JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIDebugContext)(JNIEnv *env, jclass c
 
 JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNIDebugModule\n");
-    return HPY_UP(HPyInit__debug((HPyContext *) uctxPointer));
+    return PTR_UP(HPyInit__debug());
+}
+
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceContext)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNITraceContext\n");
+    HPyContext *uctx = (HPyContext *) uctxPointer;
+
+    HPyContext *tctx = (HPyContext *) malloc(sizeof(HPyContext));
+    tctx->name = "HPy Trace Mode ABI";
+    tctx->_private = NULL;
+    tctx->abi_version = HPY_ABI_VERSION;
+
+    hpy_trace_ctx_init(tctx, uctx);
+    return PTR_UP(tctx);
+}
+
+JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNITraceContext)(JNIEnv *env, jclass clazz, jlong tctxPointer) {
+    LOG("%s", "hpy_jni.c:finalizeJNITraceContext\n");
+    HPyContext *tctx = (HPyContext *) tctxPointer;
+    hpy_trace_ctx_free(tctx);
+    free(tctx);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNITraceModule\n");
+    return PTR_UP(HPyInit__trace());
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
@@ -478,4 +512,14 @@ HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
         HPy_FatalError(uctx, "hpy_debug_get_ctx: expected an universal ctx, got a debug ctx");
     }
     return dctx;
+}
+
+HPyContext * hpy_trace_get_ctx(HPyContext *uctx)
+{
+    HPyContext *tctx = (HPyContext *) DO_UPCALL_PTR_NOARGS(CONTEXT_INSTANCE(uctx), hpy_trace_get_context);
+    if (uctx == tctx) {
+        HPy_FatalError(uctx, "hpy_trace_get_ctx: expected an universal ctx, "
+                             "got a trace ctx");
+    }
+    return tctx;
 }

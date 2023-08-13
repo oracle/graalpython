@@ -50,6 +50,7 @@ import java.io.PrintStream;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -94,6 +96,8 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract Object loadExtensionLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException;
 
+    protected abstract HPyABIVersion getHPyABIVersion(Object extLib, String getMajorVersionFuncName, String getMinorVersionFuncName) throws Exception;
+
     /**
      * Execute an HPy extension's init function and return the raw result value.
      *
@@ -102,28 +106,32 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
      * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
      * @param name The HPy extension's name as requested by the user.
      * @param path The HPy extension's shared library path.
-     * @param debug Flags indicating if the HPy extension should be initialized in debug mode.
+     * @param mode An enum indicating which mode should be used to initialize the HPy extension.
      * @return The bare (unconverted) result of the HPy extension's init function. This will be a
      *         handle that was created with the given {@code hpyContext}.
      */
-    protected abstract Object initHPyModule(Object extLib, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected abstract Object initHPyModule(Object extLib, String initFuncName, TruffleString name, TruffleString path, HPyMode mode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException;
 
     protected abstract HPyUpcall[] getUpcalls();
 
     protected abstract int[] getUpcallCounts();
 
-    public abstract long createNativeArguments(Object[] delegate, InteropLibrary lib);
-
-    public abstract void freeNativeArgumentsArray(int nargs);
-
     public abstract void initHPyDebugContext() throws ApiInitException;
 
+    public abstract void initHPyTraceContext() throws ApiInitException;
+
     public abstract PythonModule getHPyDebugModule() throws ImportException;
+
+    public abstract PythonModule getHPyTraceModule() throws ImportException;
 
     protected abstract void setNativeCache(long cachePtr);
 
     protected abstract long getWcharSize();
+
+    protected abstract Object createArgumentsArray(Object[] args);
+
+    protected abstract void freeArgumentsArray(Object argsArray);
 
     public abstract HPyCallHelperFunctionNode createCallHelperFunctionNode();
 
@@ -166,6 +174,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
 
     protected abstract void initNativeFastPaths();
 
+    @TruffleBoundary
     public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
         if (t instanceof PException pe) {
             // this is ok, and will be handled correctly

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,28 +41,28 @@
 /**
  * Implementation of HPy_BuildValue.
  *
- * Note: HPy_BuildValue is a runtime helper functions, i.e., it is not a part
- * of the HPy context, but is available to HPy extensions to incorporate at
- * compile time.
+ * Note: :c:func:`HPy_BuildValue` is a runtime helper functions, i.e., it is not
+ * a part of the HPy context, but is available to HPy extensions to incorporate
+ * at compile time.
  *
- * HPy_BuildValue creates a new value based on a format string from the values
- * passed in variadic arguments. Returns HPy_NULL in case of an error and raises
- * an exception.
+ * ``HPy_BuildValue`` creates a new value based on a format string from the
+ * values passed in variadic arguments. Returns ``HPy_NULL`` in case of an error
+ * and raises an exception.
  *
- * HPy_BuildValue does not always build a tuple. It builds a tuple only if its format
- * string contains two or more format units. If the format string is empty, it returns
- * None; if it contains exactly one format unit, it returns whatever object is described
- * by that format unit. To force it to return a tuple of size 0 or one, parenthesize the
- * format string.
+ * ``HPy_BuildValue`` does not always build a tuple. It builds a tuple only if
+ * its format string contains two or more format units. If the format string is
+ * empty, it returns ``None``; if it contains exactly one format unit, it
+ * returns whatever object is described by that format unit. To force it to
+ * return a tuple of size ``0`` or one, parenthesize the format string.
  *
- * Building complex values with HPy_BuildValue is more convenient than the equivalent
- * code that uses more granular APIs with proper error handling and cleanup. Moreover,
- * HPy_BuildValue provides straightforward way to port existing code that uses
- * Py_BuildValue.
+ * Building complex values with ``HPy_BuildValue`` is more convenient than the
+ * equivalent code that uses more granular APIs with proper error handling and
+ * cleanup. Moreover, ``HPy_BuildValue`` provides straightforward way to port
+ * existing code that uses ``Py_BuildValue``.
  *
- * HPy_BuildValue always returns a new handle that will be owned by the caller. Even
- * an artificial example 'HPy_BuildValue(ctx, "O", h)' does not simply forward
- * the value stored in 'h' but duplicates the handle.
+ * ``HPy_BuildValue`` always returns a new handle that will be owned by the
+ * caller. Even an artificial example ``HPy_BuildValue(ctx, "O", h)`` does not
+ * simply forward the value stored in ``h`` but duplicates the handle.
  *
  * Supported Formatting Strings
  * ----------------------------
@@ -87,6 +87,9 @@
  *
  * ``K (int) [unsigned long long]``
  *     Convert a C unsigned long long to a Python integer object.
+ *
+ * ``n (int) [HPy_ssize_t]``
+ *     Convert a C HPy_ssize_t to a Python integer object.
  *
  * ``f (float) [float]``
  *     Convert a C float to a Python floating point number.
@@ -141,6 +144,21 @@ static HPy build_list(HPyContext *ctx, const char **fmt, va_list *values, HPy_ss
 static HPy build_dict(HPyContext *ctx, const char **fmt, va_list *values);
 static HPy build_single(HPyContext *ctx, const char **fmt, va_list *values, int *needs_close);
 
+/**
+ * Creates a new value based on a format string from the values passed in
+ * variadic arguments.
+ *
+ * :param ctx:
+ *     The execution context.
+ * :param fmt:
+ *     The format string (ASCII only; must not be ``NULL``). For details, see
+ *     :ref:`api-reference/build-value:supported formatting strings`.
+ * :param ...:
+ *     Variable arguments according to the provided format string.
+ *
+ * :returns:
+ *     A handle to the built Python value or ``HPy_NULL`` in case of errors.
+ */
 HPyAPI_HELPER
 HPy HPy_BuildValue(HPyContext *ctx, const char *fmt, ...)
 {
@@ -190,7 +208,7 @@ static HPy_ssize_t count_items(HPyContext *ctx, const char *fmt, char end)
                     }
                     par_type = top_level_par;
                 }
-                snprintf(msg, MESSAGE_BUF_SIZE, "unmatched '%c' in the format string passed to HPy_BuildValue", par_type);
+                snprintf(msg, sizeof(msg), "unmatched '%c' in the format string passed to HPy_BuildValue", par_type);
                 HPyErr_SetString(ctx, ctx->h_SystemError, msg);
                 return -1;
             }
@@ -267,6 +285,9 @@ static HPy build_single(HPyContext *ctx, const char **fmt, va_list *values, int 
         case 'K':
             return HPyLong_FromUnsignedLongLong(ctx, va_arg(*values, unsigned long long));
 
+        case 'n':
+            return HPyLong_FromSsize_t(ctx, va_arg(*values, HPy_ssize_t));
+
         case 's':
             return HPyUnicode_FromString(ctx, va_arg(*values, const char*));
 
@@ -300,7 +321,7 @@ static HPy build_single(HPyContext *ctx, const char **fmt, va_list *values, int 
 
         default: {
             char message[MESSAGE_BUF_SIZE];
-            snprintf(message, MESSAGE_BUF_SIZE, "bad format char '%c' in the format string passed to HPy_BuildValue", format_char);
+            snprintf(message, sizeof(message), "bad format char '%c' in the format string passed to HPy_BuildValue", format_char);
             HPyErr_SetString(ctx, ctx->h_SystemError, message);
             return HPy_NULL;
         }

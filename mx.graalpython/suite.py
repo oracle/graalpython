@@ -451,6 +451,23 @@ suite = {
             "testProject": True,
             "javaProperties": {
                 "test.graalpython.home": "<suite:graalpython>/graalpython"
+            },
+        },
+
+        "com.oracle.graal.python.hpy.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON_NATIVE_LIBS",
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
+            "workingSets": "Truffle,Python",
+            "testProject": True,
+            "javaProperties": {
+                "test.graalpython.home": "<suite:graalpython>/graalpython"
              },
         },
 
@@ -680,7 +697,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "cflags": [
-                            "-DHPY_UNIVERSAL_ABI", "-DNDEBUG", "-DMS_WINDOWS",
+                            "-DHPY_ABI_HYBRID", "-DHPY_EMBEDDED_MODULES", "-DNDEBUG", "-DMS_WINDOWS",
                             # cflags equivalent to -g -O3 -Wall (/WX would be -Werror)
                             "-D_CRT_SECURE_NO_WARNINGS", "/Z7", "/O2", "/W3",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
@@ -695,7 +712,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cflags": [
-                            "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                            "-DHPY_ABI_HYBRID", "-DHPY_EMBEDDED_MODULES", "-DNDEBUG",
                             "-O3", "-Werror", "-fPIC",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
                             "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",

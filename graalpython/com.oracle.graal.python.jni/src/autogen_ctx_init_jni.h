@@ -55,7 +55,7 @@ _HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *ctx,
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_Unicode_FromWideChar;
 _HPy_HIDDEN HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *w, HPy_ssize_t size);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_ListBuilder_New;
-_HPy_HIDDEN HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size);
+_HPy_HIDDEN HPyListBuilder ctx_ListBuilder_New_jni(HPyContext *ctx, HPy_ssize_t size);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_ListBuilder_Set;
 _HPy_HIDDEN void ctx_ListBuilder_Set_jni(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_ListBuilder_Build;
@@ -63,7 +63,7 @@ _HPy_HIDDEN HPy ctx_ListBuilder_Build_jni(HPyContext *ctx, HPyListBuilder builde
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_ListBuilder_Cancel;
 _HPy_HIDDEN void ctx_ListBuilder_Cancel_jni(HPyContext *ctx, HPyListBuilder builder);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_TupleBuilder_New;
-_HPy_HIDDEN HPyTupleBuilder ctx_TupleBuilder_New_jni(HPyContext *ctx, HPy_ssize_t initial_size);
+_HPy_HIDDEN HPyTupleBuilder ctx_TupleBuilder_New_jni(HPyContext *ctx, HPy_ssize_t size);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_TupleBuilder_Set;
 _HPy_HIDDEN void ctx_TupleBuilder_Set_jni(HPyContext *ctx, HPyTupleBuilder builder, HPy_ssize_t index, HPy h_item);
 _HPy_HIDDEN extern jmethodID jniMethod_ctx_TupleBuilder_Build;

@@ -48,10 +48,7 @@ public abstract class GraalHPyJNITrampolines {
     /* manual HPY JNI trampoline declarations */
 
     @TruffleBoundary
-    public static native long executeModuleInit(long target, long ctx);
-
-    @TruffleBoundary
-    public static native long executeDebugModuleInit(long target, long ctx);
+    public static native long executeModuleInit(long target);
 
     @TruffleBoundary
     public static native void executeDestroyfunc(long target, long dataptr);
@@ -76,13 +73,13 @@ public abstract class GraalHPyJNITrampolines {
     @TruffleBoundary
     public static native long executeO(long target, long ctx, long self, long arg);
 
-    // typedef HPy (*HPyFunc_varargs)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+    // typedef HPy (*HPyFunc_varargs)(HPyContext *ctx, HPy self, const HPy *args, size_t nargs)
     @TruffleBoundary
     public static native long executeVarargs(long target, long ctx, long self, long args, long nargs);
 
-    // typedef HPy (*HPyFunc_keywords)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs, HPy kw)
+    // typedef HPy (*HPyFunc_keywords)(HPyContext *ctx, HPy self, const HPy *args, size_t nargs, HPy kwnames)
     @TruffleBoundary
-    public static native long executeKeywords(long target, long ctx, long self, long args, long nargs, long kw);
+    public static native long executeKeywords(long target, long ctx, long self, long args, long nargs, long kwnames);
 
     // typedef HPy (*HPyFunc_unaryfunc)(HPyContext *ctx, HPy)
     @TruffleBoundary
@@ -172,9 +169,13 @@ public abstract class GraalHPyJNITrampolines {
     @TruffleBoundary
     public static native int executeDescrsetfunc(long target, long ctx, long arg0, long arg1, long arg2);
 
-    // typedef int (*HPyFunc_initproc)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs, HPy kw)
+    // typedef int (*HPyFunc_initproc)(HPyContext *ctx, HPy self, const HPy *args, HPy_ssize_t nargs, HPy kw)
     @TruffleBoundary
     public static native int executeInitproc(long target, long ctx, long self, long args, long nargs, long kw);
+
+    // typedef HPy (*HPyFunc_newfunc)(HPyContext *ctx, HPy type, const HPy *args, HPy_ssize_t nargs, HPy kw)
+    @TruffleBoundary
+    public static native long executeNewfunc(long target, long ctx, long type, long args, long nargs, long kw);
 
     // typedef HPy (*HPyFunc_getter)(HPyContext *ctx, HPy, void *)
     @TruffleBoundary
@@ -200,6 +201,10 @@ public abstract class GraalHPyJNITrampolines {
     @TruffleBoundary
     public static native void executeDestructor(long target, long ctx, long arg0);
 
+    // typedef HPy (*HPyFunc_mod_create)(HPyContext *ctx, HPy)
+    @TruffleBoundary
+    public static native long executeModcreate(long target, long ctx, long arg0);
+
     // typedef HPy (*HPyFunc_noargs)(HPyContext *ctx, HPy self)
     @TruffleBoundary
     public static native long executeDebugNoargs(long target, long ctx, long self);
@@ -208,13 +213,13 @@ public abstract class GraalHPyJNITrampolines {
     @TruffleBoundary
     public static native long executeDebugO(long target, long ctx, long self, long arg);
 
-    // typedef HPy (*HPyFunc_varargs)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+    // typedef HPy (*HPyFunc_varargs)(HPyContext *ctx, HPy self, const HPy *args, size_t nargs)
     @TruffleBoundary
     public static native long executeDebugVarargs(long target, long ctx, long self, long args, long nargs);
 
-    // typedef HPy (*HPyFunc_keywords)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs, HPy kw)
+    // typedef HPy (*HPyFunc_keywords)(HPyContext *ctx, HPy self, const HPy *args, size_t nargs, HPy kwnames)
     @TruffleBoundary
-    public static native long executeDebugKeywords(long target, long ctx, long self, long args, long nargs, long kw);
+    public static native long executeDebugKeywords(long target, long ctx, long self, long args, long nargs, long kwnames);
 
     // typedef HPy (*HPyFunc_unaryfunc)(HPyContext *ctx, HPy)
     @TruffleBoundary
@@ -304,9 +309,13 @@ public abstract class GraalHPyJNITrampolines {
     @TruffleBoundary
     public static native int executeDebugDescrsetfunc(long target, long ctx, long arg0, long arg1, long arg2);
 
-    // typedef int (*HPyFunc_initproc)(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs, HPy kw)
+    // typedef int (*HPyFunc_initproc)(HPyContext *ctx, HPy self, const HPy *args, HPy_ssize_t nargs, HPy kw)
     @TruffleBoundary
     public static native int executeDebugInitproc(long target, long ctx, long self, long args, long nargs, long kw);
+
+    // typedef HPy (*HPyFunc_newfunc)(HPyContext *ctx, HPy type, const HPy *args, HPy_ssize_t nargs, HPy kw)
+    @TruffleBoundary
+    public static native long executeDebugNewfunc(long target, long ctx, long type, long args, long nargs, long kw);
 
     // typedef HPy (*HPyFunc_getter)(HPyContext *ctx, HPy, void *)
     @TruffleBoundary
@@ -331,6 +340,10 @@ public abstract class GraalHPyJNITrampolines {
     // typedef void (*HPyFunc_destructor)(HPyContext *ctx, HPy)
     @TruffleBoundary
     public static native void executeDebugDestructor(long target, long ctx, long arg0);
+
+    // typedef HPy (*HPyFunc_mod_create)(HPyContext *ctx, HPy)
+    @TruffleBoundary
+    public static native long executeDebugModcreate(long target, long ctx, long arg0);
 
     // @formatter:on
     // Checkstyle: resume

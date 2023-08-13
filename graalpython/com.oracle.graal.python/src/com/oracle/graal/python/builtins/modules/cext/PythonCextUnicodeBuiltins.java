@@ -65,6 +65,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -98,9 +99,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHandlerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
@@ -130,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -161,6 +161,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromByteArrayNode;
@@ -267,30 +268,33 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyUnicode_FromEncodedObject extends CApiTernaryBuiltinNode {
 
         @Specialization
-        Object fromBytes(PBytesLike obj, Object encoding, Object errors,
-                        @Cached DecodeNode decodeNode) {
-            return decode(obj, encoding, errors, decodeNode);
-        }
+        static Object doGeneric(Object obj, Object encodingObj, Object errorsObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile encodingProfile,
+                        @Cached InlinedExactClassProfile errorsProfile,
+                        @Cached InlinedConditionProfile nullProfile,
+                        @Cached PyUnicodeFromEncodedObject decodeNode) {
+            TruffleString encoding;
+            Object encodingObjProfiled = encodingProfile.profile(inliningTarget, encodingObj);
+            if (encodingObjProfiled == PNone.NO_VALUE) {
+                encoding = T_UTF8;
+            } else {
+                assert encodingObjProfiled instanceof TruffleString;
+                encoding = (TruffleString) encodingObjProfiled;
+            }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isString(obj)", "!isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        Object fromEncoded(Object obj, Object encoding, Object errors,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached DecodeNode decodeNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return decode(obj, encoding, errors, decodeNode);
-        }
-
-        private static Object decode(Object obj, Object encoding, Object errors, DecodeNode decodeNode) {
-            return decodeNode.execute(null, obj, convertEncoding(encoding), convertErrors(errors));
-        }
-
-        @Specialization(guards = "isString(obj) || isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)")
-        Object concat(@SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            throw raise(TypeError, ErrorMessages.DECODING_STR_NOT_SUPPORTED);
+            TruffleString errors;
+            Object errorsObjProfiled = errorsProfile.profile(inliningTarget, errorsObj);
+            if (errorsObjProfiled == PNone.NO_VALUE) {
+                errors = T_STRICT;
+            } else {
+                assert errorsObjProfiled instanceof TruffleString;
+                errors = (TruffleString) errorsObjProfiled;
+            }
+            if (nullProfile.profile(inliningTarget, obj == PNone.NO_VALUE)) {
+                throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            return decodeNode.execute(null, inliningTarget, obj, encoding, errors);
         }
     }
 
@@ -404,24 +408,32 @@ public final class PythonCextUnicodeBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Substring extends CApiTernaryBuiltinNode {
-        @Specialization(guards = {"isString(s) || isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)"})
-        Object find(Object s, long start, long end,
-                        @Bind("this") Node inliningTarget,
+        @Specialization(guards = {"isString(s) || isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        static Object doString(Object s, long start, long end,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            if (profile.profile(inliningTarget, start < 0 || end < 0)) {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+            }
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, s, T___GETITEM__);
             return callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
         }
 
-        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)"})
-        Object find(Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+        @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"})
+        Object doError(Object s, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, s);
+        }
+
+        protected static boolean isStringSubtype(Object obj, Node n, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(n, obj), PythonBuiltinClassType.PString);
         }
     }
 

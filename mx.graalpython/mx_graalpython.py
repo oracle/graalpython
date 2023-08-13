@@ -1010,8 +1010,11 @@ def _graalpytest_root():
     return os.path.join(mx.dependency("com.oracle.graal.python.test").get_output_root(), "bin", "tests")
 
 
+# name of the project containing the HPy tests
+HPY_TEST_PROJECT = "com.oracle.graal.python.hpy.test"
+
 def _hpy_test_root():
-    return os.path.join(_get_core_home(), "modules", "hpy", "test")
+    return os.path.join(mx.dependency(HPY_TEST_PROJECT).get_output_root(), "bin", "hpytest")
 
 
 def graalpytest(args):
@@ -1226,6 +1229,7 @@ def patch_batch_launcher(launcher_path, jvm_args):
 
 def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
     args = [] if args is None else args
+    mx.command_function("build")(["--dep", HPY_TEST_PROJECT])
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = env or os.environ.copy()
         prefix = str(d)
@@ -1239,6 +1243,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         mx.run([python_binary] + args + ["-m", "pip", "install", "--user", "pytest<=6.2.3", "pytest-xdist", "filelock"],
                nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         if not is_collecting_coverage():
+            global DISABLE_REBUILD
+            DISABLE_REBUILD = True
             # parallelize
             import threading
             threads = []
@@ -1280,7 +1286,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         abi_list = ['cpython', 'universal']
         if include_native:
             # modes 'debug' and 'nfi' can only be used if native access is allowed
-            abi_list.extend(['debug', 'nfi'])
+            abi_list.append('debug')
         for abi in abi_list:
             tenv = env.copy()
             tenv["TEST_HPY_ABI"] = abi
@@ -2208,20 +2214,20 @@ def _register_vms(namespace):
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        '--experimental-options', '--python.HPyBackend=NFI'
+        '--experimental-options', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=NFI']), SUITE, 10)
+        '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=JNI']), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context'] + SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--python.HPyBackend=NFI'
+        '--experimental-options', '-multi-context', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--engine.Compilation=false', '--python.HPyBackend=NFI'
+        '--experimental-options', '-multi-context', '--engine.Compilation=false', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
-        '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=NFI'
+        '--experimental-options', '--engine.MultiTier=true', '--python.HPyBackend=JNI'
     ]), SUITE, 10)
 
     # java embedding driver
@@ -2673,6 +2679,7 @@ def update_hpy_import_cmd(args):
     hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
     hpy_repo_src_dir = join(hpy_repo_path, "hpy", "devel", "src")
     hpy_repo_debug_dir = join(hpy_repo_path, "hpy", "debug")
+    hpy_repo_trace_dir = join(hpy_repo_path, "hpy", "trace")
     hpy_repo_test_dir = join(hpy_repo_path, "test")
     for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_src_dir, hpy_repo_test_dir]:
         if not os.path.isdir(d):
@@ -2742,8 +2749,8 @@ def update_hpy_import_cmd(args):
     def exclude_files(*files):
         return lambda relpath: str(os.path.normpath(relpath)) in files
 
-    # headers go into 'com.oracle.graal.python.cext/include'
-    header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
+    # headers go into 'com.oracle.graal.python.hpy.llvm/include'
+    header_dest = join(mx.project("com.oracle.graal.python.hpy.llvm").dir, "include")
 
     # copy 'hpy/devel/__init__.py' to 'lib-graalpython/module/hpy/devel/__init__.py'
     dest_devel_file = join(_get_core_home(), "modules", "hpy", "devel", "__init__.py")
@@ -2763,6 +2770,15 @@ def update_hpy_import_cmd(args):
         mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
     import_file(src_version_file, dest_version_file)
 
+    # 'abitag.py' goes to 'lib-graalpython/module/hpy/devel/'
+    dest_abitag_file = join(_get_core_home(), "modules", "hpy", "devel", "abitag.py")
+    src_abitag_file = join(hpy_repo_path, "hpy", "devel", "abitag.py")
+    if not os.path.exists(src_abitag_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File 'abitag.py' is not available. Did you forget to run 'setup.py build' ?")
+    import_file(src_abitag_file, dest_abitag_file)
+
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
@@ -2778,10 +2794,11 @@ def update_hpy_import_cmd(args):
     tracker_file_src = join(hpy_repo_src_dir, "runtime", "ctx_tracker.c")
     if not os.path.exists(tracker_file_src):
         mx.abort("File '{}' is missing but required.".format(tracker_file_src))
-    tracker_file_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "ctx_tracker.c")
+    jni_project_dir = mx.project("com.oracle.graal.python.jni").dir
+    tracker_file_dest = join(jni_project_dir, "src", "ctx_tracker.c")
     import_file(tracker_file_src, tracker_file_dest)
 
-    # tests go to 'lib-graalpython/module/hpy/tests'
+    # tests go to 'com.oracle.graal.python.hpy.test/src/test'
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
@@ -2793,11 +2810,23 @@ def update_hpy_import_cmd(args):
 
     # debug mode goes into 'com.oracle.graal.python.jni/src/debug'
     debugctx_src = join(hpy_repo_debug_dir, "src")
-    debugctx_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "debug")
+    debugctx_dest = join(jni_project_dir, "src", "debug")
     debugctx_hdr = join(debugctx_src, "include", "hpy_debug.h")
     import_files(debugctx_src, debugctx_dest, exclude_files(
         "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", debugctx_hdr))
     import_file(debugctx_hdr, join(debugctx_dest, "hpy_debug.h"))
+
+    # trace Python sources go into 'lib-graalpython/module/hpy/trace'
+    trace_files_dest = join(_get_core_home(), "modules", "hpy", "trace")
+    import_files(hpy_repo_debug_dir, trace_files_dest, exclude_subdir("src"))
+    remove_inexistent_files(hpy_repo_trace_dir, trace_files_dest)
+
+    # trace mode goes into 'com.oracle.graal.python.jni/src/trace'
+    tracectx_src = join(hpy_repo_trace_dir, "src")
+    tracectx_dest = join(jni_project_dir, "src", "trace")
+    tracectx_hdr = join(tracectx_src, "include", "hpy_trace.h")
+    import_files(tracectx_src, tracectx_dest, exclude_files(tracectx_hdr))
+    import_file(tracectx_hdr, join(tracectx_dest, "hpy_trace.h"))
 
     # import 'version.py' by path and read '__version__'
     from importlib import util

@@ -1,18 +1,18 @@
 /* MIT License
- *  
+ *
  * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
- *  
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *  
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,6 +35,7 @@
 */
 
 typedef HPy* _HPyPtr;
+typedef const HPy* _ConstHPyPtr;
 typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
 typedef HPyGlobal* _HPyGlobalPtr;
@@ -48,13 +49,14 @@ typedef HPyGlobal* _HPyGlobalPtr;
 #define HPyThreadState void*
 #define HPyGlobal void*
 #define _HPyCapsule_key int32_t
+#define HPy_SourceKind int32_t
 #endif
 
 
 struct _HPyContext_s {
     const char *name; // used just to make debugging and testing easier
     void *_private;   // used by implementations to store custom data
-    int ctx_version;
+    int abi_version;
     _HPyConst h_None;
     _HPyConst h_True;
     _HPyConst h_False;
@@ -132,28 +134,27 @@ struct _HPyContext_s {
     _HPyConst h_UnicodeType;
     _HPyConst h_TupleType;
     _HPyConst h_ListType;
-    HPy (*ctx_Module_Create)(HPyContext *ctx, HPyModuleDef *def);
     HPy (*ctx_Dup)(HPyContext *ctx, HPy h);
     void (*ctx_Close)(HPyContext *ctx, HPy h);
-    HPy (*ctx_Long_FromLong)(HPyContext *ctx, long value);
-    HPy (*ctx_Long_FromUnsignedLong)(HPyContext *ctx, unsigned long value);
-    HPy (*ctx_Long_FromLongLong)(HPyContext *ctx, long long v);
-    HPy (*ctx_Long_FromUnsignedLongLong)(HPyContext *ctx, unsigned long long v);
+    HPy (*ctx_Long_FromInt32_t)(HPyContext *ctx, int32_t value);
+    HPy (*ctx_Long_FromUInt32_t)(HPyContext *ctx, uint32_t value);
+    HPy (*ctx_Long_FromInt64_t)(HPyContext *ctx, int64_t v);
+    HPy (*ctx_Long_FromUInt64_t)(HPyContext *ctx, uint64_t v);
     HPy (*ctx_Long_FromSize_t)(HPyContext *ctx, size_t value);
     HPy (*ctx_Long_FromSsize_t)(HPyContext *ctx, HPy_ssize_t value);
-    long (*ctx_Long_AsLong)(HPyContext *ctx, HPy h);
-    unsigned long (*ctx_Long_AsUnsignedLong)(HPyContext *ctx, HPy h);
-    unsigned long (*ctx_Long_AsUnsignedLongMask)(HPyContext *ctx, HPy h);
-    long long (*ctx_Long_AsLongLong)(HPyContext *ctx, HPy h);
-    unsigned long long (*ctx_Long_AsUnsignedLongLong)(HPyContext *ctx, HPy h);
-    unsigned long long (*ctx_Long_AsUnsignedLongLongMask)(HPyContext *ctx, HPy h);
+    int32_t (*ctx_Long_AsInt32_t)(HPyContext *ctx, HPy h);
+    uint32_t (*ctx_Long_AsUInt32_t)(HPyContext *ctx, HPy h);
+    uint32_t (*ctx_Long_AsUInt32_tMask)(HPyContext *ctx, HPy h);
+    int64_t (*ctx_Long_AsInt64_t)(HPyContext *ctx, HPy h);
+    uint64_t (*ctx_Long_AsUInt64_t)(HPyContext *ctx, HPy h);
+    uint64_t (*ctx_Long_AsUInt64_tMask)(HPyContext *ctx, HPy h);
     size_t (*ctx_Long_AsSize_t)(HPyContext *ctx, HPy h);
     HPy_ssize_t (*ctx_Long_AsSsize_t)(HPyContext *ctx, HPy h);
     void *(*ctx_Long_AsVoidPtr)(HPyContext *ctx, HPy h);
     double (*ctx_Long_AsDouble)(HPyContext *ctx, HPy h);
     HPy (*ctx_Float_FromDouble)(HPyContext *ctx, double v);
     double (*ctx_Float_AsDouble)(HPyContext *ctx, HPy h);
-    HPy (*ctx_Bool_FromLong)(HPyContext *ctx, long v);
+    HPy (*ctx_Bool_FromBool)(HPyContext *ctx, bool v);
     HPy_ssize_t (*ctx_Length)(HPyContext *ctx, HPy h);
     int (*ctx_Number_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Add)(HPyContext *ctx, HPy h1, HPy h2);
@@ -193,7 +194,7 @@ struct _HPyContext_s {
     int (*ctx_Callable_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_CallTupleDict)(HPyContext *ctx, HPy callable, HPy args, HPy kw);
     void (*ctx_FatalError)(HPyContext *ctx, const char *message);
-    void (*ctx_Err_SetString)(HPyContext *ctx, HPy h_type, const char *message);
+    void (*ctx_Err_SetString)(HPyContext *ctx, HPy h_type, const char *utf8_message);
     void (*ctx_Err_SetObject)(HPyContext *ctx, HPy h_type, HPy h_value);
     HPy (*ctx_Err_SetFromErrnoWithFilename)(HPyContext *ctx, HPy h_type, const char *filename_fsencoded);
     void (*ctx_Err_SetFromErrnoWithFilenameObjects)(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2);
@@ -201,31 +202,31 @@ struct _HPyContext_s {
     int (*ctx_Err_ExceptionMatches)(HPyContext *ctx, HPy exc);
     void (*ctx_Err_NoMemory)(HPyContext *ctx);
     void (*ctx_Err_Clear)(HPyContext *ctx);
-    HPy (*ctx_Err_NewException)(HPyContext *ctx, const char *name, HPy base, HPy dict);
-    HPy (*ctx_Err_NewExceptionWithDoc)(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict);
-    int (*ctx_Err_WarnEx)(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level);
+    HPy (*ctx_Err_NewException)(HPyContext *ctx, const char *utf8_name, HPy base, HPy dict);
+    HPy (*ctx_Err_NewExceptionWithDoc)(HPyContext *ctx, const char *utf8_name, const char *utf8_doc, HPy base, HPy dict);
+    int (*ctx_Err_WarnEx)(HPyContext *ctx, HPy category, const char *utf8_message, HPy_ssize_t stack_level);
     void (*ctx_Err_WriteUnraisable)(HPyContext *ctx, HPy obj);
     int (*ctx_IsTrue)(HPyContext *ctx, HPy h);
     HPy (*ctx_Type_FromSpec)(HPyContext *ctx, HPyType_Spec *spec, HPyType_SpecParam *params);
-    HPy (*ctx_Type_GenericNew)(HPyContext *ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw);
+    HPy (*ctx_Type_GenericNew)(HPyContext *ctx, HPy type, _ConstHPyPtr args, HPy_ssize_t nargs, HPy kw);
     HPy (*ctx_GetAttr)(HPyContext *ctx, HPy obj, HPy name);
-    HPy (*ctx_GetAttr_s)(HPyContext *ctx, HPy obj, const char *name);
+    HPy (*ctx_GetAttr_s)(HPyContext *ctx, HPy obj, const char *utf8_name);
     int (*ctx_HasAttr)(HPyContext *ctx, HPy obj, HPy name);
-    int (*ctx_HasAttr_s)(HPyContext *ctx, HPy obj, const char *name);
+    int (*ctx_HasAttr_s)(HPyContext *ctx, HPy obj, const char *utf8_name);
     int (*ctx_SetAttr)(HPyContext *ctx, HPy obj, HPy name, HPy value);
-    int (*ctx_SetAttr_s)(HPyContext *ctx, HPy obj, const char *name, HPy value);
+    int (*ctx_SetAttr_s)(HPyContext *ctx, HPy obj, const char *utf8_name, HPy value);
     HPy (*ctx_GetItem)(HPyContext *ctx, HPy obj, HPy key);
     HPy (*ctx_GetItem_i)(HPyContext *ctx, HPy obj, HPy_ssize_t idx);
-    HPy (*ctx_GetItem_s)(HPyContext *ctx, HPy obj, const char *key);
+    HPy (*ctx_GetItem_s)(HPyContext *ctx, HPy obj, const char *utf8_key);
     int (*ctx_Contains)(HPyContext *ctx, HPy container, HPy key);
     int (*ctx_SetItem)(HPyContext *ctx, HPy obj, HPy key, HPy value);
     int (*ctx_SetItem_i)(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value);
-    int (*ctx_SetItem_s)(HPyContext *ctx, HPy obj, const char *key, HPy value);
+    int (*ctx_SetItem_s)(HPyContext *ctx, HPy obj, const char *utf8_key, HPy value);
     HPy (*ctx_Type)(HPyContext *ctx, HPy obj);
     int (*ctx_TypeCheck)(HPyContext *ctx, HPy obj, HPy type);
     int (*ctx_Is)(HPyContext *ctx, HPy obj, HPy other);
-    void *(*ctx_AsStruct)(HPyContext *ctx, HPy h);
-    void *(*ctx_AsStructLegacy)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Object)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Legacy)(HPyContext *ctx, HPy h);
     HPy (*ctx_New)(HPyContext *ctx, HPy h_type, void **data);
     HPy (*ctx_Repr)(HPyContext *ctx, HPy obj);
     HPy (*ctx_Str)(HPyContext *ctx, HPy obj);
@@ -237,10 +238,10 @@ struct _HPyContext_s {
     int (*ctx_Bytes_Check)(HPyContext *ctx, HPy h);
     HPy_ssize_t (*ctx_Bytes_Size)(HPyContext *ctx, HPy h);
     HPy_ssize_t (*ctx_Bytes_GET_SIZE)(HPyContext *ctx, HPy h);
-    char *(*ctx_Bytes_AsString)(HPyContext *ctx, HPy h);
-    char *(*ctx_Bytes_AS_STRING)(HPyContext *ctx, HPy h);
-    HPy (*ctx_Bytes_FromString)(HPyContext *ctx, const char *v);
-    HPy (*ctx_Bytes_FromStringAndSize)(HPyContext *ctx, const char *v, HPy_ssize_t len);
+    const char *(*ctx_Bytes_AsString)(HPyContext *ctx, HPy h);
+    const char *(*ctx_Bytes_AS_STRING)(HPyContext *ctx, HPy h);
+    HPy (*ctx_Bytes_FromString)(HPyContext *ctx, const char *bytes);
+    HPy (*ctx_Bytes_FromStringAndSize)(HPyContext *ctx, const char *bytes, HPy_ssize_t len);
     HPy (*ctx_Unicode_FromString)(HPyContext *ctx, const char *utf8);
     int (*ctx_Unicode_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Unicode_AsASCIIString)(HPyContext *ctx, HPy h);
@@ -252,8 +253,8 @@ struct _HPyContext_s {
     HPy (*ctx_Unicode_DecodeFSDefaultAndSize)(HPyContext *ctx, const char *v, HPy_ssize_t size);
     HPy (*ctx_Unicode_EncodeFSDefault)(HPyContext *ctx, HPy h);
     HPy_UCS4 (*ctx_Unicode_ReadChar)(HPyContext *ctx, HPy h, HPy_ssize_t index);
-    HPy (*ctx_Unicode_DecodeASCII)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
-    HPy (*ctx_Unicode_DecodeLatin1)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
+    HPy (*ctx_Unicode_DecodeASCII)(HPyContext *ctx, const char *ascii, HPy_ssize_t size, const char *errors);
+    HPy (*ctx_Unicode_DecodeLatin1)(HPyContext *ctx, const char *latin1, HPy_ssize_t size, const char *errors);
     int (*ctx_List_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_List_New)(HPyContext *ctx, HPy_ssize_t len);
     int (*ctx_List_Append)(HPyContext *ctx, HPy h_list, HPy h_item);
@@ -261,15 +262,15 @@ struct _HPyContext_s {
     HPy (*ctx_Dict_New)(HPyContext *ctx);
     int (*ctx_Tuple_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Tuple_FromArray)(HPyContext *ctx, _HPyPtr items, HPy_ssize_t n);
-    HPy (*ctx_Import_ImportModule)(HPyContext *ctx, const char *name);
+    HPy (*ctx_Import_ImportModule)(HPyContext *ctx, const char *utf8_name);
     HPy (*ctx_FromPyObject)(HPyContext *ctx, cpy_PyObject *obj);
     cpy_PyObject *(*ctx_AsPyObject)(HPyContext *ctx, HPy h);
     void (*ctx_CallRealFunctionFromTrampoline)(HPyContext *ctx, HPyFunc_Signature sig, HPyCFunction func, void *args);
-    HPyListBuilder (*ctx_ListBuilder_New)(HPyContext *ctx, HPy_ssize_t initial_size);
+    HPyListBuilder (*ctx_ListBuilder_New)(HPyContext *ctx, HPy_ssize_t size);
     void (*ctx_ListBuilder_Set)(HPyContext *ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item);
     HPy (*ctx_ListBuilder_Build)(HPyContext *ctx, HPyListBuilder builder);
     void (*ctx_ListBuilder_Cancel)(HPyContext *ctx, HPyListBuilder builder);
-    HPyTupleBuilder (*ctx_TupleBuilder_New)(HPyContext *ctx, HPy_ssize_t initial_size);
+    HPyTupleBuilder (*ctx_TupleBuilder_New)(HPyContext *ctx, HPy_ssize_t size);
     void (*ctx_TupleBuilder_Set)(HPyContext *ctx, HPyTupleBuilder builder, HPy_ssize_t index, HPy h_item);
     HPy (*ctx_TupleBuilder_Build)(HPyContext *ctx, HPyTupleBuilder builder);
     void (*ctx_TupleBuilder_Cancel)(HPyContext *ctx, HPyTupleBuilder builder);
@@ -284,33 +285,41 @@ struct _HPyContext_s {
     void (*ctx_Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h);
     HPy (*ctx_Global_Load)(HPyContext *ctx, HPyGlobal global);
     void (*ctx_Dump)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Type)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Long)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Float)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Unicode)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_Tuple)(HPyContext *ctx, HPy h);
+    void *(*ctx_AsStruct_List)(HPyContext *ctx, HPy h);
+    HPyType_BuiltinShape (*ctx_Type_GetBuiltinShape)(HPyContext *ctx, HPy h_type);
+    int (*ctx_DelItem)(HPyContext *ctx, HPy obj, HPy key);
+    int (*ctx_DelItem_i)(HPyContext *ctx, HPy obj, HPy_ssize_t idx);
+    int (*ctx_DelItem_s)(HPyContext *ctx, HPy obj, const char *utf8_key);
     _HPyConst h_ComplexType;
     _HPyConst h_BytesType;
     _HPyConst h_MemoryViewType;
     _HPyConst h_CapsuleType;
     _HPyConst h_SliceType;
-    HPy (*ctx_MaybeGetAttr_s)(HPyContext *ctx, HPy obj, const char *name);
-    int (*ctx_Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
-    HPy (*ctx_ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value);
-    int (*ctx_ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, _HPyPtr result);
-    HPy (*ctx_ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value);
-    HPy (*ctx_Capsule_New)(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor);
-    void *(*ctx_Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name);
-    int (*ctx_Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *name);
+    _HPyConst h_Builtins;
+    HPy (*ctx_Capsule_New)(HPyContext *ctx, void *pointer, const char *utf8_name, HPyCapsule_Destructor *destructor);
+    void *(*ctx_Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *utf8_name);
+    int (*ctx_Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *utf8_name);
     int (*ctx_Capsule_Set)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value);
-    HPy (*ctx_Unicode_FromEncodedObject)(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
-    HPy (*ctx_Unicode_InternFromString)(HPyContext *ctx, const char *str);
-    HPy (*ctx_Unicode_Substring)(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end);
-    HPy (*ctx_Dict_Keys)(HPyContext *ctx, HPy h);
-    HPy (*ctx_Dict_GetItem)(HPyContext *ctx, HPy op, HPy key);
-    int (*ctx_Sequence_Check)(HPyContext *ctx, HPy h);
-    int (*ctx_SetType)(HPyContext *ctx, HPy obj, HPy type);
-    int (*ctx_Type_IsSubtype)(HPyContext *ctx, HPy sub, HPy type);
+    HPy (*ctx_Compile_s)(HPyContext *ctx, const char *utf8_source, const char *utf8_filename, HPy_SourceKind kind);
+    HPy (*ctx_EvalCode)(HPyContext *ctx, HPy code, HPy globals, HPy locals);
+    HPy (*ctx_ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value);
+    int32_t (*ctx_ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, _HPyPtr result);
+    HPy (*ctx_ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value);
     const char *(*ctx_Type_GetName)(HPyContext *ctx, HPy type);
-    HPy (*ctx_SeqIter_New)(HPyContext *ctx, HPy seq);
-    int (*ctx_Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *value);
-    int (*ctx_TypeCheck_g)(HPyContext *ctx, HPy obj, HPyGlobal type);
-    int (*ctx_Is_g)(HPyContext *ctx, HPy obj, HPyGlobal other);
+    int (*ctx_Type_IsSubtype)(HPyContext *ctx, HPy sub, HPy type);
+    HPy (*ctx_Unicode_FromEncodedObject)(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
+    HPy (*ctx_Unicode_Substring)(HPyContext *ctx, HPy str, HPy_ssize_t start, HPy_ssize_t end);
+    HPy (*ctx_Dict_Keys)(HPyContext *ctx, HPy h);
+    HPy (*ctx_Dict_Copy)(HPyContext *ctx, HPy h);
+    int (*ctx_Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
+    int (*ctx_SetCallFunction)(HPyContext *ctx, HPy h, HPyCallFunction *func);
+    HPy (*ctx_Call)(HPyContext *ctx, HPy callable, _ConstHPyPtr args, size_t nargs, HPy kwnames);
+    HPy (*ctx_CallMethod)(HPyContext *ctx, HPy name, _ConstHPyPtr args, size_t nargs, HPy kwnames);
 };
 
 #ifdef GRAALVM_PYTHON_LLVM
@@ -322,4 +331,5 @@ struct _HPyContext_s {
 #undef HPyThreadState
 #undef HPyGlobal
 #undef _HPyCapsule_key
+#undef HPy_SourceKind
 #endif

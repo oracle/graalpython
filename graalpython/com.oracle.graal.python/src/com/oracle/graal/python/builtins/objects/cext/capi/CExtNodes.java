@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeW
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -1884,8 +1885,8 @@ public abstract class CExtNodes {
                     } else {
                         result = interopLib.execute(createFunction, cArguments);
                     }
-                    DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), capiContext.getContext(),
-                                    errOccurredProfile, ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
+                    CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), capiContext.getContext(), errOccurredProfile,
+                                    ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -1928,6 +1929,7 @@ public abstract class CExtNodes {
 
             writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
             writeAttrNode.execute(module, SpecialAttributeNames.T___LIBRARY__, library);
+            capiContext.addLoadedExtensionLibrary(library);
             return module;
         }
     }
@@ -1998,8 +2000,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(raiseNode), capiContext.getContext(),
-                                            ConditionProfile.getUncached(),
+                            CheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(raiseNode), capiContext.getContext(), ConditionProfile.getUncached(),
                                             ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:

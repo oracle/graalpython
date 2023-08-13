@@ -39,7 +39,7 @@
 
 import textwrap
 from copy import deepcopy
-from .conf import RETURN_CONSTANT
+from . import conf
 from .autogenfile import AutoGenFile
 from .parse import toC, find_typedecl, get_context_return_type, \
     maybe_make_void, make_void, get_return_constant
@@ -280,11 +280,16 @@ JNI_UPCALL_TYPE_CASTS = {
     'HPy': 'HPY_UP',
     'void *': 'PTR_UP',
     'int': 'INT_UP',
+    'int32_t': 'INT_UP',
+    'uint32_t': 'INT_UP',
     'long': 'LONG_UP',
+    'int64_t': 'LONG_UP',
+    'uint64_t': 'LONG_UP',
     'double': 'DOUBLE_UP',
     'size_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
-    '_HPyCapsule_key': 'INT_UP'
+    '_HPyCapsule_key': 'INT_UP',
+    'HPy_SourceKind': 'INT_UP'
 }
 
 JNI_UPCALLS = {
@@ -299,8 +304,10 @@ JNI_UPCALLS = {
     # "DO_UPCALL_PTR_NOARGS",
     'DO_UPCALL_SIZE_T',
     'int', 'DO_UPCALL_INT',
+    'int32_t', 'DO_UPCALL_INT32',
     'double', 'DO_UPCALL_DOUBLE',
     'long', 'DO_UPCALL_LONG',
+    'int64_t', 'DO_UPCALL_INT64',
     'HPy_UCS4', 'DO_UPCALL_UCS4',
 }
 
@@ -311,7 +318,8 @@ JNI_UPCALL_ARG_CASTS = {
     'double': 'DOUBLE_UP',
     'HPy_ssize_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
-    '_HPyCapsule_key': 'INT_UP'
+    '_HPyCapsule_key': 'INT_UP',
+    'HPy_SourceKind': 'INT_UP'
 }
 
 # The following table maps HPy context handles to Java objects (and a construct with additional arguments).
@@ -403,6 +411,7 @@ CTX_HANDLES = {
     "h_MemoryViewType": ("PythonBuiltinClassType.PMemoryView", "createTypeConstant", []),
     "h_CapsuleType": ("PythonBuiltinClassType.Capsule", "createTypeConstant", []),
     "h_SliceType": ("PythonBuiltinClassType.PSlice", "createTypeConstant", []),
+    "h_Builtins": ("", "createBuiltinsConstant", []),
 }
 
 def get_cast_fun(type_name):
@@ -414,8 +423,12 @@ def get_cast_fun(type_name):
         return 'HPY_FIELD_UP'
     elif type_is_pointer(type_name):
         return 'PTR_UP'
-    elif type_name in ('int', '_HPyCapsule_key'):
+    elif type_name in ('int', '_HPyCapsule_key', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'INT_UP'
+    elif type_name == 'int32_t':
+        return 'INT32_UP'
+    elif type_name == 'uint32_t':
+        return 'UINT32_UP'
     elif type_name == 'long':
         return 'LONG_UP'
     elif type_name == 'double':
@@ -431,7 +444,7 @@ def get_cast_fun(type_name):
     return 'LONG_UP'
 
 def get_jni_signature_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'I'
     elif type_name == 'long':
         return 'J'
@@ -439,25 +452,31 @@ def get_jni_signature_type(type_name):
         return 'D'
     elif type_name == 'void':
         return 'V'
+    elif type_name == 'bool':
+        return 'Z'
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
     elif type_name == 'void':
         return 'void'
+    elif type_name == 'bool':
+        return 'jboolean'
     # also covers type_name == 'long'
     return 'jlong'
 
 def get_java_signature_type(type):
     type_name = toC(type)
-    if type_name in ('int', '_HPyCapsule_key', 'HPy_UCS4'):
+    if type_name in ('int', 'int32_t', 'uint32_t', '_HPyCapsule_key', 'HPy_UCS4', 'HPyType_BuiltinShape', 'HPy_SourceKind'):
         return 'int'
+    if type_name == 'bool':
+        return 'boolean'
+    # also covers type_name == 'long'
     if type_name == 'double' or type_name == 'void':
         return type_name
-    # also covers type_name == 'long'
     return 'long'
 
 def type_is_pointer(type):
@@ -782,8 +801,11 @@ class autogen_jni_upcall_method_stub(AutoGenFilePart):
 
 
 NO_CALL = ('DESTROYFUNC', 'TRAVERSEPROC')
-NO_DEBUG_TRAMPOLINE = NO_CALL + ('GETBUFFERPROC', 'RELEASEBUFFERPROC')
+NO_DEBUG_TRAMPOLINE = NO_CALL + ('KEYWORDS', 'GETBUFFERPROC', 'RELEASEBUFFERPROC')
 NO_UNIVERSAL_TRAMPOLINE = NO_CALL
+
+def get_jni_trampoline_name(base_name):
+    return base_name.replace('_', '').capitalize()
 
 
 class autogen_ctx_jni(AutoGenFilePart):
@@ -801,7 +823,7 @@ class autogen_ctx_jni(AutoGenFilePart):
         lines_debug = []
         d = lines_debug.append
         for hpyfunc in self.api.hpyfunc_typedefs:
-            name = hpyfunc.base_name().capitalize()
+            name = get_jni_trampoline_name(hpyfunc.base_name())
             if name.upper() in NO_CALL:
                 continue
             #
@@ -852,9 +874,9 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
         w(' *                    UNIVERSAL MODE TRAMPOLINES                   *')
         w(' ******************************************************************/')
         w('')
-        w(f'JNIEXPORT jlong JNICALL TRAMPOLINE(executeModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx)')
+        w(f'JNIEXPORT jlong JNICALL TRAMPOLINE(executeModuleInit)(JNIEnv *env, jclass clazz, jlong target)')
         w('{')
-        w('    return _h2jlong(((DHPy (*)(HPyContext *)) target)((HPyContext *) ctx));')
+        w('    return (jlong) (((HPyModuleDef *(*)(void)) target)());')
         w('}')
         w('')
         for hpyfunc in self.api.hpyfunc_typedefs:
@@ -880,7 +902,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
             trampoline_args = ', '.join(trampoline_args)
             args = ', '.join(args)
             #
-            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(execute{name.capitalize()})(JNIEnv *env, jclass clazz, {trampoline_args})')
+            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(execute{get_jni_trampoline_name(name)})(JNIEnv *env, jclass clazz, {trampoline_args})')
             w('{')
             w(f'    HPyFunc_{name} f = (HPyFunc_{name})target;')
             if c_rettype == 'void':
@@ -896,12 +918,6 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
         w('/*******************************************************************')
         w(' *                      DEBUG MODE TRAMPOLINES                     *')
         w(' ******************************************************************/')
-        w('')
-        w(f'JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx)')
-        w('{')
-        w('    HPyContext *dctx = (HPyContext *) ctx;')
-        w('    return from_dh(dctx, ((DHPy (*)(HPyContext *)) target)(dctx));')
-        w('}')
         w('')
         for hpyfunc in self.api.hpyfunc_typedefs:
             name = hpyfunc.base_name()
@@ -926,7 +942,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
                     dh_arg = f'dh_{pname}'
                     dh_init.append(pname)
                     args.append(dh_arg)
-                elif c_param_type == 'HPy *' and pname == 'args':
+                elif (c_param_type == 'HPy *' or c_param_type == 'const HPy *') and pname == 'args':
                     dh_init.append('')
                     args.append('dh_args')
                     has_args_param = True
@@ -936,7 +952,7 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
             trampoline_args = ', '.join(trampoline_args)
             s_args = ', '.join(args)
             #
-            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(executeDebug{name.capitalize()})(JNIEnv *env, jclass clazz, {trampoline_args})')
+            w(f'JNIEXPORT {jni_c_rettype} JNICALL TRAMPOLINE(executeDebug{get_jni_trampoline_name(name)})(JNIEnv *env, jclass clazz, {trampoline_args})')
             w('{')
             w('    HPyContext *dctx = (HPyContext *) ctx;')
             w(f'    HPyFunc_{name} f = (HPyFunc_{name})target;')
@@ -977,6 +993,7 @@ LLVM_HPY_BACKEND_CLASS = 'GraalHPyLLVMContext'
 # The name of the native HPy context (will be used for HPyContext.name)
 LLVM_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, LLVM)'
 
+AUTOGEN_CTX_INIT_H_FILE = 'autogen_ctx_init.h'
 
 def get_signature_type(type):
     """
@@ -1038,6 +1055,153 @@ class autogen_ctx_llvm_init(AutoGenFilePart):
         w('')
         return '\n'.join(lines)
 
+llvm_return_cast_func = {
+    'HPy': 'WRAP',
+    'HPyGlobal': 'WRAP_GLOBAL',
+    'HPyField': 'WRAP_FIELD',
+    'HPyTracker': 'WRAP_TRACKER',
+    'HPyListBuilder': 'WRAP_LIST_BUILDER',
+    'HPyTupleBuilder': 'WRAP_TUPLE_BUILDER',
+    'HPyThreadState': 'WRAP_THREADSTATE',
+}
+
+
+llvm_param_cast_func = {
+    'HPy': 'UNWRAP',
+    'HPyGlobal': 'UNWRAP_GLOBAL',
+    'HPyField': 'UNWRAP_FIELD',
+    'HPyTracker': 'UNWRAP_TRACKER',
+    'HPyListBuilder': 'UNWRAP_LIST_BUILDER',
+    'HPyTupleBuilder': 'UNWRAP_TUPLE_BUILDER',
+    'HPyThreadState': 'UNWRAP_THREADSTATE',
+}
+
+
+class autogen_llvm_trampolines_h(GraalPyAutoGenFile):
+    PATH = 'graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/universal/autogen_trampolines.h'
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w('#ifdef GRAALVM_PYTHON_LLVM')
+        w('#define UNWRAP(_h) ((_h)._i)')
+        w('#define WRAP(_ptr) ((HPy){(_ptr)})')
+        w('#define UNWRAP_TUPLE_BUILDER(_h) ((_h)._tup)')
+        w('#define WRAP_TUPLE_BUILDER(_ptr) ((HPyTupleBuilder){(_ptr)})')
+        w('#define UNWRAP_LIST_BUILDER(_h) ((_h)._lst)')
+        w('#define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})')
+        w('#define UNWRAP_TRACKER(_h) ((_h)._i)')
+        w('#define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})')
+        w('#define UNWRAP_THREADSTATE(_ts) ((_ts)._i)')
+        w('#define WRAP_THREADSTATE(_ptr) ((HPyThreadState){(_ptr)})')
+        w('#define UNWRAP_FIELD(_h) ((_h)._i)')
+        w('#define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})')
+        w('#define UNWRAP_GLOBAL(_h) ((_h)._i)')
+        w('#define WRAP_GLOBAL(_ptr) ((HPyGlobal){(_ptr)})')
+        w('#else')
+        w('#define UNWRAP(_h) _h')
+        w('#define WRAP(_ptr) _ptr')
+        w('#define UNWRAP_TUPLE_BUILDER(_h) _h')
+        w('#define WRAP_TUPLE_BUILDER(_ptr) _ptr')
+        w('#define UNWRAP_LIST_BUILDER(_h) _h')
+        w('#define WRAP_LIST_BUILDER(_ptr) _ptr')
+        w('#define UNWRAP_TRACKER(_h) _h')
+        w('#define WRAP_TRACKER(_ptr) _ptr')
+        w('#define UNWRAP_THREADSTATE(_ts) _ts')
+        w('#define WRAP_THREADSTATE(_data) _data')
+        w('#define UNWRAP_FIELD(_h) _h')
+        w('#define WRAP_FIELD(_ptr) _ptr')
+        w('#define UNWRAP_GLOBAL(_h) _h')
+        w('#define WRAP_GLOBAL(_ptr) _ptr')
+        w('#endif')
+        for func in self.api.functions:
+            trampoline = self.gen_trampoline(func)
+            if trampoline:
+                lines.append(trampoline)
+                lines.append('')
+        return '\n'.join(lines)
+
+    def gen_trampoline(self, func):
+        # HPyAPI_FUNC HPy HPyModule_Create(HPyContext *ctx, HPyModuleDef *def) {
+        #      return ctx->ctx_Module_Create ( ctx, def );
+        # }
+        if func.name in conf.NO_TRAMPOLINES:
+            return None
+        const_return = get_return_constant(func)
+        rettype = get_context_return_type(func.node, const_return)
+        parts = []
+        w = parts.append
+        w('HPyAPI_FUNC')
+        w(toC(func.node))
+        w('{')
+
+        # trampolines cannot deal with varargs easily
+        assert not func.is_varargs()
+
+        call = []
+        wc = call.append
+        wc('    ')
+        cast_fun = llvm_return_cast_func.get(rettype, '')
+        if rettype == 'void':
+            wc(f'ctx->{func.ctx_name()}')
+        else:
+            if cast_fun:
+                wc(f'return {cast_fun}(ctx->{func.ctx_name()}')
+            else:
+                wc(f'return ctx->{func.ctx_name()}')
+        wc('(')
+        params = []
+        for p in func.node.type.args.params:
+            param_type_name = toC(p.type)
+            arg_cast_fun = llvm_param_cast_func.get(param_type_name, '')
+            params.append(f'{arg_cast_fun}({p.name})')
+        wc(', '.join(params))
+        if cast_fun:
+            wc('));')
+        else:
+            wc(');')
+
+        w(''.join(call))
+        if const_return:
+            w(f'return {const_return};')
+
+        w('}')
+        return '\n'.join(parts)
+
+
+class autogen_llvm_upcall_wrappers(GraalPyAutoGenFile):
+    """
+    Generates the
+    """
+    PATH = 'graalpython/com.oracle.graal.python.cext/hpy/autogen_llvm_wrappers.c'
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w('#include "hpynative.h"')
+        w('')
+        w('#define COPY(MEMBER) native_ctx->MEMBER = managed_ctx->MEMBER')
+        w('')
+
+        # start of 'init_autogen_jni_ctx'
+        w(f'_HPy_HIDDEN int init_autogen_llvm_ctx(HPyContext *managed_ctx, HPyContext *native_ctx)')
+        w('{')
+
+        # initialize context handles
+        for var in self.api.variables:
+            w(f'    COPY({var.ctx_name()});')
+        w('')
+
+        # initialize context function pointers
+        for func in self.api.functions:
+            if func.name not in NO_WRAPPER:
+                w(f'    COPY({func.ctx_name()});')
+        w(f'    return 0;')
+
+        w('}')
+        w('')
+        return '\n'.join(lines)
+
 
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
@@ -1049,4 +1213,6 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_handles_init,
               autogen_ctx_member_enum,
               autogen_ctx_llvm_init,
-              autogen_ctx_function_factory)
+              autogen_ctx_function_factory,
+              autogen_llvm_trampolines_h,
+              autogen_llvm_upcall_wrappers)

@@ -40,12 +40,14 @@
  */
 #include "hpy.h"
 #include "hpytypes.h"
+#include "structmember.h"
 #include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
 
 #include <wchar.h>
 #include <string.h>
 #include <errno.h>
+
 
 #define SRC_CS "utf-8"
 #define UNWRAP(_h) ((_h)._i)
@@ -56,6 +58,9 @@ static HPyContext *g_universal_ctx;
 static HPyContext *g_debug_ctx;
 
 typedef HPyDef* HPyDefPtr;
+typedef PyMemberDef cpy_PyMemberDef;
+typedef PyGetSetDef cpy_PyGetSetDef;
+typedef PyType_Slot cpy_PyTypeSlot;
 
 POLYGLOT_DECLARE_TYPE(HPy)
 POLYGLOT_DECLARE_TYPE(HPyField)
@@ -79,6 +84,7 @@ POLYGLOT_DECLARE_TYPE(HPyModuleDef)
 POLYGLOT_DECLARE_TYPE(wchar_t)
 POLYGLOT_DECLARE_TYPE(HPyType_Spec)
 POLYGLOT_DECLARE_TYPE(HPyType_SpecParam)
+POLYGLOT_DECLARE_TYPE(HPyCapsule_Destructor)
 
 int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject) {
 	// save context in global for NFI upcalls
@@ -115,6 +121,17 @@ void graal_hpy_free(void *ptr) {
 
 char* graal_hpy_strdup(const char *ptr) {
     return strdup(ptr);
+}
+
+char* graal_hpy_type_name(const char *ptr) {
+    const char *s = strrchr(ptr, '.');
+    if (s == NULL) {
+        s = ptr;
+    }
+    else {
+        s++;
+    }
+    return strdup(s);
 }
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
@@ -155,9 +172,10 @@ void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 	return NULL;
 }
 
-void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
-	return polyglot_from_string(moduleDef->name, SRC_CS);
+void* graal_hpy_from_HPyCapsule_Destructor(void *ptr) {
+	return polyglot_from_HPyCapsule_Destructor(ptr);
 }
+
 
 void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
 	const char *m_doc = moduleDef->doc;
@@ -201,6 +219,12 @@ void graal_hpy_set_global_i(HPyGlobal *hg, void* i) {
 
 HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
 	return slot->slot;
+}
+
+/* getters for HPyCallFunction */
+
+void* graal_hpy_call_function_get_impl(HPyCallFunction *def) {
+	return (void *)def->impl;
 }
 
 /* getters for PyType_Slot */
@@ -379,6 +403,10 @@ void* graal_hpy_type_spec_get_legacy_slots(HPyType_Spec *type_spec) {
 	return NULL;
 }
 
+int64_t graal_hpy_type_spec_get_builtin_shape(HPyType_Spec *type_spec) {
+	return (int64_t) type_spec->builtin_shape;
+}
+
 
 /*
  * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.
@@ -518,8 +546,8 @@ void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
     return polyglot_from_string(addr, "utf-8");
 }
 
-void* graal_hpy_read_HPy(void* object, HPy_ssize_t offset) {
-    return UNWRAP(ReadMember(object, offset, HPy));
+void* graal_hpy_read_HPyField(void* object, HPy_ssize_t offset) {
+    return UNWRAP_FIELD(ReadMember(object, offset, HPyField));
 }
 
 char graal_hpy_read_c(void* object, HPy_ssize_t offset) {
@@ -599,6 +627,10 @@ void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* val
 
 void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
     WriteMember(object, offset, WRAP(value), HPy);
+}
+
+void graal_hpy_write_HPyField(void* object, HPy_ssize_t offset, void* value) {
+    WriteMember(object, offset, WRAP_FIELD(value), HPyField);
 }
 
 void graal_hpy_write_c(void* object, HPy_ssize_t offset, char value) {
@@ -1534,7 +1566,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
 
 #define COPY(__member) native_context->__member = managed_context->__member
     COPY(name);
-    COPY(ctx_version);
+    COPY(abi_version);
     COPY(h_None);
     COPY(h_True);
     COPY(h_False);

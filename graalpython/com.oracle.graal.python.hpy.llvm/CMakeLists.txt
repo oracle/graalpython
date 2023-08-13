@@ -98,7 +98,7 @@ target_include_directories(${TARGET_LIB} PRIVATE
 )
 
 target_compile_definitions(${TARGET_LIB} PRIVATE
-    HPY_UNIVERSAL_ABI
+    HPY_ABI_HYBRID
     NDEBUG
     GRAALVM_PYTHON_LLVM
     Py_BUILD_CORE

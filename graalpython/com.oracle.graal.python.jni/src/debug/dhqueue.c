@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,7 +32,7 @@ void DHQueue_init(DHQueue *q) {
     q->size = 0;
 }
 
-void DHQueue_append(DHQueue *q, DebugHandle *h) {
+void DHQueue_append(DHQueue *q, DHQueueNode *h) {
     if (q->head == NULL) {
         h->prev = NULL;
         h->next = NULL;
@@ -47,11 +47,11 @@ void DHQueue_append(DHQueue *q, DebugHandle *h) {
     q->size++;
 }
 
-DebugHandle *DHQueue_popfront(DHQueue *q)
+DHQueueNode *DHQueue_popfront(DHQueue *q)
 {
     assert(q->size > 0);
     assert(q->head != NULL);
-    DebugHandle *head = q->head;
+    DHQueueNode *head = q->head;
     if (q->size == 1) {
         q->head = NULL;
         q->tail = NULL;
@@ -69,11 +69,11 @@ DebugHandle *DHQueue_popfront(DHQueue *q)
     return head;
 }
 
-void DHQueue_remove(DHQueue *q, DebugHandle *h)
+void DHQueue_remove(DHQueue *q, DHQueueNode *h)
 {
 #ifndef NDEBUG
     // if we are debugging, let's check that h is effectively in the queue
-    DebugHandle *it = q->head;
+    DHQueueNode *it = q->head;
     bool found = false;
     while(it != NULL) {
         if (it == h) {
@@ -107,7 +107,7 @@ void DHQueue_remove(DHQueue *q, DebugHandle *h)
 
 
 #ifndef NDEBUG
-static void linked_item_sanity_check(DebugHandle *h)
+static void linked_item_sanity_check(DHQueueNode *h)
 {
     if (h == NULL)
         return;
@@ -130,7 +130,7 @@ void DHQueue_sanity_check(DHQueue *q)
         assert(q->head->prev == NULL);
         assert(q->tail->next == NULL);
         assert(q->size > 0);
-        DebugHandle *h = q->head;
+        DHQueueNode *h = q->head;
         HPy_ssize_t size = 0;
         while(h != NULL) {
             linked_item_sanity_check(h);

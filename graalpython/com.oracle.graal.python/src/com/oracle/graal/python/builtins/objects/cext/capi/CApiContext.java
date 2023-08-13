@@ -50,6 +50,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,7 +101,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -187,7 +188,21 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
     private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
     private Object nativeLibrary;
-    public RootCallTarget signatureContainer;
+
+    /**
+     * This list holds a strong reference to all loaded extension libraries to keep the library
+     * objects alive. This is necessary because NFI will {@code dlclose} the library (and thus
+     * {@code munmap} all code) if the library object is no longer reachable. However, it can happen
+     * that we still store raw function pointers (as Java {@code long} values) in a native object
+     * that is referenced by a
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference}.
+     * For example, the {code tp_dealloc} functions may be executed a long time after all managed
+     * objects of the extension died and the native library has been {@code dlclosed}'d.
+     *
+     * Since we have no control over the timing when certain garbage will be collected, we need to
+     * ensure that the code is still mapped.
+     */
+    private final List<Object> loadedExtensions = new LinkedList<>();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -208,6 +223,11 @@ public final class CApiContext extends CExtContext {
 
     public long getAndIncMaxModuleNumber() {
         return maxModuleNumber++;
+    }
+
+    @TruffleBoundary
+    void addLoadedExtensionLibrary(Object nativeLibrary) {
+        loadedExtensions.add(nativeLibrary);
     }
 
     @TruffleBoundary
@@ -632,6 +652,7 @@ public final class CApiContext extends CExtContext {
             PythonModule module = (PythonModule) result;
             module.setAttribute(T___FILE__, spec.path);
             module.setAttribute(T___LIBRARY__, sharedLibrary);
+            addLoadedExtensionLibrary(sharedLibrary);
 
             // add to 'sys.modules'
             PDict sysModules = context.getSysModules();

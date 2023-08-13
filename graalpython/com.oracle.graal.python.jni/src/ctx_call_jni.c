@@ -49,6 +49,35 @@
  *                        MANUAL TRAMPOLINES                       *
  *******************************************************************/
 
+JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kwnames)
+{
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_keywords f = (HPyFunc_keywords)target;
+    DHPy dh_self = _jlong2dh(dctx, self);
+    UHPy uh_kwnames = _jlong2h(kwnames);
+    DHPy dh_kwnames;
+    HPy_ssize_t n_kwnames;
+    if (!HPy_IsNull(uh_kwnames))
+    {
+        n_kwnames = HPy_Length(get_info(dctx)->uctx, uh_kwnames);
+        dh_kwnames = DHPy_open(dctx, uh_kwnames);
+    }
+    else
+    {
+        n_kwnames = 0;
+        dh_kwnames = HPy_NULL;
+    }
+    assert(nargs >= 0);
+    assert(n_kwnames >= 0);
+    size_t nargs_with_kw = (size_t)nargs + (size_t)n_kwnames;
+    _ARR_JLONG2DH(dctx, dh_args, args, nargs_with_kw)
+    DHPy dh_result = f(dctx, dh_self, dh_args, (size_t)nargs, dh_kwnames);
+    _ARR_DH_CLOSE(dctx, dh_args, nargs_with_kw)
+    DHPy_close_and_check(dctx, dh_self);
+    DHPy_close_and_check(dctx, dh_kwnames);
+    return from_dh(dctx, dh_result);
+}
+
 JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;

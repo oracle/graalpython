@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_DEBUG;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -56,10 +57,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -112,7 +114,7 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
              * Error case: install "not_available" for everything. So, loading still works, but you
              * cannot use it.
              */
-            PBuiltinFunction notAvailableObj = createFunction(core);
+            PythonBuiltinObject notAvailableObj = createFunction(core, hpyDebugModule);
             for (TruffleString tkey : keys) {
                 hpyDebugModule.setAttribute(tkey, notAvailableObj);
             }
@@ -121,16 +123,14 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J_NOT_AVAILABLE, takesVarArgs = true, takesVarKeywordArgs = true)
     static final class NotAvailable extends PythonBuiltinNode {
-        private static final ReadArgumentNode[] EMPTY_ARGS = new ReadArgumentNode[0];
-
         @Override
         public Object execute(VirtualFrame frame) {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
         }
     }
 
     @TruffleBoundary
-    private static PBuiltinFunction createFunction(Python3Core core) {
+    static PBuiltinMethod createFunction(Python3Core core, PythonModule module) {
         Builtin builtin = NotAvailable.class.getAnnotation(Builtin.class);
         RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(new NotAvailable());
@@ -138,6 +138,7 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }, NotAvailable.class, builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = PythonUtils.toTruffleStringUncached(builtin.name());
-        return core.factory().createBuiltinFunction(name, null, 0, flags, callTarget);
+        PBuiltinFunction fun = core.factory().createBuiltinFunction(name, null, 0, flags, callTarget);
+        return core.factory().createBuiltinMethod(module, fun);
     }
 }

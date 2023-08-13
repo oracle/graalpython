@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
@@ -81,10 +82,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
@@ -133,7 +138,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     private static final String J_NAME = "HPy Universal ABI (GraalVM LLVM backend)";
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyLLVMContext.class);
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyLLVMContext.class);
 
     /** A resolving cache from Java string to HPyContextMember */
     public static HashMap<String, HPyContextMember> contextMembersByName;
@@ -262,14 +267,28 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected Object initHPyModule(Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug)
+    protected HPyABIVersion getHPyABIVersion(Object extLib, String getMajorVersionFuncName, String getMinorVersionFuncName) throws InteropException {
+        CompilerAsserts.neverPartOfCompilation();
+        InteropLibrary lib = InteropLibrary.getUncached(extLib);
+        Object majorVersionFun = lib.readMember(extLib, getMajorVersionFuncName);
+        Object minorVersionFun = lib.readMember(extLib, getMinorVersionFuncName);
+        InteropLibrary funLib = InteropLibrary.getUncached(majorVersionFun);
+        assert (funLib.accepts(minorVersionFun));
+        int requiredMajorVersion = expectInt(funLib.execute(majorVersionFun));
+        int requiredMinorVersion = expectInt(funLib.execute(minorVersionFun));
+        return new HPyABIVersion(requiredMajorVersion, requiredMinorVersion);
+    }
+
+    @Override
+    protected Object initHPyModule(Object llvmLibrary, String initFuncName, TruffleString name, TruffleString path, HPyMode mode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         CompilerAsserts.neverPartOfCompilation();
+        assert mode == HPyMode.MODE_UNIVERSAL;
         Object initFunction;
         InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
-        if (lib.isMemberReadable(llvmLibrary, initFuncName.toJavaStringUncached())) {
+        if (lib.isMemberReadable(llvmLibrary, initFuncName)) {
             try {
-                initFunction = lib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
+                initFunction = lib.readMember(llvmLibrary, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -310,30 +329,32 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    public long createNativeArguments(Object[] delegate, InteropLibrary lib) {
-        return 0;
-    }
-
-    @Override
     protected void finalizeNativeContext() {
 
     }
 
     @Override
-    public void freeNativeArgumentsArray(int nargs) {
-        // nothing to do
-    }
-
-    @Override
     public void initHPyDebugContext() throws ApiInitException {
         // debug mode is currently not available with the LLVM backend
-        throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
     }
 
     @Override
     public PythonModule getHPyDebugModule() throws ImportException {
         // debug mode is currently not available with the LLVM backend
-        throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+        throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
+    }
+
+    @Override
+    public void initHPyTraceContext() throws ApiInitException {
+        // debug mode is currently not available with the LLVM backend
+        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
+    }
+
+    @Override
+    public PythonModule getHPyTraceModule() throws ImportException {
+        // trace mode is currently not available with the LLVM backend
+        throw new ImportException(null, null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
     }
 
     @Override
@@ -394,8 +415,39 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         nativePointer = PCallHPyFunctionNodeGen.getUncached().call(context, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
     }
 
+    @Override
+    protected Object createArgumentsArray(Object[] args) {
+        return new HPyArrayWrapper(context, args);
+    }
+
+    @Override
+    protected void freeArgumentsArray(Object argsArray) {
+        if (argsArray instanceof HPyArrayWrapper hpyArrayWrapper) {
+            hpyArrayWrapper.close();
+        }
+    }
+
+    private static int expectInt(Object value) {
+        if (value instanceof Integer i) {
+            return i;
+        }
+        InteropLibrary lib = InteropLibrary.getUncached(value);
+        if (lib.fitsInInt(value)) {
+            try {
+                return lib.asInt(value);
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+        }
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
     private static Object createConstant(Object value) {
         return GraalHPyHandle.create(value);
+    }
+
+    private Object createBuiltinsConstant() {
+        return createConstant(GetOrCreateDictNode.executeUncached(context.getContext().getBuiltins()));
     }
 
     private static Object createSingletonConstant(Object value, int handle) {
@@ -414,7 +466,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
-        members[HPyContextMember.CTX_VERSION.ordinal()] = 1;
+        // TODO(fa): we should use the value of macro HPY_ABI_VERSION here
+        members[HPyContextMember.ABI_VERSION.ordinal()] = 0;
 
         // {{start llvm ctx init}}
         // @formatter:off
@@ -503,31 +556,30 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.H_MEMORYVIEWTYPE.ordinal()] = createTypeConstant(PythonBuiltinClassType.PMemoryView);
         members[HPyContextMember.H_CAPSULETYPE.ordinal()] = createTypeConstant(PythonBuiltinClassType.Capsule);
         members[HPyContextMember.H_SLICETYPE.ordinal()] = createTypeConstant(PythonBuiltinClassType.PSlice);
+        members[HPyContextMember.H_BUILTINS.ordinal()] = createBuiltinsConstant();
 
-        members[HPyContextMember.CTX_MODULE_CREATE.ordinal()] = createContextFunction(HPyContextMember.CTX_MODULE_CREATE);
         members[HPyContextMember.CTX_DUP.ordinal()] = createContextFunction(HPyContextMember.CTX_DUP);
         members[HPyContextMember.CTX_CLOSE.ordinal()] = createContextFunction(HPyContextMember.CTX_CLOSE);
-        members[HPyContextMember.CTX_LONG_FROMLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMLONG);
-        members[HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG);
-        members[HPyContextMember.CTX_LONG_FROMLONGLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMLONGLONG);
-        members[HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMUNSIGNEDLONGLONG);
+        members[HPyContextMember.CTX_LONG_FROMINT32_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMINT32_T);
+        members[HPyContextMember.CTX_LONG_FROMUINT32_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMUINT32_T);
+        members[HPyContextMember.CTX_LONG_FROMINT64_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMINT64_T);
+        members[HPyContextMember.CTX_LONG_FROMUINT64_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMUINT64_T);
         members[HPyContextMember.CTX_LONG_FROMSIZE_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMSIZE_T);
         members[HPyContextMember.CTX_LONG_FROMSSIZE_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_FROMSSIZE_T);
-        members[HPyContextMember.CTX_LONG_ASLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASLONG);
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONG);
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK);
-        members[HPyContextMember.CTX_LONG_ASLONGLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASLONGLONG);
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG);
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK);
+        members[HPyContextMember.CTX_LONG_ASINT32_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASINT32_T);
+        members[HPyContextMember.CTX_LONG_ASUINT32_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUINT32_T);
+        members[HPyContextMember.CTX_LONG_ASUINT32_TMASK.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUINT32_TMASK);
+        members[HPyContextMember.CTX_LONG_ASINT64_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASINT64_T);
+        members[HPyContextMember.CTX_LONG_ASUINT64_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUINT64_T);
+        members[HPyContextMember.CTX_LONG_ASUINT64_TMASK.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASUINT64_TMASK);
         members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASSIZE_T);
         members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASSSIZE_T);
         members[HPyContextMember.CTX_LONG_ASVOIDPTR.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASVOIDPTR);
         members[HPyContextMember.CTX_LONG_ASDOUBLE.ordinal()] = createContextFunction(HPyContextMember.CTX_LONG_ASDOUBLE);
         members[HPyContextMember.CTX_FLOAT_FROMDOUBLE.ordinal()] = createContextFunction(HPyContextMember.CTX_FLOAT_FROMDOUBLE);
         members[HPyContextMember.CTX_FLOAT_ASDOUBLE.ordinal()] = createContextFunction(HPyContextMember.CTX_FLOAT_ASDOUBLE);
-        members[HPyContextMember.CTX_BOOL_FROMLONG.ordinal()] = createContextFunction(HPyContextMember.CTX_BOOL_FROMLONG);
+        members[HPyContextMember.CTX_BOOL_FROMBOOL.ordinal()] = createContextFunction(HPyContextMember.CTX_BOOL_FROMBOOL);
         members[HPyContextMember.CTX_LENGTH.ordinal()] = createContextFunction(HPyContextMember.CTX_LENGTH);
-        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_SEQUENCE_CHECK);
         members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_NUMBER_CHECK);
         members[HPyContextMember.CTX_ADD.ordinal()] = createContextFunction(HPyContextMember.CTX_ADD);
         members[HPyContextMember.CTX_SUBTRACT.ordinal()] = createContextFunction(HPyContextMember.CTX_SUBTRACT);
@@ -565,6 +617,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_INPLACEOR.ordinal()] = createContextFunction(HPyContextMember.CTX_INPLACEOR);
         members[HPyContextMember.CTX_CALLABLE_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_CALLABLE_CHECK);
         members[HPyContextMember.CTX_CALLTUPLEDICT.ordinal()] = createContextFunction(HPyContextMember.CTX_CALLTUPLEDICT);
+        members[HPyContextMember.CTX_CALL.ordinal()] = createContextFunction(HPyContextMember.CTX_CALL);
+        members[HPyContextMember.CTX_CALLMETHOD.ordinal()] = createContextFunction(HPyContextMember.CTX_CALLMETHOD);
         members[HPyContextMember.CTX_FATALERROR.ordinal()] = createContextFunction(HPyContextMember.CTX_FATALERROR);
         members[HPyContextMember.CTX_ERR_SETSTRING.ordinal()] = createContextFunction(HPyContextMember.CTX_ERR_SETSTRING);
         members[HPyContextMember.CTX_ERR_SETOBJECT.ordinal()] = createContextFunction(HPyContextMember.CTX_ERR_SETOBJECT);
@@ -583,7 +637,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_TYPE_GENERICNEW.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_GENERICNEW);
         members[HPyContextMember.CTX_GETATTR.ordinal()] = createContextFunction(HPyContextMember.CTX_GETATTR);
         members[HPyContextMember.CTX_GETATTR_S.ordinal()] = createContextFunction(HPyContextMember.CTX_GETATTR_S);
-        members[HPyContextMember.CTX_MAYBEGETATTR_S.ordinal()] = createContextFunction(HPyContextMember.CTX_MAYBEGETATTR_S);
         members[HPyContextMember.CTX_HASATTR.ordinal()] = createContextFunction(HPyContextMember.CTX_HASATTR);
         members[HPyContextMember.CTX_HASATTR_S.ordinal()] = createContextFunction(HPyContextMember.CTX_HASATTR_S);
         members[HPyContextMember.CTX_SETATTR.ordinal()] = createContextFunction(HPyContextMember.CTX_SETATTR);
@@ -595,16 +648,23 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_SETITEM.ordinal()] = createContextFunction(HPyContextMember.CTX_SETITEM);
         members[HPyContextMember.CTX_SETITEM_I.ordinal()] = createContextFunction(HPyContextMember.CTX_SETITEM_I);
         members[HPyContextMember.CTX_SETITEM_S.ordinal()] = createContextFunction(HPyContextMember.CTX_SETITEM_S);
+        members[HPyContextMember.CTX_DELITEM.ordinal()] = createContextFunction(HPyContextMember.CTX_DELITEM);
+        members[HPyContextMember.CTX_DELITEM_I.ordinal()] = createContextFunction(HPyContextMember.CTX_DELITEM_I);
+        members[HPyContextMember.CTX_DELITEM_S.ordinal()] = createContextFunction(HPyContextMember.CTX_DELITEM_S);
         members[HPyContextMember.CTX_TYPE.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE);
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPECHECK);
-        members[HPyContextMember.CTX_TYPECHECK_G.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPECHECK_G);
-        members[HPyContextMember.CTX_SETTYPE.ordinal()] = createContextFunction(HPyContextMember.CTX_SETTYPE);
-        members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE);
         members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_GETNAME);
+        members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_ISSUBTYPE);
         members[HPyContextMember.CTX_IS.ordinal()] = createContextFunction(HPyContextMember.CTX_IS);
-        members[HPyContextMember.CTX_IS_G.ordinal()] = createContextFunction(HPyContextMember.CTX_IS_G);
-        members[HPyContextMember.CTX_ASSTRUCT.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT);
-        members[HPyContextMember.CTX_ASSTRUCTLEGACY.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCTLEGACY);
+        members[HPyContextMember.CTX_ASSTRUCT_OBJECT.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_OBJECT);
+        members[HPyContextMember.CTX_ASSTRUCT_LEGACY.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_LEGACY);
+        members[HPyContextMember.CTX_ASSTRUCT_TYPE.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_TYPE);
+        members[HPyContextMember.CTX_ASSTRUCT_LONG.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_LONG);
+        members[HPyContextMember.CTX_ASSTRUCT_FLOAT.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_FLOAT);
+        members[HPyContextMember.CTX_ASSTRUCT_UNICODE.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_UNICODE);
+        members[HPyContextMember.CTX_ASSTRUCT_TUPLE.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_TUPLE);
+        members[HPyContextMember.CTX_ASSTRUCT_LIST.ordinal()] = createContextFunction(HPyContextMember.CTX_ASSTRUCT_LIST);
+        members[HPyContextMember.CTX_TYPE_GETBUILTINSHAPE.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_GETBUILTINSHAPE);
         members[HPyContextMember.CTX_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_NEW);
         members[HPyContextMember.CTX_REPR.ordinal()] = createContextFunction(HPyContextMember.CTX_REPR);
         members[HPyContextMember.CTX_STR.ordinal()] = createContextFunction(HPyContextMember.CTX_STR);
@@ -613,7 +673,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_RICHCOMPARE.ordinal()] = createContextFunction(HPyContextMember.CTX_RICHCOMPARE);
         members[HPyContextMember.CTX_RICHCOMPAREBOOL.ordinal()] = createContextFunction(HPyContextMember.CTX_RICHCOMPAREBOOL);
         members[HPyContextMember.CTX_HASH.ordinal()] = createContextFunction(HPyContextMember.CTX_HASH);
-        members[HPyContextMember.CTX_SEQITER_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_SEQITER_NEW);
         members[HPyContextMember.CTX_BYTES_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_BYTES_CHECK);
         members[HPyContextMember.CTX_BYTES_SIZE.ordinal()] = createContextFunction(HPyContextMember.CTX_BYTES_SIZE);
         members[HPyContextMember.CTX_BYTES_GET_SIZE.ordinal()] = createContextFunction(HPyContextMember.CTX_BYTES_GET_SIZE);
@@ -635,7 +694,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_UNICODE_DECODEASCII.ordinal()] = createContextFunction(HPyContextMember.CTX_UNICODE_DECODEASCII);
         members[HPyContextMember.CTX_UNICODE_DECODELATIN1.ordinal()] = createContextFunction(HPyContextMember.CTX_UNICODE_DECODELATIN1);
         members[HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT.ordinal()] = createContextFunction(HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT);
-        members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = createContextFunction(HPyContextMember.CTX_UNICODE_INTERNFROMSTRING);
         members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = createContextFunction(HPyContextMember.CTX_UNICODE_SUBSTRING);
         members[HPyContextMember.CTX_LIST_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_LIST_CHECK);
         members[HPyContextMember.CTX_LIST_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_LIST_NEW);
@@ -643,13 +701,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_DICT_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_DICT_CHECK);
         members[HPyContextMember.CTX_DICT_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_DICT_NEW);
         members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = createContextFunction(HPyContextMember.CTX_DICT_KEYS);
-        members[HPyContextMember.CTX_DICT_GETITEM.ordinal()] = createContextFunction(HPyContextMember.CTX_DICT_GETITEM);
+        members[HPyContextMember.CTX_DICT_COPY.ordinal()] = createContextFunction(HPyContextMember.CTX_DICT_COPY);
         members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = createContextFunction(HPyContextMember.CTX_TUPLE_CHECK);
         members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = createContextFunction(HPyContextMember.CTX_TUPLE_FROMARRAY);
         members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = createContextFunction(HPyContextMember.CTX_SLICE_UNPACK);
-        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_NEW);
-        members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_GET);
-        members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_SET);
         members[HPyContextMember.CTX_IMPORT_IMPORTMODULE.ordinal()] = createContextFunction(HPyContextMember.CTX_IMPORT_IMPORTMODULE);
         members[HPyContextMember.CTX_CAPSULE_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_CAPSULE_NEW);
         members[HPyContextMember.CTX_CAPSULE_GET.ordinal()] = createContextFunction(HPyContextMember.CTX_CAPSULE_GET);
@@ -676,7 +731,12 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         members[HPyContextMember.CTX_GLOBAL_STORE.ordinal()] = createContextFunction(HPyContextMember.CTX_GLOBAL_STORE);
         members[HPyContextMember.CTX_GLOBAL_LOAD.ordinal()] = createContextFunction(HPyContextMember.CTX_GLOBAL_LOAD);
         members[HPyContextMember.CTX_DUMP.ordinal()] = createContextFunction(HPyContextMember.CTX_DUMP);
-        members[HPyContextMember.CTX_TYPE_CHECKSLOT.ordinal()] = createContextFunction(HPyContextMember.CTX_TYPE_CHECKSLOT);
+        members[HPyContextMember.CTX_COMPILE_S.ordinal()] = createContextFunction(HPyContextMember.CTX_COMPILE_S);
+        members[HPyContextMember.CTX_EVALCODE.ordinal()] = createContextFunction(HPyContextMember.CTX_EVALCODE);
+        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_NEW);
+        members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_GET);
+        members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = createContextFunction(HPyContextMember.CTX_CONTEXTVAR_SET);
+        members[HPyContextMember.CTX_SETCALLFUNCTION.ordinal()] = createContextFunction(HPyContextMember.CTX_SETCALLFUNCTION);
 
         // @formatter:on
         // Checkstyle: resume
@@ -864,8 +924,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
         private static Object getErrorValue(Node inliningTarget, HPyContextSignatureType type) {
             return switch (type) {
-                case Int, HPy_UCS4 -> -1;
-                case CLong, LongLong, UnsignedLong, UnsignedLongLong, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
+                case Int, Int32_t, Uint32_t, HPy_UCS4 -> -1;
+                case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
                 case CDouble -> -1.0;
                 case HPy -> GraalHPyHandle.NULL_HANDLE;
                 case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(inliningTarget).getNativeNull().getPtr();

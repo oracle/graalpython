@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -180,6 +181,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1404,7 +1406,7 @@ public abstract class TypeNodes {
                             DynamicObjectLibrary.getUncached());
             Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true,
                             DynamicObjectLibrary.getUncached());
-            return typeNewMethod != baseNewMethod;
+            return !HasSameConstructorNode.isSameFunction(typeNewMethod, baseNewMethod);
         }
 
         @TruffleBoundary
@@ -1749,16 +1751,11 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        static boolean doUserClass(PythonClass obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttributeFromObjectNode,
-                        @Cached InlinedBranchProfile hasHPyFlagsProfile) {
+        static boolean doUserClass(PythonClass obj) {
             // Special case for custom classes created via HPy: They are managed classes but can
             // have custom flags. The flags may prohibit subtyping.
-            Object flagsObj = readAttributeFromObjectNode.execute(obj, GraalHPyDef.TYPE_HPY_FLAGS);
-            if (flagsObj != PNone.NO_VALUE) {
-                hasHPyFlagsProfile.enter(inliningTarget);
-                return (((long) flagsObj) & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
+            if (obj.isHPyType()) {
+                return (obj.getFlags() & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
             }
             return true;
         }
@@ -2739,6 +2736,47 @@ public abstract class TypeNodes {
         @Fallback
         static boolean doOther(@SuppressWarnings("unused") Object cls) {
             return false;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(SpecialMethodSlot.class)
+    public abstract static class HasSameConstructorNode extends Node {
+
+        public abstract boolean execute(Node inliningTarget, Object leftClass, Object rightClass);
+
+        @Specialization
+        static boolean doGeneric(Node inliningTarget, Object left, Object right,
+                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupLeftNode,
+                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupRightNode,
+                        @Cached InlinedExactClassProfile leftNewProfile,
+                        @Cached InlinedExactClassProfile rightNewProfile) {
+            assert IsTypeNode.executeUncached(left);
+            assert IsTypeNode.executeUncached(right);
+
+            Object leftNew = leftNewProfile.profile(inliningTarget, lookupLeftNode.execute(left));
+            Object rightNew = rightNewProfile.profile(inliningTarget, lookupRightNode.execute(right));
+            return isSameFunction(leftNew, rightNew);
+        }
+
+        static boolean isSameFunction(Object leftFunc, Object rightFunc) {
+            Object leftResolved = leftFunc;
+            if (leftFunc instanceof PBuiltinFunction builtinFunction) {
+                Object typeDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (typeDecorated != null) {
+                    leftResolved = typeDecorated;
+                }
+            }
+            Object rightResolved = rightFunc;
+            if (rightFunc instanceof PBuiltinFunction builtinFunction) {
+                Object baseDecorated = HPyObjectNewNode.getDecoratedSuperConstructor(builtinFunction);
+                if (baseDecorated != null) {
+                    rightResolved = baseDecorated;
+                }
+            }
+            return leftResolved == rightResolved;
         }
     }
 }

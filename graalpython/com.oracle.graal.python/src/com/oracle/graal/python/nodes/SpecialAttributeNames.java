@@ -172,4 +172,7 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___MATCH_ARGS__ = "__match_args__";
     public static final TruffleString T___MATCH_ARGS__ = tsLiteral(J___MATCH_ARGS__);
+
+    public static final String J___VECTORCALLOFFSET__ = "__vectorcalloffset__";
+    public static final TruffleString T___VECTORCALLOFFSET__ = tsLiteral(J___VECTORCALLOFFSET__);
 }

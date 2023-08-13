@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,112 +40,88 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.util.List;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltinsFactory.HPyObjectNewNodeGen;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.GeneratedBy;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class GraalHPyObjectBuiltins {
-    public static class HPyObjectNewNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
-        private final T node;
 
-        public HPyObjectNewNodeFactory(T node) {
-            this.node = node;
-        }
+    public static final class HPyObjectNewNode extends PRootNode {
+        private static final TruffleString KW_SUPERCONS = tsLiteral("$supercons");
+        private static final TruffleString[] KEYWORDS_HIDDEN_SUPERCONS = {KW_SUPERCONS};
 
-        @Override
-        public T createNode(Object... arguments) {
-            return NodeUtil.cloneNode(node);
-        }
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_SUPERCONS, false);
 
-        @Override
-        public Class<T> getNodeClass() {
-            return determineNodeClass(node);
-        }
-
-        @SuppressWarnings("unchecked")
-        private static <T> Class<T> determineNodeClass(T node) {
-            CompilerAsserts.neverPartOfCompilation();
-            Class<T> nodeClass = (Class<T>) node.getClass();
-            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
-            if (genBy != null) {
-                nodeClass = (Class<T>) genBy.value();
-                assert nodeClass.isAssignableFrom(node.getClass());
-            }
-            return nodeClass;
-        }
-
-        @Override
-        public List<List<Class<?>>> getNodeSignatures() {
-            throw new IllegalAccessError();
-        }
-
-        @Override
-        public List<Class<? extends Node>> getExecutionSignature() {
-            throw new IllegalAccessError();
-        }
-
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
-        private static final TruffleString KW_SUPER_CONSTRUCTOR = tsLiteral("$supercons");
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyObjectNewNode.class);
 
         private static PKeyword[] createKwDefaults(Object superConstructor) {
             if (superConstructor != null) {
-                return new PKeyword[]{new PKeyword(KW_SUPER_CONSTRUCTOR, superConstructor)};
+                return new PKeyword[]{new PKeyword(KW_SUPERCONS, superConstructor)};
             }
             return PKeyword.EMPTY_KEYWORDS;
         }
 
-        private static final Builtin BUILTIN = HPyObjectNewNode.class.getAnnotation(Builtin.class);
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyObjectNewNode.class);
-
+        @Child private CalleeContext calleeContext;
+        @Child private ReadIndexedArgumentNode readSelfNode;
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CallVarargsMethodNode callNewNode;
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length >= 1) {
-                return doGeneric(frame, self, arguments, keywords);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
+        private final int builtinShape;
+
+        private HPyObjectNewNode(PythonLanguage language, int builtinShape) {
+            super(language);
+            this.builtinShape = builtinShape;
         }
 
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object explicitSelf, Object[] arguments, PKeyword[] keywords) {
+        @Override
+        public Object execute(VirtualFrame frame) {
+            getCalleeContext().enter(frame);
+            try {
+                return doCall(frame, getSuperConstructor(frame), getSelf(frame), getVarargs(frame), getKwargs(frame));
+            } finally {
+                getCalleeContext().exit(frame, this);
+            }
+        }
+
+        private Object doCall(VirtualFrame frame, Object superConstructor, Object explicitSelf, Object[] arguments, PKeyword[] keywords) {
             assert explicitSelf != null;
 
             // create the managed Python object
@@ -162,49 +138,114 @@ public abstract class GraalHPyObjectBuiltins {
                 PythonUtils.arraycopy(arguments, 0, argsWithSelf, 1, arguments.length);
                 self = explicitSelf;
             }
+            PythonContext context = PythonContext.get(this);
             Object dataPtr = null;
-            if (self instanceof PythonClass) {
+            Object defaultCallFunction = null;
+            if (self instanceof PythonClass pythonClass) {
                 // allocate native space
-                long basicSize = ((PythonClass) self).basicSize;
+                long basicSize = pythonClass.getBasicSize();
                 if (basicSize > 0) {
                     /*
                      * This is just calling 'calloc' which is a pure helper function. Therefore, we
                      * can take any HPy context and don't need to attach a context to this __new__
                      * function for that since the helper function won't deal with handles.
                      */
-                    dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    dataPtr = ensureCallHPyFunctionNode().call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
                         LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
-                    // TODO(fa): add memory tracing
                 }
+
+                defaultCallFunction = pythonClass.getHPyDefaultCallFunc();
             }
 
-            Object inheritedConstructor = extractInheritedConstructor(arguments, keywords);
-            Object pythonObject;
-            if (inheritedConstructor == null) {
-                // fast-path if the super class is 'object'
-                pythonObject = factory().createPythonHPyObject(self, dataPtr);
+            Object result = ensureCallNewNode().execute(frame, superConstructor, argsWithSelf, keywords);
+            assert validateSuperConstructorResult(result, builtinShape);
+
+            /*
+             * Since we are creating an object with an unknown constructor, the Java type may be
+             * anything (e.g. PInt, etc). However, we require it to be a PythonObject otherwise we
+             * don't know where to store the native data pointer.
+             */
+            if (result instanceof PythonObject pythonObject) {
+                if (dataPtr != null) {
+                    GraalHPyData.setHPyNativeSpace(pythonObject, dataPtr);
+                }
+                if (defaultCallFunction != null) {
+                    GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunction);
+                }
             } else {
-                pythonObject = ensureCallNewNode().execute(frame, inheritedConstructor, argsWithSelf, keywords);
-
-                /*
-                 * Since we are creating an object with an unknown constructor, the Java type may be
-                 * anything (e.g. PInt, etc). However, we require it to be a PythonObject otherwise
-                 * we don't know where to store the native data pointer.
-                 */
-                if (dataPtr != null && pythonObject instanceof PythonObject) {
-                    ((PythonObject) pythonObject).setHPyNativeSpace(dataPtr);
-                }
+                assert false : "inherited constructor of HPy type did not create a managed Python object";
             }
-            return pythonObject;
+            return result;
         }
 
-        @SuppressWarnings("unused")
-        private static Object extractInheritedConstructor(Object[] arguments, PKeyword[] keywords) {
-            // TODO(fa): not yet implemented
-            return null;
+        private static boolean validateSuperConstructorResult(Object result, int builtinShape) {
+            return switch (builtinShape) {
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_LEGACY, GraalHPyDef.HPyType_BUILTIN_SHAPE_OBJECT -> result instanceof PythonObject;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_TYPE -> result instanceof PythonClass;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_LONG -> result instanceof PInt;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_FLOAT -> result instanceof PFloat;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_UNICODE -> result instanceof PString;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_TUPLE -> result instanceof PTuple;
+                case GraalHPyDef.HPyType_BUILTIN_SHAPE_LIST -> result instanceof PList;
+                default -> false;
+            };
+        }
+
+        private Object getSelf(VirtualFrame frame) {
+            if (readSelfNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readSelfNode = insert(ReadIndexedArgumentNode.create(0));
+            }
+            return readSelfNode.execute(frame);
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
+        }
+
+        private PKeyword[] getKwargs(VirtualFrame frame) {
+            if (PArguments.getKeywordArguments(frame).length == 0) {
+                return PKeyword.EMPTY_KEYWORDS;
+            }
+            if (readKwargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readKwargsNode = insert(ReadVarKeywordsNode.create());
+            }
+            return (PKeyword[]) readKwargsNode.execute(frame);
+        }
+
+        private Object getSuperConstructor(VirtualFrame frame) {
+            if (readCallableNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // we insert a hidden argument at the end of the positional arguments
+                int hiddenArg = getSignature().getParameterIds().length;
+                readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
+            }
+            return readCallableNode.execute(frame);
+        }
+
+        private CalleeContext getCalleeContext() {
+            if (calleeContext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                calleeContext = insert(CalleeContext.create());
+            }
+            return calleeContext;
+        }
+
+        private static Object extractInheritedConstructor(PythonContext context, PKeyword[] keywords) {
+            for (int i = 0; i < keywords.length; i++) {
+                if (keywords[i].getName() == KW_SUPERCONS) {
+                    return keywords[i].getValue();
+                }
+            }
+            return context.lookupType(PythonBuiltinClassType.PythonObject).getAttribute(SpecialMethodNames.T___NEW__);
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
@@ -223,12 +264,41 @@ public abstract class GraalHPyObjectBuiltins {
             return callNewNode;
         }
 
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
+        @Override
+        public boolean setsUpCalleeContext() {
+            return true;
+        }
+
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object superConstructor) {
-            RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyObjectNewNodeFactory<>(HPyObjectNewNodeGen.create()), true),
-                            HPyObjectNewNode.class, BUILTIN.name());
-            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object superConstructor, int builtinShape) {
+            // do not decorate the decorator
+            if (superConstructor instanceof PBuiltinFunction builtinFunction && isHPyObjectNewDecorator(builtinFunction)) {
+                return builtinFunction;
+            }
+            RootCallTarget callTarget = language.createCachedCallTarget(l -> new HPyObjectNewNode(language, builtinShape), HPyObjectNewNode.class, builtinShape);
+            int flags = CExtContext.METH_KEYWORDS | CExtContext.METH_VARARGS;
             return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.T___NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
+        }
+
+        public static Object getDecoratedSuperConstructor(PBuiltinFunction builtinFunction) {
+            if (isHPyObjectNewDecorator(builtinFunction)) {
+                return extractInheritedConstructor(PythonContext.get(null), builtinFunction.getKwDefaults());
+            }
+            return null;
+        }
+
+        private static boolean isHPyObjectNewDecorator(PBuiltinFunction builtinFunction) {
+            return builtinFunction.getFunctionRootNode() instanceof HPyObjectNewNode;
         }
     }
 }

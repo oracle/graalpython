@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyTraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
@@ -723,10 +724,10 @@ public abstract class Python3Core {
                         new PyCPointerBuiltins(),
                         new CDataBuiltins(),
 
-                        // _hpy_universal and _hpy_debug
+                        // _hpy_universal, _hpy_debug, and _hpy_trace
                         new GraalHPyUniversalModuleBuiltins(),
                         new GraalHPyDebugModuleBuiltins(),
-                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyTraceModuleBuiltins(),
 
                         // _asyncio
                         new AsyncioModuleBuiltins(),

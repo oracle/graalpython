@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -50,21 +48,29 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltinsClinicProviders.HPyUniversalLoadBootstrapNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltinsClinicProviders.HPyUniversalLoadNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -84,12 +90,21 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         return GraalHPyUniversalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "load", parameterNames = {"name", "path", "debug"}, minNumOfPositionalArgs = 2)
+    @Override
+    public void initialize(Python3Core core) {
+        for (HPyMode mode : HPyMode.values()) {
+            addBuiltinConstant(mode.name(), mode.getValue());
+        }
+        super.initialize(core);
+    }
+
+    @Builtin(name = "load", parameterNames = {"name", "path", "spec", "debug", "mode"}, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "debug", conversion = ClinicConversion.Boolean, defaultValue = "false")
-    abstract static class HPyUniversalLoadNode extends PythonTernaryClinicBuiltinNode {
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    abstract static class HPyUniversalLoadNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -97,14 +112,18 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PythonModule doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, boolean debug,
-                        @Cached HPyCheckHandleResultNode checkHandleResultNode,
+        Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, Object spec, boolean debug, int mode,
                         @Cached TruffleString.EqualNode eqNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return loadHPyModule(context, name, path, debug, checkHandleResultNode);
+                HPyMode hmode = debug ? HPyMode.MODE_DEBUG : HPyMode.MODE_UNIVERSAL;
+                // 'mode' just overwrites 'debug'
+                if (mode > 0) {
+                    hmode = HPyMode.fromValue(mode);
+                }
+                return GraalHPyContext.loadHPyModule(this, context, name, path, spec, hmode);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -115,22 +134,90 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
+    }
 
-        @TruffleBoundary
-        private PythonModule loadHPyModule(PythonContext context, TruffleString name, TruffleString path, boolean debug,
-                        HPyCheckHandleResultNode checkHandleResultNode) throws IOException, ApiInitException, ImportException {
-            Object result = GraalHPyContext.loadHPyModule(this, context, name, path, debug, checkHandleResultNode);
-            if (!(result instanceof PythonModule)) {
-                /*
-                 * HPy does currently not support multi-phase extension module initialization. This
-                 * means there is no structure defined in HPy that we could parse. Hence, whenever
-                 * we reach this point, it's an error.
-                 */
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.SystemError, ErrorMessages.INIT_S_RETURNED_AN_UNEXPECTED_VALUE, name);
+    @Builtin(name = "_load_bootstrap", parameterNames = {"name", "ext_name", "package", "file", "loader", "spec", "env"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "ext_name", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "file", conversion = ClinicConversion.TString)
+    abstract static class HPyUniversalLoadBootstrapNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return HPyUniversalLoadBootstrapNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, TruffleString name, TruffleString extName, Object pkg, TruffleString file, Object loader, Object spec, Object env,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+            Object module;
+
+            PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                HPyMode hmode = getHPyModeFromEnviron(name, env);
+                module = GraalHPyContext.loadHPyModule(this, context, name, file, spec, hmode);
+            } catch (CannotCastException e) {
+                // thrown by getHPyModeFromEnviron if value is not a string
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
+            } catch (ApiInitException ie) {
+                throw ie.reraise(getConstructAndRaiseNode(), frame);
+            } catch (ImportException ie) {
+                throw ie.reraise(getConstructAndRaiseNode(), frame);
+            } catch (IOException e) {
+                throw getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
             }
-            PythonModule module = (PythonModule) result;
-            module.setAttribute(T___FILE__, path);
+
+            writeAttrNode.execute(module, SpecialAttributeNames.T___FILE__, file);
+            writeAttrNode.execute(module, SpecialAttributeNames.T___LOADER__, loader);
+            writeAttrNode.execute(module, SpecialAttributeNames.T___NAME__, extName);
+            writeAttrNode.execute(module, SpecialAttributeNames.T___PACKAGE__, pkg);
+            writeAttrNode.execute(spec, ImpModuleBuiltins.T_ORIGIN, file);
+            writeAttrNode.execute(module, SpecialAttributeNames.T___SPEC__, spec);
             return module;
+        }
+
+        /**
+         * <pre>
+         *     HPY_MODE := MODE | (MODULE_NAME ':' MODE { ',' MODULE_NAME ':' MODE })
+         *     MODULE_NAME :=
+         *     IDENTIFIER MODE := 'debug' | 'trace' | 'universal'
+         * </pre>
+         */
+        @TruffleBoundary
+        private static HPyMode getHPyModeFromEnviron(TruffleString moduleName, Object env) throws CannotCastException {
+            Object result;
+            try {
+                result = PyObjectGetItem.executeUncached(env, PythonUtils.tsLiteral("HPY"));
+            } catch (PException e) {
+                e.expect(null, PythonBuiltinClassType.KeyError, IsBuiltinObjectProfile.getUncached());
+                // this is not an error; it just means that the key was not present in 'env'
+                return HPyMode.MODE_UNIVERSAL;
+            }
+
+            String s = CastToJavaStringNode.getUncached().execute(result);
+
+            int colonIdx = s.indexOf(':');
+            if (colonIdx != -1) {
+                // case 2: modes are specified per module
+                String[] moduleParts = s.split(",");
+                String sModuleName = moduleName.toJavaStringUncached();
+                for (String modulePars : moduleParts) {
+                    String[] def = modulePars.split(":");
+                    if (sModuleName.equals(def[0])) {
+                        return HPyMode.valueOf("MODE_" + def[1].toUpperCase());
+                    }
+                }
+            } else {
+                // case 1: mode was globally specified
+                return HPyMode.valueOf("MODE_" + s.toUpperCase());
+            }
+            return HPyMode.MODE_UNIVERSAL;
         }
     }
 }

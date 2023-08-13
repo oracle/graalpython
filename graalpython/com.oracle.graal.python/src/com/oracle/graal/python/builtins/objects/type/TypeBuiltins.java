@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
@@ -206,7 +207,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
     public static final HiddenKey TYPE_AS_BUFFER = new HiddenKey("__tp_as_buffer__");
     public static final HiddenKey TYPE_FLAGS = new HiddenKey(J___FLAGS__);
-    public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey("__vectorcall_offset__");
+    public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey(J___VECTORCALLOFFSET__);
     public static final HiddenKey TYPE_GETBUFFER = new HiddenKey("__getbuffer__");
     public static final HiddenKey TYPE_RELEASEBUFFER = new HiddenKey("__releasebuffer__");
     private static final HiddenKey TYPE_DOC = new HiddenKey(J___DOC__);

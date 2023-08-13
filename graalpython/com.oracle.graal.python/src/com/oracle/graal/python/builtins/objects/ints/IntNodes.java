@@ -52,6 +52,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -66,6 +67,7 @@ public final class IntNodes {
     /**
      * Equivalent of CPython's {@code _PyLong_Sign}. Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
      */
+    @GenerateUncached
     @GenerateInline(false)
     public abstract static class PyLongSign extends Node {
         public abstract int execute(Object value);

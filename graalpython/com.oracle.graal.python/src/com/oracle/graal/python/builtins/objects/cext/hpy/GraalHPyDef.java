@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
@@ -106,15 +107,22 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -126,7 +134,7 @@ public abstract class GraalHPyDef {
 
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
-    public static final HiddenKey TYPE_HPY_IS_PURE = new HiddenKey("hpy_is_pure");
+    public static final HiddenKey TYPE_HPY_BUILTIN_SHAPE = new HiddenKey("hpy_builtin_shape");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
@@ -237,8 +245,8 @@ public abstract class GraalHPyDef {
         BINARYFUNC(LLVMType.HPyFunc_binaryfunc),
         BINARYFUNC_L(LLVMType.HPyFunc_binaryfunc),
         BINARYFUNC_R(LLVMType.HPyFunc_binaryfunc),
-        CALL,
-        HASHFUNC(LLVMType.HPyFunc_binaryfunc),
+        CALL(LLVMType.HPyFunc_keywords),
+        HASHFUNC(LLVMType.HPyFunc_hashfunc),
         TERNARYFUNC(LLVMType.HPyFunc_ternaryfunc),
         TERNARYFUNC_R(LLVMType.HPyFunc_ternaryfunc),
         INQUIRYPRED(LLVMType.HPyFunc_inquiry),
@@ -267,7 +275,8 @@ public abstract class GraalHPyDef {
         TRAVERSE(LLVMType.HPyFunc_traverseproc),
         DESTRUCTOR(LLVMType.HPyFunc_destructor),
         GETBUFFER(LLVMType.HPyFunc_getbufferproc),
-        RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc);
+        RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc),
+        MOD_CREATE(LLVMType.HPyModule_create);
 
         /** The C function's type (basically it's signature). */
         private final LLVMType llvmFunctionType;
@@ -318,6 +327,16 @@ public abstract class GraalHPyDef {
     public static final long HPy_TPFLAGS_HAVE_GC = (1L << 14);
     public static final long HPy_TPFLAGS_DEFAULT = _Py_TPFLAGS_HEAPTYPE;
 
+    /* enum values of 'HPyType_BuiltinShape' */
+    public static final int HPyType_BUILTIN_SHAPE_LEGACY = -1;
+    public static final int HPyType_BUILTIN_SHAPE_OBJECT = 0;
+    public static final int HPyType_BUILTIN_SHAPE_TYPE = 1;
+    public static final int HPyType_BUILTIN_SHAPE_LONG = 2;
+    public static final int HPyType_BUILTIN_SHAPE_FLOAT = 3;
+    public static final int HPyType_BUILTIN_SHAPE_UNICODE = 4;
+    public static final int HPyType_BUILTIN_SHAPE_TUPLE = 5;
+    public static final int HPyType_BUILTIN_SHAPE_LIST = 6;
+
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
         HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
@@ -366,17 +385,21 @@ public abstract class GraalHPyDef {
         HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
-        HPY_TP_CALL(50, HPySlotWrapper.NULL, T___CALL__),
+        HPY_TP_CALL(50, HPySlotWrapper.CALL, T___CALL__),
+        HPY_TP_HASH(59, HPySlotWrapper.HASHFUNC, T___HASH__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
         HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, T___NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, T___REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),
+        HPY_TP_STR(70, HPySlotWrapper.UNARYFUNC, T___STR__),
         HPY_TP_TRAVERSE(71, HPySlotWrapper.TRAVERSE),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, T___MATMUL__, HPySlotWrapper.BINARYFUNC_R, T___RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, T___IMATMUL__),
         HPY_TP_FINALIZE(80, HPySlotWrapper.DESTRUCTOR),
-        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC);
+        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC),
+        HPY_MOD_CREATE(2000, HPySlotWrapper.MOD_CREATE),
+        HPY_MOD_EXEC(2001, HPySlotWrapper.INQUIRYPRED);
 
         /** The corresponding C enum value. */
         private final int value;
@@ -447,12 +470,11 @@ public abstract class GraalHPyDef {
             return signatures;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final HPySlot[] BY_VALUE = new HPySlot[100];
 
         static {
-            for (var entry : VALUES) {
-                if (entry != HPY_TP_DESTROY) {
+            for (var entry : values()) {
+                if (entry.value >= 0 && entry.value < BY_VALUE.length) {
                     assert BY_VALUE[entry.value] == null;
                     BY_VALUE[entry.value] = entry;
                 }
@@ -460,7 +482,17 @@ public abstract class GraalHPyDef {
         }
 
         static HPySlot fromValue(int value) {
-            return value == HPY_TP_DESTROY.value ? HPY_TP_DESTROY : value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
+            if (value >= 0 && value < BY_VALUE.length) {
+                return BY_VALUE[value];
+            }
+            if (HPY_TP_DESTROY.value == value) {
+                return HPY_TP_DESTROY;
+            } else if (HPY_MOD_CREATE.value == value) {
+                return HPY_MOD_CREATE;
+            } else if (HPY_MOD_EXEC.value == value) {
+                return HPY_MOD_EXEC;
+            }
+            return null;
         }
 
         private static HPySlotWrapper[] w(HPySlotWrapper... wrappers) {
@@ -470,5 +502,32 @@ public abstract class GraalHPyDef {
         private static TruffleString[] k(TruffleString... keys) {
             return keys;
         }
+    }
+
+    public static boolean isValidBuiltinShape(int i) {
+        return HPyType_BUILTIN_SHAPE_LEGACY <= i && i <= HPyType_BUILTIN_SHAPE_LIST;
+    }
+
+    public static int getBuiltinShapeFromHiddenAttribute(Object object) {
+        if (object instanceof PythonClass pythonClass) {
+            return pythonClass.getBuiltinShape();
+        } else if (object instanceof PythonAbstractNativeObject) {
+            assert IsTypeNode.executeUncached(object);
+            return HPyType_BUILTIN_SHAPE_LEGACY;
+        }
+        return -2; // error
+    }
+
+    static PythonBuiltinClassType getBuiltinClassType(int builtinShape) {
+        return switch (builtinShape) {
+            case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> PythonBuiltinClassType.PythonObject;
+            case HPyType_BUILTIN_SHAPE_TYPE -> PythonBuiltinClassType.PythonClass;
+            case HPyType_BUILTIN_SHAPE_LONG -> PythonBuiltinClassType.PInt;
+            case HPyType_BUILTIN_SHAPE_FLOAT -> PythonBuiltinClassType.PFloat;
+            case HPyType_BUILTIN_SHAPE_UNICODE -> PythonBuiltinClassType.PString;
+            case HPyType_BUILTIN_SHAPE_TUPLE -> PythonBuiltinClassType.PTuple;
+            case HPyType_BUILTIN_SHAPE_LIST -> PythonBuiltinClassType.PList;
+            default -> throw CompilerDirectives.shouldNotReachHere(GraalHPyNew.INVALID_BUILT_IN_SHAPE);
+        };
     }
 }

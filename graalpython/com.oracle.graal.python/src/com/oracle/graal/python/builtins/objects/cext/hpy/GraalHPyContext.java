@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
@@ -55,8 +56,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -66,8 +70,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -78,9 +83,9 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -96,10 +101,10 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -116,9 +121,25 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GraalHPyContext extends CExtContext {
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
+    // {{start autogen}}
+    public static final int HPY_ABI_VERSION = 0;
+    public static final int HPY_ABI_VERSION_MINOR = 0;
+    public static final String HPY_ABI_TAG = "hpy0";
+    // {{end autogen}}
+
+    private static final String LOGGER_HPY_NAME = "hpy";
+    private static final String HPY_EXT = ".hpy";
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyContext.class);
 
     public static final long SIZEOF_LONG = java.lang.Long.BYTES;
+    private static final long NATIVE_ARGUMENT_STACK_SIZE = 1 << 15; // 32 kB stack size
+
+    // "blah.hpy123[-graalpy231-310].so"
+    private static final Pattern SO_NAME_PATTERN = Pattern.compile(".*" + Pattern.quote(HPY_EXT) + "(\\d+)(?:-[\\w-]+)?\\.so$");
+
+    public static TruffleLogger getLogger(Class<?> clazz) {
+        return PythonLanguage.getLogger(LOGGER_HPY_NAME + "." + clazz.getSimpleName());
+    }
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ApiInitException, ImportException {
@@ -157,17 +178,14 @@ public final class GraalHPyContext extends CExtContext {
      *            messages).
      * @param path The path of the C extension module to load (usually something ending with
      *            {@code .so} or {@code .pyd} or similar).
-     * @param checkResultNode An adopted node instance. This is necessary because the result check
-     *            could raise an exception and only an adopted node will report useful source
-     *            locations.
-     * @return A Python module.
+     * @param mode The mode (e.g. debug or trace) to use when loading the module.
+     * @return Pointer to the HPy module definition struct.
      * @throws IOException If the specified file cannot be loaded.
      * @throws ApiInitException If the corresponding native context could not be initialized.
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadHPyModule(Node location, PythonContext context, TruffleString name, TruffleString path, boolean debug,
-                    HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
+    public static Object loadHPyModule(Node location, PythonContext context, TruffleString name, TruffleString path, Object spec, HPyMode mode) throws IOException, ApiInitException, ImportException {
 
         /*
          * Unfortunately, we need eagerly initialize the HPy context because the ctors of the
@@ -176,26 +194,123 @@ public final class GraalHPyContext extends CExtContext {
         GraalHPyContext hpyUniversalContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
         GraalHPyNativeContext backend = hpyUniversalContext.backend;
         Object llvmLibrary = backend.loadExtensionLibrary(location, context, name, path);
-        TruffleString basename = getBaseName(name);
-        TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
-        boolean saved = hpyUniversalContext.debugMode;
-        hpyUniversalContext.debugMode = debug;
+        String basename = getBaseName(name).toJavaStringUncached();
+        String hpyInitFuncName = J_HPY_INIT + basename;
+
+        // get_required_hpy_major_version_<ext_name>
+        String hpyMajorVersionFuncName = J_HPY_MAJOR_VER_FUN + basename;
+
+        // get_required_hpy_minor_version_<ext_name>
+        String hpyMinorVersionFuncName = J_HPY_MINOR_VER_FUN + basename;
+
+        HPyABIVersion abiVersion;
         try {
-            Object nativeResult = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, debug);
-            return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
+            abiVersion = backend.getHPyABIVersion(llvmLibrary, hpyMajorVersionFuncName, hpyMinorVersionFuncName);
+        } catch (Exception e) {
+            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ERROR_LOADING_EXT_MODULE,
+                            path, hpyMajorVersionFuncName, hpyMinorVersionFuncName, e.getMessage());
+        }
+
+        /*
+         * For now, we have only one major version but in the future at this point we would decide
+         * which HPyContext to create.
+         */
+        if (abiVersion.major != HPY_ABI_VERSION || abiVersion.minor > HPY_ABI_VERSION_MINOR) {
+            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_VERSION_ERROR,
+                            name, abiVersion.major, abiVersion.minor, HPY_ABI_VERSION, HPY_ABI_VERSION_MINOR);
+        }
+
+        // Sanity check of the tag in the shared object filename
+        validateABITag(location, basename, path.toJavaStringUncached(), abiVersion);
+
+        HPyMode saved = hpyUniversalContext.currentMode;
+        hpyUniversalContext.currentMode = mode;
+        try {
+            Object hpyModuleDefPtr = backend.initHPyModule(llvmLibrary, hpyInitFuncName, name, path, mode);
+            // HPy only supports multi-phase extension module initialization.
+            assert !(hpyModuleDefPtr instanceof PythonModule);
+            if (InteropLibrary.getUncached().isNull(hpyModuleDefPtr)) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.ERROR_LOADING_HPY_EXT_S_S, path, name);
+            }
+
+            Object module = GraalHPyModuleCreateNodeGen.getUncached().execute(context.getHPyContext(), name, spec, hpyModuleDefPtr);
+            if (module instanceof PythonModule pythonModule) {
+                GraalHPyModuleExecNodeGen.getUncached().execute(location, context.getHPyContext(), pythonModule);
+            }
+            return module;
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         } finally {
-            hpyUniversalContext.debugMode = saved;
+            hpyUniversalContext.currentMode = saved;
         }
     }
 
-    public long createNativeArguments(Object[] delegate, InteropLibrary delegateLib) {
-        return backend.createNativeArguments(delegate, delegateLib);
+    private static void validateABITag(Node location, String shortname, String soname, HPyABIVersion abiVersion) {
+        // assumes format: "blah.hpy123[-310].so"
+        Matcher matcher = SO_NAME_PATTERN.matcher(soname);
+        if (matcher.matches()) {
+            String abiTagVersion = matcher.group(1);
+            int abiTag = Integer.parseInt(abiTagVersion);
+            if (abiTag != abiVersion.major) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
+                                shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
+            }
+            // major version fits -> validation successful
+            return;
+        }
+        throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_NO_ABI_TAG,
+                        shortname, soname, abiVersion.major, abiVersion.minor);
+    }
+
+    public Object createArgumentsArray(Object[] args) {
+        return backend.createArgumentsArray(args);
+    }
+
+    public void freeArgumentsArray(Object argsArray) {
+        backend.freeArgumentsArray(argsArray);
+    }
+
+    public long createNativeArguments(Object[] delegate) {
+        if (nativeArgumentsStack == 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // we use 'getContext().getUnsafe()' because this will check if native access is allowed
+            nativeArgumentsStack = getContext().getUnsafe().allocateMemory(NATIVE_ARGUMENT_STACK_SIZE);
+            nativeArgumentStackTop = nativeArgumentsStack + NATIVE_ARGUMENT_STACK_SIZE;
+        }
+        long arraySize = delegate.length * SIZEOF_LONG;
+        if (nativeArgumentsStack + arraySize > nativeArgumentStackTop) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            String msg = String.format("overflow on native argument stack (requested size: %d bytes)", arraySize);
+            LOGGER.severe(msg);
+            throw new InternalError(msg);
+        }
+        long arrayPtr = nativeArgumentsStack;
+        nativeArgumentsStack += arraySize;
+
+        for (int i = 0; i < delegate.length; i++) {
+            Object element = delegate[i];
+            UNSAFE.putLong(arrayPtr + i * SIZEOF_LONG, pythonObjectAsBits(element));
+        }
+        return arrayPtr;
     }
 
     public void freeNativeArgumentsArray(int nargs) {
-        backend.freeNativeArgumentsArray(nargs);
+        freeNativeArgumentsUntil(nativeArgumentsStack - nargs * SIZEOF_LONG);
+    }
+
+    public void freeNativeArgumentsUntil(long basePtr) {
+        assert basePtr <= nativeArgumentsStack;
+        for (long cur = basePtr; cur < nativeArgumentsStack; cur += SIZEOF_LONG) {
+            long h = UNSAFE.getLong(cur);
+            if (GraalHPyBoxing.isBoxedHandle(h)) {
+                releaseHPyHandleForObject(GraalHPyBoxing.unboxHandle(h));
+            }
+        }
+        nativeArgumentsStack = basePtr;
+    }
+
+    @ValueType
+    public record HPyABIVersion(int major, int minor) {
     }
 
     public interface HPyUpcall {
@@ -242,7 +357,8 @@ public final class GraalHPyContext extends CExtContext {
         HPyFunc_getbufferproc,
         HPyFunc_releasebufferproc,
         HPyFunc_destroyfunc,
-        HPyModule_init;
+        HPyModule_init,
+        HPyModule_create
     }
 
     public static final int IMMUTABLE_HANDLE_COUNT = 256;
@@ -261,12 +377,12 @@ public final class GraalHPyContext extends CExtContext {
     final boolean useNativeFastPaths;
 
     /**
-     * This is set to {@code true} if an HPy extension is initialized (i.e. {@code HPyInit_*} is
-     * called) in debug mode. The value is then used to create the right closures for down calls
-     * during module ({@code HPyModule_Create}) and type creation ({@code HPyType_FromSpec}). We
-     * need this because the debug context is just a wrapper around the universal context, so the
-     * module and type creation will look as normal. For reference on how other implementations do
-     * it:
+     * This is set to the appropriate mode if an HPy extension is initialized (i.e.
+     * {@code HPyInit_*} is called) in, e.g., debug mode. The value is then used to create the right
+     * closures for down calls during module ({@code HPyModule_Create}) and type creation
+     * ({@code HPyType_FromSpec}). We need this because the debug context is just a wrapper around
+     * the universal context, so the module and type creation will look as normal. For reference on
+     * how other implementations do it:
      * <p>
      * CPython stores the HPy context into global C variable {@code _ctx_for_trampolines} defined by
      * {@code HPy_MODINIT}. This variable belongs to the HPy extension and the context is loaded
@@ -279,7 +395,7 @@ public final class GraalHPyContext extends CExtContext {
      * trampolines pick the appropriate context.
      * </p>
      */
-    private boolean debugMode;
+    private HPyMode currentMode = HPyMode.MODE_UNIVERSAL;
 
     /**
      * Few well known Python objects that are also HPyContext constants are guaranteed to always get
@@ -305,6 +421,9 @@ public final class GraalHPyContext extends CExtContext {
     private Thread hpyReferenceCleanerThread;
 
     private long nativeSpacePointers;
+
+    private long nativeArgumentsStack = 0;
+    private long nativeArgumentStackTop = 0;
 
     private final ScheduledExecutorService scheduler;
 
@@ -391,7 +510,7 @@ public final class GraalHPyContext extends CExtContext {
      * exchanging process, see also {@link #references}).
      */
     static final class GraalHPyReferenceCleanerRunnable implements Runnable {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyReferenceCleanerRunnable.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyReferenceCleanerRunnable.class);
         private final ReferenceQueue<?> referenceQueue;
         private GraalHPyHandleReference cleanerList;
 
@@ -492,7 +611,7 @@ public final class GraalHPyContext extends CExtContext {
      */
     private static final class HPyNativeSpaceCleanerRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyNativeSpaceCleanerRootNode.class);
 
         @Child private PCallHPyFunction callBulkFree;
 
@@ -611,8 +730,12 @@ public final class GraalHPyContext extends CExtContext {
         return backend.getHPyDebugModule();
     }
 
-    boolean isDebugMode() {
-        return debugMode;
+    public PythonModule getHPyTraceModule() throws ImportException {
+        return backend.getHPyTraceModule();
+    }
+
+    HPyMode getCurrentMode() {
+        return currentMode;
     }
 
     public GraalHPyNativeContext getBackend() {
@@ -721,9 +844,8 @@ public final class GraalHPyContext extends CExtContext {
     }
 
     public static int getHPyHandleForSingleton(Object object) {
-        CompilerAsserts.neverPartOfCompilation();
         assert !(object instanceof GraalHPyHandle);
-        return GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen.getUncached().execute(object);
+        return GetHPyHandleForSingleton.doGeneric(object);
     }
 
     /**
@@ -780,6 +902,31 @@ public final class GraalHPyContext extends CExtContext {
         return handle;
     }
 
+    public Object bitsAsPythonObject(long bits) {
+        if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+            return GraalHPyBoxing.unboxInt(bits);
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+    }
+
+    public long pythonObjectAsBits(Object object) {
+        if (GraalHPyBoxing.isBoxablePrimitive(object)) {
+            if (object instanceof Integer) {
+                return GraalHPyBoxing.boxInt((Integer) object);
+            }
+            assert object instanceof Double;
+            return GraalHPyBoxing.boxDouble((Double) object);
+        } else if (object == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
+            return 0;
+        }
+        return getHPyHandleForObject(object);
+    }
+
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class GetHPyHandleForSingleton extends Node {
@@ -796,7 +943,7 @@ public final class GraalHPyContext extends CExtContext {
         }
 
         @Specialization
-        static int doElipsis(@SuppressWarnings("unused") PEllipsis x) {
+        static int doEllipsis(@SuppressWarnings("unused") PEllipsis x) {
             return SINGLETON_HANDLE_ELIPSIS;
         }
 
@@ -805,9 +952,27 @@ public final class GraalHPyContext extends CExtContext {
             return SINGLETON_HANDLE_NOT_IMPLEMENTED;
         }
 
-        @Fallback
+        @Specialization(guards = "!isSingleton(delegate)")
         static int doOthers(@SuppressWarnings("unused") Object delegate) {
             return -1;
+        }
+
+        @Specialization(replaces = {"doNoValue", "doNone", "doEllipsis", "doNotImplemented", "doOthers"})
+        static int doGeneric(Object object) {
+            if (object == PNone.NO_VALUE) {
+                return 0;
+            } else if (object == PNone.NONE) {
+                return SINGLETON_HANDLE_NONE;
+            } else if (object == PEllipsis.INSTANCE) {
+                return SINGLETON_HANDLE_ELIPSIS;
+            } else if (object == PNotImplemented.NOT_IMPLEMENTED) {
+                return SINGLETON_HANDLE_NOT_IMPLEMENTED;
+            }
+            return -1;
+        }
+
+        static boolean isSingleton(Object object) {
+            return object == PNone.NONE || object == PEllipsis.INSTANCE || object == PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -1046,6 +1211,10 @@ public final class GraalHPyContext extends CExtContext {
             }
         }
         backend.finalizeNativeContext();
+        if (nativeArgumentsStack != 0) {
+            UNSAFE.freeMemory(nativeArgumentsStack);
+            nativeArgumentsStack = 0;
+        }
         if (scheduler != null) {
             scheduler.shutdown();
         }

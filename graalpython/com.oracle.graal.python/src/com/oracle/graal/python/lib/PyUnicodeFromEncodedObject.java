@@ -44,13 +44,16 @@ import static com.oracle.graal.python.nodes.ErrorMessages.DECODING_STR_NOT_SUPPO
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.IndirectCallData;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,12 +108,14 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Cached(inline = false) IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
+                    @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
                     @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+        Object buffer = bufferAcquireLib.acquireReadonly(object, frame, PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget), indirectCallNode);
         try {
-            int len = bufferLib.getBufferLength(object);
+            int len = bufferLib.getBufferLength(buffer);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }

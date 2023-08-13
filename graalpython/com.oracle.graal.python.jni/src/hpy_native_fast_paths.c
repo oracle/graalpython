@@ -67,19 +67,19 @@ static inline uint64_t boxDouble(double value) {
 //*************************
 // direct fast paths that handle certain calls on the native side:
 
-static void *(*original_AsStruct)(HPyContext *ctx, HPy h);
+static void *(*original_AsStruct_Object)(HPyContext *ctx, HPy h);
 static HPy (*original_Dup)(HPyContext *ctx, HPy h);
 static HPy (*original_Long)(HPyContext *ctx, HPy h);
 static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
 static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
-static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
-static long long (*original_Long_AsLongLong)(HPyContext *ctx, HPy h);
-static unsigned long (*original_Long_AsUnsignedLong)(HPyContext *ctx, HPy h);
+static int32_t (*original_Long_AsInt32_t)(HPyContext *ctx, HPy h);
+static int64_t (*original_Long_AsInt64_t)(HPyContext *ctx, HPy h);
+static uint32_t (*original_Long_AsUInt32_t)(HPyContext *ctx, HPy h);
 static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
-static HPy (*original_Long_FromLong)(HPyContext *ctx, long l);
-static HPy (*original_Long_FromUnsignedLong)(HPyContext *ctx, unsigned long l);
-static HPy (*original_Long_FromLongLong)(HPyContext *ctx, long long l);
-static HPy (*original_Long_FromUnsignedLongLong)(HPyContext *ctx, unsigned long long l);
+static HPy (*original_Long_FromInt32_t)(HPyContext *ctx, int32_t l);
+static HPy (*original_Long_FromUInt32_t)(HPyContext *ctx, uint32_t l);
+static HPy (*original_Long_FromInt64_t)(HPyContext *ctx, int64_t l);
+static HPy (*original_Long_FromUInt64_t)(HPyContext *ctx, uint64_t l);
 static int (*original_List_Check)(HPyContext *ctx, HPy h);
 static int (*original_Number_Check)(HPyContext *ctx, HPy h);
 static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
@@ -118,7 +118,7 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     }
 }
 
-static void *augment_AsStruct(HPyContext *ctx, HPy h) {
+static void *augment_AsStruct_Object(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
         return get_handle_native_data_pointer(ctx, bits);
@@ -153,25 +153,25 @@ static double augment_Float_AsDouble(HPyContext *ctx, HPy h) {
     }
 }
 
-static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
+static int32_t augment_Long_AsInt32_t(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
         return unboxInt(bits);
     } else {
-        return original_Long_AsLong(ctx, h);
+        return original_Long_AsInt32_t(ctx, h);
     }
 }
 
-static long long augment_Long_AsLongLong(HPyContext *ctx, HPy h) {
+static int64_t augment_Long_AsInt64_t(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
-        return (long long) unboxInt(bits);
+        return unboxInt(bits);
     } else {
-        return original_Long_AsLongLong(ctx, h);
+        return original_Long_AsInt64_t(ctx, h);
     }
 }
 
-static unsigned long augment_Long_AsUnsignedLong(HPyContext *ctx, HPy h) {
+static uint32_t augment_Long_AsUInt32_t(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
         int32_t unboxed = unboxInt(bits);
@@ -179,7 +179,7 @@ static unsigned long augment_Long_AsUnsignedLong(HPyContext *ctx, HPy h) {
             return unboxed;
         }
     }
-    return original_Long_AsUnsignedLong(ctx, h);
+    return original_Long_AsUInt32_t(ctx, h);
 }
 
 static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
@@ -191,35 +191,31 @@ static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
     }
 }
 
-static HPy augment_Long_FromLong(HPyContext *ctx, long l) {
-    if (isBoxableInt(l)) {
-        return toPtr(boxInt((int32_t) l));
-    } else {
-        return original_Long_FromLong(ctx, l);
-    }
+static HPy augment_Long_FromInt32_t(HPyContext *ctx, int32_t l) {
+    return toPtr(boxInt(l));
 }
 
-static HPy augment_Long_FromUnsignedLong(HPyContext *ctx, unsigned long l) {
+static HPy augment_Long_FromUInt32_t(HPyContext *ctx, uint32_t l) {
     if (isBoxableUnsignedInt(l)) {
         return toPtr(boxInt((int32_t) l));
     } else {
-        return original_Long_FromUnsignedLong(ctx, l);
+        return original_Long_FromUInt32_t(ctx, l);
     }
 }
 
-static HPy augment_Long_FromLongLong(HPyContext *ctx, long long l) {
+static HPy augment_Long_FromInt64_t(HPyContext *ctx, int64_t l) {
     if (isBoxableInt(l)) {
         return toPtr(boxInt((int32_t) l));
     } else {
-        return original_Long_FromLongLong(ctx, l);
+        return original_Long_FromInt64_t(ctx, l);
     }
 }
 
-static HPy augment_Long_FromUnsignedLongLong(HPyContext *ctx, unsigned long long l) {
+static HPy augment_Long_FromUInt64_t(HPyContext *ctx, uint64_t l) {
     if (isBoxableUnsignedInt(l)) {
         return toPtr(boxInt((int32_t) l));
     } else {
-        return original_Long_FromUnsignedLongLong(ctx, l);
+        return original_Long_FromUInt64_t(ctx, l);
     }
 }
 
@@ -343,27 +339,33 @@ void init_native_fast_paths(HPyContext *context) {
 
     AUGMENT(Float_AsDouble);
 
-    AUGMENT(Long_AsLong);
+    AUGMENT(Long_AsInt32_t);
 
-    AUGMENT(Long_AsLongLong);
+    AUGMENT(Long_AsInt64_t);
 
-    AUGMENT(Long_AsUnsignedLong);
+    AUGMENT(Long_AsUInt32_t);
 
     AUGMENT(Long_AsDouble);
 
-    AUGMENT(Long_FromLong);
+    AUGMENT(Long_FromInt32_t);
 
-    AUGMENT(Long_FromUnsignedLong);
+    AUGMENT(Long_FromUInt32_t);
 
-    AUGMENT(Long_FromLongLong);
+    AUGMENT(Long_FromInt64_t);
 
-    AUGMENT(Long_FromUnsignedLongLong);
+    AUGMENT(Long_FromUInt64_t);
 
     AUGMENT(Close);
 
-    AUGMENT(AsStruct);
+    AUGMENT(AsStruct_Object);
 
-    context->ctx_AsStructLegacy = augment_AsStruct;
+    context->ctx_AsStruct_Legacy = augment_AsStruct_Object;
+    context->ctx_AsStruct_Float = augment_AsStruct_Object;
+    context->ctx_AsStruct_List = augment_AsStruct_Object;
+    context->ctx_AsStruct_Long = augment_AsStruct_Object;
+    context->ctx_AsStruct_Type = augment_AsStruct_Object;
+    context->ctx_AsStruct_Unicode = augment_AsStruct_Object;
+    context->ctx_AsStruct_Tuple = augment_AsStruct_Object;
 
     AUGMENT(Dup);
 
