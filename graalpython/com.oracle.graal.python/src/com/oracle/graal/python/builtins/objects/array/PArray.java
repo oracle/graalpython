@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -38,6 +39,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.sequence.storage.BufferStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -55,7 +58,8 @@ public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final TruffleString formatString;
     private int length;
-    private byte[] buffer;
+    private byte[] bytes;
+    private BufferStorage storage;
     private volatile int exports;
 
     public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format) {
@@ -63,7 +67,8 @@ public final class PArray extends PythonBuiltinObject {
         this.formatString = formatString;
         this.format = format;
         this.length = 0;
-        this.buffer = new byte[0];
+        this.bytes = EMPTY_BYTE_ARRAY;
+        this.storage = new ByteSequenceStorage(bytes);
     }
 
     public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
@@ -71,7 +76,8 @@ public final class PArray extends PythonBuiltinObject {
         this.formatString = formatString;
         this.format = format;
         this.length = length;
-        this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
+        this.bytes = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
+        this.storage = new ByteSequenceStorage(bytes);
     }
 
     public BufferFormat getFormat() {
@@ -91,8 +97,12 @@ public final class PArray extends PythonBuiltinObject {
         return formatString;
     }
 
-    public byte[] getBuffer() {
-        return buffer;
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+    public Object getBuffer() {
+        return storage;
     }
 
     public int getLength() {
@@ -137,10 +147,10 @@ public final class PArray extends PythonBuiltinObject {
     public void resizeStorage(int newLength) throws OverflowException {
         assert newLength >= 0;
         int itemsize = format.bytesize;
-        if (buffer.length / itemsize < newLength || length + 16 >= newLength) {
+        if (bytes.length / itemsize < newLength || length + 16 >= newLength) {
             byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, Math.min(buffer.length, newBuffer.length));
-            buffer = newBuffer;
+            PythonUtils.arraycopy(bytes, 0, newBuffer, 0, Math.min(bytes.length, newBuffer.length));
+            bytes = newBuffer;
         }
     }
 
@@ -154,13 +164,13 @@ public final class PArray extends PythonBuiltinObject {
         assert by >= 0;
         int newLength = PythonUtils.addExact(length, by);
         int itemsize = format.bytesize;
-        if (buffer.length / itemsize < newLength) {
+        if (bytes.length / itemsize < newLength) {
             byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
-            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (length - from) * itemsize);
-            buffer = newBuffer;
+            PythonUtils.arraycopy(bytes, 0, newBuffer, 0, from * itemsize);
+            PythonUtils.arraycopy(bytes, from * itemsize, newBuffer, (from + by) * itemsize, (length - from) * itemsize);
+            bytes = newBuffer;
         } else {
-            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (length - from) * itemsize);
+            PythonUtils.arraycopy(bytes, from * itemsize, bytes, (from + by) * itemsize, (length - from) * itemsize);
         }
         length = newLength;
     }
@@ -173,11 +183,11 @@ public final class PArray extends PythonBuiltinObject {
         int itemsize = format.bytesize;
         if (length + 16 >= newLength) {
             byte[] newBuffer = new byte[computeNewSizeNoOverflowCheck(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, at * itemsize);
-            PythonUtils.arraycopy(buffer, (at + count) * itemsize, newBuffer, at * itemsize, (length - at - count) * itemsize);
-            buffer = newBuffer;
+            PythonUtils.arraycopy(bytes, 0, newBuffer, 0, at * itemsize);
+            PythonUtils.arraycopy(bytes, (at + count) * itemsize, newBuffer, at * itemsize, (length - at - count) * itemsize);
+            bytes = newBuffer;
         } else {
-            PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
+            PythonUtils.arraycopy(bytes, (at + count) * itemsize, bytes, at * itemsize, (length - at - count) * itemsize);
         }
         length = newLength;
     }
@@ -289,66 +299,66 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     byte[] getInternalByteArray() {
-        return buffer;
+        return bytes;
     }
 
     @ExportMessage
     byte readByte(int byteOffset) {
-        return buffer[byteOffset];
+        return bytes[byteOffset];
     }
 
     @ExportMessage
     void writeByte(int byteOffset, byte value) {
-        buffer[byteOffset] = value;
+        bytes[byteOffset] = value;
     }
 
     @ExportMessage
     short readShort(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getShort(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getShort(bytes, byteOffset);
     }
 
     @ExportMessage
     void writeShort(int byteOffset, short value) {
-        PythonUtils.ARRAY_ACCESSOR.putShort(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putShort(bytes, byteOffset, value);
     }
 
     @ExportMessage
     int readInt(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getInt(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getInt(bytes, byteOffset);
     }
 
     @ExportMessage
     void writeInt(int byteOffset, int value) {
-        PythonUtils.ARRAY_ACCESSOR.putInt(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putInt(bytes, byteOffset, value);
     }
 
     @ExportMessage
     long readLong(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getLong(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getLong(bytes, byteOffset);
     }
 
     @ExportMessage
     void writeLong(int byteOffset, long value) {
-        PythonUtils.ARRAY_ACCESSOR.putLong(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putLong(bytes, byteOffset, value);
     }
 
     @ExportMessage
     float readFloat(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getFloat(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getFloat(bytes, byteOffset);
     }
 
     @ExportMessage
     void writeFloat(int byteOffset, float value) {
-        PythonUtils.ARRAY_ACCESSOR.putFloat(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putFloat(bytes, byteOffset, value);
     }
 
     @ExportMessage
     double readDouble(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getDouble(buffer, byteOffset);
+        return PythonUtils.ARRAY_ACCESSOR.getDouble(bytes, byteOffset);
     }
 
     @ExportMessage
     void writeDouble(int byteOffset, double value) {
-        PythonUtils.ARRAY_ACCESSOR.putDouble(buffer, byteOffset, value);
+        PythonUtils.ARRAY_ACCESSOR.putDouble(bytes, byteOffset, value);
     }
 }

@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes.UnpackValueNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -58,7 +60,7 @@ public abstract class ArrayNodes {
 
         @Specialization
         static Object get(Node inliningTarget, PArray array, int index,
-                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+                        @Cached UnpackValueNode unpackValueNode) {
             return unpackValueNode.execute(inliningTarget, array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
         }
     }
@@ -70,9 +72,9 @@ public abstract class ArrayNodes {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, PArray array, int index, Object value);
 
         @Specialization
-        static void put(VirtualFrame frame, PArray array, int index, Object value,
-                        @Cached(inline = false) BufferStorageNodes.PackValueNode packValueNode) {
-            packValueNode.execute(frame, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
+        static void put(VirtualFrame frame, Node inliningTarget, PArray array, int index, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, inliningTarget, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
         }
     }
 
@@ -83,9 +85,9 @@ public abstract class ArrayNodes {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, PArray array, Object value);
 
         @Specialization
-        static void check(VirtualFrame frame, PArray array, Object value,
-                        @Cached(inline = false) BufferStorageNodes.PackValueNode packValueNode) {
-            packValueNode.execute(frame, array.getFormat(), value, new byte[8], 0);
+        static void check(VirtualFrame frame, Node inliningTarget, PArray array, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, inliningTarget, array.getFormat(), value, new ByteSequenceStorage(new byte[8]), 0);
         }
     }
 }
