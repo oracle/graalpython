@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -556,31 +557,120 @@ public final class CodeUnit {
         return afterFirst ? bestBci : -2;
     }
 
+    public enum JumpBlock {
+        None(0, null),
+        With(1, "the body of a with statement"),
+        Loop(2, "the body of a for loop"),
+        Try(3, "the body of a try statement"),
+        Except(4, "an 'except' block as there's no exception");
+
+        public final int i;
+        public final String error;
+        public static final long BITS = 3;
+
+        JumpBlock(int i, String error) {
+            this.error = error;
+            this.i = i;
+        }
+
+        private static final JumpBlock[] VALUES = JumpBlock.values();
+
+        public long push(long stack) {
+            return stack << BITS | this.i;
+        }
+
+        public static long pop(long stack) {
+            return stack >> BITS;
+        }
+
+        public static JumpBlock peek(long stack) {
+            return VALUES[(int) (stack & ((1 << BITS) - 1))];
+        }
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public void computeStackLevels(long[] blocks, int[] stackLevels) {
+        assert code.length + 1 == blocks.length;
+        assert stackLevels.length == code.length;
+        Arrays.fill(stackLevels, -1);
+        // stackLevels has the stack depth before the corresponding opcode executes
+        stackLevels[0] = 0;
+        // deque of bci
+        ArrayDeque<Integer> todo = new ArrayDeque<>();
+        todo.addFirst(0);
+        for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
+            int handler = exceptionHandlerRanges[i + 2];
+            int stackAtHandler = exceptionHandlerRanges[i + 3];
+            // stack at handler + the exception
+            stackLevels[handler] = stackAtHandler + 1;
+            todo.addFirst(handler);
+        }
+        while (!todo.isEmpty()) {
+            int bci = todo.removeLast();
+            int stackHere = stackLevels[bci];
+            assert stackHere >= 0;
+            opCodeAt(code, bci, (ignored, op, oparg, followingArgs) -> {
+                assert stackHere >= op.getNumberOfConsumedStackItems(oparg, followingArgs, true) : "failed at:" + op + ":" + bci;
+                assert stackHere >= op.getNumberOfConsumedStackItems(oparg, followingArgs, false) : "failed at:" + op + ":" + bci;
+                int stackWJump = op.getStackEffect(oparg, followingArgs, true);
+                int stackWOJump = op.getStackEffect(oparg, followingArgs, false);
+                int bciWJump = op.getNextBci(bci, oparg, true);
+                int bciWOJump = op.getNextBci(bci, oparg, false);
+                if (bciWJump == -1) {
+                    assert bciWOJump == bciWJump;
+                    return;
+                }
+                if (stackLevels[bciWJump] < 0) {
+                    stackLevels[bciWJump] = stackHere + stackWJump;
+                    if (op == OpCodes.GET_ITER) {
+                        System.out.println(stackLevels[bciWJump]);
+                    }
+                    todo.addFirst(bciWJump);
+                } else {
+                    assert stackLevels[bciWJump] == stackHere + stackWJump;
+                }
+                if (bciWJump != bciWOJump) {
+                    if (stackLevels[bciWOJump] < 0) {
+                        stackLevels[bciWOJump] = stackHere + stackWOJump;
+                        todo.addFirst(bciWOJump);
+                    } else {
+                        assert stackLevels[bciWOJump] == stackHere + stackWOJump;
+                    }
+                }
+            });
+        }
+    }
+
     @FunctionalInterface
     public interface BytecodeAction {
         void run(int bci, OpCodes op, int oparg, byte[] followingArgs);
     }
 
-    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+    // returns the following bci
+    private static int opCodeAt(byte[] bytecode, int bci, BytecodeAction action) {
         int oparg = 0;
-        for (int bci = 0; bci < bytecode.length;) {
-            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
-            if (op == OpCodes.EXTENDED_ARG) {
-                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
-                oparg <<= 8;
-            } else {
-                byte[] followingArgs = null;
-                if (op.argLength > 0) {
-                    oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
-                    if (op.argLength > 1) {
-                        followingArgs = new byte[op.argLength - 1];
-                        System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
-                    }
-                }
-                action.run(bci, op, oparg, followingArgs);
-                oparg = 0;
+        OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+        while (op == OpCodes.EXTENDED_ARG) {
+            oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+            oparg <<= 8;
+            bci += 2;
+            op = OpCodes.fromOpCode(bytecode[bci]);
+        }
+        byte[] followingArgs = null;
+        if (op.argLength > 0) {
+            oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+            if (op.argLength > 1) {
+                followingArgs = new byte[op.argLength - 1];
+                System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
             }
-            bci += op.length();
+        }
+        action.run(bci, op, oparg, followingArgs);
+        return bci + op.length();
+    }
+
+    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+        for (int bci = 0; bci < bytecode.length;) {
+            bci = opCodeAt(bytecode, bci, action);
         }
     }
 

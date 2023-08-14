@@ -1300,7 +1300,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (newBci != bci) {
                     setCurrentBci(virtualFrame, bciSlot, newBci);
                     bci = newBci;
-                    continue; // todo make sure this doesn't break inlining
+                    continue; // todo code in big loop
                 }
             }
 
@@ -2922,7 +2922,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             mutableData.setReturnLine(mutableData.getPastLine());
             mutableData.setPyFrame(ensurePyFrame(virtualFrame));
             PFrame pyFrame = mutableData.getPyFrame();
-            if (pyFrame != null && pyFrame.didJump()) {
+            if (pyFrame.didJump()) {
                 pyFrame.setJumpDestLine(-3);
                 mutableData.setPastBci(bci);
                 return bci;
@@ -2932,6 +2932,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
                 if (pyFrame.didJump()) {
+                    long[] blocks = new long[getCodeUnit().code.length + 1];
+                    int[] stacks = new int[getCodeUnit().code.length];
+                    getCodeUnit().computeStackLevels(blocks, stacks);
+                    System.out.println(getCodeUnit());
                     mutableData.setPastBci(bci);
                     int newBci = lineToBci(pyFrame.getJumpDestLine());
                     if (newBci == -1) {
