@@ -849,6 +849,22 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
+/*
+This is a workaround for C++ modules, namely PyTorch, that declare global/static variables with destructors that call
+_Py_DECREF. The destructors get called by libc during exit during which we cannot make upcalls as that would segfault.
+So we rebind them to no-ops when exiting.
+*/
+Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
+ return 100; // large dummy refcount
+}
+void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
+ // do nothing
+}
+PyAPI_FUNC(void) finalizeCAPI() {
+ GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
+ GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
+}
+
 static void unimplemented(const char* name) {
 	printf("Function not implemented in GraalPy: %s\n", name);
 }
