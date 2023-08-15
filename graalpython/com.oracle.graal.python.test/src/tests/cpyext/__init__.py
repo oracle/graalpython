@@ -494,7 +494,7 @@ class UnseenFormatter(Formatter):
             return Formatter.get_value(key, args, kwds)
 
 
-def CPyExtType(name, code, **kwargs):
+def CPyExtType(name, code='', **kwargs):
     template = """
     #include "Python.h"
     /* structmember.h is not included by default in Python.h */
