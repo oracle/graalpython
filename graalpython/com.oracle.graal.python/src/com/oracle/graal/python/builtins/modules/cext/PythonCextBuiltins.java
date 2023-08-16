@@ -1122,8 +1122,8 @@ public final class PythonCextBuiltins {
                         int flags = readI32.readStructArrayElement(member, i, PyMemberDef__flags);
                         Object docPtr = readPointer.readStructArrayElement(member, i, PyMemberDef__doc);
                         Object doc = PGuards.isNullOrZero(docPtr, lib) ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
-
-                        addMember.execute(pythonClass, dict, name, type, offset, flags & CConstants.READONLY.intValue(), doc);
+                        boolean canSet = (flags & CConstants.READONLY.intValue()) == 0;
+                        addMember.execute(pythonClass, dict, name, type, offset, canSet ? 1 : 0, doc);
                     }
                 }
             }

@@ -48,6 +48,7 @@ __dir__ = __file__.rpartition("/")[0]
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
+IS_MANAGED_LAUNCHER = not GRAALPYTHON or __graalpython__.is_managed_launcher()
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -494,7 +495,7 @@ class UnseenFormatter(Formatter):
             return Formatter.get_value(key, args, kwds)
 
 
-def CPyExtType(name, code, **kwargs):
+def CPyExtType(name, code='', **kwargs):
     template = """
     #include "Python.h"
     /* structmember.h is not included by default in Python.h */

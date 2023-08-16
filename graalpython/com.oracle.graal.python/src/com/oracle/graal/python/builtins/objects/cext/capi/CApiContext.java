@@ -187,7 +187,6 @@ public final class CApiContext extends CExtContext {
      */
     private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
     private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
-    private Object nativeLibrary;
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -591,11 +590,11 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void finalizeCapi() {
-        if (nativeLibrary != null) {
+        if (useNativeBackend && getLLVMLibrary() != null) {
             try {
-                Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "finalizeCAPI");
+                Object finalizeFunction = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "finalizeCAPI");
                 Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():VOID", "exec").build()).call();
-                SignatureLibrary.getUncached().call(signature, initFunction);
+                SignatureLibrary.getUncached().call(signature, finalizeFunction);
             } catch (InteropException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

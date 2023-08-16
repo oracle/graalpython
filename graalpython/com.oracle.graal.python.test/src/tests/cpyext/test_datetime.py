@@ -38,9 +38,48 @@
 # SOFTWARE.
 import datetime
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, is_native_object, IS_MANAGED_LAUNCHER
 
 __dir__ = __file__.rpartition("/")[0]
+
+
+def create_datetime_subclass(typename):
+    return CPyExtType(
+        f"Native{typename}Subclass",
+        struct_base=f'PyDateTime_{typename} base;',
+        tp_new='0',
+        tp_alloc='0',
+        tp_free='0',
+        includes='#include "datetime.h"',
+        ready_code=f'''
+        PyDateTime_IMPORT;
+        PyTypeObject* t = PyDateTimeAPI->{typename}Type;
+        Py_XINCREF(t);
+        Native{typename}SubclassType.tp_base = t;
+        ''',
+    )
+
+
+NativeDateSubclass = create_datetime_subclass("Date")
+NativeTimeSubclass = create_datetime_subclass("Time")
+NativeDateTimeSubclass = create_datetime_subclass("DateTime")
+NativeDeltaSubclass = create_datetime_subclass("Delta")
+
+
+class ManagedNativeDateSubclass(NativeDateSubclass):
+    pass
+
+
+class ManagedNativeTimeSubclass(NativeTimeSubclass):
+    pass
+
+
+class ManagedNativeDateTimeSubclass(NativeDateTimeSubclass):
+    pass
+
+
+class ManagedNativeDeltaSubclass(NativeDeltaSubclass):
+    pass
 
 
 class TestPyDateTime(CPyExtTestCase):
@@ -577,3 +616,32 @@ class TestDateTime(object):
         )
         tester = TestWriteAndInvokeMemeber()
         assert tester.getDate() == "foo"
+
+
+# GR-47546: Native subclasses of managed types don't work in managed mode
+if not IS_MANAGED_LAUNCHER:
+    class TestNativeSubclasses:
+        def test_time(self):
+            for t in (NativeTimeSubclass, ManagedNativeTimeSubclass):
+                x = t(hour=6)
+                assert is_native_object(x)
+                assert x.hour == 6
+
+        def test_date(self):
+            for t in (NativeDateSubclass, ManagedNativeDateSubclass):
+                x = t(1992, 4, 11)
+                assert is_native_object(x)
+                assert x.day == 11
+
+        def test_datetime(self):
+            for t in (NativeDateTimeSubclass, ManagedNativeDateTimeSubclass):
+                x = t(1992, 4, 11, hour=13)
+                assert is_native_object(x)
+                assert x.day == 11
+                assert x.hour == 13
+
+        def test_timedelta(self):
+            for t in (NativeDeltaSubclass, ManagedNativeDeltaSubclass):
+                x = t(hours=6)
+                assert is_native_object(x)
+                assert x.seconds == 21600
