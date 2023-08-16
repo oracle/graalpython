@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.40.1",
+    "mxversion": "6.41.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -857,6 +857,7 @@ suite = {
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-launcher",
+                "tag": ["default", "public"],
             },
         },
 
@@ -938,6 +939,7 @@ suite = {
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
+                "tag": ["default", "public"],
             },
             "license": [
                 "UPL",
@@ -996,6 +998,7 @@ suite = {
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
+                "tag": ["default", "public"],
             },
             "noMavenJavadoc": True,
             "license": [
@@ -1005,7 +1008,7 @@ suite = {
             ],
         },
 
-        "GRAALPYTHON_COMMUNITY": {
+        "PYTHON_COMMUNITY": {
             "type": "pom",
             "runtimeDependencies": [
                 "GRAALPYTHON",
@@ -1013,8 +1016,9 @@ suite = {
             ],
             "description": "GraalPython engine.",
             "maven": {
-                "groupId": "org.graalvm.python",
+                "groupId": "org.graalvm.polyglot",
                 "artifactId": "python-community",
+                "tag": ["default", "public"],
             },
             "license": [
                 "UPL",
