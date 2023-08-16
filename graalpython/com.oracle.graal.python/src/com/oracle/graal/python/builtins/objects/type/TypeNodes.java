@@ -1399,6 +1399,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static boolean extraivars(Object type, Object base, Object typeSlots) {
+            // This should use basicsize and reflect to what CPython is doing:
+            // https://github.com/python/cpython/blob/v3.10.8/Objects/typeobject.c#L2218
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }

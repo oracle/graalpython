@@ -742,6 +742,93 @@ class TestObject(object):
         actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
+    def test_tp_basicsize(self):
+        TpBasicsize1Type = CPyExtType("TpBasicsize1",
+                             '''
+                                int vv = 0;
+
+                                static PyObject* set_values(PyObject* oself) {
+                                    TpBasicsize1Object * self = (TpBasicsize1Object *) oself;
+                                    for (int i = 0; i < 20; i++) {
+                                        self->f[i] = vv++;
+                                    }
+                                    return Py_None;
+                                }
+                                static PyObject* get_values(PyObject* self, PyObject* idx) {
+                                    int i = (int)PyNumber_AsSsize_t(idx, NULL);
+                                    return PyLong_FromLong(((TpBasicsize1Object *) self)->f[i]);
+                                }
+                            ''',
+                            tp_methods='''
+                            {"set_values", (PyCFunction)set_values, METH_NOARGS, NULL},
+                            {"get_value", (PyCFunction)get_values, METH_O, NULL}
+                            ''',
+                            cmembers='Py_ssize_t f[20];',
+        )
+        
+        TpBasicsize2Type = CPyExtType("TpBasicsize2",
+                             '''
+                                int vvv = 0;
+
+                                static PyObject* set_values(PyObject* oself) {
+                                    TpBasicsize2Object * self = (TpBasicsize2Object *) oself;
+                                    for (int i = 0; i < 10; i++) {
+                                        self->f[i] = vvv++;
+                                    }
+                                    return Py_None;
+                                }
+                                static PyObject* get_values(PyObject* self, PyObject* idx) {
+                                    int i = (int)PyNumber_AsSsize_t(idx, NULL);
+                                    return PyLong_FromLong(((TpBasicsize2Object *) self)->f[i]);
+                                }
+                            ''',
+                            tp_methods='''
+                            {"set_values", (PyCFunction)set_values, METH_NOARGS, NULL},
+                            {"get_value", (PyCFunction)get_values, METH_O, NULL}
+                            ''',
+                            cmembers='Py_ssize_t f[10];',
+        )
+        
+        TpBasicsize3Type = CPyExtType("TpBasicsize3",
+                            '''
+                            ''',
+                            cmembers='',
+        )
+        
+        try:
+            class Foo(TpBasicsize2Type, TpBasicsize1Type):
+                pass
+        except TypeError:
+            pass
+        else:
+            assert False, "should raise: TypeError: multiple bases have instance lay-out conflict"
+
+        class Foo(TpBasicsize3Type, TpBasicsize1Type):
+            pass
+
+        assert Foo.__basicsize__ == 192, "Foo.__basicsize__ %d != 192" % Foo.__basicsize__
+        objs = [Foo() for i in range(5)]
+        for foo in objs:
+            foo.set_values()
+        vv = 0
+        for foo in objs:
+            for i in range(20):
+                assert foo.get_value(i) == vv
+                vv += 1
+
+        class Foo(TpBasicsize2Type, TpBasicsize3Type):
+            pass
+
+        assert Foo.__basicsize__ == 112, "Foo.__basicsize__ %d != 112" % Foo.__basicsize__
+        objs = [Foo() for i in range(5)]
+        for foo in objs:
+            foo.set_values()
+        vvv = 0
+        for foo in objs:
+            for i in range(10):
+                assert foo.get_value(i) == vvv, "Failed"
+                vvv += 1
+
     def test_descrget(self):
         TestDescrGet = CPyExtType(
             "TestDescrGet",
