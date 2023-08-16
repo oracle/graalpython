@@ -105,6 +105,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleThreadBuilder;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1153,7 +1154,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         // lazily register the runnable that concurrently collects the queued references
         Env env = getContext().getEnv();
         if (env.isCreateThreadAllowed()) {
-            Thread thread = env.createThread(new GraalHPyReferenceCleanerRunnable(referenceQueue), null, getContext().getThreadGroup());
+            TruffleThreadBuilder truffleThreadBuilder = env.newTruffleThreadBuilder(new GraalHPyReferenceCleanerRunnable(referenceQueue)).threadGroup(getContext().getThreadGroup());
+            Thread thread = truffleThreadBuilder.build();
             // Make the cleaner thread a daemon; it should not prevent JVM shutdown.
             thread.setDaemon(true);
             thread.start();

@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleThreadBuilder;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -228,7 +229,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
-            Thread thread = env.createThread(() -> {
+            TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
 
                     // the increment is protected by the gil
@@ -236,7 +237,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                     HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
-                        // it's own stack and if we would pass the current frame, this would be
+                        // its own stack and if we would pass the current frame, this would be
                         // connected as a caller which is incorrect. However, the thread-local
                         // 'topframeref' is initialized with EMPTY which will be picked up.
                         callNode.execute(null, callable, arguments, keywords);
@@ -251,9 +252,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
                     }
                 }
-            }, env.getContext(), context.getThreadGroup());
+            }).context(env.getContext()).threadGroup(context.getThreadGroup());
 
-            PThread pThread = factory.createPythonThread(cls, thread);
+            PThread pThread = factory.createPythonThread(cls, threadBuilder.build());
             pThread.start();
             return pThread.getId();
         }
