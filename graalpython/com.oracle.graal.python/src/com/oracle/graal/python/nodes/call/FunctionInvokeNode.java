@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -127,17 +128,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @TruffleBoundary
     public static FunctionInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
-        boolean split = forceSplitBuiltins();
+        boolean split = forceSplitBuiltins() || (callee.getFunctionRootNode() instanceof BuiltinFunctionRootNode root && root.getBuiltin().forceSplitDirectCalls());
         return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false, split);
-    }
-
-    /**
-     * Same as {@link #create(PBuiltinFunction)} but only providing the call target of the builtin
-     * function. Be careful using it. It will never provide globals or a closure to the invoked
-     * function!
-     */
-    @TruffleBoundary
-    public static FunctionInvokeNode createBuiltinFunction(RootCallTarget callTarget) {
-        return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false, forceSplitBuiltins());
     }
 }
