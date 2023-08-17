@@ -57,6 +57,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
+    private final Object base;
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
     @CompilationFinal private MroSequenceStorage methodResolutionOrder;
@@ -85,17 +86,18 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public PTuple basesTuple;
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, PythonAbstractClass... baseClasses) {
-        this(lang, typeClass, classShape, instanceShape, name, true, true, baseClasses);
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
+        this(lang, typeClass, classShape, instanceShape, name, true, true, base, baseClasses);
     }
 
     @TruffleBoundary
     @SuppressWarnings("this-escape")
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
-                    PythonAbstractClass... baseClasses) {
+                    Object base, PythonAbstractClass[] baseClasses) {
         super(typeClass, classShape);
         this.name = name;
         this.qualName = name;
+        this.base = base;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
 
@@ -162,8 +164,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return instanceShape;
     }
 
-    PythonAbstractClass getSuperClass() {
-        return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
+    Object getBase() {
+        return base;
     }
 
     public void setMRO(PythonAbstractClass[] mro) {

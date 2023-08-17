@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -1209,6 +1210,47 @@ public abstract class CExtNodes {
             }
             // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
             return nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class LookupNativeI64MemberFromBaseNode extends Node {
+
+        public final long execute(Object cls, CFields nativeMemberName, Object managedMemberName) {
+            return execute(cls, nativeMemberName, managedMemberName, null);
+        }
+
+        public abstract long execute(Object cls, CFields nativeMemberName, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
+
+        @Specialization
+        static long doSingleContext(Object cls, CFields nativeMember, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
+                                    @Bind("this") Node inliningTarget,
+                                    @Cached GetBaseClassNode getBaseClassNode,
+                                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                                    @Cached CStructAccess.ReadI64Node getTypeMemberNode,
+                                    @Cached PyNumberAsSizeNode asSizeNode) {
+            CompilerAsserts.partialEvaluationConstant(builtinCallback);
+
+            Object current = cls;
+            do {
+                if (current instanceof PythonBuiltinClassType pbct) {
+                    current = PythonContext.get(inliningTarget).lookupType(pbct);
+                }
+                if (builtinCallback != null && current instanceof PythonBuiltinClass builtinClass) {
+                    return builtinCallback.apply(builtinClass.getType());
+                } else if (PGuards.isManagedClass(current)) {
+                    Object attr = readAttrNode.execute(current, managedMemberName);
+                    if (attr != PNone.NO_VALUE) {
+                        return asSizeNode.executeExact(null, inliningTarget, attr);
+                    }
+                } else {
+                    assert PGuards.isNativeClass(current) : "invalid class inheritance structure; expected native class";
+                    return getTypeMemberNode.readFromObj((PythonNativeClass) current, nativeMember);
+                }
+                current = getBaseClassNode.execute(inliningTarget, current);
+            } while (current != null);
+            // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
+            return nativeMember == CFields.PyTypeObject__tp_basicsize || nativeMember == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
         }
     }
 

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
@@ -199,6 +200,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class TypeBuiltins extends PythonBuiltins {
 
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(J___DICTOFFSET__);
+    public static final HiddenKey TYPE_WEAKLISTOFFSET = new HiddenKey(J___WEAKLISTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(J___ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(J___BASICSIZE__);
     public static final HiddenKey TYPE_ALLOC = new HiddenKey(J___ALLOC__);
@@ -904,7 +906,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object base(Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
+                        @Cached GetBaseClassNode getBaseClassNode) {
             Object baseClass = getBaseClassNode.execute(inliningTarget, self);
             return baseClass != null ? baseClass : PNone.NONE;
         }

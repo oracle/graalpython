@@ -555,17 +555,17 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, getShape(cls)));
     }
 
-    public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, PythonAbstractClass[] bases) {
-        PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
+    public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, Object base, PythonAbstractClass[] bases) {
+        PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, base, bases));
         SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.executeUncached(result), language);
         result.initializeMroShape(language);
         return result;
     }
 
-    public final PythonClass createPythonClass(Object metaclass, TruffleString name, boolean invokeMro, PythonAbstractClass[] bases) {
+    public final PythonClass createPythonClass(Object metaclass, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] bases) {
         // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
         // right point
-        return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
+        return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, base, bases));
     }
 
     public final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,

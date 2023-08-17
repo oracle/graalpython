@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -167,7 +167,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     private static PythonClass initClass(TruffleString className, PythonAbstractClass superClass, BuiltinDescr[] descrs, PythonModule codecsTruffleModule, PythonLanguage language,
                     PythonObjectFactory factory) {
-        PythonClass clazz = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, className, new PythonAbstractClass[]{superClass});
+        PythonClass clazz = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, className, superClass, new PythonAbstractClass[]{superClass});
         for (BuiltinDescr d : descrs) {
             PythonUtils.createMethod(language, clazz, d.nodeClass, d.enclosingType ? clazz : null, 1, d.nodeSupplier, factory);
         }
@@ -328,11 +328,11 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached("createSetAttr()") SetAttributeNode setAttrNode,
                         @Cached GetPythonObjectClassNode getClass,
-                        @Cached GetSuperClassNode getSuperClassNode,
+                        @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CallNode callNode) {
             assert args.length > 0;
-            Object superClass = getSuperClassNode.execute(inliningTarget, getClass.execute(inliningTarget, self));
-            Object superInit = getAttrNode.execute(frame, inliningTarget, superClass, T___INIT__);
+            Object base = getBaseClassNode.execute(inliningTarget, getClass.execute(inliningTarget, self));
+            Object superInit = getAttrNode.execute(frame, inliningTarget, base, T___INIT__);
             Object[] callArgs = new Object[args.length];
             callArgs[0] = self;
             if (args.length > 1) {
