@@ -231,7 +231,7 @@ class TestObject(object):
                             }
 
                             static PyObject* B_has_add_slot(PyObject* cls) {
-                                return (&B_Type)->tp_as_number != NULL && (&B_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                                return Py_NewRef((&B_Type)->tp_as_number != NULL && (&B_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False);
                             }
 
                             ''',
@@ -282,7 +282,7 @@ class TestObject(object):
                             }
 
                             static PyObject* E_has_add_slot(PyObject* cls) {
-                                return (&E_Type)->tp_as_number != NULL && (&E_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                                return Py_NewRef((&E_Type)->tp_as_number != NULL && (&E_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False);
                             }
                             ''',
                             tp_methods='''{"create_E", (PyCFunction)create_E, METH_NOARGS | METH_CLASS, ""},
@@ -668,7 +668,7 @@ class TestObject(object):
                                                    return new_fp(PyLong_AsLong(l) + PyLong_AsLong(r));
                                                }
                                            }
-                                           return Py_NotImplemented;
+                                           return Py_NewRef(Py_NotImplemented);
                                        }
                                        """,
                                        cmembers="PyFloatObject base;",
@@ -745,7 +745,7 @@ class TestObject(object):
                                     for (int i = 0; i < 20; i++) {
                                         self->f[i] = vv++;
                                     }
-                                    return Py_None;
+                                    Py_RETURN_NONE;
                                 }
                                 static PyObject* get_values(PyObject* self, PyObject* idx) {
                                     int i = (int)PyNumber_AsSsize_t(idx, NULL);
@@ -768,7 +768,7 @@ class TestObject(object):
                                     for (int i = 0; i < 10; i++) {
                                         self->f[i] = vvv++;
                                     }
-                                    return Py_None;
+                                    Py_RETURN_NONE;
                                 }
                                 static PyObject* get_values(PyObject* self, PyObject* idx) {
                                     int i = (int)PyNumber_AsSsize_t(idx, NULL);
@@ -830,10 +830,10 @@ class TestObject(object):
             '''
             PyObject* testdescr_get(PyObject* self, PyObject* obj, PyObject* type) {
                 if (obj == NULL) {
-                    obj = Py_Ellipsis;
+                    obj = Py_NewRef(Py_Ellipsis);
                 }
                 if (type == NULL) {
-                    type = Py_Ellipsis;
+                    type = Py_NewRef(Py_Ellipsis);
                 }
                 return Py_BuildValue("OOO", self, obj, type);
             }
@@ -1330,7 +1330,7 @@ class TestObjectFunctions(CPyExtTestCase):
             // this will free the tuple
             Py_DECREF(object);
             
-            return Py_None;
+            Py_RETURN_NONE;
         }
         ''',
         arguments=["PyObject* element"],
