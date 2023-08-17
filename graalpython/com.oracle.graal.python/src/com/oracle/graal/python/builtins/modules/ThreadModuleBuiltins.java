@@ -299,10 +299,10 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J_EXIT)
     @Builtin(name = "exit_thread")
     @GenerateNodeFactory
-    abstract static class ExitNode extends PythonBuiltinNode {
+    abstract static class ExitThreadNode extends PythonBuiltinNode {
         @Specialization
-        Object exit(
-                        @Cached PRaiseNode raiseNode) {
+        static Object exit(
+                @Cached PRaiseNode raiseNode) {
             throw raiseNode.raiseSystemExit(PNone.NONE);
         }
     }
