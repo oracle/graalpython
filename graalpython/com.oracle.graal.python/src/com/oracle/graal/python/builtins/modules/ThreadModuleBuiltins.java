@@ -247,6 +247,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         if (!IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.SystemExit)) {
                             WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                         }
+                        // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
                         curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 1);
                         HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
