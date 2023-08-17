@@ -824,6 +824,28 @@ class TestObject(object):
                 assert foo.get_value(i) == vvv, "Failed"
                 vvv += 1
 
+    def test_new_inherited_from_dominant_base(self):
+        DominantBase = CPyExtType(
+            'DominantBase',
+            '''
+            PyObject* base_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                return Py_NewRef(Py_Ellipsis);
+            }
+            ''',
+            cmembers='int foo; int bar;',
+            tp_new='base_new',
+        )
+        assert DominantBase() is Ellipsis
+
+        WeakBase = CPyExtType('WeakBase')
+
+        class Subclass(WeakBase, DominantBase):
+            pass
+
+        # In CPython 3.10, Subclass.__new__ is WeakBase.__new__, but Subclass.tp_new is DominantBase.tp_new
+
+        assert Subclass() is Ellipsis
+
     def test_descrget(self):
         TestDescrGet = CPyExtType(
             "TestDescrGet",
