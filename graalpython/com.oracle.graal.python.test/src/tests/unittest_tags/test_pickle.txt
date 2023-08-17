@@ -363,4 +363,3 @@
 *test.pickletester.BigmemPickleTests.test_huge_bytes_64b
 *test.pickletester.BigmemPickleTests.test_huge_long_32b
 *test.pickletester.BigmemPickleTests.test_huge_str_32b
-*test.pickletester.BigmemPickleTests.test_huge_str_64b

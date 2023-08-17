@@ -247,9 +247,6 @@
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_reduce
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_remainder
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_remainderNear
-*graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_rescale
-*graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_rotate
-*graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_rounding
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_samequantum
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_scaleb
 *graalpython.lib-python.3.test.test_decimal.PyIBMTestCases.test_shift
