@@ -78,9 +78,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
@@ -289,11 +289,11 @@ public abstract class ToNativeTypeNode extends Node {
                 writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
             }
 
-            Object superClass = GetSuperClassNode.executeUncached(clazz);
-            if (superClass == null) {
-                superClass = ctx.getNativeNull();
-            } else if (superClass instanceof PythonBuiltinClassType builtinClass) {
-                superClass = ctx.lookupType(builtinClass);
+            Object base = GetBaseClassNode.executeUncached(clazz);
+            if (base == null) {
+                base = ctx.getNativeNull();
+            } else if (base instanceof PythonBuiltinClassType builtinClass) {
+                base = ctx.lookupType(builtinClass);
             }
 
             writeI64Node.write(mem, CFields.PyVarObject__ob_size, 0L);
@@ -347,7 +347,7 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);
             if (!isType) {
                 // "object" base needs to be initialized explicitly in capi.c
-                writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(superClass));
+                writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(base));
             }
 
             // TODO(fa): we could cache the dict instance on the class' native wrapper
