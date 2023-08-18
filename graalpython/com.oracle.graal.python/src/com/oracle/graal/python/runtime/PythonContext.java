@@ -1250,8 +1250,7 @@ public final class PythonContext extends Python3Core {
         TruffleContext childContext = childContextBuilder.build();
         data.setTruffleContext(childContext);
         ChildContextThread childContextRunnable = new ChildContextThread(fd, sentinel, data);
-        TruffleThreadBuilder threadBuilder = data.parentCtx.env.newTruffleThreadBuilder(childContextRunnable).context(childContext);
-        Thread thread = threadBuilder.build();
+        Thread thread = data.parentCtx.env.newTruffleThreadBuilder(childContextRunnable).context(childContext).threadGroup(threadGroup).build();
         long tid = PThread.getThreadId(thread);
         getSharedMultiprocessingData().putChildContextThread(tid, thread);
         getSharedMultiprocessingData().putChildContextData(tid, data);
