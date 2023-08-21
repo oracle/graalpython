@@ -1048,6 +1048,16 @@ public class CStructAccess {
             }
         }
 
+        public final void writeIntArray(Object pointer, int[] values) {
+            writeIntArray(pointer, values, values.length, 0, 0);
+        }
+
+        public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, int targetOffset) {
+            for (int i = 0; i < length; i++) {
+                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
+            }
+        }
+
         public final boolean accepts(ArgDescriptor desc) {
             return desc.isI64();
         }
