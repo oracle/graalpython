@@ -2804,6 +2804,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return 0;
     }
 
+    private static boolean isTracingOrProfilingEnabled(byte tracingOrProfilingEnabled) {
+        return tracingOrProfilingEnabled != 0;
+    }
+
     private static boolean isTracingEnabled(byte tracingOrProfilingEnabled) {
         return (tracingOrProfilingEnabled & TRACE_FUN) != 0;
     }
@@ -2813,6 +2817,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void traceOrProfileYield(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, byte tracingOrProfilingEnabled) {
+        if (isTracingOrProfilingEnabled(tracingOrProfilingEnabled)) {
+            traceOrProfileYieldCutoff(virtualFrame, mutableData, value, tracingOrProfilingEnabled);
+        }
+    }
+
+    @InliningCutoff
+    private void traceOrProfileYieldCutoff(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, byte tracingOrProfilingEnabled) {
         if (isTracingEnabled(tracingOrProfilingEnabled)) {
             invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN, mutableData.getReturnLine(), true);
         }
@@ -2822,6 +2833,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void traceOrProfileReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, byte tracingOrProfilingEnabled) {
+        if (isTracingOrProfilingEnabled(tracingOrProfilingEnabled)) {
+            traceOrProfileReturnCutoff(virtualFrame, mutableData, value, tracingOrProfilingEnabled);
+        }
+    }
+
+    @InliningCutoff
+    private void traceOrProfileReturnCutoff(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, byte tracingOrProfilingEnabled) {
         if (isTracingEnabled(tracingOrProfilingEnabled)) {
             invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN, mutableData.getReturnLine(), true);
         }
@@ -2846,6 +2864,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void traceOrProfileCall(VirtualFrame virtualFrame, int initialBci, MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
+        if (isTracingOrProfilingEnabled(tracingOrProfilingEnabled)) {
+            traceOrProfileCallCutoff(virtualFrame, initialBci, mutableData, tracingOrProfilingEnabled);
+        }
+    }
+
+    @InliningCutoff
+    private void traceOrProfileCallCutoff(VirtualFrame virtualFrame, int initialBci, MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
         if (isTracingEnabled(tracingOrProfilingEnabled)) {
             invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.CALL,
                             initialBci == 0 ? getFirstLineno() : (mutableData.setPastLine(bciToLine(initialBci))), false);
@@ -4561,6 +4586,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @InliningCutoff
     private int bytecodeFormatValue(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, int options, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         int type = options & FormatOptions.FVC_MASK;
@@ -4675,8 +4701,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (localFrame.isObject(oparg)) {
             Object value = localFrame.getObject(oparg);
             if (value == null) {
-                PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-                throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                raiseVarReferencedBeforeAssignment(localNodes, bci, oparg);
             }
         } else {
             generalizeVariableStores(oparg);
