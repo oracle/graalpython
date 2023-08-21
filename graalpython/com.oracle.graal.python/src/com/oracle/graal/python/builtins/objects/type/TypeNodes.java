@@ -172,6 +172,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesO
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.LookupNewNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -248,6 +249,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
@@ -2700,15 +2702,14 @@ public abstract class TypeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class HasSameConstructorNode extends Node {
 
         public abstract boolean execute(Node inliningTarget, Object leftClass, Object rightClass);
 
         @Specialization
         static boolean doGeneric(Node inliningTarget, Object left, Object right,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupLeftNode,
-                        @Cached(parameters = "New", inline = false) LookupCallableSlotInMRONode lookupRightNode,
+                        @Cached(inline = false) LookupNewNode lookupLeftNode,
+                        @Cached(inline = false) LookupNewNode lookupRightNode,
                         @Cached InlinedExactClassProfile leftNewProfile,
                         @Cached InlinedExactClassProfile rightNewProfile) {
             assert IsTypeNode.executeUncached(left);
@@ -2735,6 +2736,63 @@ public abstract class TypeNodes {
                 }
             }
             return leftResolved == rightResolved;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({SpecialMethodSlot.class, PGuards.class})
+    @SuppressWarnings("truffle-inlining")
+    public abstract static class LookupNewNode extends PNodeWithContext {
+        public abstract Object execute(Object type);
+
+        public static Object executeUncached(Object type) {
+            return LookupNewNodeGen.getUncached().execute(type);
+        }
+
+        @Specialization(guards = "!isNativeClass(type)")
+        static Object doManaged(Object type,
+                        @Exclusive @Cached(parameters = "New") LookupCallableSlotInMRONode lookup) {
+            /*
+             * It's not an MRO lookup, despite the node name. tp_new has different inheritance rules
+             * and the slot mechanism honors them.
+             */
+            return lookup.execute(type);
+        }
+
+        @Specialization
+        static Object doNative(PythonNativeClass type,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedLoopConditionProfile profile,
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Exclusive @Cached(parameters = "New") LookupCallableSlotInMRONode lookup,
+                        @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode read) {
+            /*
+             * TODO msimacek: we have tp_new set to the right thing on the native side, so we could
+             * read it directly. But it would be a lot of code duplication to make the native
+             * pointer into a callable, so we walk the bases to get a method object
+             */
+            Object current = type;
+            do {
+                if ((getTypeFlagsNode.execute(type) & DISALLOW_INSTANTIATION) != 0) {
+                    return PNone.NO_VALUE;
+                }
+                if (current instanceof PythonManagedClass || current instanceof PythonBuiltinClassType) {
+                    return lookup.execute(current);
+                } else {
+                    Object newMethod = read.execute(type, T___NEW__);
+                    if (newMethod != PNone.NO_VALUE) {
+                        return newMethod;
+                    }
+                }
+                current = getBaseClassNode.execute(inliningTarget, current);
+            } while (profile.profile(inliningTarget, current != null));
+            return PNone.NO_VALUE;
+        }
+
+        @NeverDefault
+        public static LookupNewNode create() {
+            return LookupNewNodeGen.create();
         }
     }
 }

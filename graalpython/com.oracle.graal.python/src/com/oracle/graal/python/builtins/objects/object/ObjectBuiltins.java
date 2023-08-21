@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.LookupNewNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -248,16 +249,17 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
                         @Cached(value = "createLookupProfile(getClassNode)", inline = false) ValueProfile profileInit,
                         @Cached(value = "createClassProfile()", inline = false) ValueProfile profileInitFactory,
-                        @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
+                        @Cached LookupNewNode lookupNew,
                         @Cached(value = "createLookupProfile(getClassNode)", inline = false) ValueProfile profileNew,
                         @Cached(value = "createClassProfile()", inline = false) ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
-                if (overridesNew.profile(inliningTarget, overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
+                if (overridesNew.profile(inliningTarget, overridesBuiltinMethod(profileInit.profile(lookupInit.execute(type)), ObjectBuiltinsFactory.InitNodeFactory.class, profileInitFactory))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (overridesInit.profile(inliningTarget, !overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
+                if (overridesInit.profile(inliningTarget,
+                                !overridesBuiltinMethod(profileNew.profile(lookupNew.execute(type)), BuiltinConstructorsFactory.ObjectNodeFactory.class, profileNewFactory))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
@@ -274,11 +276,9 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         /**
          * Simple utility method to check if a method was overridden. The {@code profile} parameter
-         * must {@emph not} be an identity profile when AST sharing is enabled.
+         * must not be an identity profile when AST sharing is enabled.
          */
-        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupCallableSlotInMRONode lookup,
-                        ValueProfile factoryProfile, Class<T> builtinNodeFactoryClass) {
-            Object method = profile.profile(lookup.execute(type));
+        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object method, Class<T> builtinNodeFactoryClass, ValueProfile factoryProfile) {
             if (method instanceof PBuiltinFunction) {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
