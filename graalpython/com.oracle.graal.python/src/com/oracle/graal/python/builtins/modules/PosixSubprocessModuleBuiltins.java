@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -141,7 +142,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(argsStorage, i);
-                argsArray[i] = objectToOpaquePathNode.execute(frame, o, false);
+                argsArray[i] = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
             }
             return argsArray;
         }
@@ -250,7 +251,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GilNode gil,
-                        @Cached ToBytesNode toBytesNode) {
+                        @Cached ToBytesNode toBytesNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (!(preexecFn instanceof PNone)) {
                 throw raise(RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
             }
@@ -262,7 +264,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
             Object[] processArgs = args;
             int[] fdsToKeep = convertFdSequence(inliningTarget, (PTuple) fdsToKeepObj, tupleGetItem, castToIntNode);
-            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
+            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, inliningTarget, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
 
@@ -296,10 +298,10 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                                 errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep);
             } catch (PosixException e) {
                 gil.acquire();
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (SecurityException e) {
                 gil.acquire();
-                throw raiseOSError(frame, OSErrorEnum.EPERM);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EPERM);
             } finally {
                 gil.acquire();
             }

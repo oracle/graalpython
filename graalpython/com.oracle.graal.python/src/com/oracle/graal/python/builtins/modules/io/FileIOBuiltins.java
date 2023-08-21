@@ -162,6 +162,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -308,10 +310,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
             processMode(self, mode);
             self.setBlksize(DEFAULT_BUFFER_SIZE);
             WriteAttributeToObjectNode.getUncached().execute(self, T_NAME, name);
-        }
-
-        protected final Object getPosixSupport() {
-            return getContext().getPosixSupport();
         }
 
         @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"})
@@ -540,14 +538,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size >= 0"})
-        @SuppressWarnings("truffle-static-method") // raise
-        Object read(VirtualFrame frame, PFileIO self, int size,
+        static Object read(VirtualFrame frame, PFileIO self, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached InlinedBranchProfile readErrorProfile,
                         @Cached InlinedBranchProfile readErrorProfile2,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 return posixRead.read(self.getFD(), size, inliningTarget, posixLib, readErrorProfile, gil);
             } catch (PosixException e) {
@@ -555,7 +553,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     readErrorProfile2.enter(inliningTarget);
                     return PNone.NONE;
                 }
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -582,8 +580,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile multipleReadsProfile,
-                        @Cached InlinedBranchProfile exceptionProfile,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int bufsize = SMALLCHUNK;
             boolean mayBeQuick = false;
             try {
@@ -613,11 +611,10 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     return b;
                 }
             } catch (PosixException e) {
-                exceptionProfile.enter(inliningTarget);
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
                 }
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
 
             multipleReadsProfile.enter(inliningTarget);
@@ -652,8 +649,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         }
                         return PNone.NONE;
                     }
-                    exceptionProfile.enter(inliningTarget);
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
 
                 append(result, buffer, n);
@@ -681,7 +677,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached InlinedBranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 int size = bufferLib.getBufferLength(buffer);
                 if (size == 0) {
@@ -696,7 +693,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     if (e.getErrorCode() == EAGAIN.getNumber()) {
                         return PNone.NONE;
                     }
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
                 bufferLib.release(buffer, frame, this);
@@ -725,37 +722,16 @@ public final class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!self.isUTF8Write()"})
+        @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
         Object write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
-                        @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
-                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached GetBytesToWriteNode getBytesToWriteNode,
+                        @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Exclusive @Cached InlinedBranchProfile errorProfile,
-                        @Shared("g") @Cached GilNode gil) {
-            try {
-                return posixWrite.write(self.getFD(), toBytes.execute(frame, data),
-                                toBytes.execute(frame, data).length, inliningTarget, posixLib, errorProfile, gil);
-            } catch (PosixException e) {
-                if (e.getErrorCode() == EAGAIN.getNumber()) {
-                    return PNone.NONE;
-                }
-                errorProfile.enter(inliningTarget);
-                throw raiseOSErrorFromPosixException(frame, e);
-            }
-        }
-
-        @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "self.isUTF8Write()"})
-        @SuppressWarnings("truffle-static-method")
-        Object utf8write(VirtualFrame frame, PFileIO self, Object data,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
-                        @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
-                        @Cached CastToTruffleStringNode castStr,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Exclusive @Cached InlinedBranchProfile errorProfile,
-                        @Shared("g") @Cached GilNode gil) {
-            byte[] bytes = encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            byte[] bytes = getBytesToWriteNode.execute(frame, inliningTarget, self, data);
             try {
                 return posixWrite.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
             } catch (PosixException e) {
@@ -763,7 +739,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
                 errorProfile.enter(inliningTarget);
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -775,6 +751,25 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isClosed()")
         Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf) {
             throw raise(ValueError, IO_CLOSED);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class GetBytesToWriteNode extends Node {
+        abstract byte[] execute(VirtualFrame frame, Node inliningTarget, PFileIO self, Object data);
+
+        @Specialization(guards = "!self.isUTF8Write()")
+        static byte[] doBytes(VirtualFrame frame, @SuppressWarnings("unused") PFileIO self, Object data,
+                        @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
+            return toBytes.execute(frame, data);
+        }
+
+        @Specialization(guards = "self.isUTF8Write()")
+        static byte[] doUtf8(Node inliningTarget, @SuppressWarnings("unused") PFileIO self, Object data,
+                        @Cached(inline = false) CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
+                        @Cached CastToTruffleStringNode castStr) {
+            return encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
         }
     }
 
@@ -790,8 +785,10 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 gil.release(true);
                 try {
@@ -800,7 +797,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 

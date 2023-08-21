@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.WrapperDescriptor})
@@ -106,11 +104,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
-        @TruffleBoundary
-        Object objclass(PBuiltinFunction self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile profile) {
-            return getPythonClass(inliningTarget, self.getEnclosingType(), profile);
+        static Object objclass(PBuiltinFunction self) {
+            return self.getEnclosingType();
         }
     }
 
@@ -121,7 +116,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            PythonModule builtins = getCore().getBuiltins();
+            PythonModule builtins = getContext().getBuiltins();
             Object getattr = getAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
             PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
             return factory().createTuple(new Object[]{getattr, args});

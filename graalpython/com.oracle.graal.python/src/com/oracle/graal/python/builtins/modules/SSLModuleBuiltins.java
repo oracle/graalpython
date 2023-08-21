@@ -67,8 +67,6 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import com.oracle.graal.python.builtins.PythonOS;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -78,6 +76,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
@@ -90,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -102,11 +102,13 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SSL)
@@ -408,10 +410,12 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, Object path,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
-            return decode(toTruffleFile(frame, asPath, path, toJavaStringNode, eqNode));
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            return decode(toTruffleFile(frame, inliningTarget, asPath, path, toJavaStringNode, eqNode, constructAndRaiseNode));
         }
 
         @TruffleBoundary
@@ -433,17 +437,17 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.EqualNode eqNode)
-                        throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, Node inliningTarget, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode,
+                        TruffleString.EqualNode eqNode, PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws PException {
             TruffleFile file;
             try {
                 file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, fileObject)));
                 if (!file.exists()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOENT);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
                 return file;
             } catch (Exception e) {
-                throw raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             }
         }
     }

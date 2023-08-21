@@ -66,6 +66,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -387,12 +388,13 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
-                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+                        @Cached PyTimeFromObjectNode timeFromObjectNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
-                throw raiseOSError(frame, OSErrorEnum.EINVAL);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
             PTuple resultTuple = GetitimerNode.createResultTuple(factory(), moduleData);
             setitimer(moduleData, usDelay, usInterval);
@@ -453,10 +455,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, PythonModule self, int which,
-                        @Cached ReadAttributeFromObjectNode readModuleDataNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode readModuleDataNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             if (which != ITIMER_REAL) {
-                throw raiseOSError(frame, OSErrorEnum.EINVAL);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
             return createResultTuple(factory(), moduleData);
         }

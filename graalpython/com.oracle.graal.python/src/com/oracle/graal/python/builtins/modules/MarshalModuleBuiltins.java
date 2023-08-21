@@ -156,7 +156,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode) {
             Object savedState = IndirectCallContext.enter(frame, this);
             try {
-                return callNode.executeObject(frame, file, factory().createBytes(Marshal.dump(value, version, getCore())));
+                return callNode.executeObject(frame, file, factory().createBytes(Marshal.dump(value, version, getContext())));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
@@ -180,7 +180,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, Object value, int version) {
             Object savedState = IndirectCallContext.enter(frame, this);
             try {
-                return factory().createBytes(Marshal.dump(value, version, getCore()));
+                return factory().createBytes(Marshal.dump(value, version, getContext()));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {

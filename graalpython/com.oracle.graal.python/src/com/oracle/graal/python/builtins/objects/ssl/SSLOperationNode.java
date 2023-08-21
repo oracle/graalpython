@@ -67,11 +67,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -167,9 +169,10 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() != null")
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
+                    @Bind("this") Node inliningTarget,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
-                    @Shared @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                    @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                     @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert socket.getSocket() != null;
         prepare(socket);
@@ -211,7 +214,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                              * The engine requested more data, but we think we already got enough
                              * data
                              */
-                            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ErrorMessages.PACKET_SIZE_MISMATCH);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ErrorMessages.PACKET_SIZE_MISMATCH);
                         }
                         int len1 = packetLen - networkInboundBIO.getPending();
                         networkInboundBIO.ensureWriteCapacity(len1);
@@ -219,7 +222,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
                             if (recvlen == 0) {
@@ -227,17 +230,17 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                                 if (socket.hasSavedException()) {
                                     throw socket.getAndClearSavedException();
                                 }
-                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
                             }
                             networkInboundBIO.advanceWritePosition(recvlen);
                         } catch (PosixException e) {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
-                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
                         }
                         break;
                     case WANTS_WRITE:
@@ -247,18 +250,18 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int len2 = networkOutboundBIO.getPending();
                         try {
                             Object posixSupport = context.getPosixSupport();
-                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);
                         } catch (PosixException e) {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
-                                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
+                                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
                         }
                         break;
                 }
@@ -273,7 +276,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() == null")
     void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @Shared @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
         prepare(socket);
         SSLOperationStatus status;
         try {
@@ -292,13 +296,13 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         if (socket.hasSavedException()) {
                             throw socket.getAndClearSavedException();
                         }
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                        throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
                     } else {
                         /*
                          * MemoryBIO input - we already read as much as we could. Signal to the
                          * caller that we need more.
                          */
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                        throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                     }
                 case WANTS_WRITE:
                     throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");

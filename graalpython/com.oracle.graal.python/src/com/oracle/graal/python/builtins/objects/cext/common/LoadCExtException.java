@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LoadCExtException extends Exception {
@@ -84,11 +85,11 @@ public abstract class LoadCExtException extends Exception {
             super(cause, name, formatString, formatArgs);
         }
 
-        public PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
+        public PException reraise(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode) {
             if (cause != null) {
                 throw cause.getExceptionForReraise(false);
             }
-            throw raiseNode.executeWithFmtMessageAndArgs(frame, SystemError, formatString, formatArgs, null);
+            throw raiseNode.get(inliningTarget).executeWithFmtMessageAndArgs(frame, SystemError, formatString, formatArgs, null);
         }
     }
 
@@ -101,11 +102,11 @@ public abstract class LoadCExtException extends Exception {
             this.path = path;
         }
 
-        public PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
+        public PException reraise(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode) {
             if (cause != null) {
-                throw raiseNode.raiseImportErrorWithCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
+                throw raiseNode.get(inliningTarget).raiseImportErrorWithCause(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
             }
-            throw raiseNode.raiseImportError(frame, name, path, formatString, formatArgs);
+            throw raiseNode.get(inliningTarget).raiseImportError(frame, name, path, formatString, formatArgs);
         }
     }
 }

@@ -135,7 +135,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
 
         Object getKwdMark(ReadAttributeFromObjectNode readAttr) {
-            return readAttr.execute(getCore().lookupBuiltinModule(T_FUNCTOOLS), KWD_MARK);
+            return readAttr.execute(getContext().lookupBuiltinModule(T_FUNCTOOLS), KWD_MARK);
         }
 
         @Specialization
@@ -384,26 +384,26 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         /*
          * General note on reentrancy:
-         * 
+         *
          * There are four dictionary calls in the bounded_lru_cache_wrapper(): 1) The initial check
          * for a cache match. 2) The post user-function check for a cache match. 3) The deletion of
          * the oldest entry. 4) The addition of the newest entry.
-         * 
+         *
          * In all four calls, we have a known hash which lets use avoid a call to __hash__(). That
          * leaves only __eq__ as a possible source of a reentrant call.
-         * 
+         *
          * The __eq__ method call is always made for a cache hit (dict access #1). Accordingly, we
          * have make sure not modify the cache state prior to this call.
-         * 
+         *
          * The __eq__ method call is never made for the deletion (dict access #3) because it is an
          * identity match.
-         * 
+         *
          * For the other two accesses (#2 and #4), calls to __eq__ only occur when some other entry
          * happens to have an exactly matching hash (all 64-bits). Though rare, this can happen, so
          * we have to make sure to either call it at the top of its code path before any cache state
          * modifications (dict access #2) or be prepared to restore invariants at the end of the
          * code path (dict access #4).
-         * 
+         *
          * Another possible source of reentrancy is a decref which can trigger arbitrary code
          * execution. To make the code easier to reason about, the decrefs are deferred to the end
          * of the each possible code path so that we know the cache is a consistent state.
@@ -464,7 +464,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
              * Since the cache is full, we need to evict an old key and add a new key. Rather than
              * free the old link and allocate a new one, we reuse the link for the new key and
              * result and move it to front of the cache to mark it as recently used.
-             * 
+             *
              * We try to assure all code paths (including errors) leave all of the links in place.
              * Either the link is successfully updated and moved or it is restored to its old
              * position. However if an unrecoverable error is found, it doesn't make sense to

@@ -2930,7 +2930,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     abstract static class DescriptorNode extends PythonBuiltinNode {
         @TruffleBoundary
         protected final void denyInstantiationAfterInitialization(TruffleString name) {
-            if (getCore().isCoreInitialized()) {
+            if (getContext().isCoreInitialized()) {
                 throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, name);
             }
         }

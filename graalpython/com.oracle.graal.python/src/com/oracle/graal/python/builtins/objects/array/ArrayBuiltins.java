@@ -723,7 +723,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
-            PythonModule arrayModule = getCore().lookupBuiltinModule(T_ARRAY);
+            PythonModule arrayModule = getContext().lookupBuiltinModule(T_ARRAY);
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(inliningTarget, self);

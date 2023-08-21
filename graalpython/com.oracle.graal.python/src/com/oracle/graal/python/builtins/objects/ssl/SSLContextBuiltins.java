@@ -163,7 +163,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
             if (method == null) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
@@ -188,7 +189,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
             } catch (KeyManagementException e) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
             }
         }
 
@@ -605,9 +606,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
             PythonModule posix;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                posix = getCore().lookupBuiltinModule(T_NT);
+                posix = getContext().lookupBuiltinModule(T_NT);
             } else {
-                posix = getCore().lookupBuiltinModule(T_POSIX);
+                posix = getContext().lookupBuiltinModule(T_POSIX);
             }
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
             HashingStorage storage = environ.getDictStorage();
@@ -670,7 +671,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object storeStats(VirtualFrame frame, PSSLContext self,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 int x509 = 0, crl = 0, ca = 0;
                 for (X509Certificate cert : self.getCACerts()) {
@@ -686,7 +688,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createDict(new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
             } catch (Exception ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
     }
@@ -701,7 +703,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached CastToJavaStringNode castToString,
                         @Cached ToByteArrayNode toBytes,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode) {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
@@ -715,16 +717,16 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             }
             final TruffleFile file;
             if (!(cafile instanceof PNone)) {
-                file = toTruffleFile(frame, asPath, cafile, toJavaStringNode, eqNode);
+                file = toTruffleFile(frame, inliningTarget, asPath, cafile, toJavaStringNode, eqNode, constructAndRaiseNode);
                 if (!file.exists()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOENT);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
             } else {
                 file = null;
             }
             final TruffleFile path;
             if (!(capath instanceof PNone)) {
-                path = toTruffleFile(frame, asPath, capath, toJavaStringNode, eqNode);
+                path = toTruffleFile(frame, inliningTarget, asPath, capath, toJavaStringNode, eqNode, constructAndRaiseNode);
             } else {
                 path = null;
             }
@@ -750,23 +752,23 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     try {
                         self.setCAEntries(CertUtils.loadVerifyLocations(file, path));
                     } catch (NoCertificateFoundException e) {
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
+                        throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
                     } catch (IOException | DecoderException e) {
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
+                        throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
                     }
                 }
             } catch (IOException | GeneralSecurityException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
             return PNone.NONE;
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.EqualNode eqNode)
-                        throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, Node inliningTarget, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode,
+                        TruffleString.EqualNode eqNode, PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws PException {
             try {
                 return getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, fileObject)));
             } catch (Exception e) {
-                throw raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             }
         }
 
@@ -819,8 +821,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object passwordObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GetPasswordNode getPasswordNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode) {
@@ -831,8 +834,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
             }
             Object kf = keyfile instanceof PNone ? certfile : keyfile;
-            TruffleFile certTruffleFile = toTruffleFile(frame, asPath.execute(frame, certfile), toJavaStringNode, eqNode);
-            TruffleFile keyTruffleFile = toTruffleFile(frame, asPath.execute(frame, kf), toJavaStringNode, eqNode);
+            TruffleFile certTruffleFile = toTruffleFile(frame, inliningTarget, asPath.execute(frame, certfile), toJavaStringNode, eqNode, constructAndRaiseNode);
+            TruffleFile keyTruffleFile = toTruffleFile(frame, inliningTarget, asPath.execute(frame, kf), toJavaStringNode, eqNode, constructAndRaiseNode);
             try {
                 try {
                     return load(getContext(), certTruffleFile, keyTruffleFile, null, self);
@@ -848,7 +851,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     throw raise(NotImplementedError, ErrorMessages.PASSWORD_NOT_IMPLEMENTED);
                 }
             } catch (IOException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
 
@@ -892,15 +895,16 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, TruffleString path, TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.EqualNode eqNode) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, Node inliningTarget, TruffleString path, TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.EqualNode eqNode,
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws PException {
             try {
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(path));
                 if (!file.exists()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOENT);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
                 return file;
             } catch (Exception e) {
-                throw raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             }
         }
     }
@@ -1035,7 +1039,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "!binary_form")
         Object getCerts(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 List<PDict> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
@@ -1045,7 +1050,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createList(PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateParsingException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
 
