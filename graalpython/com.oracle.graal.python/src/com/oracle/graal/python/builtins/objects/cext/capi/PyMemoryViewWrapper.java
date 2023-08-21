@@ -91,9 +91,7 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
                             @Cached CStructAccess.AllocateNode alloc,
                             @Cached CStructAccess.WriteLongNode write) {
                 Object mem = alloc.alloc(intArray.length * Long.BYTES);
-                for (int i = 0; i < intArray.length; i++) {
-                    write.write(mem, intArray[i]);
-                }
+                write.writeIntArray(mem, intArray);
                 return mem;
             }
         }
