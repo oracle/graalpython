@@ -155,8 +155,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.LookupNewNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -297,6 +299,15 @@ public enum SpecialMethodSlot {
     }
 
     public static final SpecialMethodSlot[] VALUES = values();
+    public static final SpecialMethodSlot[] MRO_INHERITED_SLOTS = new SpecialMethodSlot[VALUES.length - 1];
+    static {
+        for (int i = 0, j = 0; i < VALUES.length; i++) {
+            if (i == New.ordinal()) {
+                continue;
+            }
+            MRO_INHERITED_SLOTS[j++] = VALUES[i];
+        }
+    }
     private final TruffleString name;
     @CompilationFinal private SpecialMethodSlot reverse;
     /**
@@ -532,6 +543,7 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
+                        setNewSlot(result, klass);
                         setMethodsFlags(result, klass);
                         return result;
                     }
@@ -573,6 +585,7 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
+        setNewSlot(slots, klass);
         setMethodsFlags(slots, klass);
         return slots;
     }
@@ -613,12 +626,21 @@ public enum SpecialMethodSlot {
         }
     }
 
+    private static void setNewSlot(Object[] slots, Object type) {
+        Object newMethod = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
+        if (newMethod == PNone.NO_VALUE) {
+            Object base = GetBaseClassNode.executeUncached(type);
+            newMethod = LookupNewNode.executeUncached(base);
+        }
+        slots[New.ordinal()] = newMethod;
+    }
+
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
         PDict dict = GetDictIfExistsNode.getUncached().execute(source);
         if (dict == null) {
             DynamicObject storage = source.getStorage();
             DynamicObjectLibrary domLib = DynamicObjectLibrary.getFactory().getUncached(storage);
-            for (SpecialMethodSlot slot : VALUES) {
+            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
                 final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -626,7 +648,7 @@ public enum SpecialMethodSlot {
             }
         } else {
             HashingStorage storage = dict.getDictStorage();
-            for (SpecialMethodSlot slot : VALUES) {
+            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
                 final Object value = HashingStorageGetItem.executeUncached(storage, slot.getName());
                 if (value != null) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -637,7 +659,7 @@ public enum SpecialMethodSlot {
 
     private static void setSlotsFromGeneric(Object[] slots, PythonAbstractClass base, PythonLanguage language) {
         ReadAttributeFromObjectNode readAttNode = ReadAttributeFromObjectNode.getUncachedForceType();
-        for (SpecialMethodSlot slot : VALUES) {
+        for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
             Object value = readAttNode.execute(base, slot.getName());
             if (value != PNone.NO_VALUE) {
                 slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -651,7 +673,11 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
+            if (slot == New) {
+                newValue = LookupNewNode.executeUncached(GetBaseClassNode.executeUncached(klass));
+            } else {
+                newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
+            }
         }
         fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, PythonContext.get(null));
     }
@@ -675,7 +701,11 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
+            if (slot == New) {
+                newValue = LookupNewNode.executeUncached(GetBaseClassNode.executeUncached(klass));
+            } else {
+                newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
+            }
         }
 
         PythonContext context = PythonContext.get(null);
@@ -1215,7 +1245,7 @@ public enum SpecialMethodSlot {
             if (type.getSpecialMethodSlots() == null) {
                 return true;
             }
-            for (SpecialMethodSlot slot : VALUES) {
+            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
                 Object actual = LookupAttributeInMRONode.findAttr(core, type, slot.getName(), uncachedReadAttrNode);
                 Object expected = slot.getValue(type);
                 if (expected instanceof BuiltinMethodDescriptor) {
@@ -1230,7 +1260,7 @@ public enum SpecialMethodSlot {
         }
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managed = (PythonManagedClass) klass;
-            for (SpecialMethodSlot slot : VALUES) {
+            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
                 Object actual = LookupAttributeInMRONode.lookupSlowPath(managed, slot.getName());
                 Object expected = slot.getValue(managed);
                 if (expected instanceof NodeFactory<?>) {
