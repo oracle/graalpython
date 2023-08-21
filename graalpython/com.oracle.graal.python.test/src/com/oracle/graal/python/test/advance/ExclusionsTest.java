@@ -41,11 +41,30 @@
 package com.oracle.graal.python.test.advance;
 
 import org.graalvm.polyglot.Context;
+import org.junit.Test;
 
 public class ExclusionsTest {
     public static void main(String[] args) {
         try (Context context = Context.create()) {
             context.eval("python", "print('Hello Python!');");
+        }
+    }
+
+    @Test
+    public void testDatetimeWithoutPlatformAccess() {
+        if (!"true".equals(System.getProperty("python.WithoutPlatformAccess"))) {
+            return;
+        }
+        var builder = Context.newBuilder().allowExperimentalOptions(true);
+        if (System.getenv("GRAAL_PYTHONHOME") != null) {
+            builder.option("python.PythonHome", System.getenv("GRAAL_PYTHONHOME"));
+        }
+        try (Context context = builder.build()) {
+            context.eval("python",
+                            """
+                            import datetime
+                            datetime.datetime.strptime('2014 7 2 6 14 0 742 +0700', '%Y %m %d %H %M %S %f %z')
+                            """);
         }
     }
 }
