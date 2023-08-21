@@ -1412,6 +1412,14 @@ def graalpython_gate_runner(args, tasks):
                 )
             else:
                 punittest(['--verbose'], report=report())
+                # Run tests with static exclusion paths
+                jdk = mx.get_jdk()
+                prev = jdk.java_args_pfx
+                try:
+                    jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
+                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advance.ExclusionsTest'])
+                finally:
+                    jdk.java_args_pfx = prev
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
