@@ -220,12 +220,21 @@ public class JavaInteropTest {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +
                             "def foo(x, y):\n" +
-                            "    print(int(x) + int(y))\n\n";
+                            "    print(int(x) * int(y))\n\n";
             Source script = Source.create("python", source);
             context.eval(script);
             Value main = context.getPolyglotBindings().getMember("foo");
             main.execute(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TWO), BigInteger.valueOf(7));
-            assertEquals("18446744073709551621\n", out.toString("UTF-8"));
+            assertEquals("129127208515966861298\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(Long.MAX_VALUE, 14);
+            assertEquals("129127208515966861298\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("42\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, true);
+            assertEquals("1\n", out.toString("UTF-8"));
         }
 
         @Test
