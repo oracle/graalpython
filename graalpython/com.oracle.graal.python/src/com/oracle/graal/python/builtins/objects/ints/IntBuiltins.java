@@ -151,6 +151,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -185,9 +186,14 @@ public final class IntBuiltins extends PythonBuiltins {
     private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
         protected void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile) {
             if (cond) {
-                divisionByZeroProfile.enter(inliningTarget);
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+                raiseDivByZero(inliningTarget, divisionByZeroProfile);
             }
+        }
+
+        @InliningCutoff
+        private void raiseDivByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile) {
+            divisionByZeroProfile.enter(inliningTarget);
+            throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
         }
     }
 
@@ -1226,6 +1232,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         // see cpython://Objects/longobject.c#long_pow
         @Specialization(replaces = "doPP")
+        @InliningCutoff
         Object powModulo(Object x, Object y, Object z,
                         @Shared @Cached PythonObjectFactory factory) {
             if (!(MathGuards.isInteger(x) && MathGuards.isInteger(y))) {

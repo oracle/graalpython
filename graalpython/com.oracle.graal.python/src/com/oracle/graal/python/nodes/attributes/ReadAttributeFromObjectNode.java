@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -103,6 +104,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     public abstract Object execute(Object object, Object key);
+
+    public abstract Object execute(PythonModule object, TruffleString key);
 
     /**
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
@@ -169,6 +172,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // foreign object or primitive
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
+    @InliningCutoff
     protected static Object readForeign(Object object, Object key,
                     @Bind("this") Node inliningTarget,
                     @Cached IsForeignObjectNode isForeignObjectNode,
