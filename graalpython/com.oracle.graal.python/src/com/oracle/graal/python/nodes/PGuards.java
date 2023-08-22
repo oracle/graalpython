@@ -626,6 +626,18 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
+    public static boolean cannotBeOverriddenForImmutableType(PList object) {
+        return cannotBeOverriddenForImmutableType((PythonObject) object);
+    }
+
+    public static boolean cannotBeOverriddenForImmutableType(PDict object) {
+        return cannotBeOverriddenForImmutableType((PythonObject) object);
+    }
+
+    public static boolean cannotBeOverriddenForImmutableType(PTuple object) {
+        return cannotBeOverriddenForImmutableType((PythonObject) object);
+    }
+
     /**
      * Tests if the class of this Python object is a builtin class. This method is supposed to be
      * used for builtin types that do not support __class__ assignment at all, so we can safely read
