@@ -1822,7 +1822,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.STORE_NAME: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeStoreName(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes);
+                        stackTop = bytecodeStoreName(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.DELETE_NAME: {
@@ -1852,13 +1852,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.DELETE_GLOBAL: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteGlobal(virtualFrame, globals, beginBci, oparg, localNodes, localNames);
+                        bytecodeDeleteGlobal(virtualFrame, globals, beginBci, oparg, localNodes, localNames, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_NAME: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadName(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames);
+                        stackTop = bytecodeLoadName(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_GLOBAL: {
@@ -3554,8 +3554,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         return;
                     }
                     if (right == 0) {
-                        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-                        throw raiseNode.raise(ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+                        raiseDivByZero(bci, localNodes, useCachedNodes);
                     }
                     result = Math.floorDiv(left, right);
                     break;
@@ -3599,6 +3598,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return;
         }
         virtualFrame.setInt(stackTop - 1, result);
+    }
+
+    @InliningCutoff
+    private void raiseDivByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
+        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+        throw raiseNode.raise(ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
     }
 
     @BytecodeInterpreterSwitch
@@ -4716,9 +4721,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
+    private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         TruffleString varname = localNames[oparg];
-        DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, usingCachedNodes);
+        DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, useCachedNodes);
         deleteGlobalNode.executeWithGlobals(virtualFrame, globals, varname);
     }
 
@@ -5062,9 +5067,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeLoadName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
+    private int bytecodeLoadName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         int stackTop = initialStackTop;
-        ReadNameNode readNameNode = insertChildNode(localNodes, bci, UNCACHED_READ_NAME, ReadNameNodeGen.class, NODE_READ_NAME, usingCachedNodes);
+        ReadNameNode readNameNode = insertChildNode(localNodes, bci, UNCACHED_READ_NAME, ReadNameNodeGen.class, NODE_READ_NAME, useCachedNodes);
         virtualFrame.setObject(++stackTop, readNameNode.execute(virtualFrame, localNames[oparg]));
         return stackTop;
     }
@@ -5295,11 +5300,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeStoreName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
+    private int bytecodeStoreName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        WriteNameNode writeNameNode = insertChildNode(localNodes, bci, UNCACHED_WRITE_NAME, WriteNameNodeGen.class, NODE_WRITE_NAME, usingCachedNodes);
+        WriteNameNode writeNameNode = insertChildNode(localNodes, bci, UNCACHED_WRITE_NAME, WriteNameNodeGen.class, NODE_WRITE_NAME, useCachedNodes);
         writeNameNode.execute(virtualFrame, localNames[oparg], value);
         return stackTop;
     }
