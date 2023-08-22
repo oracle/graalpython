@@ -1113,6 +1113,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
+        @InliningCutoff
         static long doLLFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
             long exponent = right;
@@ -1130,12 +1131,14 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", replaces = "doLLFast")
+        @InliningCutoff
         PInt doLLPos(long left, long right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(op(PInt.longToBigInteger(left), right));
         }
 
         @Specialization(guards = "right < 0")
+        @InliningCutoff
         double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
@@ -1146,6 +1149,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = {OverflowException.class, ArithmeticException.class})
+        @InliningCutoff
         Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) throws OverflowException {
@@ -1157,6 +1161,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doLPNarrow")
+        @InliningCutoff
         Object doLP(long left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             Object result = op(PInt.longToBigInteger(left), right.getValue());
@@ -1168,17 +1173,20 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
+        @InliningCutoff
         long doPLNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right));
         }
 
         @Specialization(guards = "right >= 0", replaces = "doPLNarrow")
+        @InliningCutoff
         PInt doPLPos(PInt left, long right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(op(left.getValue(), right));
         }
 
         @Specialization(guards = "right < 0")
+        @InliningCutoff
         double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
@@ -1189,6 +1197,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         Object doPP(PInt left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             Object result = op(left.getValue(), right.getValue());
@@ -1200,6 +1209,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"right >= 0", "mod > 0"})
+        @InliningCutoff
         static long doLLPosLPos(long left, long right, long mod) {
             try {
                 return PInt.longValueExact(op(left, right, mod));
@@ -1211,6 +1221,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
+        @InliningCutoff
         long doLLPosLGeneric(long left, long right, long mod,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile errorProfile,

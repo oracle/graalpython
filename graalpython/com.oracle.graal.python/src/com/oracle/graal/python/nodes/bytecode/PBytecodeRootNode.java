@@ -3554,7 +3554,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         return;
                     }
                     if (right == 0) {
-                        raiseDivByZero(bci, localNodes, useCachedNodes);
+                        raiseDivOrModByZero(bci, localNodes, useCachedNodes);
                     }
                     result = Math.floorDiv(left, right);
                     break;
@@ -3601,7 +3601,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void raiseDivByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
+    private void raiseDivOrModByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
         throw raiseNode.raise(ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
     }
@@ -3633,8 +3633,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.TRUEDIV:
                 case BinaryOpsConstants.INPLACE_TRUEDIV:
                     if (right == 0.0) {
-                        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-                        throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                        raiseDivByZero(bci, localNodes, useCachedNodes);
                     }
                     result = left / right;
                     break;
@@ -3716,8 +3715,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.TRUEDIV:
             case BinaryOpsConstants.INPLACE_TRUEDIV:
                 if (right == 0.0) {
-                    PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-                    throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                    raiseDivByZero(bci, localNodes, useCachedNodes);
                 }
                 result = left / right;
                 break;
@@ -3750,6 +3748,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         virtualFrame.setObject(stackTop, null);
         virtualFrame.setObject(stackTop - 1, result);
+    }
+
+    @InliningCutoff
+    private void raiseDivByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
+        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+        throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
     }
 
     private void generalizeBinaryOp(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op) {

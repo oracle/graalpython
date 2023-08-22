@@ -2768,6 +2768,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        @InliningCutoff
         static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, int cap,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached(inline = false) CStructAccess.AllocateNode alloc,
