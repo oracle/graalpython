@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -185,32 +186,34 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"}, limit = "1")
-        Object doManagedCachedShape(PythonModule self, @SuppressWarnings("unused") PNone none,
+        static Object doManagedCachedShape(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetDictIfExistsNode getDict,
                         @Shared @Cached SetDictNode setDict,
-                        @CachedLibrary("self") DynamicObjectLibrary dynamicObjectLibrary) {
+                        @CachedLibrary("self") DynamicObjectLibrary dynamicObjectLibrary,
+                        @Shared @Cached PythonObjectFactory factory) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
                 if (hasInitialProperties(dynamicObjectLibrary, self)) {
                     return PNone.NONE;
                 }
-                dict = createDict(inliningTarget, self, setDict);
+                dict = createDict(inliningTarget, self, setDict, factory);
             }
             return dict;
         }
 
         @Specialization(guards = "isNoValue(none)", replaces = "doManagedCachedShape")
-        Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
+        static Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetDictIfExistsNode getDict,
-                        @Shared @Cached SetDictNode setDict) {
+                        @Shared @Cached SetDictNode setDict,
+                        @Shared @Cached PythonObjectFactory factory) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
                 if (hasInitialPropertiesUncached(self)) {
                     return PNone.NONE;
                 }
-                dict = createDict(inliningTarget, self, setDict);
+                dict = createDict(inliningTarget, self, setDict, factory);
             }
             return dict;
         }
@@ -230,8 +233,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
         }
 
-        private PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict) {
-            PDict dict = factory().createDictFixedStorage(self);
+        private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict, PythonObjectFactory factory) {
+            PDict dict = factory.createDictFixedStorage(self);
             setDict.execute(inliningTarget, self, dict);
             return dict;
         }
@@ -338,12 +341,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AnnotationsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        Object get(Object self, @SuppressWarnings("unused") Object value,
+        static Object get(Object self, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
-                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToObjectNode write,
+                        @Cached PythonObjectFactory.Lazy factory) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                annotations = factory().createDict();
+                annotations = factory.get(inliningTarget).createDict();
                 write.execute(self, T___ANNOTATIONS__, annotations);
             }
             return annotations;
@@ -362,7 +367,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object set(Object self, Object value,
+        static Object set(Object self, Object value,
                         @Shared("write") @Cached WriteAttributeToObjectNode write) {
             write.execute(self, T___ANNOTATIONS__, value);
             return PNone.NONE;

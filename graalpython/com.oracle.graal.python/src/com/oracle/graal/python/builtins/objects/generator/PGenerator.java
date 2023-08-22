@@ -155,11 +155,11 @@ public class PGenerator extends PythonBuiltinObject {
         return "<generator object " + name + " at " + hashCode() + ">";
     }
 
-    public final PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile, PythonObjectFactory factory) {
+    public final PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile, PythonObjectFactory.Lazy factory) {
         if (hasCodeProfile.profile(inliningTarget, code == null)) {
             RootCallTarget callTarget;
             callTarget = bytecodeRootNode.getCallTarget();
-            code = factory.createCode(callTarget);
+            code = factory.get(inliningTarget).createCode(callTarget);
         }
         return code;
     }

@@ -150,8 +150,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IOBaseNode extends PythonBuiltinNode {
         @Specialization
-        PythonObject doGeneric(Object cls) {
-            return factory().createPythonObject(cls);
+        static PythonObject doGeneric(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createPythonObject(cls);
         }
     }
 
@@ -159,9 +160,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization
-        PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
-            return factory().createFileIO(cls);
+            return factory.createFileIO(cls);
         }
     }
 
@@ -169,9 +171,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedReaderNode extends PythonBuiltinNode {
         @Specialization
-        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
-            return factory().createBufferedReader(cls);
+            return factory.createBufferedReader(cls);
         }
     }
 
@@ -179,9 +182,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedWriterNode extends PythonBuiltinNode {
         @Specialization
-        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
-            return factory().createBufferedWriter(cls);
+            return factory.createBufferedWriter(cls);
         }
     }
 
@@ -189,9 +193,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
         @Specialization
-        PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
-            return factory().createRWPair(cls);
+            return factory.createRWPair(cls);
         }
     }
 
@@ -199,9 +204,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedRandomNode extends PythonBuiltinNode {
         @Specialization
-        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
-            return factory().createBufferedRandom(cls);
+            return factory.createBufferedRandom(cls);
         }
     }
 
@@ -209,9 +215,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
         @Specialization
-        PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
-            return factory().createTextIO(cls);
+            return factory.createTextIO(cls);
         }
     }
 
@@ -219,10 +226,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesIONode extends PythonBuiltinNode {
         @Specialization
-        PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
-            PBytesIO bytesIO = factory().createBytesIO(cls);
-            bytesIO.setBuf(factory().createByteArray(PythonUtils.EMPTY_BYTE_ARRAY));
+            PBytesIO bytesIO = factory.createBytesIO(cls);
+            bytesIO.setBuf(factory.createByteArray(PythonUtils.EMPTY_BYTE_ARRAY));
             return bytesIO;
         }
     }
@@ -231,9 +239,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StringIONode extends PythonBuiltinNode {
         @Specialization
-        PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
-            return factory().createStringIO(cls);
+            return factory.createStringIO(cls);
         }
     }
 
@@ -241,10 +250,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
         @Specialization
-        PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        static PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see
             // IncrementalNewlineDecoderBuiltins.InitNode
-            return factory().createNLDecoder(cls);
+            return factory.createNLDecoder(cls);
         }
     }
 
@@ -270,9 +280,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PFileIO openCode(VirtualFrame frame, TruffleString path,
-                        @Cached FileIOBuiltins.FileIOInit initFileIO) {
-            return createFileIO(frame, path, IOMode.RB, true, PNone.NONE, factory(), initFileIO);
+        static PFileIO openCode(VirtualFrame frame, TruffleString path,
+                        @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Cached PythonObjectFactory factory) {
+            return createFileIO(frame, path, IOMode.RB, true, PNone.NONE, factory, initFileIO);
         }
     }
 
@@ -300,8 +311,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
-            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
             Object result = fileIO;
             try {
                 /* buffering */
@@ -339,11 +351,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* wraps into a buffered file */
 
-                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
+                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory, mode);
                 result = buffer;
 
                 /* wraps into a TextIOWrapper */
-                PTextIO wrapper = factory().createTextIO(PTextIOWrapper);
+                PTextIO wrapper = factory.createTextIO(PTextIOWrapper);
                 initTextIO.execute(frame, inliningTarget, wrapper, buffer, encoding,
                                 errors == PNone.NONE ? T_STRICT : (TruffleString) errors,
                                 newline, line_buffering, false);
@@ -365,8 +377,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO) {
-            return createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
@@ -381,9 +394,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
+                        @Shared @Cached PythonObjectFactory factory) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, factory);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -397,8 +411,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
-            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory, initFileIO);
             try {
                 /* buffering */
                 boolean isatty = false;
@@ -432,7 +447,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* wraps into a buffered file */
 
                 /* if binary, returns the buffered file */
-                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
+                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory, mode);
             } catch (PException e) {
                 callClose.execute(frame, inliningTarget, fileIO, T_CLOSE);
                 throw e;

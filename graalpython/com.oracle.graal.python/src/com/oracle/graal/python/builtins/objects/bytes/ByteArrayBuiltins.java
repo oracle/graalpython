@@ -255,11 +255,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
-                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices) {
+                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
+                        @Cached PythonObjectFactory factory) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
-                PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
+                PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(value));
                 return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
             } finally {
                 bufferLib.release(buffer, frame, this);
@@ -390,7 +391,8 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached @Shared SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached @Shared SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached PythonObjectFactory factory) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
@@ -400,7 +402,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             try {
                 self.checkCanResize(this);
                 // TODO avoid copying
-                PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
+                PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(buffer));
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), bytes.getSequenceStorage());
                 updateSequenceStorage(self, res);
                 return self;
@@ -594,7 +596,8 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile bufferProfile,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode) {
+                        @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode,
+                        @Cached PythonObjectFactory factory) {
             self.checkCanResize(this);
             byte[] b;
             if (bufferProfile.profile(inliningTarget, bufferAcquireLib.hasBuffer(source))) {
@@ -613,7 +616,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.CANT_EXTEND_BYTEARRAY_WITH_P, source);
                 }
             }
-            PByteArray bytes = factory().createByteArray(b);
+            PByteArray bytes = factory.createByteArray(b);
             extend(frame, self, bytes, b.length, extendNode);
             return PNone.NONE;
         }
@@ -635,11 +638,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
         @Specialization
-        public PByteArray copy(PByteArray byteArray,
+        static PByteArray copy(PByteArray byteArray,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return factory().createByteArray(getClassNode.execute(inliningTarget, byteArray), toByteArray.execute(inliningTarget, byteArray.getSequenceStorage()));
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createByteArray(getClassNode.execute(inliningTarget, byteArray), toByteArray.execute(inliningTarget, byteArray.getSequenceStorage()));
         }
     }
 
@@ -649,7 +653,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ReverseNode extends PythonBuiltinNode {
 
         @Specialization
-        public static PNone reverse(PByteArray byteArray) {
+        static PNone reverse(PByteArray byteArray) {
             byteArray.reverse();
             return PNone.NONE;
         }
@@ -661,7 +665,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PNone clear(VirtualFrame frame, PByteArray byteArray,
+        PNone clear(VirtualFrame frame, PByteArray byteArray,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached PySliceNew sliceNode) {
@@ -678,20 +682,22 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)")
-        PByteArray doBytes(Object cls, TruffleString str,
+        static PByteArray doBytes(Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached IsSameTypeNode isSameType,
-                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
-            return factory().createByteArray(cls, hexStringToBytesNode.execute(str));
+                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createByteArray(cls, hexStringToBytesNode.execute(str));
         }
 
         @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)")
-        Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
+        static Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isSameType") @Cached IsSameTypeNode isSameType,
                         @Cached CallNode callNode,
-                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
-            PByteArray byteArray = factory().createByteArray(hexStringToBytesNode.execute(str));
+                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PByteArray byteArray = factory.createByteArray(hexStringToBytesNode.execute(str));
             return callNode.execute(frame, cls, byteArray);
         }
 
@@ -711,45 +717,49 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class TranslateNode extends BytesBuiltins.BaseTranslateNode {
 
         @Specialization(guards = "isNoValue(delete)")
-        public PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
-                        @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
+        static PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
+                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] content = toBytesNode.execute(self);
-            return factory().createByteArray(content);
+            return factory.createByteArray(content);
         }
 
         @Specialization(guards = "!isNone(table)")
         PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
-                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
+                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
+                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
             byte[] bSelf = toBytesNode.execute(self);
 
             Result result = translate(bSelf, bTable);
-            return factory().createByteArray(result.array);
+            return factory.createByteArray(result.array);
         }
 
         @Specialization(guards = "isNone(table)")
-        PByteArray delete(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, Object delete,
-                        @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
+        static PByteArray delete(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, Object delete,
+                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bSelf = toBytesNode.execute(self);
             byte[] bDelete = toBytesNode.execute(frame, delete);
 
             Result result = delete(bSelf, bDelete);
-            return factory().createByteArray(result.array);
+            return factory.createByteArray(result.array);
         }
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
         PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
-                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
+                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
+                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
             byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(self);
 
             Result result = translateAndDelete(bSelf, bTable, bDelete);
-            return factory().createByteArray(result.array);
+            return factory.createByteArray(result.array);
         }
     }
 
@@ -789,13 +799,14 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PByteArray self,
+        static Object reduce(VirtualFrame frame, PByteArray self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupDict,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = getBytes.execute(inliningTarget, self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
             Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
@@ -803,7 +814,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object clazz = getClassNode.execute(inliningTarget, self);
-            return commonReduce(2, bytes, len, clazz, dict, factory(), appendCodePointNode, toStringNode);
+            return commonReduce(2, bytes, len, clazz, dict, factory, appendCodePointNode, toStringNode);
         }
     }
 

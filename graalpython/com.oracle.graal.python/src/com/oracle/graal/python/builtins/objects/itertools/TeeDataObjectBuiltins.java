@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -167,16 +168,17 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PythonObject self);
 
         @Specialization
-        Object reduce(PTeeDataObject self,
+        static Object reduce(PTeeDataObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);
             Object type = getClass.execute(inliningTarget, self);
             Object nextlink = self.getNextlink();
-            PTuple tuple = factory().createTuple(new Object[]{self.getIt(), factory().createList(values), nextlink == null ? PNone.NONE : nextlink});
-            return factory().createTuple(new Object[]{type, tuple});
+            PTuple tuple = factory.createTuple(new Object[]{self.getIt(), factory.createList(values), nextlink == null ? PNone.NONE : nextlink});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 }

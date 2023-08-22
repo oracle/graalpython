@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -168,42 +169,45 @@ public final class ReversedBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object reduce(PStringReverseIterator self,
+        static Object reduce(PStringReverseIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             if (self.isExhausted()) {
-                return reduceInternal(inliningTarget, self, "", null, getClassNode);
+                return reduceInternal(inliningTarget, self, "", null, getClassNode, factory);
             }
-            return reduceInternal(inliningTarget, self, self.value, self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, self.value, self.index, getClassNode, factory);
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object reduce(PSequenceReverseIterator self,
+        static Object reduce(PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             if (self.isExhausted()) {
-                return reduceInternal(inliningTarget, self, factory().createList(), null, getClassNode);
+                return reduceInternal(inliningTarget, self, factory.createList(), null, getClassNode, factory);
             }
-            return reduceInternal(inliningTarget, self, self.getPSequence(), self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, self.getPSequence(), self.index, getClassNode, factory);
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
+        static Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T___REDUCE__)") LookupAndCallUnaryNode callReduce,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object content = callReduce.executeObject(frame, self.getPSequence());
-            return reduceInternal(inliningTarget, self, content, self.index, getClassNode);
+            return reduceInternal(inliningTarget, self, content, self.index, getClassNode, factory);
         }
 
-        private PTuple reduceInternal(Node inliningTarget, Object self, Object arg, Object state, GetClassNode getClassNode) {
+        private static PTuple reduceInternal(Node inliningTarget, Object self, Object arg, Object state, GetClassNode getClassNode, PythonObjectFactory factory) {
             Object revIter = getClassNode.execute(inliningTarget, self);
-            PTuple args = factory().createTuple(new Object[]{arg});
+            PTuple args = factory.createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
-                return factory().createTuple(new Object[]{revIter, args, state});
+                return factory.createTuple(new Object[]{revIter, args, state});
             } else {
-                return factory().createTuple(new Object[]{revIter, args});
+                return factory.createTuple(new Object[]{revIter, args});
             }
         }
     }

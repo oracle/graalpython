@@ -127,6 +127,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -164,7 +165,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
                         @Bind("this") Node inliningTarget,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
             if (method == null) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
@@ -179,7 +181,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     checkHostname = false;
                     verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
                 }
-                PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext());
+                PSSLContext context = factory.createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext());
                 long options = SSLOptions.SSL_OP_ALL;
                 if (method != SSLMethod.SSL3) {
                     options |= SSLOptions.SSL_OP_NO_SSLv3;
@@ -282,13 +284,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
                         @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached PythonObjectFactory factory) {
             TruffleString serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
             SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
-            PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
+            PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
             }
@@ -317,13 +320,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone session,
                         @Bind("this") Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached PythonObjectFactory factory) {
             TruffleString serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
             SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
-            PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
+            PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
             }
@@ -511,13 +515,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCiphersNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PList getCiphers(PSSLContext self) {
+        static PList getCiphers(PSSLContext self) {
             List<SSLCipher> ciphers = self.computeEnabledCiphers(self.getContext().createSSLEngine());
             Object[] dicts = new Object[ciphers.size()];
             for (int i = 0; i < dicts.length; i++) {
-                dicts[i] = factory().createDict(ciphers.get(i).asKeywords());
+                dicts[i] = PythonObjectFactory.getUncached().createDict(ciphers.get(i).asKeywords());
             }
-            return factory().createList(dicts);
+            return PythonObjectFactory.getUncached().createList(dicts);
         }
     }
 
@@ -630,13 +634,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @NeverDefault
+        @TruffleBoundary
         protected PBytes createCertFileKey() {
-            return factory().createBytes("SSL_CERT_FILE".getBytes());
+            return PythonObjectFactory.getUncached().createBytes("SSL_CERT_FILE".getBytes());
         }
 
         @NeverDefault
+        @TruffleBoundary
         protected PBytes createCertDirKey() {
-            return factory().createBytes("SSL_CERT_DIR".getBytes());
+            return PythonObjectFactory.getUncached().createBytes("SSL_CERT_DIR".getBytes());
         }
 
         @NeverDefault
@@ -670,9 +676,10 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         public static final TruffleString T_X509_CA = tsLiteral("x509_ca");
 
         @Specialization
-        Object storeStats(VirtualFrame frame, PSSLContext self,
+        static Object storeStats(VirtualFrame frame, PSSLContext self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 int x509 = 0, crl = 0, ca = 0;
                 for (X509Certificate cert : self.getCACerts()) {
@@ -686,7 +693,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         }
                     }
                 }
-                return factory().createDict(new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
+                return factory.createDict(new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
             } catch (Exception ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
@@ -1040,7 +1047,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!binary_form")
         Object getCerts(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
                         @Bind("this") Node inliningTarget,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 List<PDict> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
@@ -1048,22 +1056,23 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         PythonUtils.add(result, CertUtils.decodeCertificate(getContext().factory(), cert));
                     }
                 }
-                return factory().createList(PythonUtils.toArray(result));
+                return factory.createList(PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateParsingException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
         }
 
         @Specialization(guards = "binary_form")
-        Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
+        static Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 List<PBytes> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
                     if (CertUtils.isCA(cert, CertUtils.getKeyUsage(cert))) {
-                        PythonUtils.add(result, factory().createBytes(CertUtils.getEncoded(cert)));
+                        PythonUtils.add(result, factory.createBytes(CertUtils.getEncoded(cert)));
                     }
                 }
-                return factory().createList(PythonUtils.toArray(result));
+                return factory.createList(PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateEncodingException ex) {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, ex);
             }

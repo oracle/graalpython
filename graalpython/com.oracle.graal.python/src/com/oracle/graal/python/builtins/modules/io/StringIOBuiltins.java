@@ -117,6 +117,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -276,7 +277,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached IONodes.ToTruffleStringNode toTruffleStringNode) {
+                        @Cached IONodes.ToTruffleStringNode toTruffleStringNode,
+                        @Cached PythonObjectFactory factory) {
             TruffleString newline;
 
             if (newlineArg == PNone.NO_VALUE) {
@@ -309,7 +311,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             if (self.isReadUniversal()) {
-                Object incDecoder = factory().createNLDecoder(PIncrementalNewlineDecoder);
+                Object incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
                 initNode.execute(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
                 self.setDecoder(incDecoder);
             }
@@ -612,15 +614,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        @SuppressWarnings("truffle-static-method")
-        Object doit(VirtualFrame frame, PStringIO self,
+        static Object doit(VirtualFrame frame, PStringIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetValueNode getValueNode,
-                        @Cached GetOrCreateDictNode getDict) {
+                        @Cached GetOrCreateDictNode getDict,
+                        @Cached PythonObjectFactory factory) {
             Object initValue = getValueNode.execute(frame, self);
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
             Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(inliningTarget, self)};
-            return factory().createTuple(state);
+            return factory.createTuple(state);
         }
     }
 

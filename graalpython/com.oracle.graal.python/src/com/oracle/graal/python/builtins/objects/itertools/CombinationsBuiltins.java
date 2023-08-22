@@ -189,39 +189,26 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "isNull(self)")
-        Object reduceNoResult(PAbstractCombinations self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
-            Object type = getClassNode.execute(inliningTarget, self);
 
-            Object[] obj = new Object[self.getIndices().length];
-            for (int i = 0; i < obj.length; i++) {
-                obj[i] = self.getIndices()[i];
-            }
-            PTuple tuple = factory().createTuple(new Object[]{factory().createList(self.getPool()), self.getR()});
-            return factory().createTuple(new Object[]{type, tuple});
-        }
-
-        @Specialization(guards = "!isNull(self)")
+        @Specialization
         Object reduce(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Cached InlinedConditionProfile hasNoLastResultProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-
+            PTuple tuple1 = factory.createTuple(new Object[]{factory.createList(self.getPool()), self.getR()});
+            if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
+                return factory.createTuple(new Object[]{type, tuple1});
+            }
+            Object lastResult = self.getLastResult() == null ? PNone.NONE : factory.createList(self.getLastResult());
             Object[] obj = new Object[self.getIndices().length];
             for (int i = 0; i < obj.length; i++) {
                 obj[i] = self.getIndices()[i];
             }
-            PList indices = factory().createList(obj);
-            Object lastResult = self.getLastResult() == null ? PNone.NONE : factory().createList(self.getLastResult());
-            PTuple tuple1 = factory().createTuple(new Object[]{factory().createList(self.getPool()), self.getR()});
-            PTuple tuple2 = factory().createTuple(new Object[]{indices, lastResult, self.isStopped()});
-            return factory().createTuple(new Object[]{type, tuple1, tuple2});
-        }
-
-        protected boolean isNull(PAbstractCombinations self) {
-            return self.getLastResult() == null;
+            PList indices = factory.createList(obj);
+            PTuple tuple2 = factory.createTuple(new Object[]{indices, lastResult, self.isStopped()});
+            return factory.createTuple(new Object[]{type, tuple1, tuple2});
         }
     }
 

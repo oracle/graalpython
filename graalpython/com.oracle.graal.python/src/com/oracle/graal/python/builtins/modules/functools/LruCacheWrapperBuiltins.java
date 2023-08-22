@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -145,7 +146,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readAttr,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
-                        @Cached PyNumberAsSizeNode numberAsSize) {
+                        @Cached PyNumberAsSizeNode numberAsSize,
+                        @Cached PythonObjectFactory factory) {
 
             if (!callableCheck.execute(inliningTarget, func)) {
                 throw raise(TypeError, THE_FIRST_ARGUMENT_MUST_BE_CALLABLE);
@@ -172,7 +174,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                 throw raise(TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
             }
 
-            LruCacheObject obj = factory().createLruCacheObject(type);
+            LruCacheObject obj = factory.createLruCacheObject(type);
 
             obj.root.prev = obj.root;
             obj.root.next = obj.root;
@@ -280,11 +282,12 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
 
         // lru_cache_make_key
-        Object lruCacheMakeKey(Object kwdMark, Object[] args, PKeyword[] kwds, int typed,
+        static Object lruCacheMakeKey(Object kwdMark, Object[] args, PKeyword[] kwds, int typed,
                         Node inliningTarget,
                         GetClassNode getClassNode,
                         PyUnicodeCheckExactNode unicodeCheckExact,
-                        PyLongCheckExactNode longCheckExact) {
+                        PyLongCheckExactNode longCheckExact,
+                        PythonObjectFactory factory) {
             int kwdsSize = kwds.length;
             /* short path, key will match args anyway, which is a tuple */
             if (typed == 0 && kwdsSize == 0) {
@@ -298,7 +301,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                     }
                 }
 
-                return factory().createTuple(args);
+                return factory.createTuple(args);
             }
             int argsLen = args.length;
             int keySize = args.length;
@@ -333,11 +336,11 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                 }
             }
             assert (keyPos == keySize);
-            return factory().createTuple(keyArray);
+            return factory.createTuple(keyArray);
         }
 
         // infinite_lru_cache_wrapper
-        Object infiniteLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
+        static Object infiniteLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
                         Node inliningTarget,
                         Object key,
                         long hash,
@@ -410,7 +413,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
          */
 
         // bounded_lru_cache_wrapper
-        Object boundedLruCacheWrapper(VirtualFrame frame, Node inliningTarget, LruCacheObject self, Object[] args, PKeyword[] kwds,
+        static Object boundedLruCacheWrapper(VirtualFrame frame, Node inliningTarget, LruCacheObject self, Object[] args, PKeyword[] kwds,
                         Object key,
                         long hash,
                         Object cachedItem,
@@ -516,8 +519,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isUncached()")
-        @SuppressWarnings("truffle-static-method")
-        Object cachedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
+        static Object cachedLruCacheWrapper(VirtualFrame frame, LruCacheObject self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CallVarargsMethodNode callNode,
                         @Cached PyObjectHashNode hashNode,
@@ -527,9 +529,10 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         @Cached PyUnicodeCheckExactNode unicodeCheckExact,
                         @Cached PyLongCheckExactNode longCheckExact,
                         @Cached ObjectHashMap.RemoveNode popItem,
-                        @Cached InlinedConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile,
+                        @Cached PythonObjectFactory factory) {
             Object key = lruCacheMakeKey(self.kwdMark, args, kwds, self.typed,
-                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact);
+                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact, factory);
             long hash = hashNode.execute(frame, inliningTarget, key);
             Object cached = getItem.execute(frame, inliningTarget, self.cache, key, hash);
             if (profile.profile(inliningTarget, self.isInfinite())) {
@@ -574,11 +577,12 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected Object getmethod(LruCacheObject self, Object obj, @SuppressWarnings("unused") Object type) {
+        static Object getmethod(LruCacheObject self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached PythonObjectFactory factory) {
             if (obj instanceof PNone) {
                 return self;
             }
-            return factory().createMethod(obj, self);
+            return factory.createMethod(obj, self);
         }
     }
 
@@ -586,7 +590,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object copy(LruCacheObject self) {
+        static Object copy(LruCacheObject self) {
             return self;
         }
     }
@@ -595,7 +599,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object deepcopy(LruCacheObject self, @SuppressWarnings("unused") Object ignored) {
+        static Object deepcopy(LruCacheObject self, @SuppressWarnings("unused") Object ignored) {
             return self;
         }
     }

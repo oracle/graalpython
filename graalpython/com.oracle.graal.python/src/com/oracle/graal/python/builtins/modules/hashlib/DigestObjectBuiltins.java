@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -82,9 +83,10 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        DigestObject copy(DigestObject self) {
+        DigestObject copy(DigestObject self,
+                        @Cached PythonObjectFactory factory) {
             try {
-                return self.copy(factory());
+                return self.copy(factory);
             } catch (CloneNotSupportedException e) {
                 throw raise(PythonBuiltinClassType.ValueError);
             }
@@ -95,8 +97,9 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DigestNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes digest(DigestObject self) {
-            return factory().createBytes(self.digest());
+        static PBytes digest(DigestObject self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(self.digest());
         }
     }
 

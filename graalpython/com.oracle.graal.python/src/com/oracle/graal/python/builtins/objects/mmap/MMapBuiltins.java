@@ -257,15 +257,16 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode,
-                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(inliningTarget, info);
                 if (emptyProfile.profile(inliningTarget, len == 0)) {
-                    return createEmptyBytes(factory());
+                    return createEmptyBytes(factory);
                 }
                 byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, getPosixSupport(), info.start, len, constructAndRaiseNode);
-                return factory().createBytes(result);
+                return factory.createBytes(result);
             } catch (OverflowException e) {
                 throw raise(PythonBuiltinClassType.OverflowError, e);
             }
@@ -456,7 +457,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile negativeProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             long nread;
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
             if (noneProfile.profile(inliningTarget, isPNone(n))) {
@@ -475,12 +477,12 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
             }
             if (emptyProfile.profile(inliningTarget, nread == 0)) {
-                return createEmptyBytes(factory());
+                return createEmptyBytes(factory);
             }
             try {
                 byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, posixLib, getPosixSupport(), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);
                 self.setPos(self.getPos() + buffer.length);
-                return factory().createBytes(buffer);
+                return factory.createBytes(buffer);
             } catch (OverflowException e) {
                 throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
             }
@@ -497,7 +499,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             // Posix abstraction is leaking here a bit: with read mmapped memory, we'd just read
             // byte by byte, but that would be very inefficient with emulated mmap, so we use a
             // small buffer
@@ -520,7 +523,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
                 self.setPos(self.getPos() + nread);
             }
-            return factory().createBytes(res);
+            return factory.createBytes(res);
         }
     }
 

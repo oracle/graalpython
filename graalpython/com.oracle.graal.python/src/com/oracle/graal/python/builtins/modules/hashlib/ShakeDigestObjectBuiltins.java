@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -88,11 +89,12 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes digest(DigestObject self, int length) {
+        PBytes digest(DigestObject self, int length,
+                        @Cached PythonObjectFactory factory) {
             if (self.getDigestLength() != length) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
-            return factory().createBytes(self.digest());
+            return factory.createBytes(self.digest());
         }
     }
 

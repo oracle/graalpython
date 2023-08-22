@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
@@ -129,22 +131,21 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getCnt() >= 0")
-        Object reducePos(PRepeat self,
+        @Specialization
+        static Object reduce(PRepeat self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClass) {
+                        @Cached InlinedConditionProfile negativeCountProfile,
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getElement(), self.getCnt()});
-            return factory().createTuple(new Object[]{type, tuple});
-        }
-
-        @Specialization(guards = "self.getCnt() < 0")
-        Object reduceNeg(PRepeat self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClass) {
-            Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getElement()});
-            return factory().createTuple(new Object[]{type, tuple});
+            Object[] tupleElements;
+            if (negativeCountProfile.profile(inliningTarget, self.getCnt() < 0)) {
+                tupleElements = new Object[]{self.getElement()};
+            } else {
+                tupleElements = new Object[]{self.getElement(), self.getCnt()};
+            }
+            PTuple tuple = factory.createTuple(tupleElements);
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 

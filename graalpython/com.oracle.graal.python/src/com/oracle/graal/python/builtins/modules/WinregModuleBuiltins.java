@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,12 +94,13 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
+        static Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access,
                         @Bind("this") Node inliningTarget,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             if (key instanceof Integer intKey) {
                 if (intKey == HKEY_CLASSES_ROOT) {
-                    return factory().createLock();
+                    return factory.createLock();
                 }
             }
             throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);

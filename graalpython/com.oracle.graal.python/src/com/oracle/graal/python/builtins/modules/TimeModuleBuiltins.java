@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -304,9 +305,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
 
         @Specialization
-        public PTuple gmtime(VirtualFrame frame, Object seconds,
-                        @Cached ToLongTime toLongTime) {
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, this, seconds)));
+        static PTuple gmtime(VirtualFrame frame, Object seconds,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ToLongTime toLongTime,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -338,12 +341,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonLocalTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
+        static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
-                        @Cached ToLongTime toLongTime) {
+                        @Cached ToLongTime toLongTime,
+                        @Cached PythonObjectFactory factory) {
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
+            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -1100,9 +1104,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getClockInfo(TruffleString name,
+        Object getClockInfo(TruffleString name,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PythonObjectFactory factory) {
             final boolean adjustable;
             final boolean monotonic;
 
@@ -1117,7 +1122,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
             }
 
-            final PSimpleNamespace ns = factory().createSimpleNamespace();
+            final PSimpleNamespace ns = factory.createSimpleNamespace();
             dyLib.put(ns, T_ADJUSTABLE, adjustable);
             dyLib.put(ns, T_IMPLEMENTATION, name);
             dyLib.put(ns, T_MONOTONIC, monotonic);

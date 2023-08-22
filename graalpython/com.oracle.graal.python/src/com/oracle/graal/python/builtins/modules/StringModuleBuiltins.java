@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,7 +83,8 @@ public final class StringModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self) {
+        PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self,
+                        @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
             PythonLanguage language = PythonLanguage.get(this);
@@ -93,7 +95,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
             }
-            return parserListToIterator(parserList, factory());
+            return parserListToIterator(parserList, factory);
         }
     }
 
@@ -115,7 +117,8 @@ public final class StringModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object formatterParser(VirtualFrame frame, TruffleString self) {
+        Object formatterParser(VirtualFrame frame, TruffleString self,
+                        @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
             PythonLanguage language = PythonLanguage.get(this);
@@ -126,7 +129,6 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
             }
-            PythonObjectFactory factory = factory();
             return factory.createTuple(new Object[]{result.first, parserListToIterator(result.parserList, factory)});
         }
     }

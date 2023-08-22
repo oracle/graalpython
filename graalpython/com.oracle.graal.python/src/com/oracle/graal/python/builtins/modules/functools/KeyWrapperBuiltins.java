@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -173,8 +174,9 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object call(PKeyWrapper self, Object obj) {
-            final PKeyWrapper keyWrapper = factory().createKeyWrapper(self.getCmp());
+        static Object call(PKeyWrapper self, Object obj,
+                        @Cached PythonObjectFactory factory) {
+            final PKeyWrapper keyWrapper = factory.createKeyWrapper(self.getCmp());
             keyWrapper.setObject(obj);
             return keyWrapper;
         }

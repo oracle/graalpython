@@ -81,10 +81,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -281,10 +283,11 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "!self.hasDecoder()")
-        Object noDecoder(PNLDecoder self) {
-            PBytes buffer = factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        static Object noDecoder(PNLDecoder self,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PBytes buffer = factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             int flag = self.isPendingCR() ? 1 : 0;
-            return factory().createTuple(new Object[]{buffer, flag});
+            return factory.createTuple(new Object[]{buffer, flag});
         }
 
         @Specialization(guards = "self.hasDecoder()")
@@ -294,7 +297,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
@@ -308,7 +312,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             if (self.isPendingCR()) {
                 flag |= 1;
             }
-            return factory().createTuple(new Object[]{objects[0], flag});
+            return factory.createTuple(new Object[]{objects[0], flag});
         }
     }
 
@@ -339,7 +343,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PythonObjectFactory factory) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
@@ -347,7 +352,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
-            PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});
+            PTuple tuple = factory.createTuple(new Object[]{objects[0], flag});
             return callMethod.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
         }
 
@@ -381,7 +386,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NewlineNode extends PythonBuiltinNode {
         @Specialization
-        Object newline(PNLDecoder self) {
+        static Object newline(PNLDecoder self,
+                        @Cached PythonObjectFactory factory) {
             switch (self.getSeenNewline()) {
                 case SEEN_CR:
                     return T_CR;
@@ -390,13 +396,13 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                 case SEEN_CRLF:
                     return T_CRLF;
                 case SEEN_CR | SEEN_LF:
-                    return factory().createTuple(new Object[]{T_CR, T_NEWLINE});
+                    return factory.createTuple(new Object[]{T_CR, T_NEWLINE});
                 case SEEN_CR | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{T_CR, T_CRLF});
+                    return factory.createTuple(new Object[]{T_CR, T_CRLF});
                 case SEEN_LF | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{T_NEWLINE, T_CRLF});
+                    return factory.createTuple(new Object[]{T_NEWLINE, T_CRLF});
                 case SEEN_CR | SEEN_LF | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{T_CR, T_NEWLINE, T_CRLF});
+                    return factory.createTuple(new Object[]{T_CR, T_NEWLINE, T_CRLF});
                 default:
                     return PNone.NONE;
             }

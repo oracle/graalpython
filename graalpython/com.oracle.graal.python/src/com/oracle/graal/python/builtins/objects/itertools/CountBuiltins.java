@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -132,21 +133,22 @@ public final class CountBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reducePos(PCount self,
+        static Object reducePos(PCount self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaLongExactNode castLongNode,
                         @Cached PyObjectTypeCheck typeCheckNode,
-                        @Cached InlinedConditionProfile hasDefaultStep) {
+                        @Cached InlinedConditionProfile hasDefaultStep,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple;
             if (hasDefaultStep.profile(inliningTarget,
                             !typeCheckNode.execute(inliningTarget, self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(inliningTarget, self.getStep()) != 1)) {
-                tuple = factory().createTuple(new Object[]{self.getCnt(), self.getStep()});
+                tuple = factory.createTuple(new Object[]{self.getCnt(), self.getStep()});
             } else {
-                tuple = factory().createTuple(new Object[]{self.getCnt()});
+                tuple = factory.createTuple(new Object[]{self.getCnt()});
             }
-            return factory().createTuple(new Object[]{type, tuple});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 }

@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -173,7 +174,7 @@ public final class DictBuiltins extends PythonBuiltins {
     abstract static class SetDefaultNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
-        public Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+        Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached PyDictSetDefault setDefault) {
             return setDefault.execute(frame, inliningTarget, dict, key, defaultValue);
@@ -190,7 +191,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+        Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasKeyProfile,
                         @Cached InlinedConditionProfile defaultIsNoneProfile,
@@ -214,18 +215,19 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object popItem(VirtualFrame frame, PDict dict,
+        Object popItem(VirtualFrame frame, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageDelItem delItem,
                         @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorValue iterValue) {
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = dict.getDictStorage();
             HashingStorageIterator it = getReverseIterator.execute(inliningTarget, storage);
             while (iterNext.execute(inliningTarget, storage, it)) {
                 Object key = iterKey.execute(inliningTarget, storage, it);
-                PTuple result = factory().createTuple(new Object[]{key, iterValue.execute(inliningTarget, storage, it)});
+                PTuple result = factory.createTuple(new Object[]{key, iterValue.execute(inliningTarget, storage, it)});
                 delItem.execute(frame, inliningTarget, storage, key, dict);
                 return result;
             }
@@ -239,8 +241,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PDictView keys(PDict self) {
-            return factory().createDictKeysView(self);
+        PDictView keys(PDict self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictKeysView(self);
         }
     }
 
@@ -250,8 +253,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PDictView items(PDict self) {
-            return factory().createDictItemsView(self);
+        static PDictView items(PDict self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictItemsView(self);
         }
     }
 
@@ -260,7 +264,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public static Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
+        static Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
             final Object value = getItem.execute(frame, inliningTarget, self.getDictStorage(), key);
@@ -296,7 +300,7 @@ public final class DictBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization
-        protected static Object misssing(VirtualFrame frame, Object self, Object key,
+        static Object misssing(VirtualFrame frame, Object self, Object key,
                         @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
                         @Cached DefaultMissingNode defaultMissing) {
             Object result = callMissing.executeObject(frame, self, key);
@@ -352,12 +356,13 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(@SuppressWarnings("unused") PDict self,
+        static Object run(@SuppressWarnings("unused") PDict self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageGetIterator getIterator) {
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage dictStorage = self.getDictStorage();
-            return factory().createDictKeyIterator(getIterator.execute(inliningTarget, dictStorage), dictStorage, lenNode.execute(inliningTarget, dictStorage));
+            return factory.createDictKeyIterator(getIterator.execute(inliningTarget, dictStorage), dictStorage, lenNode.execute(inliningTarget, dictStorage));
         }
     }
 
@@ -365,12 +370,13 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(PDict self,
+        static Object run(PDict self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageGetReverseIterator getReverseIterator) {
+                        @Cached HashingStorageGetReverseIterator getReverseIterator,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getDictStorage();
-            return factory().createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -408,7 +414,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static int len(PDict self,
+        static int len(PDict self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, self.getDictStorage());
@@ -421,10 +427,11 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDict dict,
+        static PDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCopy copyNode) {
-            return factory().createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
         }
     }
 
@@ -434,7 +441,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public static PDict clear(PDict dict,
+        static PDict clear(PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageClear clearNode) {
             HashingStorage newStorage = clearNode.execute(inliningTarget, dict.getDictStorage());
@@ -449,8 +456,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PDictView values(PDict self) {
-            return factory().createDictValuesView(self);
+        static PDictView values(PDict self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictValuesView(self);
         }
     }
 
@@ -511,16 +519,17 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isBuiltinDict(inliningTarget, cls, isSameTypeNode)", limit = "1")
-        public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+        static Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage s = getHashingStorageNode.execute(frame, inliningTarget, iterable, value);
-            return factory().createDict(cls, s);
+            return factory.createDict(cls, s);
         }
 
         @Fallback
-        public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+        Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
@@ -559,11 +568,12 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PDict or(VirtualFrame frame, PDict self, PDict other,
+        static PDict or(VirtualFrame frame, PDict self, PDict other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached DictNodes.UpdateNode updateNode) {
-            PDict merged = factory().createDict(copyNode.execute(inliningTarget, self.getDictStorage()));
+                        @Cached DictNodes.UpdateNode updateNode,
+                        @Cached PythonObjectFactory factory) {
+            PDict merged = factory.createDict(copyNode.execute(inliningTarget, self.getDictStorage()));
             updateNode.execute(frame, merged, other);
             return merged;
         }
@@ -590,8 +600,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

@@ -81,6 +81,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -107,39 +108,40 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()"})
-        @SuppressWarnings("truffle-static-method")
-        PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data, int maxLength,
+        static PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj,
+                        @Shared @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
                 int len = data.getSequenceStorage().length();
-                return factory().createBytes(decompressObj.execute(inliningTarget, self, PythonContext.get(this), bytes, len, maxLength));
+                return factory.createBytes(decompressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()", "!isBytes(data)"})
-        @SuppressWarnings("truffle-static-method")
-        PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data, int maxLength,
+        static PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
-                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
+                        @Exclusive @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj,
+                        @Shared @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
-                return factory().createBytes(decompressObj.execute(inliningTarget, self, PythonContext.get(this), bytes, len, maxLength));
+                return factory.createBytes(decompressObj.execute(inliningTarget, self, PythonContext.get(inliningTarget), bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()"})
         PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength,
-                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(frame, data);
-            byte[] res = ZlibNodes.JavaDecompressor.execute(frame, self, bytes, maxLength, DEF_BUF_SIZE, this, factory(), toBytes);
-            return factory().createBytes(res);
+            byte[] res = ZlibNodes.JavaDecompressor.execute(frame, self, bytes, maxLength, DEF_BUF_SIZE, this, factory, toBytes);
+            return factory.createBytes(res);
         }
 
         @SuppressWarnings("unused")
@@ -206,10 +208,11 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(ZLibCompObject self,
+        static Object doit(ZLibCompObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BaseCopyNode copyNode) {
-            return copyNode.execute(inliningTarget, self, PythonContext.get(this), factory());
+                        @Cached BaseCopyNode copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return copyNode.execute(inliningTarget, self, PythonContext.get(inliningTarget), factory);
         }
     }
 
@@ -222,10 +225,11 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doit(ZLibCompObject self, @SuppressWarnings("unused") Object memo,
+        static Object doit(ZLibCompObject self, @SuppressWarnings("unused") Object memo,
                         @Bind("this") Node inliningTarget,
-                        @Cached BaseCopyNode copyNode) {
-            return copyNode.execute(inliningTarget, self, PythonContext.get(this), factory());
+                        @Cached BaseCopyNode copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return copyNode.execute(inliningTarget, self, PythonContext.get(inliningTarget), factory);
         }
     }
 
@@ -240,14 +244,14 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"length > 0", "!self.isEof()", "self.isInitialized()"})
-        @SuppressWarnings("truffle-static-method") // factory
-        PBytes doit(ZLibCompObject.NativeZlibCompObject self, int length,
+        static PBytes doit(ZLibCompObject.NativeZlibCompObject self, int length,
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
                         @Cached NativeLibrary.InvokeNativeFunction getIsInitialised,
                         @Cached ZlibNodes.NativeDeallocation processDeallocation,
-                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
+                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling,
+                        @Shared @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 PythonContext ctxt = PythonContext.get(inliningTarget);
                 assert self.isInitialized();
@@ -258,37 +262,40 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
                 }
                 byte[] resultArray = getBuffer.getOutputBuffer(inliningTarget, self.getZst(), ctxt);
                 if (zlibSupport.getIsInitialised(self.getZst(), getIsInitialised) == 0) {
-                    processDeallocation.execute(inliningTarget, self, ctxt, factory(), false);
+                    processDeallocation.execute(inliningTarget, self, ctxt, factory, false);
                 }
-                return factory().createBytes(resultArray);
+                return factory.createBytes(resultArray);
             }
         }
 
         @Specialization(guards = {"length > 0", "!self.isEof()", "self.isInitialized()"})
         PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, int length,
-                        @Cached BytesNodes.ToBytesNode toBytes) {
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] res;
             try {
-                res = ZlibNodes.JavaDecompressor.execute(frame, self, toBytes.execute(self.getUnconsumedTail()), 0, length, this, factory(), toBytes);
+                res = ZlibNodes.JavaDecompressor.execute(frame, self, toBytes.execute(self.getUnconsumedTail()), 0, length, this, factory, toBytes);
             } catch (PException e) {
                 // CPython ignores errors here
                 res = PythonUtils.EMPTY_BYTE_ARRAY;
             }
             self.setUninitialized();
-            return factory().createBytes(res);
+            return factory.createBytes(res);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"length > 0", "self.isEof() || !self.isInitialized()"})
-        PBytes empty(ZLibCompObject.JavaZlibCompObject self, int length) {
+        static PBytes empty(ZLibCompObject.JavaZlibCompObject self, int length,
+                        @Shared @Cached PythonObjectFactory factory) {
             self.setUninitialized();
-            return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"length > 0", "self.isEof() || !self.isInitialized()"})
-        PBytes empty(ZLibCompObject.NativeZlibCompObject self, int length) {
-            return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        static PBytes empty(ZLibCompObject.NativeZlibCompObject self, int length,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @SuppressWarnings("unused")
@@ -302,12 +309,13 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isInitialized()")
-        PBytes doit(ZLibCompObject.NativeZlibCompObject self,
+        static PBytes doit(ZLibCompObject.NativeZlibCompObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached ZlibNodes.GetNativeBufferNode getBuffer) {
+                        @Cached ZlibNodes.GetNativeBufferNode getBuffer,
+                        @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 assert self.isInitialized();
-                return factory().createBytes(getBuffer.getUnusedDataBuffer(inliningTarget, self.getZst(), PythonContext.get(this)));
+                return factory.createBytes(getBuffer.getUnusedDataBuffer(inliningTarget, self.getZst(), PythonContext.get(inliningTarget)));
             }
         }
 
@@ -326,12 +334,13 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnconsumedTailNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isInitialized()")
-        PBytes doit(ZLibCompObject.NativeZlibCompObject self,
+        static PBytes doit(ZLibCompObject.NativeZlibCompObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached ZlibNodes.GetNativeBufferNode getBuffer) {
+                        @Cached ZlibNodes.GetNativeBufferNode getBuffer,
+                        @Cached PythonObjectFactory factory) {
             synchronized (self) {
                 assert self.isInitialized();
-                return factory().createBytes(getBuffer.getUnconsumedTailBuffer(inliningTarget, self.getZst(), PythonContext.get(this)));
+                return factory.createBytes(getBuffer.getUnconsumedTailBuffer(inliningTarget, self.getZst(), PythonContext.get(inliningTarget)));
             }
         }
 

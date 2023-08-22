@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -241,7 +242,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PythonObjectFactory factory) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for array object instances";
             Object proto = stgdict.proto;
@@ -255,17 +257,17 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (slicelen <= 0) {
-                    return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 if (sliceInfo.step == 1) {
-                    return factory().createBytes(ptr, sliceInfo.start, slicelen);
+                    return factory.createBytes(ptr, sliceInfo.start, slicelen);
                 }
                 byte[] dest = new byte[slicelen];
                 for (int cur = sliceInfo.start, i = 0; i < slicelen; cur += sliceInfo.step, i++) {
                     dest[i] = ptr[cur];
                 }
 
-                return factory().createBytes(dest);
+                return factory.createBytes(dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -291,7 +293,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             for (int cur = sliceInfo.start, i = 0; i < slicelen; cur += sliceInfo.step, i++) {
                 np[i] = Array_item(self, cur, pyCDataGetNode, pyObjectStgDictNode);
             }
-            return factory().createList(np);
+            return factory.createList(np);
         }
 
         @Specialization(guards = "!isPSlice(item)")
@@ -331,8 +333,9 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -98,14 +99,15 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         Object next(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] lst = new Object[self.getGears().length];
             loopProfile.profileCounted(inliningTarget, lst.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < lst.length); i++) {
                 lst[i] = self.getGears()[i][0];
             }
             self.setLst(lst);
-            return factory().createTuple(lst);
+            return factory.createTuple(lst);
         }
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
@@ -115,7 +117,8 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile indexProfile,
                         @Cached InlinedBranchProfile wasStoppedProfile,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached InlinedBranchProfile doneProfile) {
+                        @Cached InlinedBranchProfile doneProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
 
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
@@ -142,7 +145,7 @@ public final class ProductBuiltins extends PythonBuiltins {
             // the existing lst array can be changed in a following next call
             Object[] ret = new Object[self.getLst().length];
             PythonUtils.arraycopy(self.getLst(), 0, ret, 0, ret.length);
-            return factory().createTuple(ret);
+            return factory.createTuple(ret);
         }
 
         @SuppressWarnings("unused")
@@ -186,44 +189,33 @@ public final class ProductBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
-        Object reduce(PProduct self,
+
+        @Specialization
+        static Object reduce(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Cached InlinedConditionProfile stoppedProfile,
+                        @Cached InlinedConditionProfile noLstProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple gearTuples = createGearTuple(self);
-            return factory().createTuple(new Object[]{type, gearTuples});
+            if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
+                PTuple empty = factory.createEmptyTuple();
+                return factory.createTuple(new Object[]{type, factory.createTuple(new Object[]{empty})});
+            }
+            PTuple gearTuples = createGearTuple(self, factory);
+            if (noLstProfile.profile(inliningTarget, self.getLst() == null)) {
+                return factory.createTuple(new Object[]{type, gearTuples});
+            }
+            PTuple indicesTuple = factory.createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
+            return factory.createTuple(new Object[]{type, gearTuples, indicesTuple});
         }
 
-        @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
-        Object reduceLst(PProduct self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
-            Object type = getClassNode.execute(inliningTarget, self);
-            PTuple gearTuples = createGearTuple(self);
-            PTuple indicesTuple = factory().createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
-            return factory().createTuple(new Object[]{type, gearTuples, indicesTuple});
-        }
-
-        private PTuple createGearTuple(PProduct self) {
+        private static PTuple createGearTuple(PProduct self, PythonObjectFactory factory) {
             PList[] lists = new PList[self.getGears().length];
             for (int i = 0; i < lists.length; i++) {
-                lists[i] = factory().createList(self.getGears()[i]);
+                lists[i] = factory.createList(self.getGears()[i]);
             }
-            return factory().createTuple(lists);
-        }
-
-        @Specialization(guards = "self.isStopped()")
-        Object reduceStopped(PProduct self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
-            Object type = getClassNode.execute(inliningTarget, self);
-            PTuple empty = factory().createEmptyTuple();
-            return factory().createTuple(new Object[]{type, factory().createTuple(new Object[]{empty})});
-        }
-
-        protected static boolean hasLst(PProduct self) {
-            return self.getLst() != null;
+            return factory.createTuple(lists);
         }
     }
 

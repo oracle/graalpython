@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -400,11 +401,12 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
-                        @Shared("getName") @Cached PyObjectGetAttr getName) {
+                        @Shared("getName") @Cached PyObjectGetAttr getName,
+                        @Shared @Cached PythonObjectFactory factory) {
             PythonModule builtins = getContext().getBuiltins();
             Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
-            return factory().createTuple(new Object[]{getattr, args});
+            PTuple args = factory.createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
+            return factory.createTuple(new Object[]{getattr, args});
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
@@ -412,11 +414,12 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
-                        @Shared("getName") @Cached PyObjectGetAttr getName) {
+                        @Shared("getName") @Cached PyObjectGetAttr getName,
+                        @Shared @Cached PythonObjectFactory factory) {
             PythonModule builtins = getContext().getBuiltins();
             Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
-            return factory().createTuple(new Object[]{getattr, args});
+            PTuple args = factory.createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
+            return factory.createTuple(new Object[]{getattr, args});
         }
 
         private static TruffleString getName(VirtualFrame frame, Node inliningTarget, Object func, CastToTruffleStringNode toStringNode, PyObjectGetAttr getName) {

@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -107,14 +108,15 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached TruffleString.EqualNode isEqual) { // "O|s:StreamReader"
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory) { // "O|s:StreamReader"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamReaderObject self = factory().createMultibyteStreamReaderObject(type);
+            MultibyteStreamReaderObject self = factory.createMultibyteStreamReaderObject(type);
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);

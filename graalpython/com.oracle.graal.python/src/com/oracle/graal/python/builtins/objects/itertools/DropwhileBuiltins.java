@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -120,12 +121,13 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PDropwhile self,
+        static Object reduce(PDropwhile self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getPredicate(), self.getIterable()});
-            return factory().createTuple(new Object[]{type, tuple, self.isDoneDropping()});
+            PTuple tuple = factory.createTuple(new Object[]{self.getPredicate(), self.getIterable()});
+            return factory.createTuple(new Object[]{type, tuple, self.isDoneDropping()});
         }
     }
 

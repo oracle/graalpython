@@ -148,7 +148,8 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             long uid;
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
@@ -172,7 +173,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             if (pwd == null) {
                 throw raiseUidNotFound();
             }
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory(), unsignedConversionProfile));
+            return factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory, unsignedConversionProfile));
         }
 
         private PException raiseUidNotFound() {
@@ -197,7 +198,8 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object nameEncoded = encodeFSDefault.execute(inliningTarget, name);
@@ -215,7 +217,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             if (pwd == null) {
                 throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
             }
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory(), unsignedConversionProfile));
+            return factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory, unsignedConversionProfile));
         }
     }
 
@@ -227,7 +229,8 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             // We cannot release the GIL, because the underlying POSIX calls are not thread safe
             PwdResult[] entries;
             try {
@@ -237,9 +240,9 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
             }
             Object[] result = new Object[entries.length];
             for (int i = 0; i < result.length; i++) {
-                result[i] = factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, entries[i], factory(), unsignedConversionProfile));
+                result[i] = factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, entries[i], factory, unsignedConversionProfile));
             }
-            return factory().createList(result);
+            return factory.createList(result);
         }
     }
 }

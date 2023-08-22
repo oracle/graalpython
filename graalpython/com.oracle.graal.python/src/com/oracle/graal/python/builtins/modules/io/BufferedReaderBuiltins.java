@@ -111,13 +111,13 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method") // factory
-        final Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
+        static Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
                         @Bind("this") Node inliningTarget,
                         @Cached InitBufferSizeNode initBufferSizeNode,
-                        @Cached BufferedReaderInit init) {
+                        @Cached BufferedReaderInit init,
+                        @Cached PythonObjectFactory factory) {
             int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);
-            init.execute(frame, inliningTarget, self, raw, size, factory());
+            init.execute(frame, inliningTarget, self, raw, size, factory);
             return PNone.NONE;
         }
     }

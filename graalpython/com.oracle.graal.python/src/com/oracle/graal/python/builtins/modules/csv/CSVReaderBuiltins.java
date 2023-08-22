@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -127,8 +128,9 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         @Cached GetNextNode getNextNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
-            PList fields = factory().createList();
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PythonObjectFactory factory) {
+            PList fields = factory.createList();
             CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) getContext().lookupBuiltinModule(T__CSV).getBuiltins();
             self.parseReset();
             do {

@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -479,7 +480,8 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasPeek,
-                        @Cached InlinedConditionProfile isBytes) {
+                        @Cached InlinedConditionProfile isBytes,
+                        @Cached PythonObjectFactory factory) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
@@ -520,7 +522,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory().createBytes(toByteArray(buffer));
+            return factory.createBytes(toByteArray(buffer));
         }
     }
 
@@ -534,13 +536,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object withHint(VirtualFrame frame, Object self, int hintIn,
+        static Object withHint(VirtualFrame frame, Object self, int hintIn,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNextNode next,
                         @Cached InlinedConditionProfile isNegativeHintProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyObjectSizeNode sizeNode) {
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PythonObjectFactory factory) {
             int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
             Object iterator = getIter.execute(frame, inliningTarget, self);
@@ -559,7 +562,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     break;
                 }
             }
-            return factory().createList(list.toArray(new Object[0]));
+            return factory.createList(list.toArray(new Object[0]));
         }
     }
 

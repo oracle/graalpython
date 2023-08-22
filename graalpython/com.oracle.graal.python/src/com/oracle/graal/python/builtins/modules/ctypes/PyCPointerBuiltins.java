@@ -299,7 +299,8 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PythonObjectFactory factory) {
             /*
              * Since pointers have no length, and we want to apply different semantics to negative
              * indices than normal slicing, we have to dissect the slice object ourselves.
@@ -345,16 +346,16 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
-                    return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 if (step == 1) {
-                    return factory().createBytes(ptr, start, len);
+                    return factory.createBytes(ptr, start, len);
                 }
                 byte[] dest = new byte[len];
                 for (int cur = start, i = 0; i < len; cur += step, i++) {
                     dest[i] = ptr[cur];
                 }
-                return factory().createBytes(dest);
+                return factory.createBytes(dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -377,7 +378,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             for (int cur = start, i = 0; i < len; cur += step, i++) {
                 np[i] = Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode);
             }
-            return factory().createList(np);
+            return factory.createList(np);
         }
 
         @Specialization(guards = "!isPSlice(item)")

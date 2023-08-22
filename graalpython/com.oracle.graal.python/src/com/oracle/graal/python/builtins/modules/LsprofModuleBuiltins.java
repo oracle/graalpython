@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleContext;
@@ -141,7 +142,8 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
             if (instrumentInfo != null) {
                 CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
                 if (sampler != null) {
-                    return factory().trace(new Profiler(cls, factory().getShape(cls), sampler));
+                    PythonObjectFactory factory = PythonObjectFactory.getUncached();
+                    return factory.trace(new Profiler(cls, factory.getShape(cls), sampler));
                 }
             }
             throw raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
@@ -274,7 +276,7 @@ class ProfilerBuiltins extends PythonBuiltins {
     abstract static class GetStats extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PList doit(Profiler self) {
+        static PList doit(Profiler self) {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
             List<PTuple> entries = new ArrayList<>();
             Map<TruffleContext, CPUSamplerData> data = self.sampler.getData();
@@ -288,22 +290,23 @@ class ProfilerBuiltins extends PythonBuiltins {
             }
 
             self.sampler.close();
-            return factory().createList(entries.toArray());
+            return PythonObjectFactory.getUncached().createList(entries.toArray());
         }
 
-        private void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
+        private static void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             Collection<ProfilerNode<Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
             int callIdx = 0;
             for (ProfilerNode<Payload> childNode : children) {
                 countNode(entries, childNode, avgSampleTime);
-                calls[callIdx++] = factory().createStructSeq(LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
+                calls[callIdx++] = factory.createStructSeq(LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
             }
             assert callIdx == calls.length;
             profilerEntry = Arrays.copyOf(profilerEntry, 6);
-            profilerEntry[profilerEntry.length - 1] = factory().createList(calls);
-            entries.add(factory().createStructSeq(LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
+            profilerEntry[profilerEntry.length - 1] = factory.createList(calls);
+            entries.add(factory.createStructSeq(LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
         }
 
         private static Object[] getProfilerEntry(ProfilerNode<Payload> node, double avgSampleTime) {

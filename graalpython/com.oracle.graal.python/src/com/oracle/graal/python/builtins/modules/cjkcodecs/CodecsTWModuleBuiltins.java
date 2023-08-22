@@ -116,7 +116,8 @@ public final class CodecsTWModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
-                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode,
+                        @Cached PythonObjectFactory factory) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
                 throw raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
@@ -127,8 +128,8 @@ public final class CodecsTWModuleBuiltins extends PythonBuiltins {
                 throw raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = factory().createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
-            return createCodec(this, codecobj, nameMatchesNode, factory(), getRaiseNode());
+            PyCapsule codecobj = factory.createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
+            return createCodec(this, codecobj, nameMatchesNode, factory, getRaiseNode());
         }
     }
 

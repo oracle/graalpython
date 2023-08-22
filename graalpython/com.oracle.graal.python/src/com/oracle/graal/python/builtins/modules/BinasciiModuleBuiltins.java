@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -183,10 +184,11 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bBase64Node extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes doConvert(VirtualFrame frame, Object buffer,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             try {
                 ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
-                return factory().createBytes(storage);
+                return factory.createBytes(storage);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -257,10 +259,11 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class A2bHexNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
         PBytes a2b(VirtualFrame frame, Object buffer,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             try {
                 byte[] bytes = a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
-                return factory().createBytes(bytes);
+                return factory.createBytes(bytes);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -302,7 +305,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonClinicBuiltinNode {
         @TruffleBoundary
-        private PBytes b2a(byte[] data, int lenght, int newline) {
+        private PBytes b2a(byte[] data, int lenght, int newline, PythonObjectFactory factory) {
             ByteBuffer encoded;
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
@@ -312,16 +315,17 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             if (newline != 0) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
                 encodedWithNL[encodedWithNL.length - 1] = '\n';
-                return factory().createBytes(encodedWithNL);
+                return factory.createBytes(encodedWithNL);
             }
-            return factory().createBytes(encoded.array(), encoded.limit());
+            return factory.createBytes(encoded.array(), encoded.limit());
         }
 
         @Specialization(limit = "3")
         PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             try {
-                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline);
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline, factory);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -343,27 +347,28 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
                 throw raise(NotImplementedError);
             }
             try {
-                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), factory);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
         @TruffleBoundary
-        private PBytes b2a(byte[] bytes, int length) {
+        private static PBytes b2a(byte[] bytes, int length, PythonObjectFactory factory) {
             byte[] output = new byte[length * 2];
             for (int i = 0; i < length; i++) {
                 int v = bytes[i] & 0xff;
                 output[i * 2] = HEX_DIGITS[v >> 4];
                 output[i * 2 + 1] = HEX_DIGITS[v & 0xf];
             }
-            return factory().createBytes(output);
+            return factory.createBytes(output);
         }
 
         @Override

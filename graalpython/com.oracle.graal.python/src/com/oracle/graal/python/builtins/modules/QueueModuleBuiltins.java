@@ -53,6 +53,8 @@ import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -78,8 +80,9 @@ public final class QueueModuleBuiltins extends PythonBuiltins {
     abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PSimpleQueue doGeneric(Object cls) {
-            return factory().createSimpleQueue(cls);
+        static PSimpleQueue doGeneric(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createSimpleQueue(cls);
         }
     }
 }

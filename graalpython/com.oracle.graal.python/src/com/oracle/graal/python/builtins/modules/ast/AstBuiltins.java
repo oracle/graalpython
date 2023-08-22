@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -173,13 +174,14 @@ public final class AstBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(VirtualFrame frame, PythonObject self, Object ignored,
+        static Object doit(VirtualFrame frame, PythonObject self, Object ignored,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookupAttr) {
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
-            return factory().createTuple(new Object[]{clazz, factory().createTuple(EMPTY_OBJECT_ARRAY), dict});
+            return factory.createTuple(new Object[]{clazz, factory.createTuple(EMPTY_OBJECT_ARRAY), dict});
         }
     }
 }

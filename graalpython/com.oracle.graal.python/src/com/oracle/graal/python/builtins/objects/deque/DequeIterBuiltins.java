@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -133,11 +134,12 @@ public final class DequeIterBuiltins extends PythonBuiltins {
     public abstract static class DequeIterReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PTuple doGeneric(PDequeIter self,
+        static PTuple doGeneric(PDequeIter self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
-            return factory().createTuple(new Object[]{clazz, factory().createTuple(new Object[]{self.deque, self.deque.getSize() - self.lengthHint()})});
+            return factory.createTuple(new Object[]{clazz, factory.createTuple(new Object[]{self.deque, self.deque.getSize() - self.lengthHint()})});
         }
     }
 }

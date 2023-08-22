@@ -154,10 +154,11 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getCode(PGenerator self,
+        static Object getCode(PGenerator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
+                        @Cached InlinedConditionProfile hasCodeProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
         }
     }
 
@@ -211,7 +212,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        TruffleString repr(PGenerator self,
+        static TruffleString repr(PGenerator self,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<generator object %s at %d>", self.getName(), PythonAbstractObject.objectHashCode(self));
         }
@@ -221,8 +222,9 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

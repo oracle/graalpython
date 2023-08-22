@@ -76,6 +76,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -113,8 +114,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ThreadLocalNode extends PythonBuiltinNode {
         @Specialization
-        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs) {
-            return factory().createThreadLocal(cls, args, keywordArgs);
+        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createThreadLocal(cls, args, keywordArgs);
         }
     }
 
@@ -123,8 +125,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public abstract static class AllocateLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        PLock construct(Object self, Object unused) {
-            return factory().createLock(PythonBuiltinClassType.PLock);
+        PLock construct(Object self, Object unused,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createLock(PythonBuiltinClassType.PLock);
         }
     }
 
@@ -132,8 +135,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PLock construct(Object cls) {
-            return factory().createLock(cls);
+        PLock construct(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createLock(cls);
         }
     }
 
@@ -141,8 +145,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PRLock construct(Object cls) {
-            return factory().createRLock(cls);
+        PRLock construct(Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createRLock(cls);
         }
     }
 
@@ -221,7 +226,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
-                        @Cached ExpandKeywordStarargsNode getKwArgsNode) {
+                        @Cached ExpandKeywordStarargsNode getKwArgsNode,
+                        @Cached PythonObjectFactory factory) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
             PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
@@ -267,7 +273,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                 }
             }, env.getContext(), context.getThreadGroup());
 
-            PThread pThread = factory().createPythonThread(cls, thread);
+            PThread pThread = factory.createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
         }
@@ -279,7 +285,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object setSentinel() {
-            PLock sentinelLock = factory().createLock();
+            PLock sentinelLock = PythonObjectFactory.getUncached().createLock();
             PythonContext.get(this).setSentinelLockWeakref(new WeakReference<>(sentinelLock));
             return sentinelLock;
         }

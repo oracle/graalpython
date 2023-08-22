@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -110,7 +111,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile jProfile,
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
-                        @Cached InlinedLoopConditionProfile shiftIndicesProfile) {
+                        @Cached InlinedLoopConditionProfile shiftIndicesProfile,
+                        @Cached PythonObjectFactory factory) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -131,7 +133,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                     int tmp = indices[i];
                     indices[i] = indices[indices.length - j];
                     indices[indices.length - j] = tmp;
-                    return factory().createTuple(result);
+                    return factory.createTuple(result);
                 }
                 cycles[i] = indices.length - i;
                 int n1 = indices.length - 1;
@@ -151,7 +153,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             } else {
                 self.setStarted(true);
             }
-            return factory().createTuple(result);
+            return factory.createTuple(result);
         }
     }
 
@@ -159,30 +161,32 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isRaisedStopIteration()")
-        Object reduce(PPermutations self,
+        static Object reduce(PPermutations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PList poolList = factory().createList(self.getPool());
-            PTuple tuple = factory().createTuple(new Object[]{poolList, self.getR()});
+            PList poolList = factory.createList(self.getPool());
+            PTuple tuple = factory.createTuple(new Object[]{poolList, self.getR()});
 
             // we must pickle the indices and use them for setstate
-            PTuple indicesTuple = factory().createTuple(self.getIndices());
-            PTuple cyclesTuple = factory().createTuple(self.getCycles());
-            PTuple tuple2 = factory().createTuple(new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
+            PTuple indicesTuple = factory.createTuple(self.getIndices());
+            PTuple cyclesTuple = factory.createTuple(self.getCycles());
+            PTuple tuple2 = factory.createTuple(new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
 
             Object[] result = new Object[]{type, tuple, tuple2};
-            return factory().createTuple(result);
+            return factory.createTuple(result);
         }
 
         @Specialization(guards = "self.isRaisedStopIteration()")
-        Object reduceStopped(PPermutations self,
+        static Object reduceStopped(PPermutations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClassNode) {
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{factory().createEmptyTuple(), self.getR()});
+            PTuple tuple = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
             Object[] result = new Object[]{type, tuple};
-            return factory().createTuple(result);
+            return factory.createTuple(result);
         }
     }
 

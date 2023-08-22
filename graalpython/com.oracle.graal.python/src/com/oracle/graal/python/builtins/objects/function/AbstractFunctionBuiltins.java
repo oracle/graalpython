@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,12 +115,13 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetClosureNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
-        Object getClosure(PFunction self) {
+        Object getClosure(PFunction self,
+                        @Cached PythonObjectFactory factory) {
             PCell[] closure = self.getClosure();
             if (closure == null) {
                 return PNone.NONE;
             }
-            return factory().createTuple(closure);
+            return factory.createTuple(closure);
         }
 
         @SuppressWarnings("unused")
@@ -209,12 +211,14 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetAnnotationsNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getModule(PFunction self, @SuppressWarnings("unused") PNone none,
+        static Object getModule(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readObject,
-                        @Shared @Cached WriteAttributeToObjectNode writeObject) {
+                        @Shared @Cached WriteAttributeToObjectNode writeObject,
+                        @Cached PythonObjectFactory.Lazy factory) {
             Object annotations = readObject.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                annotations = factory().createDict();
+                annotations = factory.get(inliningTarget).createDict();
                 writeObject.execute(self, T___ANNOTATIONS__, annotations);
             }
             return annotations;

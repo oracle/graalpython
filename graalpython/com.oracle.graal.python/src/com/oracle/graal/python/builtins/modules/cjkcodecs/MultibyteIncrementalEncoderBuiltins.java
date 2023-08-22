@@ -122,14 +122,15 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached TruffleString.EqualNode isEqual) { // "|s:IncrementalEncoder"
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory) { // "|s:IncrementalEncoder"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteIncrementalEncoderObject self = factory().createMultibyteIncrementalEncoderObject(type);
+            MultibyteIncrementalEncoderObject self = factory.createMultibyteIncrementalEncoderObject(type);
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
@@ -239,8 +240,9 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         Object encode(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, Object unistr, int end,
-                        @Cached EncodeStatefulNode encodeStatefulNode) {
-            return encodeStatefulNode.execute(frame, ctx, unistr, end, factory());
+                        @Cached EncodeStatefulNode encodeStatefulNode,
+                        @Cached PythonObjectFactory factory) {
+            return encodeStatefulNode.execute(frame, ctx, unistr, end, factory);
         }
 
     }

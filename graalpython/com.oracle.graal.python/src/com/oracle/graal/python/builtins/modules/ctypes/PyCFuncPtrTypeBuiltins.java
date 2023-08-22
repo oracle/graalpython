@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -124,8 +125,9 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached HashingStorageGetItem getItem,
-                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PythonObjectFactory factory) {
+            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
             /*
@@ -143,7 +145,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated storage dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory().createDictFixedStorage((PythonObject) result);
+                resDict = factory.createDictFixedStorage((PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, result, stgdict);

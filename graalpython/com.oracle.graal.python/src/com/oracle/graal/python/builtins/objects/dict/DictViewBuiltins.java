@@ -98,6 +98,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -128,8 +129,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MappingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object mapping(PDictView self) {
-            return factory().createMappingproxy(self.getWrappedDict());
+        static Object mapping(PDictView self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createMappingproxy(self.getWrappedDict());
         }
     }
 
@@ -148,21 +150,23 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
+        static Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
                         @Bind("this") Node inliningTarget,
                         @Shared("len") @Cached HashingStorageLen lenNode,
-                        @Shared("getit") @Cached HashingStorageGetIterator getIterator) {
+                        @Shared("getit") @Cached HashingStorageGetIterator getIterator,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictKeyIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictKeyIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
 
         @Specialization
-        Object getItemsViewIter(PDictItemsView self,
+        static Object getItemsViewIter(PDictItemsView self,
                         @Bind("this") Node inliningTarget,
                         @Shared("len") @Cached HashingStorageLen lenNode,
-                        @Shared("getit") @Cached HashingStorageGetIterator getIterator) {
+                        @Shared("getit") @Cached HashingStorageGetIterator getIterator,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictItemIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictItemIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -171,21 +175,23 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-static-method")
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getReversedKeysViewIter(PDictKeysView self,
+        static Object getReversedKeysViewIter(PDictKeysView self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
-                        @Shared @Cached HashingStorageGetReverseIterator getReverseIterator) {
+                        @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
 
         @Specialization
-        Object getReversedItemsViewIter(PDictItemsView self,
+        static Object getReversedItemsViewIter(PDictItemsView self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingStorageLen lenNode,
-                        @Shared @Cached HashingStorageGetReverseIterator getReverseIterator) {
+                        @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
-            return factory().createDictItemIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return factory.createDictItemIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -445,62 +451,68 @@ public final class DictViewBuiltins extends PythonBuiltins {
     abstract static class SubNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedDict().getDictStorage(), other.getDictStorage());
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = diffNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             HashingStorage storage = diffNode.execute(frame, inliningTarget, selfSet.getDictStorage(), other.getDictStorage());
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @Specialization
-        PBaseSet doNotIterable(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
+        static PBaseSet doNotIterable(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             HashingStorage storage = diffNode.execute(frame, inliningTarget, selfSet.getDictStorage(), otherSet.getDictStorage());
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("diff") @Cached HashingStorageDiff diffNode) {
+                        @Shared("diff") @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = diffNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
     }
 
@@ -510,70 +522,76 @@ public final class DictViewBuiltins extends PythonBuiltins {
     abstract static class AndNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = other.getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = other.getWrappedDict().getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
-                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             HashingStorage left = selfSet.getDictStorage();
             HashingStorage right = other.getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
-                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             HashingStorage left = selfSet.getDictStorage();
             HashingStorage right = otherSet.getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
-            return factory().createSet(intersectedStorage);
+            return factory.createSet(intersectedStorage);
         }
     }
 
@@ -587,60 +605,66 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
+        static PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
+        static PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
+        static PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, selfSet.getDictStorage(), other.getDictStorage()));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, selfSet.getDictStorage(), otherSet.getDictStorage()));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage selfStorage = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage otherStorage = constructSetNode.executeWith(frame, other).getDictStorage();
-            return factory().createSet(union(inliningTarget, copyNode, addAllToOther, selfStorage, otherStorage));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, selfStorage, otherStorage));
         }
     }
 
@@ -654,52 +678,58 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
-            return factory().createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
                         @Bind("this") Node inliningTarget,
-                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
-            return factory().createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
+        static PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
-            return factory().createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
+        static PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
                         @Shared("xorNode") @Cached HashingStorageXor xorNode,
-                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
-            return factory().createSet(xor(frame, inliningTarget, xorNode, selfSet.getDictStorage(), other.getDictStorage()));
+            return factory.createSet(xor(frame, inliningTarget, xorNode, selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PDictItemsView other,
+        static PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("xorNode") @Cached HashingStorageXor xorNode,
-                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return factory().createSet(xor(frame, inliningTarget, xorNode, selfSet.getDictStorage(), otherSet.getDictStorage()));
+            return factory.createSet(xor(frame, inliningTarget, xorNode, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, Object other,
+        static PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
-            return factory().createSet(xor(frame, inliningTarget, xorNode, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(xor(frame, inliningTarget, xorNode, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
     }
 

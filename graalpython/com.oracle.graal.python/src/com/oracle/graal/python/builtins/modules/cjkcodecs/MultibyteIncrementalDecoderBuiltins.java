@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -110,13 +111,14 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached TruffleString.EqualNode isEqual) { // "|s:IncrementalDecoder"
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteIncrementalDecoderObject self = factory().createMultibyteIncrementalDecoderObject(type);
+            MultibyteIncrementalDecoderObject self = factory.createMultibyteIncrementalDecoderObject(type);
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
@@ -238,12 +240,13 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
 
         // _multibytecodec_MultibyteIncrementalDecoder_getstate_impl
-        Object getstate(MultibyteIncrementalDecoderObject self,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode) {
-            PBytes buffer = factory().createBytes(Arrays.copyOf(self.pending, self.pendingsize));
-            PInt statelong = factory().createInt(0);
+        static Object getstate(MultibyteIncrementalDecoderObject self,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
+                        @Cached PythonObjectFactory factory) {
+            PBytes buffer = factory.createBytes(Arrays.copyOf(self.pending, self.pendingsize));
+            PInt statelong = factory.createInt(0);
             writeAttrNode.execute(statelong, DECODER_OBJECT_ATTR, self.state);
-            return factory().createTuple(new Object[]{buffer, statelong});
+            return factory.createTuple(new Object[]{buffer, statelong});
         }
     }
 
