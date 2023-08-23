@@ -57,7 +57,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
-    private final Object base;
+    @CompilationFinal private Object base;
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
     @CompilationFinal private MroSequenceStorage methodResolutionOrder;
@@ -282,12 +282,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public final void setSuperClass(PythonAbstractClass... newBaseClasses) {
+    public final void setBases(Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
         ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
-        for (PythonAbstractClass newBase : newBaseClasses) {
-            newBasesSubclasses.add(GetSubclassesNode.executeUncached(newBase));
+        for (PythonAbstractClass type : newBaseClasses) {
+            newBasesSubclasses.add(GetSubclassesNode.executeUncached(type));
         }
 
+        Object oldBase = getBase();
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         PythonAbstractClass[] oldMRO = (PythonAbstractClass[]) this.methodResolutionOrder.getInternalArray();
 
@@ -303,6 +304,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         try {
             // for what follows see also typeobject.c#type_set_bases()
+            this.base = newBaseClass;
             this.baseClasses = newBaseClasses;
             this.methodResolutionOrder.lookupChanged();
             this.setMRO(ComputeMroNode.doSlowPath(this));
@@ -342,6 +344,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 // take no action if bases were replaced through reentrance
                 // revert only if set in this call
                 // e.g. the mro() call might have manipulated __bases__
+                this.base = oldBase;
                 this.baseClasses = oldBaseClasses;
             }
             this.methodResolutionOrder.lookupChanged();

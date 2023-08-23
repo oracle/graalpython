@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -132,7 +133,8 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("SEEK_END", SEEK_END);
         addBuiltinConstant("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
-        unsupportedOpExcType.setSuperClass(core.lookupType(OSError), core.lookupType(ValueError));
+        PythonBuiltinClass osError = core.lookupType(OSError);
+        unsupportedOpExcType.setBases(osError, new PythonAbstractClass[]{osError, core.lookupType(ValueError)});
         addBuiltinConstant(IOUnsupportedOperation.getName(), unsupportedOpExcType);
         addBuiltinConstant(BlockingIOError.getName(), core.lookupType(BlockingIOError));
 
