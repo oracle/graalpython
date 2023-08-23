@@ -1699,17 +1699,14 @@ public final class PythonContext extends Python3Core {
         }
 
         Supplier<?>[] homeCandidates = new Supplier<?>[]{
+                        () -> home,
                         () -> {
-                            return home;
-                        },
-                        () -> {
-                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null && !ImageInfo.inImageCode()) {
-                                try {
-                                    homeResourcesFile = newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
-                                    return homeResourcesFile;
-                                } catch (IOException e) {
-                                    // fall through
-                                }
+                            try {
+                                TruffleFile internalResource = newEnv.getInternalResource("python-home");
+                                homeResourcesFile = internalResource == null ? null : internalResource.getAbsoluteFile();
+                                return homeResourcesFile;
+                            } catch (IOException e) {
+                                // fall through
                             }
                             return null;
                         }

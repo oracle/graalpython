@@ -48,14 +48,13 @@ import java.util.List;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.InternalResource;
-import com.oracle.truffle.api.InternalResource.Id;
 
 /**
  * This code needs to be kept in sync somehow with the suite.py code. In particular, the layouts
  * produced by the unpacking logic in {@link #unpackFiles} should produce the same layout as the
  * GRAALPYTHON_GRAALVM_SUPPORT distribution in the suite.py.
  */
-@Id("python-home")
+@InternalResource.Id(value = "python-home", componentId = "python", optional = true)
 public final class PythonResource implements InternalResource {
     private static final int PYTHON_MAJOR;
     private static final int PYTHON_MINOR;

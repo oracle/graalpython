@@ -2160,7 +2160,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
-        'graalpython:GRAALPYTHON_RESOURCES',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
