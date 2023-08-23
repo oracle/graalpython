@@ -1,0 +1,3 @@
+[[rules]]
+# msimacek: backport of unmerged https://github.com/pypa/packaging/pull/711
+patch = 'packaging.patch'

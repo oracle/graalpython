@@ -1,0 +1,21 @@
+diff --git a/packaging/tags.py b/packaging/tags.py
+index 76d2434..fe793d9 100644
+--- a/packaging/tags.py
++++ b/packaging/tags.py
+@@ -4,6 +4,7 @@
+ 
+ import logging
+ import platform
++import struct
+ import subprocess
+ import sys
+ import sysconfig
+@@ -37,7 +38,7 @@ INTERPRETER_SHORT_NAMES: Dict[str, str] = {
+ }
+ 
+ 
+-_32_BIT_INTERPRETER = sys.maxsize <= 2**32
++_32_BIT_INTERPRETER = struct.calcsize("P") == 4
+ 
+ 
+ class Tag:
