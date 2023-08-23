@@ -2,9 +2,17 @@
 # Always pin a specific version. Our virtualenv seeder pins setuptools and pip to the bundled
 # ones, so it makes sense to always pin wheel too to avoid it getting out of sync with setuptools.
 version = '== 0.41.2'
+# Backport pypa/packaging PR for fixing graalpy architecture. Not strictly necessary for building wheels
+patch = 'wheel-0.41.2.patch'
+subdir = 'src'
 
 [[rules]]
-# Patch upstreamed
+version = '>= 0.41.2'
+patch = 'wheel-0.41.2.patch'
+subdir = 'src'
+install-priority = 0
+
+[[rules]]
 version = '>= 0.40, < 0.41.2'
 patch = 'wheel-0.40.patch'
 subdir = 'src'

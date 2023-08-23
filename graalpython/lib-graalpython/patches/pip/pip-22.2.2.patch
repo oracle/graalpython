@@ -301,10 +301,27 @@ index 78b5c13..18a184c 100644
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
 diff --git a/pip/_vendor/packaging/tags.py b/pip/_vendor/packaging/tags.py
-index 9a3d25a..a1e93f2 100644
+index 9a3d25a..e0e7b31 100644
 --- a/pip/_vendor/packaging/tags.py
 +++ b/pip/_vendor/packaging/tags.py
-@@ -224,10 +224,46 @@ def cpython_tags(
+@@ -4,6 +4,7 @@
+ 
+ import logging
+ import platform
++import struct
+ import sys
+ import sysconfig
+ from importlib.machinery import EXTENSION_SUFFIXES
+@@ -36,7 +37,7 @@ INTERPRETER_SHORT_NAMES: Dict[str, str] = {
+ }
+ 
+ 
+-_32_BIT_INTERPRETER = sys.maxsize <= 2 ** 32
++_32_BIT_INTERPRETER = struct.calcsize("P") == 4
+ 
+ 
+ class Tag:
+@@ -224,10 +225,46 @@ def cpython_tags(
                  yield Tag(interpreter, "abi3", platform_)
  
  
