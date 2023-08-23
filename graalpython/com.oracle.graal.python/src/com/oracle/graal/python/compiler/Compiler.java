@@ -1203,6 +1203,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 op = CALL_METHOD_VARARGS;
                 String mangled = ScopeEnvironment.mangle(unit.privateName, ((ExprTy.Attribute) func).attr);
                 opArg = addObject(unit.names, mangled);
+                addOp(LOAD_METHOD, opArg);
                 shortCall = args.length <= 3;
             } else {
                 func.accept(this);
@@ -1211,7 +1212,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
             if (hasOnlyPlainArgs(args, keywords) && shortCall) {
                 if (op == CALL_METHOD_VARARGS) {
-                    addOp(LOAD_METHOD, opArg);
                     op = CALL_METHOD;
                 } else {
                     op = CALL_FUNCTION;
@@ -1221,6 +1221,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                 visitSequence(args);
                 return addOp(op, opArg);
             } else {
+                if (op == CALL_METHOD_VARARGS) {
+                    // the receiver is below the method on the stack. swap them so it can be
+                    // collected into the argument array
+                    addOp(OpCodes.ROT_TWO);
+                }
                 return callHelper(op, opArg, 0, args, keywords);
             }
         } finally {
@@ -1234,6 +1239,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             assert op == CALL_FUNCTION_VARARGS;
             collectKeywords(keywords, CALL_FUNCTION_KW);
             return addOp(CALL_FUNCTION_KW);
+        } else if (op == CALL_METHOD_VARARGS) {
+            return addOp(op);
         } else {
             return addOp(op, opArg);
         }
