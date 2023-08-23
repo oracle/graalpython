@@ -1,8 +1,37 @@
+diff --git a/wheel/bdist_wheel.py b/wheel/bdist_wheel.py
+index 5cece1f..7593f0c 100644
+--- a/wheel/bdist_wheel.py
++++ b/wheel/bdist_wheel.py
+@@ -7,6 +7,7 @@ A wheel is a built archive format.
+ import os
+ import shutil
+ import stat
++import struct
+ import sys
+ import re
+ from collections import OrderedDict
+@@ -180,7 +181,7 @@ class bdist_wheel(Command):
+             else:
+                 plat_name = get_platform(self.bdist_dir)
+ 
+-            if plat_name in ('linux-x86_64', 'linux_x86_64') and sys.maxsize == 2147483647:
++            if plat_name in ('linux-x86_64', 'linux_x86_64') and struct.calcsize("P") == 4:
+                 plat_name = 'linux_i686'
+ 
+         plat_name = plat_name.replace('-', '_').replace('.', '_')
 diff --git a/wheel/pep425tags.py b/wheel/pep425tags.py
-index 0c25763..408b407 100644
+index 0c25763..8dc2dab 100644
 --- a/wheel/pep425tags.py
 +++ b/wheel/pep425tags.py
-@@ -38,6 +38,8 @@ def get_abbr_impl():
+@@ -6,6 +6,7 @@ import sys
+ import os
+ import sysconfig
+ import warnings
++import struct
+ 
+ from .macosx_libfile import extract_macosx_min_system_version
+ 
+@@ -38,6 +39,8 @@ def get_abbr_impl():
          return 'ip'
      elif impl == 'CPython':
          return 'cp'
@@ -11,7 +40,7 @@ index 0c25763..408b407 100644
  
      raise LookupError('Unknown Python implementation: ' + impl)
  
-@@ -97,6 +99,9 @@ def get_abi_tag():
+@@ -97,6 +100,9 @@ def get_abi_tag():
          abi = '%s%s%s%s%s' % (impl, get_impl_ver(), d, m, u)
      elif soabi and soabi.startswith('cpython-'):
          abi = 'cp' + soabi.split('-')[1]
@@ -21,3 +50,12 @@ index 0c25763..408b407 100644
      elif soabi:
          abi = soabi.replace('.', '_').replace('-', '_')
      else:
+@@ -179,7 +185,7 @@ def get_platform(archive_root):
+     if result.startswith("macosx") and archive_root is not None:
+         result = calculate_macosx_platform_tag(archive_root, result)
+     result = result.replace('.', '_').replace('-', '_')
+-    if result == "linux_x86_64" and sys.maxsize == 2147483647:
++    if result == "linux_x86_64" and struct.calcsize("P") == 4:
+         # pip pull request #3497
+         result = "linux_i686"
+ 
