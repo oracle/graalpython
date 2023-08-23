@@ -393,7 +393,6 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
-                "com.oracle.graal.python.resources",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
@@ -915,9 +914,6 @@ suite = {
             "platformDependent": False,
             "moduleInfo": {
                 "name": "org.graalvm.py.resources",
-                "exports": [
-                    "com.oracle.graal.python.resources to org.graalvm.py",
-                ],
             },
             # "useModulePath": True,
             "dependencies": [
@@ -957,9 +953,6 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
-                "requires": [
-                    "static org.graalvm.py.resources",
-                ],
             },
             # "useModulePath": True,
             "dependencies": [
@@ -975,7 +968,6 @@ suite = {
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
                 "truffle:TRUFFLE_ICU4J",
-                "GRAALPYTHON_RESOURCES", # overridden below to make this an optional dependency
             ],
             "requires": [
                 "java.base",
