@@ -335,25 +335,25 @@ public enum PythonBuiltinClassType implements TruffleObject {
     AST("AST", "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
 
     // _ctype
-    CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),
-    CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    CArgObject("CArgObject", Flags.PUBLIC_BASE_WODICT),
+    CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
     StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT, DICT_M_FLAGS),
-    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCSTRUCTTYPE_M_FLAGS),
-    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, UNIONTYPE_M_FLAGS),
-    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCPOINTERTYPE_M_FLAGS),
-    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCARRAYTYPE_M_FLAGS),
-    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCSIMPLETYPE_M_FLAGS),
-    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCFUNCPTRTYPE_M_FLAGS),
-    Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = PyCStructType */
-    Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = UnionType */
-    PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCPOINTER_M_FLAGS), /*- type = PyCPointerType */
-    PyCArray("Array", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCARRAY_M_FLAGS), /*- type = PyCArrayType */
-    PyCData("_CData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = PyCStructType */
-    SimpleCData("_SimpleCData", J__CTYPES, Flags.PUBLIC_BASE_WDICT, SIMPLECDATA_M_FLAGS), /*- type = PyCStructType */
-    PyCFuncPtr("PyCFuncPtr", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCFUNCPTR_M_FLAGS), /*- type = PyCFuncPtrType */
-    CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS),
+    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, UNIONTYPE_M_FLAGS),
+    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTERTYPE_M_FLAGS),
+    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS),
+    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS),
+    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS),
+    Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
+    Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = UnionType */
+    PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTER_M_FLAGS), /*- type = PyCPointerType */
+    PyCArray("Array", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAY_M_FLAGS), /*- type = PyCArrayType */
+    PyCData("_CData", J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
+    SimpleCData("_SimpleCData", J__CTYPES, Flags.PUBLIC_BASE_WODICT, SIMPLECDATA_M_FLAGS), /*- type = PyCStructType */
+    PyCFuncPtr("PyCFuncPtr", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTR_M_FLAGS), /*- type = PyCFuncPtrType */
+    CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
+    DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
+    StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
     ArgError("ArgumentError", J__CTYPES, Flags.EXCEPTION),
 
     // _multibytecodec
