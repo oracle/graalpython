@@ -155,6 +155,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -299,15 +300,7 @@ public enum SpecialMethodSlot {
     }
 
     public static final SpecialMethodSlot[] VALUES = values();
-    public static final SpecialMethodSlot[] MRO_INHERITED_SLOTS = new SpecialMethodSlot[VALUES.length - 1];
-    static {
-        for (int i = 0, j = 0; i < VALUES.length; i++) {
-            if (i == New.ordinal()) {
-                continue;
-            }
-            MRO_INHERITED_SLOTS[j++] = VALUES[i];
-        }
-    }
+
     private final TruffleString name;
     @CompilationFinal private SpecialMethodSlot reverse;
     /**
@@ -543,7 +536,7 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
-                        setNewSlot(result, klass);
+                        fixupNewSlot(result, klass);
                         setMethodsFlags(result, klass);
                         return result;
                     }
@@ -585,7 +578,7 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
-        setNewSlot(slots, klass);
+        fixupNewSlot(slots, klass);
         setMethodsFlags(slots, klass);
         return slots;
     }
@@ -626,13 +619,56 @@ public enum SpecialMethodSlot {
         }
     }
 
-    private static void setNewSlot(Object[] slots, Object type) {
-        Object newMethod = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
-        if (newMethod == PNone.NO_VALUE) {
-            Object base = GetBaseClassNode.executeUncached(type);
-            newMethod = LookupNewNode.executeUncached(base);
+    /**
+     * CPython has a bug in their {@code tp_new} slot inheritance. Packages, notably pandas, rely on
+     * the bug being present, so we have to try to replicate the same behavior.
+     * <p>
+     * CPython first inherits {@code tp_new} from the dominant base ({@code tp_base}) and creates a
+     * {@code __new__} special method for it. Later, they update all slots to match what's in the
+     * object's special methods, which are looked up in MRO. In case of multiple inheritance, the
+     * MRO-inherited {@code __new__} may be different from the {@code tp_base}-inherited one.
+     * Normally, one would expect that the MRO-inherited one wins, as is the case for all other
+     * slots. See the code in {@code update_one_slot}, it does this:
+     * 
+     * <pre>
+        ...
+        void **ptr = slotptr(type, offset);
+        ...
+        descr = find_name_in_mro(type, p->name_strobj, &error);
+        ...
+        else if (Py_IS_TYPE(descr, &PyCFunction_Type) &&
+                 PyCFunction_GET_FUNCTION(descr) ==
+                 (PyCFunction)(void(*)(void))tp_new_wrapper &&
+                 ptr == (void**)&type->tp_new)
+        {
+            specific = (void *)type->tp_new;
         }
-        slots[New.ordinal()] = newMethod;
+     * </pre>
+     * 
+     * Apparently, they wanted to make an optimization that avoids using the wrapper if the wrapper
+     * was for the same {@code tp_new} as was inherited from {@code tp_base}. But they only check
+     * that it's a wrapper, but they forgot to check that it's for the same type. The wrapper
+     * function carries the type in its self, so they should have also checked that
+     * {@code PyCFunction_GET_SELF(descr) == type}. So in summary, {@code tp_new} is inherited
+     * through {@code tp_base} when the one in MRO is builtin/native, and it's inherited through MRO
+     * otherwise.
+     * <p>
+     * We approximate the check for the wrapper by checking that it's a builtin method, and it's
+     * named {@code __new__}.
+     */
+    private static void fixupNewSlot(Object[] slots, Object type) {
+        Object mroInheritedNew = slots[New.ordinal()];
+        if (mroInheritedNew instanceof PBuiltinMethod builtinMethod) {
+            mroInheritedNew = builtinMethod.getBuiltinFunction();
+        }
+        if (mroInheritedNew instanceof PBuiltinFunction builtinFunction && builtinFunction.getName().equalsUncached(New.name, TS_ENCODING)) {
+            Object tpBaseInheritedNew = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
+            if (tpBaseInheritedNew == PNone.NO_VALUE) {
+                Object base = GetBaseClassNode.executeUncached(type);
+                tpBaseInheritedNew = LookupNewNode.executeUncached(base);
+            }
+            slots[New.ordinal()] = tpBaseInheritedNew;
+        }
     }
 
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
@@ -640,7 +676,7 @@ public enum SpecialMethodSlot {
         if (dict == null) {
             DynamicObject storage = source.getStorage();
             DynamicObjectLibrary domLib = DynamicObjectLibrary.getFactory().getUncached(storage);
-            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
+            for (SpecialMethodSlot slot : VALUES) {
                 final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -648,7 +684,7 @@ public enum SpecialMethodSlot {
             }
         } else {
             HashingStorage storage = dict.getDictStorage();
-            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
+            for (SpecialMethodSlot slot : VALUES) {
                 final Object value = HashingStorageGetItem.executeUncached(storage, slot.getName());
                 if (value != null) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -659,7 +695,7 @@ public enum SpecialMethodSlot {
 
     private static void setSlotsFromGeneric(Object[] slots, PythonAbstractClass base, PythonLanguage language) {
         ReadAttributeFromObjectNode readAttNode = ReadAttributeFromObjectNode.getUncachedForceType();
-        for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
+        for (SpecialMethodSlot slot : VALUES) {
             Object value = readAttNode.execute(base, slot.getName());
             if (value != PNone.NO_VALUE) {
                 slots[slot.ordinal()] = asSlotValue(slot, value, language);
@@ -673,11 +709,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            if (slot == New) {
-                newValue = LookupNewNode.executeUncached(GetBaseClassNode.executeUncached(klass));
-            } else {
-                newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
-            }
+            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
         fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, PythonContext.get(null));
     }
@@ -701,11 +733,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            if (slot == New) {
-                newValue = LookupNewNode.executeUncached(GetBaseClassNode.executeUncached(klass));
-            } else {
-                newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
-            }
+            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
 
         PythonContext context = PythonContext.get(null);
@@ -1245,7 +1273,7 @@ public enum SpecialMethodSlot {
             if (type.getSpecialMethodSlots() == null) {
                 return true;
             }
-            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
+            for (SpecialMethodSlot slot : VALUES) {
                 Object actual = LookupAttributeInMRONode.findAttr(core, type, slot.getName(), uncachedReadAttrNode);
                 Object expected = slot.getValue(type);
                 if (expected instanceof BuiltinMethodDescriptor) {
@@ -1260,7 +1288,7 @@ public enum SpecialMethodSlot {
         }
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managed = (PythonManagedClass) klass;
-            for (SpecialMethodSlot slot : MRO_INHERITED_SLOTS) {
+            for (SpecialMethodSlot slot : VALUES) {
                 Object actual = LookupAttributeInMRONode.lookupSlowPath(managed, slot.getName());
                 Object expected = slot.getValue(managed);
                 if (expected instanceof NodeFactory<?>) {
