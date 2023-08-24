@@ -44,9 +44,11 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,6 +119,7 @@ public abstract class PyTruffleObjectFree {
                 if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
                     HandleReleaser.release(nativePointer);
                 } else {
+                    CApiTransitions.nativeLookupRemove(PythonContext.get(callReleaseHandleNode).nativeContext, nativePointer);
                     callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
                 }
             }
