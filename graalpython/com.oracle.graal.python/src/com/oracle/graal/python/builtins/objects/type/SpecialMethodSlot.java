@@ -159,8 +159,8 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.LookupNewNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -665,7 +665,7 @@ public enum SpecialMethodSlot {
             Object tpBaseInheritedNew = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
             if (tpBaseInheritedNew == PNone.NO_VALUE) {
                 Object base = GetBaseClassNode.executeUncached(type);
-                tpBaseInheritedNew = LookupNewNode.executeUncached(base);
+                tpBaseInheritedNew = LookupCallableSlotInMRONode.getUncached(New).execute(base);
             }
             slots[New.ordinal()] = tpBaseInheritedNew;
         }
