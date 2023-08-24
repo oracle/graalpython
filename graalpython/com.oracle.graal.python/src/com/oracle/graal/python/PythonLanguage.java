@@ -184,8 +184,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * a GraalVM build, but we may run from Jar files directly during development. We generate the
      * version during the build that are checked against these constants.
      */
-    public static final int GRAALVM_MAJOR = 23;
-    public static final int GRAALVM_MINOR = 1;
+    public static final int GRAALVM_MAJOR = 24;
+    public static final int GRAALVM_MINOR = 0;
 
     public static final Class<PythonResource> PYTHON_RESOURCE_CLASS;
 
