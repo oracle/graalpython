@@ -1213,6 +1213,11 @@ public abstract class CExtNodes {
         }
     }
 
+    /**
+     * This node is used for lookups of fields that are inherited from the dominant base instead of
+     * MRO, such as {@code tp_basicsize}. For MRO lookup, use
+     * {@link LookupNativeI64MemberInMRONode}.
+     */
     @GenerateUncached
     public abstract static class LookupNativeI64MemberFromBaseNode extends Node {
 
