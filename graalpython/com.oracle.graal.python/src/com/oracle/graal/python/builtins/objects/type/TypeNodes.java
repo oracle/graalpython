@@ -2634,8 +2634,7 @@ public abstract class TypeNodes {
         @Specialization
         long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            // TODO builtins
-            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, TYPE_WEAKLISTOFFSET);
+            return lookup.execute(cls, PyTypeObject__tp_weaklistoffset, TYPE_WEAKLISTOFFSET, PythonBuiltinClassType::getWeaklistoffset);
         }
     }
 
