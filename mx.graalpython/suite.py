@@ -953,6 +953,10 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
+                "opens": [
+                    # needed to find resources in it
+                    "com.oracle.graal.python.niresources"
+                ]
             },
             # "useModulePath": True,
             "dependencies": [
