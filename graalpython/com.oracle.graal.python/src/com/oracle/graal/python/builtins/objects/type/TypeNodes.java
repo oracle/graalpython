@@ -2589,10 +2589,10 @@ public abstract class TypeNodes {
         @Specialization
         long lookup(Object cls,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinTypeItemsize);
+            return lookup.execute(cls, PyTypeObject__tp_dictoffset, TYPE_DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
         }
 
-        private static int getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+        private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
             // TODO properly specify for all builtin classes
             PythonBuiltinClassType current = cls;
             do {
