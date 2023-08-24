@@ -153,7 +153,7 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.InitNode;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -175,7 +175,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.LookupNewNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.NeedsNativeAllocationNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
@@ -1753,7 +1752,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private SplitArgsNode splitArgsNode;
         @Child private LookupCallableSlotInMRONode lookupInit;
-        @Child private LookupNewNode lookupNew;
+        @Child private LookupCallableSlotInMRONode lookupNew;
         @Child private ReportAbstractClassNode reportAbstractClassNode;
         @CompilationFinal private ValueProfile profileInit;
         @CompilationFinal private ValueProfile profileNew;
@@ -1860,7 +1859,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (varargs.length != 0 || kwargs.length != 0) {
                 if (lookupNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupNew = insert(LookupNewNode.create());
+                    lookupNew = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.New));
                 }
                 if (lookupInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1882,10 +1881,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     profileInitFactory = ValueProfile.createClassProfile();
                 }
-                if (InitNode.overridesBuiltinMethod(profileNew.profile(lookupNew.execute(type)), BuiltinConstructorsFactory.ObjectNodeFactory.class, profileNewFactory)) {
+                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (!InitNode.overridesBuiltinMethod(profileInit.profile(lookupInit.execute(type)), ObjectBuiltinsFactory.InitNodeFactory.class, profileInitFactory)) {
+                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
@@ -2407,7 +2406,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached LookupNewNode getNewFuncNode,
+                        @Cached("create(New)") LookupCallableSlotInMRONode getNewFuncNode,
                         @Cached TypeBuiltins.BindNew bindNew,
                         @Exclusive @Cached IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
