@@ -1004,6 +1004,7 @@ suite = {
             "type": "pom",
             "runtimeDependencies": [
                 "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
             "description": "GraalPython engine.",
@@ -1037,6 +1038,7 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_TCK",
             ],
