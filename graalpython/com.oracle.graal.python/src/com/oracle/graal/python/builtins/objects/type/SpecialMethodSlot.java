@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
@@ -60,6 +61,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_SUBT
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
+import static com.oracle.graal.python.lib.GetMethodsFlagsNode.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
@@ -150,8 +152,10 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -159,6 +163,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
@@ -175,6 +180,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
@@ -601,6 +607,32 @@ public enum SpecialMethodSlot {
         return isMroSubtype;
     }
 
+    private static void setMethodsFlag(PythonManagedClass klass, long flag, PythonContext context) {
+        if (flag == 0) {
+            return;
+        }
+
+        long isHeaptype = context.isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
+        klass.setMethodsFlags(flag | isHeaptype);
+    }
+
+    private static void setMethodsFlag(PythonNativeClass cls, long flag, PythonContext context) {
+        if (flag == 0) {
+            return;
+        }
+
+        long flags = GetMethodsFlagsNodeGen.getUncached().execute(null, cls);
+        if ((flags & flag) == 0) {
+            // mq: We should put a wrapped function in the native slot.
+            CyclicAssumption assumption = context.getNativeClassStableAssumption(cls, false);
+            if (assumption != null && assumption.getAssumption().isValid()) {
+                assumption.invalidate("methods flags have changed after class creation");
+            }
+            PDict dict = (PDict) CStructAccess.ReadObjectNode.getUncached().readFromObj(cls, PyTypeObject__tp_dict);
+            dict.setDictStorage(HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags | flag));
+        }
+    }
+
     private static void setMethodsFlags(Object[] slots, PythonManagedClass klass) {
         long methodsFlags = 0;
         for (SpecialMethodSlot slot : VALUES) {
@@ -613,10 +645,7 @@ public enum SpecialMethodSlot {
             methodsFlags |= builtinClass.getMethodsFlags();
         }
 
-        if (methodsFlags != 0) {
-            long isHeaptype = PythonContext.get(null).isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
-            klass.setMethodsFlags(methodsFlags | isHeaptype);
-        }
+        setMethodsFlag(klass, methodsFlags, PythonContext.get(null));
     }
 
     /**
@@ -738,9 +767,8 @@ public enum SpecialMethodSlot {
 
         PythonContext context = PythonContext.get(null);
         slot.setValue(klass, newValue, context);
-        if (oldValue == PNone.NO_VALUE && slot.getMethodsFlag() != 0) {
-            long isHeaptype = context.isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
-            klass.setMethodsFlags(isHeaptype | slot.getMethodsFlag());
+        if (oldValue == PNone.NO_VALUE) {
+            setMethodsFlag(klass, slot.getMethodsFlag(), context);
         }
         fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value, context);
     }
@@ -768,9 +796,11 @@ public enum SpecialMethodSlot {
     }
 
     private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object newValue, PythonContext context) {
-        if (klass instanceof PythonManagedClass) {
+        if (klass instanceof PythonManagedClass clazz) {
+            setMethodsFlag(clazz, slot.getMethodsFlag(), context);
             fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue, context);
-        } else if (klass instanceof PythonNativeClass) {
+        } else if (klass instanceof PythonNativeClass clazz) {
+            setMethodsFlag(clazz, slot.getMethodsFlag(), context);
             fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, context);
         } else {
             throw new AssertionError(Objects.toString(klass));
@@ -780,7 +810,6 @@ public enum SpecialMethodSlot {
     private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue, PythonContext context) {
         for (PythonAbstractClass subClass : subClasses) {
             fixupSpecialMethodSlot(subClass, slot, newValue, context);
-            // mq: TODO: we might need to update methods flags for subclasses
         }
     }
 

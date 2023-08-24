@@ -89,7 +89,7 @@ public abstract class GetMethodsFlagsNode extends Node {
     @TruffleBoundary
     private static long populateMethodsFlags(PythonAbstractNativeObject cls, PDict dict) {
         Long flags = (Long) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
-        HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags);
+        dict.setDictStorage(HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags));
         return flags;
     }
 
