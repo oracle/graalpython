@@ -2298,6 +2298,9 @@ public final class PythonContext extends Python3Core {
         int pathLen = path.codePointLengthUncached(TS_ENCODING);
         for (TruffleString suffix : allowedSuffixes) {
             int suffixLen = suffix.codePointLengthUncached(TS_ENCODING);
+            if (suffixLen > pathLen) {
+                continue;
+            }
             if (path.regionEqualsUncached(pathLen - suffixLen, suffix, 0, suffixLen, TS_ENCODING)) {
                 return true;
             }
