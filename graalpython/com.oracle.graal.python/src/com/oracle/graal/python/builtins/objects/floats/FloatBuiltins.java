@@ -792,6 +792,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static double compareUsingBigDecimal(double v, BigInteger w) {
+            if (!Double.isFinite(v)) {
+                return v;
+            }
             return new BigDecimal(v).compareTo(new BigDecimal(w));
         }
     }
