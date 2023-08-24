@@ -1224,11 +1224,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doSingleContext(Object cls, CFields nativeMember, Object managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
-                                    @Bind("this") Node inliningTarget,
-                                    @Cached GetBaseClassNode getBaseClassNode,
-                                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                                    @Cached CStructAccess.ReadI64Node getTypeMemberNode,
-                                    @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached CStructAccess.ReadI64Node getTypeMemberNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
             Object current = cls;
