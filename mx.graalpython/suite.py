@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.41.0",
+    "mxversion": "6.43.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "4e5d7ae7276c6577f6f764463ff01d96b925514f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -108,7 +108,7 @@ suite = {
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
-        "XZ-1.8": {
+        "XZ-1.9": {
             "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
             "maven": {
                 "groupId": "org.tukaani",
@@ -398,7 +398,7 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
-                "XZ-1.8",
+                "XZ-1.9",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
@@ -946,6 +946,10 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
+                "opens": [
+                    # needed to find resources in it
+                    "com.oracle.graal.python.niresources"
+                ]
             },
             # "useModulePath": True,
             "dependencies": [
@@ -974,7 +978,7 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
-                "XZ-1.8",
+                "XZ-1.9",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
