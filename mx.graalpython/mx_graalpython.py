@@ -2172,7 +2172,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
-        'graalpython:XZ-1.8',
+        'graalpython:XZ-1.9',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
