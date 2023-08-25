@@ -94,7 +94,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -118,13 +117,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -143,12 +138,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -170,9 +162,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -856,45 +846,6 @@ public final class PythonCextSlotBuiltins {
 
     }
 
-    @CApiBuiltin(ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    abstract static class Py_set_PyTypeObject_tp_subclasses extends CApiBinaryBuiltinNode {
-
-        @GenerateUncached
-        abstract static class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
-
-            @Override
-            public abstract Set<PythonAbstractClass> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
-
-            @Specialization
-            public Set<PythonAbstractClass> doIt(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
-                            @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageIteratorKeyHash itKeyHash,
-                            @Cached HashingStorageGetItemWithHash getItemNode) {
-                long hash = itKeyHash.execute(inliningTarget, storage, it);
-                Object key = itKey.execute(inliningTarget, storage, it);
-                setAdd(subclasses, (PythonClass) getItemNode.execute(frame, inliningTarget, storage, key, hash));
-                return subclasses;
-            }
-
-            @TruffleBoundary
-            protected static void setAdd(Set<PythonAbstractClass> set, PythonClass cls) {
-                set.add(cls);
-            }
-        }
-
-        @Specialization
-        static Object doTpSubclasses(PythonClass object, PDict dict,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetSubclassesNode getSubclassesNode,
-                        @Cached EachSubclassAdd eachNode,
-                        @Cached HashingStorageForEach forEachNode) {
-            HashingStorage storage = dict.getDictStorage();
-            Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(inliningTarget, object);
-            forEachNode.execute(null, inliningTarget, storage, eachNode, subclasses);
-            return PNone.NO_VALUE;
-        }
-    }
-
     @CApiBuiltin(name = "Py_get_dummy", ret = Pointer, args = {Pointer}, call = Ignored)
     abstract static class PyGetSlotDummyPtr extends CApiUnaryBuiltinNode {
 
@@ -909,6 +860,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_getattro", ret = Void, args = {PyTypeObject, getattrofunc}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_setattr", ret = Void, args = {PyTypeObject, setattrfunc}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_setattro", ret = Void, args = {PyTypeObject, setattrofunc}, call = Ignored)
+    @CApiBuiltin(name = "Py_set_PyTypeObject_tp_subclasses", ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_finalize", ret = Void, args = {PyTypeObject, destructor}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_iter", ret = Void, args = {PyTypeObject, getiterfunc}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_iternext", ret = Void, args = {PyTypeObject, iternextfunc}, call = Ignored)
