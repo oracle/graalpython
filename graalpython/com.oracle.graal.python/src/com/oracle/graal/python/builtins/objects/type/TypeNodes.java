@@ -761,7 +761,7 @@ public abstract class TypeNodes {
             PDict dict = executeUncached(base);
             HashingStorage storage = dict.getDictStorage();
             if (storage instanceof EconomicMapStorage ems) {
-                HashingStorageDelItem.delWithHash(ems, subclass, hash);
+                HashingStorageDelItem.executeUncachedWithHash(ems, subclass, hash);
             } else {
                 assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
             }
@@ -786,8 +786,6 @@ public abstract class TypeNodes {
             Object profiled = profile.profile(inliningTarget, tpSubclasses);
             if (profiled instanceof PDict dict) {
                 return dict;
-                // } else if (profiled instanceof PNone) {
-                // return Collections.emptySet();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
@@ -801,10 +799,10 @@ public abstract class TypeNodes {
 
         private static final PythonAbstractClass[] EMPTY = new PythonAbstractClass[0];
 
-        abstract PythonAbstractClass[] execute(Frame frame, Node inliningTarget, Object clazz);
+        abstract PythonAbstractClass[] execute(Node inliningTarget, Object clazz);
 
         public static PythonAbstractClass[] executeUncached(Object clazz) {
-            return GetSubclassesAsArrayNodeGen.getUncached().execute(null, null, clazz);
+            return GetSubclassesAsArrayNodeGen.getUncached().execute(null, clazz);
         }
 
         static final class PythonAbstractClassList {
@@ -841,7 +839,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PythonAbstractClass[] doTpSubclasses(Frame frame, Node inliningTarget, PythonAbstractClass object,
+        static PythonAbstractClass[] doTpSubclasses(Node inliningTarget, PythonAbstractClass object,
                         @Cached GetSubclassesNode getSubclassesNode,
                         @Cached EachSubclassAdd eachNode,
                         @Cached HashingStorageLen dictLen,
@@ -858,7 +856,7 @@ public abstract class TypeNodes {
 
             int size = dictLen.execute(inliningTarget, storage);
             PythonAbstractClassList list = new PythonAbstractClassList(new PythonAbstractClass[size]);
-            forEachNode.execute(frame, inliningTarget, storage, eachNode, list);
+            forEachNode.execute(null, inliningTarget, storage, eachNode, list);
             return list.subclasses;
         }
     }

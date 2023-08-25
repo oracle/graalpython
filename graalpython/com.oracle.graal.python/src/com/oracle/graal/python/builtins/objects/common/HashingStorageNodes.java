@@ -486,7 +486,7 @@ public class HashingStorageNodes {
             HashingStorageDelItemNodeGen.getUncached().executeWithAsserts(null, null, self, key, false, toUpdate);
         }
 
-        public static void delWithHash(EconomicMapStorage storage, Object key, long hash) {
+        public static void executeUncachedWithHash(EconomicMapStorage storage, Object key, long hash) {
             ObjectHashMapFactory.RemoveNodeGen.getUncached().execute(null, null, storage.map, key, hash);
         }
 

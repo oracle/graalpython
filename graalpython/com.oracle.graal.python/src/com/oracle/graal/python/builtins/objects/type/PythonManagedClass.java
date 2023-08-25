@@ -29,8 +29,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
-import java.util.ArrayList;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -50,6 +48,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -128,7 +127,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.instanceShape = lang.getShapeForClass(this);
         }
 
-        this.subClasses = new PDict(lang);
+        this.subClasses = PythonObjectFactory.getUncached().createDict();
     }
 
     public boolean isMROInitialized() {
@@ -288,10 +287,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public final void setBases(Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
-        ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
-        for (PythonAbstractClass type : newBaseClasses) {
-            HashingStorage storage = GetSubclassesNode.executeUncached(newBase).getDictStorage();
-            newBasesSubclasses.add(HashingStorageCopy.executeUncached(storage));
+        HashingStorage[] newBasesSubclasses = new HashingStorage[newBaseClasses.length];
+        for (int i = 0; i < newBaseClasses.length; i++) {
+            HashingStorage storage = GetSubclassesNode.executeUncached(newBaseClasses[i]).getDictStorage();
+            newBasesSubclasses[i++] = HashingStorageCopy.executeUncached(storage);
         }
 
         Object oldBase = getBase();
@@ -353,7 +352,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 PythonAbstractClass base = newBaseClasses[i];
                 if (base != null) {
                     PDict dict = GetSubclassesNode.executeUncached(base);
-                    dict.setDictStorage(newBasesSubclasses.get(i));
+                    dict.setDictStorage(newBasesSubclasses[i]);
                 }
             }
             if (this.baseClasses == newBaseClasses) {

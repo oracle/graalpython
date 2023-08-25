@@ -34,14 +34,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyTypeExtra;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -366,18 +358,6 @@ public final class PythonClass extends PythonManagedClass {
                     subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
                 }
             }
-        }
-    }
-
-    private static void addToProcess(ArrayDeque<Object> toProcess, PythonManagedClass klass) {
-        PDict subclasses = klass.getSubClasses();
-        HashingStorage storage = subclasses.getDictStorage();
-        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
-        while (HashingStorageIteratorNext.executeUncached(storage, it)) {
-            long hash = HashingStorageIteratorKeyHash.executeUncached(storage, it);
-            Object key = HashingStorageIteratorKey.executeUncached(storage, it);
-            Object clazz = HashingStorageGetItemWithHash.getItemWithHash(storage, key, hash);
-            toProcess.add(clazz);
         }
     }
 
