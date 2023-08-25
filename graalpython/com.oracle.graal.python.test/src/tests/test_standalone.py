@@ -45,7 +45,9 @@ import shutil
 import glob
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
-MVN = shutil.which('mvn')
+MVN_CMD = [shutil.which('mvn'), '-ntp', '-e']  # No download progress bar, always show traces
+if 'MAVEN_REPO_OVERRIDE' in os.environ:
+    MVN_CMD += ['-Dmaven.repo.remote=' + os.environ['MAVEN_REPO_OVERRIDE']]
 
 def get_executable(file):
     if os.path.isfile(file):
@@ -126,7 +128,7 @@ def test_polyglot_app():
         print(p.stderr.decode(errors='backslashreplace'))
         assert "Creating polyglot java python application in directory " + target_dir in out
 
-        cmd = [MVN, "package", "-Pnative"]
+        cmd = MVN_CMD + ["package", "-Pnative"]
         p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = p.stdout.decode(errors='backslashreplace')
         print(out)
@@ -140,7 +142,7 @@ def test_polyglot_app():
         print(p.stderr.decode(errors='backslashreplace'))
         assert out.endswith("hello java\n")
 
-        cmd = [MVN, "package", "-Pjar"]
+        cmd = MVN_CMD + ["package", "-Pjar"]
         p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = p.stdout.decode(errors='backslashreplace')
         print(out)
