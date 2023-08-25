@@ -81,7 +81,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -124,7 +123,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -1070,16 +1069,14 @@ public final class TypeBuiltins extends PythonBuiltins {
     abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PList getSubclasses(Object cls,
+        PList getSubclasses(VirtualFrame frame, Object cls,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetSubclassesNode getSubclassesNode) {
+                        @Cached(inline = true) GetSubclassesAsArrayNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
-            return factory().createList(toArray(getSubclassesNode.execute(inliningTarget, cls)));
-        }
-
-        @TruffleBoundary
-        private static <T> Object[] toArray(Set<T> subclasses) {
-            return subclasses.toArray();
+            PythonAbstractClass[] array = getSubclassesNode.execute(frame, inliningTarget, cls);
+            Object[] classes = new Object[array.length];
+            PythonUtils.arraycopy(array, 0, classes, 0, array.length);
+            return factory().createList(classes);
         }
     }
 

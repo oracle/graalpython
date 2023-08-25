@@ -96,12 +96,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -114,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -125,9 +120,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
@@ -165,6 +166,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSi
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesAsArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InstancesOfTypeHaveDictNodeGen;
@@ -236,6 +238,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -738,156 +741,125 @@ public abstract class TypeNodes {
     @GenerateCached(false)
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
-        public abstract Set<PythonAbstractClass> execute(Node inliningTarget, Object obj);
+        public abstract PDict execute(Node inliningTarget, Object clazz);
 
-        public static Set<PythonAbstractClass> executeUncached(Object obj) {
-            return GetSubclassesNodeGen.getUncached().execute(null, obj);
+        public static PDict executeUncached(Object clazz) {
+            return GetSubclassesNodeGen.getUncached().execute(null, clazz);
+        }
+
+        protected static void unsafeAddSubclass(Object base, Object subclass) {
+            long hash = ObjectBuiltins.HashNode.hash(subclass);
+            PDict dict = executeUncached(base);
+            HashingStorage storage = dict.getDictStorage();
+            HashingStorageSetItemWithHash setItem = HashingStorageSetItemWithHashNodeGen.getUncached();
+            storage = setItem.execute(null, null, storage, subclass, hash, subclass);
+            dict.setDictStorage(storage);
+        }
+
+        protected static void unsafeRemoveSubclass(Object base, Object subclass) {
+            long hash = ObjectBuiltins.HashNode.hash(subclass);
+            PDict dict = executeUncached(base);
+            HashingStorage storage = dict.getDictStorage();
+            if (storage instanceof EconomicMapStorage ems) {
+                HashingStorageDelItem.delWithHash(ems, subclass, hash);
+            } else {
+                assert storage == EmptyStorage.INSTANCE : "Unexpected storage type!";
+            }
         }
 
         @Specialization
-        static Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
+        static PDict doPythonClass(PythonManagedClass obj) {
             return obj.getSubClasses();
         }
 
         @Specialization
-        static Set<PythonAbstractClass> doPythonClass(Node inliningTarget, PythonBuiltinClassType obj) {
+        static PDict doPythonClass(Node inliningTarget, PythonBuiltinClassType obj) {
             return PythonContext.get(inliningTarget).lookupType(obj).getSubClasses();
         }
 
         @Specialization
-        static Set<PythonAbstractClass> doNativeClass(Node inliningTarget, PythonNativeClass obj,
+        static PDict doNativeClass(Node inliningTarget, PythonNativeClass obj,
                         @Cached(inline = false) CStructAccess.ReadObjectNode getTpSubclassesNode,
                         @Cached InlinedExactClassProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);
 
             Object profiled = profile.profile(inliningTarget, tpSubclasses);
-            if (profiled instanceof PDict) {
-                return wrapDict(profiled);
-            } else if (profiled instanceof PNone) {
-                return Collections.emptySet();
+            if (profiled instanceof PDict dict) {
+                return dict;
+                // } else if (profiled instanceof PNone) {
+                // return Collections.emptySet();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
         }
+    }
 
-        @TruffleBoundary
-        private static Set<PythonAbstractClass> wrapDict(Object tpSubclasses) {
-            return new Set<>() {
-                private final PDict dict = (PDict) tpSubclasses;
+    @GenerateUncached
+    @GenerateInline(true)
+    @GenerateCached(true)
+    public abstract static class GetSubclassesAsArrayNode extends Node {
 
-                @Override
-                public int size() {
-                    return HashingStorageLen.executeUncached(dict.getDictStorage());
-                }
+        private static final PythonAbstractClass[] EMPTY = new PythonAbstractClass[0];
 
-                @Override
-                public boolean isEmpty() {
-                    return size() == 0;
-                }
+        abstract PythonAbstractClass[] execute(Frame frame, Node inliningTarget, Object clazz);
 
-                @Override
-                public boolean contains(Object o) {
-                    return HashingStorageGetItem.hasKeyUncached(dict.getDictStorage(), o);
-                }
+        public static PythonAbstractClass[] executeUncached(Object clazz) {
+            return GetSubclassesAsArrayNodeGen.getUncached().execute(null, null, clazz);
+        }
 
-                @Override
-                @SuppressWarnings("unchecked")
-                public Iterator<PythonAbstractClass> iterator() {
-                    final HashingStorageNodes.HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dict.getDictStorage());
-                    Boolean[] hasNext = new Boolean[1];
+        static final class PythonAbstractClassList {
+            final PythonAbstractClass[] subclasses;
+            int i;
 
-                    return new Iterator<>() {
-                        @Override
-                        public boolean hasNext() {
-                            if (hasNext[0] == null) {
-                                hasNext[0] = HashingStorageIteratorNext.executeUncached(dict.getDictStorage(), it);
-                            }
-                            return hasNext[0];
-                        }
+            PythonAbstractClassList(PythonAbstractClass[] subclasses) {
+                this.subclasses = subclasses;
+                this.i = 0;
+            }
 
-                        @Override
-                        public PythonAbstractClass next() {
-                            if (hasNext[0] == null) {
-                                hasNext[0] = HashingStorageIteratorNext.executeUncached(dict.getDictStorage(), it);
-                            }
-                            if (!hasNext[0]) {
-                                throw new NoSuchElementException();
-                            }
-                            PythonAbstractClass result = (PythonAbstractClass) HashingStorageIteratorValue.executeUncached(dict.getDictStorage(), it);
-                            hasNext[0] = null;
-                            return result;
-                        }
-                    };
-                }
+            void add(PythonAbstractClass clazz) {
+                subclasses[i++] = clazz;
+            }
+        }
 
-                @Override
-                @TruffleBoundary
-                public Object[] toArray() {
-                    Object[] result = new Object[size()];
-                    int i = 0;
-                    for (PythonAbstractClass item : this) {
-                        result[i++] = item;
-                    }
-                    return result;
-                }
+        @GenerateUncached
+        @GenerateInline(true)
+        abstract static class EachSubclassAdd extends HashingStorageForEachCallback<PythonAbstractClassList> {
 
-                @Override
-                @SuppressWarnings("unchecked")
-                public <T> T[] toArray(T[] a) {
-                    if (a.getClass() == Object[].class) {
-                        return (T[]) toArray();
-                    } else {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new UnsupportedOperationException();
-                    }
-                }
+            @Override
+            public abstract PythonAbstractClassList execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses);
 
-                @Override
-                public boolean add(PythonAbstractClass e) {
-                    if (PGuards.isNativeClass(e)) {
-                        dict.setItem(PythonNativeClass.cast(e).getPtr(), e);
-                    }
-                    dict.setItem(new PythonNativeVoidPtr(e), e);
-                    return true;
-                }
+            @Specialization
+            static PythonAbstractClassList doIt(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, PythonAbstractClassList subclasses,
+                            @Cached HashingStorageIteratorKey itKey,
+                            @Cached HashingStorageIteratorKeyHash itKeyHash,
+                            @Cached HashingStorageGetItemWithHash getItemNode) {
+                long hash = itKeyHash.execute(inliningTarget, storage, it);
+                Object key = itKey.execute(inliningTarget, storage, it);
+                subclasses.add(PythonAbstractClass.cast(getItemNode.execute(frame, inliningTarget, storage, key, hash)));
+                return subclasses;
+            }
+        }
 
-                @Override
-                public boolean remove(Object o) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
+        @Specialization
+        static PythonAbstractClass[] doTpSubclasses(Frame frame, Node inliningTarget, PythonAbstractClass object,
+                        @Cached GetSubclassesNode getSubclassesNode,
+                        @Cached EachSubclassAdd eachNode,
+                        @Cached HashingStorageLen dictLen,
+                        @Cached HashingStorageForEach forEachNode) {
+            PDict subclasses = getSubclassesNode.execute(inliningTarget, object);
+            if (subclasses == null) {
+                return EMPTY;
+            }
 
-                @Override
-                public boolean containsAll(Collection<?> c) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
+            HashingStorage storage = subclasses.getDictStorage();
+            if (storage == EmptyStorage.INSTANCE) {
+                return EMPTY;
+            }
 
-                @Override
-                public boolean addAll(Collection<? extends PythonAbstractClass> c) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public boolean retainAll(Collection<?> c) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public boolean removeAll(Collection<?> c) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public void clear() {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
-                }
-
-            };
+            int size = dictLen.execute(inliningTarget, storage);
+            PythonAbstractClassList list = new PythonAbstractClassList(new PythonAbstractClass[size]);
+            forEachNode.execute(frame, inliningTarget, storage, eachNode, list);
+            return list.subclasses;
         }
     }
 
