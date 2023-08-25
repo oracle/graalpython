@@ -155,9 +155,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -297,6 +300,7 @@ public enum SpecialMethodSlot {
     }
 
     public static final SpecialMethodSlot[] VALUES = values();
+
     private final TruffleString name;
     @CompilationFinal private SpecialMethodSlot reverse;
     /**
@@ -532,6 +536,7 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
+                        fixupNewSlot(result, klass);
                         setMethodsFlags(result, klass);
                         return result;
                     }
@@ -573,6 +578,7 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
+        fixupNewSlot(slots, klass);
         setMethodsFlags(slots, klass);
         return slots;
     }
@@ -610,6 +616,58 @@ public enum SpecialMethodSlot {
         if (methodsFlags != 0) {
             long isHeaptype = PythonContext.get(null).isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
             klass.setMethodsFlags(methodsFlags | isHeaptype);
+        }
+    }
+
+    /**
+     * CPython has a bug in their {@code tp_new} slot inheritance. Packages, notably pandas, rely on
+     * the bug being present, so we have to try to replicate the same behavior.
+     * <p>
+     * CPython first inherits {@code tp_new} from the dominant base ({@code tp_base}) and creates a
+     * {@code __new__} special method for it. Later, they update all slots to match what's in the
+     * object's special methods, which are looked up in MRO. In case of multiple inheritance, the
+     * MRO-inherited {@code __new__} may be different from the {@code tp_base}-inherited one.
+     * Normally, one would expect that the MRO-inherited one wins, as is the case for all other
+     * slots. See the code in {@code update_one_slot}, it does this:
+     * 
+     * <pre>
+        ...
+        void **ptr = slotptr(type, offset);
+        ...
+        descr = find_name_in_mro(type, p->name_strobj, &error);
+        ...
+        else if (Py_IS_TYPE(descr, &PyCFunction_Type) &&
+                 PyCFunction_GET_FUNCTION(descr) ==
+                 (PyCFunction)(void(*)(void))tp_new_wrapper &&
+                 ptr == (void**)&type->tp_new)
+        {
+            specific = (void *)type->tp_new;
+        }
+     * </pre>
+     * 
+     * Apparently, they wanted to make an optimization that avoids using the wrapper if the wrapper
+     * was for the same {@code tp_new} as was inherited from {@code tp_base}. But they only check
+     * that it's a wrapper, but they forgot to check that it's for the same type. The wrapper
+     * function carries the type in its self, so they should have also checked that
+     * {@code PyCFunction_GET_SELF(descr) == type}. So in summary, {@code tp_new} is inherited
+     * through {@code tp_base} when the one in MRO is builtin/native, and it's inherited through MRO
+     * otherwise.
+     * <p>
+     * We approximate the check for the wrapper by checking that it's a builtin method, and it's
+     * named {@code __new__}.
+     */
+    private static void fixupNewSlot(Object[] slots, Object type) {
+        Object mroInheritedNew = slots[New.ordinal()];
+        if (mroInheritedNew instanceof PBuiltinMethod builtinMethod) {
+            mroInheritedNew = builtinMethod.getBuiltinFunction();
+        }
+        if (mroInheritedNew instanceof PBuiltinFunction builtinFunction && builtinFunction.getName().equalsUncached(New.name, TS_ENCODING)) {
+            Object tpBaseInheritedNew = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
+            if (tpBaseInheritedNew == PNone.NO_VALUE) {
+                Object base = GetBaseClassNode.executeUncached(type);
+                tpBaseInheritedNew = LookupCallableSlotInMRONode.getUncached(New).execute(base);
+            }
+            slots[New.ordinal()] = tpBaseInheritedNew;
         }
     }
 
