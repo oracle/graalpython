@@ -4,17 +4,10 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 23.1.0
-* Oracle GraalPy standalones (also known as GraalPy Enterprise) are now available under GFTC. The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
+* Oracle GraalPy distributions (also known as GraalPy Enterprise) are now available under GFTC. The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
 * Add support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.
-* The GraalPy standalone tool was updated to build single-file executable Python binaries for Linux, Windows, and macOS.
-* The GraalPy standalone tool was updated to generate skeleton Maven projects the demonstrate polyglot embedding.
-* Support venv and pip installation of with pure Python wheels on Windows. This is the first preview of Windows support for this feature, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
-* Support compilation and execution of C extensions using the native MSVC toolchain on Windows. This feature allows building C extensions from source, installation via pip is not possible at this time.
-* We have [contributed](https://github.com/actions/setup-python/pull/694) support for GraalPy to GitHub's `setup-python` action. We hope it will be available in the default repository soon, until then you can try it from the fork to run your Python workloads on GraalPy.
-* Added support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.
-* The GraalPy standalone tool was updated. You can now build single-file executable Python binaries for Linux, Windows, and macOS as well as generate skeleton Maven projects that set up a polyglot embedding of Python packages into Java.
-* Support venv and pip installation of with pure Python wheels on Windows. This is the first preview of Windows support for this feature, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
-* Support compilation and execution of C extensions using the native MSVC toolchain on Windows. This feature allows building C extensions from source, installation via pip is not possible at this time.
+* Provide Windows distributions of GraalPy. This is the first preview of Windows support for this feature, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
+* The GraalPy standalone tool was updated. You can now build single-file executable Python binaries for Linux, Windows, and macOS. The tool can also generate a skeleton Maven project that sets up a polyglot embedding of Python packages into Java.
 
 ## Version 23.0.0
 * Update `numpy` and `pandas` versions, add support for `scipy` and `scikit_learn` with `ginstall`. This automatically applies some fixes that make it possible to use these new versions with GraalPy.
