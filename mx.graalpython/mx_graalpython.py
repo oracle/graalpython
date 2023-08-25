@@ -38,6 +38,8 @@ import sys
 import time
 from functools import wraps
 
+import mx_urlrewrites
+
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 if sys.version_info[0] < 3:
@@ -1484,6 +1486,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
             os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            os.environ['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             try:
                 run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
             finally:
