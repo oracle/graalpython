@@ -78,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetWeakListOffsetNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
@@ -373,7 +375,8 @@ public abstract class ToNativeTypeNode extends Node {
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(factory.createDict()));
+            PDict subclasses = GetSubclassesNode.executeUncached(clazz);
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_weaklist, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, TypeBuiltins.TYPE_DEL));
             writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
