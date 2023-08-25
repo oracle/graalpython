@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetWeakListOffsetNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
