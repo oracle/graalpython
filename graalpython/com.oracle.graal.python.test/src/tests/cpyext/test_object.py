@@ -582,7 +582,7 @@ class TestObject(object):
                 PyType_Slot slots[] = {
                     { 0 }
                 };
-                PyType_Spec spec = { "DynamicType", sizeof(PyObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots };
+                PyType_Spec spec = { "DynamicType", sizeof(PyHeapTypeObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots };
                 PyObject* result = PyType_FromSpecWithBases(&spec, bases);
                 return result;
             }
