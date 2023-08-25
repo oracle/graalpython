@@ -43,7 +43,7 @@ import time
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType
 __dir__ = __file__.rpartition("/")[0]
 
-GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.platform_id == 'native'
+GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.get_platform_id() == 'native'
 
 # typedef PyObject * (*unaryfunc)(PyObject *);
 # typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
@@ -92,7 +92,7 @@ GCTestClass = CPyExtType("GCTestClass",
             // printf("free\\n");
             free_cnt++;
             PyObject_Del(a);
-        }            
+        }
         static int dealloc_cnt = 0;
         void test_dealloc(PyObject *self) {
             // printf("dealloc\\n");
@@ -116,9 +116,9 @@ GCTestClass = CPyExtType("GCTestClass",
         tp_dealloc = "test_dealloc",
         tp_methods='{"getCounters", (PyCFunction)getCounters, METH_NOARGS | METH_STATIC, ""}, {"resetCounters", (PyCFunction)resetCounters, METH_NOARGS | METH_STATIC, ""}',
 )
-            
+
 class TestGC1():
-    
+
     def test_native_class(self):
         if GRAALPYTHON_NATIVE:
             gc.enable()
@@ -152,13 +152,13 @@ class TestGC1():
 #             Py_ssize_t r2 = Py_REFCNT(o);
 #             Py_DecRef(o);
 #             Py_ssize_t r3 = Py_REFCNT(o);
-#             return Py_BuildValue("(ii)", r2 - r1, r3 - r1); 
+#             return Py_BuildValue("(ii)", r2 - r1, r3 - r1);
 #         }''',
 #         resultspec="O",
 #         argspec='O',
 #         arguments=("PyObject* o", ),
 #         callfunction="wrap_simple",
-#     )    
+#     )
 #
 #
 #     test_create = CPyExtFunction(
@@ -171,10 +171,10 @@ class TestGC1():
 #             Py_ssize_t r2 = Py_REFCNT(o);
 #             Py_DecRef(o);
 #             Py_ssize_t r3 = Py_REFCNT(o);
-#             return Py_BuildValue("(ii)", r2 - r1, r3 - r1); 
+#             return Py_BuildValue("(ii)", r2 - r1, r3 - r1);
 #         }''',
 #         resultspec="O",
 #         argspec='O',
 #         arguments=("PyObject* o", ),
 #         callfunction="wrap_simple",
-#     )    
+#     )

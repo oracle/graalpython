@@ -243,21 +243,18 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         TruffleString capiHome = context.getCAPIHome();
         Env env = context.getEnv();
         LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         mod.setAttribute(tsLiteral("jython_emulation_enabled"), language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute(tsLiteral("host_import_enabled"), context.getEnv().isHostLookupAllowed());
         mod.setAttribute(tsLiteral("core_home"), coreHome);
         mod.setAttribute(tsLiteral("stdlib_home"), stdlibHome);
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
         mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
-        mod.setAttribute(tsLiteral("platform_id"), toTruffleStringUncached(toolchain.getIdentifier()));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
         mod.setAttribute(tsLiteral("use_system_toolchain"), context.getOption(PythonOptions.UseSystemToolchain));
         mod.setAttribute(tsLiteral("ext_mode"), context.getOption(PythonOptions.NativeModules) ? T_NATIVE : T_LLVM_LANGUAGE);
-
 
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
@@ -646,6 +643,18 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             return toTruffleStringUncached(toolPath.toString().replace("\\", "/"));
         }
+    }
+
+    @Builtin(name = "get_platform_id", minNumOfPositionalArgs = 0)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetPlatformId extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected TruffleString getPlatformId() {
+            return getContext().getPlatformId();
+        }
+
     }
 
     @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)

@@ -32,8 +32,8 @@ import distutils
 
 PY2 = sys.version_info[0] == 2
 GRAALPYTHON = sys.implementation.name == 'graalpy'
-GRAALPYTHON_NATIVE = GRAALPYTHON and __graalpython__.platform_id == 'native'
-DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.platform_id == 'native')
+GRAALPYTHON_NATIVE = GRAALPYTHON and __graalpython__.get_platform_id() == 'native'
+DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.get_platform_id() == 'native')
 
 HPY_ROOT = Path(__file__).parent.parent
 LOCK = FileLock(HPY_ROOT / ".hpy.lock")

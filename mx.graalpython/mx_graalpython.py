@@ -1108,7 +1108,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,
             "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpy' else 'cpython'))"],
+            "import sys; print('C EXT MODE: ' + (__graalpython__.get_platform_id() if sys.implementation.name == 'graalpy' else 'cpython'))"],
             nonZeroIsFatal=True, env=env, out=out, err=err)
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
