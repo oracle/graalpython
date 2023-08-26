@@ -45,7 +45,7 @@ import shutil
 import glob
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
-MVN_CMD = [shutil.which('mvn'), '-ntp', '-e']  # No download progress bar, always show traces
+MVN_CMD = [shutil.which('mvn')]
 if 'MAVEN_REPO_OVERRIDE' in os.environ:
     MVN_CMD += ['-Dmaven.repo.remote=' + os.environ['MAVEN_REPO_OVERRIDE']]
 
