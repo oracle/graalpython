@@ -50,12 +50,16 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * Partial equivalent of CPython's {@code PyObject_Dir}. Only supports listing attributes of an
@@ -77,7 +81,30 @@ public abstract class PyObjectDir extends PNodeWithContext {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
         }
         PList list = constructListNode.execute(frame, result);
+        filterHiddenKeys(list.getSequenceStorage());
         sortNode.execute(frame, list);
         return list;
+    }
+
+    static void filterHiddenKeys(SequenceStorage s) {
+        if (s instanceof EmptySequenceStorage) {
+            // noting to do.
+        } else if (s instanceof ObjectSequenceStorage storage) {
+            // String do not have a special storage
+            Object[] oldarray = storage.getInternalArray();
+            Object[] newarray = new Object[storage.length()];
+            int j = 0;
+            for (int i = 0; i < storage.length(); i++) {
+                Object o = oldarray[i];
+                if (o instanceof HiddenKey) {
+                    continue;
+                }
+                newarray[j++] = o;
+            }
+            storage.setInternalArrayObject(newarray);
+            storage.setNewLength(j);
+        } else {
+            assert false : "Unexpected storage type!";
+        }
     }
 }
