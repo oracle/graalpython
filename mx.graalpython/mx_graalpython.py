@@ -1503,12 +1503,25 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
-            home = _graalvm_home(envfile=os.path.join(mx.suite('truffle').dir, '..', 'vm', 'mx.vm', 'ce'), extra_dy="/vm")
+            # build graalvm jdk
+            mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+            mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{get_jdk().javaCompliance}"])
+            out = mx.OutputCapture()
+            mx.run_mx(mx_args + ["graalvm-home"], out=out)
+            home = out.data.splitlines()[-1].strip()
             env = os.environ.copy()
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             env['JAVA_HOME'] = home
-            run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report(), env=env)
+            # build python standalone
+            mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce-python']
+            mx.run_mx(mx_args + ["--native-images=", "build", "--dep", f"PYTHON_JAVA_STANDALONE_SVM_JAVA{get_jdk().javaCompliance}"])
+            out = mx.OutputCapture()
+            mx.run_mx(mx_args + ["standalone-home", "--type", "jvm", "python"], out=out)
+            python_home = out.data.splitlines()[-1].strip()
+            env['PYTHON_STANDALONE_HOME'] = python_home
+            # run the test
+            run_python_unittests(python_gvm(), paths=["test_standalone.py"], javaAsserts=True, report=report(), env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

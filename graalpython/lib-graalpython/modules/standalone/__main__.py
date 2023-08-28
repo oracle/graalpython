@@ -106,7 +106,7 @@ MODULE_NAME = "standalone"
 MODULE_INFO_FILE = "module-info.java"
 MODULE_INFO_PATH = f"shared/{MODULE_INFO_FILE}"
 
-GRAALVM_URL_BASE="https://download.oracle.com/graalvm/"
+GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
 MVN_PYTHON_ARTEFACT_ID = "python-community"
@@ -133,7 +133,7 @@ class AbstractStandalone:
 
     @abc.abstractmethod
     def create(self):
-        pass    
+        pass
 
     def create_virtual_filesystem_file(self, vfs_file, java_pkg=""):
         lines = open(get_file(VFS_JAVA_FILE_TEMPLATE), 'r').readlines()
@@ -230,7 +230,7 @@ class PolyglotJavaPython(AbstractStandalone):
         shutil.copy(get_file(NATIVE_IMAGE_PROXY_CONF_PATH), target_dir)
         shutil.copy(get_file(MODULE_INFO_PATH), os.path.join(target_dir, MVN_CODE_PREFIX))
         self.create_pom_file(get_file(POLYGLOT_APP_POM_TEMPLATE_PATH), os.path.join(target_dir, MVN_POM_FILE))
-        
+
 class Standalone(AbstractStandalone):
     def __init__(self, parsed_args):
         super().__init__(parsed_args)
@@ -247,10 +247,10 @@ class Standalone(AbstractStandalone):
 
         os.makedirs(os.path.dirname(self.launcher_file), exist_ok=True)
         self.create_launcher_file(get_file(JAVA_BINDING_LAUNCHER_TEMPLATE_PATH), self.launcher_file, NATIVE_EXEC_JAVA_PKG)
-        
+
         virtual_filesystem_java_file = os.path.join(self.target_dir, self.mvn_code_prefix, MODULE_NAME, VFS_JAVA_FILE)
         self.create_virtual_filesystem_file(virtual_filesystem_java_file, NATIVE_EXEC_JAVA_PKG)
-        
+
         shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(self.target_dir, NATIVE_IMAGE_RESOURCES_FILE))
         shutil.copy(get_file(MODULE_INFO_PATH), os.path.join(self.target_dir, MODULE_INFO_FILE))
 
@@ -260,7 +260,7 @@ class Standalone(AbstractStandalone):
         """
 
         os.makedirs(os.path.dirname(target_dir), exist_ok=True)
-        
+
         # XXX do we get capi_home and stdlib_home from downloaded python-resources jar or from current instance?
         lib_source = __graalpython__.capi_home
         self.copy_folder_to_target(
@@ -317,27 +317,27 @@ class JavaBinding(Standalone):
         self.mvn_code_prefix = MVN_CODE_PREFIX
         self.mvn_resource_prefix = MVN_RESOURCE_PREFIX
         self.launcher_file = os.path.join(self.target_dir, self.mvn_code_prefix, JAVA_BINDING_LAUNCHER_FILE)
-        
+
     def create(self):
         self.check_output_directory()
 
-        os.makedirs(self.target_dir, exist_ok=True)    
+        os.makedirs(self.target_dir, exist_ok=True)
         self.create_target_directory()
         self.create_pom_file(get_file(JAVA_BINDING_POM_TEMPLATE_PATH), os.path.join(self.target_dir, MVN_POM_FILE))
 
 class NativeExecutable(Standalone):
-    
+
     def __init__(self, parsed_args):
         super().__init__(parsed_args)
-        
+
         self.target_dir = tempfile.mkdtemp()
         self.modules_path = os.path.join(self.target_dir, "modules")
         self.mvn_code_prefix = ""
         self.mvn_resource_prefix = ""
         self.launcher_file = os.path.join(self.target_dir, MODULE_NAME, JAVA_BINDING_LAUNCHER_FILE)
-        
+
         self.graalvm_version = MVN_PYTHON_COMMUNITY_VERSION if MVN_PYTHON_COMMUNITY_VERSION else __graalpython__.get_graalvm_version()
-            
+
         self.jdk_version = __graalpython__.get_jdk_version()
 
     def create(self):
@@ -393,16 +393,13 @@ class NativeExecutable(Standalone):
 
         return f"{GRAALVM_URL_BASE}{major_version}/archive/graalvm-jdk-{jdk_version}_{system}-{machine}_bin.{sufix}"
 
-    def get_tools(self):        
-        # XXX gu install was not available for windows, will unchained be available?
-        # XXX where to download graalvm unchained from
-      
-        if os.getenv("GRAALVM_HOME"):
-            graalvm_home = os.getenv("GRAALVM_HOME")
-        else:    
+    def get_tools(self):
+        if os.getenv("JAVA_HOME"):
+            graalvm_home = os.getenv("JAV_HOME")
+        else:
             self.modules_path = os.path.join(self.target_dir, "lib")
             graalvm_url = self.get_graalvm_url()
-            os.makedirs(self.modules_path, exist_ok=True)            
+            os.makedirs(self.modules_path, exist_ok=True)
             graalvm_file = os.path.join(self.modules_path, graalvm_url[graalvm_url.rindex("/") + 1:])
             if self.parsed_args.verbose:
                 print(f"downloading {graalvm_url} to {graalvm_file}")
@@ -425,21 +422,21 @@ class NativeExecutable(Standalone):
                 graalvm_home = os.path.join(graalvm_dir, "Contents", "Home")
             else:
                 graalvm_home = graalvm_dir
-        
+
         ni = NativeExecutable.get_executable(os.path.join(graalvm_home, "bin", "native-image"))
         jc = NativeExecutable.get_executable(os.path.join(graalvm_home, "bin", "javac"))
         if self.parsed_args.verbose:
-            print(f"using GRAALVM_HOME: {graalvm_home}")
+            print(f"using GRAALVM: {graalvm_home}")
             print(f"  native_image: {ni}")
             print(f"  javac: {jc}")
-            
+
         if not ni or not os.path.exists(ni):
             if not self.parsed_args.verbose:
-                print(f"using GRAALVM_HOME: {graalvm_home}")
+                print(f"using GRAALVM: {graalvm_home}")
                 print(f"  native_image: {ni}")
                 print(f"  javac: {jc}")
-            if os.getenv("GRAALVM_HOME"):
-                print("If using GRAALVM_HOME env variable, please point it to a GraalVM installation with native image and javac")
+            if os.getenv("JAVA_HOME"):
+                print("If using JAVA_HOME env variable, please point it to a GraalVM installation with native image and javac")
             else:
                 graalvm_url = self.get_graalvm_url()
                 print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
@@ -448,11 +445,11 @@ class NativeExecutable(Standalone):
         return ni, jc
 
     def download_python(self):
-        mvnd = NativeExecutable.get_executable(os.path.join(__graalpython__.home, "libexec", "graalpy-polyglot-get")) 
-        cmd = [mvnd] 
-        
+        mvnd = NativeExecutable.get_executable(os.path.join(__graalpython__.home, "libexec", "graalpy-polyglot-get"))
+        cmd = [mvnd]
+
         if MVN_REPOSITORY:
-            cmd += ["-r", MVN_REPOSITORY]            
+            cmd += ["-r", MVN_REPOSITORY]
         cmd += ["-a", MVN_PYTHON_ARTEFACT_ID]
         cmd += ["-v", self.graalvm_version]
         cmd += ["-o", self.modules_path]
@@ -474,13 +471,13 @@ class NativeExecutable(Standalone):
     def build_binary(self, ni, jc):
         cwd = os.getcwd()
         output = os.path.abspath(self.parsed_args.output)
-        os.chdir(self.target_dir)        
+        os.chdir(self.target_dir)
 
         try:
             modulepath = f"{self.modules_path}/org.graalvm.polyglot-polyglot-{self.graalvm_version}.jar"
             # it would seem it is enough to compile the launcher file, but on some linux setups it isn't
             cmd = [jc, "--module-path", modulepath, os.path.join(self.target_dir,MODULE_INFO_FILE), os.path.join(self.target_dir, MODULE_NAME, "VirtualFileSystem.java"), self.launcher_file]
-            if self.parsed_args.verbose:                
+            if self.parsed_args.verbose:
                 print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
             p = subprocess.run(cmd, cwd=self.target_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if p.returncode != 0:
@@ -494,7 +491,7 @@ class NativeExecutable(Standalone):
                     modules.append(f)
             mp = f":{self.modules_path}/".join(modules)
             modulepath = f"{self.modules_path}/{mp}:."
-            
+
             # XXX org.graalvm.llvm.nativemode.resources,org.graalvm.py.resources soon obsolete so remove
             add_modules = "standalone,org.graalvm.llvm.nativemode.resources,org.graalvm.py.resources"
             cmd = [ni, "--module-path", modulepath, "--add-modules", add_modules] + self.parsed_args.ni_args[:]
