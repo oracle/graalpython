@@ -2206,7 +2206,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 f'-Dorg.graalvm.maven.downloader.default_version={GRAAL_VERSION}',
             ],
         ),
-    ],
+    ] if mx.suite("vm", fatalIfMissing=False) else [],
     priority=5,
     stability="experimental",
 ))
