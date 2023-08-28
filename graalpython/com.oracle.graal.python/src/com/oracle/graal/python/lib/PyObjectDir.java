@@ -43,8 +43,12 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -86,10 +90,8 @@ public abstract class PyObjectDir extends PNodeWithContext {
         return list;
     }
 
-    static void filterHiddenKeys(SequenceStorage s) {
-        if (s instanceof EmptySequenceStorage) {
-            // noting to do.
-        } else if (s instanceof ObjectSequenceStorage storage) {
+    public static void filterHiddenKeys(SequenceStorage s) {
+        if (s instanceof ObjectSequenceStorage storage) {
             // String do not have a special storage
             Object[] oldarray = storage.getInternalArray();
             Object[] newarray = new Object[storage.length()];
@@ -103,8 +105,26 @@ public abstract class PyObjectDir extends PNodeWithContext {
             }
             storage.setInternalArrayObject(newarray);
             storage.setNewLength(j);
-        } else {
+        } else if (!(s instanceof EmptySequenceStorage)) {
             assert false : "Unexpected storage type!";
+        }
+    }
+
+    public static void filterHiddenKeys(VirtualFrame frame, PSet names,
+                    Node inliningTarget,
+                    ListNodes.ConstructListNode constructListNode,
+                    HashingStorageDelItem delItem) {
+        HashingStorage set = names.getDictStorage();
+        if (set != EmptyStorage.INSTANCE) {
+            PList list = constructListNode.execute(frame, names);
+            ObjectSequenceStorage storage = (ObjectSequenceStorage) list.getSequenceStorage();
+            Object[] array = storage.getInternalArray();
+            for (int i = 0; i < storage.length(); i++) {
+                Object o = array[i];
+                if (o instanceof HiddenKey) {
+                    delItem.execute(frame, inliningTarget, set, o, names);
+                }
+            }
         }
     }
 }
