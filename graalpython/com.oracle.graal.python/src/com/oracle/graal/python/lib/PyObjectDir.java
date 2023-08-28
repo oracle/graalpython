@@ -43,27 +43,19 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * Partial equivalent of CPython's {@code PyObject_Dir}. Only supports listing attributes of an
@@ -85,46 +77,7 @@ public abstract class PyObjectDir extends PNodeWithContext {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
         }
         PList list = constructListNode.execute(frame, result);
-        filterHiddenKeys(list.getSequenceStorage());
         sortNode.execute(frame, list);
         return list;
-    }
-
-    public static void filterHiddenKeys(SequenceStorage s) {
-        if (s instanceof ObjectSequenceStorage storage) {
-            // String do not have a special storage
-            Object[] oldarray = storage.getInternalArray();
-            Object[] newarray = new Object[storage.length()];
-            int j = 0;
-            for (int i = 0; i < storage.length(); i++) {
-                Object o = oldarray[i];
-                if (o instanceof HiddenKey) {
-                    continue;
-                }
-                newarray[j++] = o;
-            }
-            storage.setInternalArrayObject(newarray);
-            storage.setNewLength(j);
-        } else if (!(s instanceof EmptySequenceStorage)) {
-            assert false : "Unexpected storage type!";
-        }
-    }
-
-    public static void filterHiddenKeys(VirtualFrame frame, PSet names,
-                    Node inliningTarget,
-                    ListNodes.ConstructListNode constructListNode,
-                    HashingStorageDelItem delItem) {
-        HashingStorage set = names.getDictStorage();
-        if (set != EmptyStorage.INSTANCE) {
-            PList list = constructListNode.execute(frame, names);
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) list.getSequenceStorage();
-            Object[] array = storage.getInternalArray();
-            for (int i = 0; i < storage.length(); i++) {
-                Object o = array[i];
-                if (o instanceof HiddenKey) {
-                    delItem.execute(frame, inliningTarget, set, o, names);
-                }
-            }
-        }
     }
 }

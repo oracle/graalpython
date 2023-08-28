@@ -26,7 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.lib.PyObjectDir.filterHiddenKeys;
 import static com.oracle.graal.python.nodes.PGuards.isDeleteMarker;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
@@ -80,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -107,7 +105,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -929,8 +926,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached HashingStorageDelItem delItem,
                         @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode) {
             PSet names = factory().createSet();
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
@@ -938,7 +933,6 @@ public final class ObjectBuiltins extends PythonBuiltins {
             if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {
                 callNode.execute(frame, updateCallable, ns);
             }
-            filterHiddenKeys(frame, names, inliningTarget, constructListNode, delItem);
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);
             if (klass != PNone.NO_VALUE) {
                 callNode.execute(frame, updateCallable, dirNode.execute(frame, klass));

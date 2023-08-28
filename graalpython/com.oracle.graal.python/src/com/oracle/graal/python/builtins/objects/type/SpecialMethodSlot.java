@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
@@ -151,11 +150,10 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -627,8 +625,9 @@ public enum SpecialMethodSlot {
             if (assumption != null && assumption.getAssumption().isValid()) {
                 assumption.invalidate("methods flags have changed after class creation");
             }
-            PDict dict = (PDict) CStructAccess.ReadObjectNode.getUncached().readFromObj(cls, PyTypeObject__tp_dict);
-            dict.setDictStorage(HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags | flag));
+            if (cls instanceof PythonAbstractNativeObject nclass) {
+                DynamicObjectLibrary.getUncached().putLong(nclass, METHODS_FLAGS, flags | flag);
+            }
         }
     }
 
