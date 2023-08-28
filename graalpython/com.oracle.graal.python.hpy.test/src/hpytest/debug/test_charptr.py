@@ -210,7 +210,7 @@ def test_charptr_write_ptr(compiler, python_subprocess):
         assert result.stderr == b""
 
 
-@pytest.mark.xfail(__graalpython__.platform_id == "managed", reason="unaligned memcpy is not supported")
+@pytest.mark.xfail(__graalpython__.get_platform_id() == "managed", reason="unaligned memcpy is not supported")
 def test_charptr_correct_usage(compiler):
     mod = compiler.make_module("""
         #include <string.h>

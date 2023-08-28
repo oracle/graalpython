@@ -43,11 +43,11 @@ def _get_posix_vars():
     import _imp
     import sys
     import os
-    darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
-    win32_native = sys.platform == "win32" and __graalpython__.platform_id == "native"
+    darwin_native = sys.platform == "darwin" and __graalpython__.get_platform_id() == "native"
+    win32_native = sys.platform == "win32" and __graalpython__.get_platform_id() == "native"
 
     # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.get_platform_id() + "-" + sys.implementation._multiarch
     if win32_native:
         so_ext = ".pyd"
     else:
