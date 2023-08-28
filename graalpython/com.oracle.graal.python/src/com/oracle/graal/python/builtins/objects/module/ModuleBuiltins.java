@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.lib.PyObjectDir.filterHiddenKeys;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
@@ -73,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -175,9 +173,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
-                    PList list = constructListNode.execute(frame, dict);
-                    filterHiddenKeys(list.getSequenceStorage());
-                    return list;
+                    return constructListNode.execute(frame, dict);
                 }
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");

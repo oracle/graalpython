@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.InitNode.overridesBuiltinMethod;
-import static com.oracle.graal.python.lib.PyObjectDir.filterHiddenKeys;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -148,7 +146,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -1407,11 +1404,9 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
-                        @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached HashingStorageDelItem delItem) {
+                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode) {
             PSet names = dir(frame, klass,
-                            inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode, constructListNode, delItem);
+                            inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode);
             return names;
         }
 
@@ -1420,16 +1415,13 @@ public final class TypeBuiltins extends PythonBuiltins {
                         PyObjectLookupAttr lookupAttrNode,
                         com.oracle.graal.python.nodes.call.CallNode callNode,
                         GetFixedAttributeNode getBasesNode,
-                        ToArrayNode toArrayNode,
-                        ListNodes.ConstructListNode constructListNode,
-                        HashingStorageDelItem delItem) {
+                        ToArrayNode toArrayNode) {
             PSet names = factory().createSet();
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, klass, T___DICT__);
             if (ns != PNone.NO_VALUE) {
                 callNode.execute(frame, updateCallable, ns);
             }
-            filterHiddenKeys(frame, names, inliningTarget, constructListNode, delItem);
             Object basesAttr = getBasesNode.execute(frame, klass);
             if (basesAttr instanceof PTuple) {
                 Object[] bases = toArrayNode.execute(inliningTarget, ((PTuple) basesAttr).getSequenceStorage());
@@ -1437,7 +1429,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant
                     Object baseNames = dir(frame, cls,
-                                    inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode, constructListNode, delItem);
+                                    inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode);
                     callNode.execute(frame, updateCallable, baseNames);
                 }
             }
