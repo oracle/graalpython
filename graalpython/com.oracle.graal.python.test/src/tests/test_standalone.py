@@ -61,18 +61,20 @@ def get_executable(file):
     return None
 
 def get_gp():
-    java_home = os.path.join(__graalpython__.home, "..", "..")
+    java_home = os.environ["JAVA_HOME"]
+    graalpy_home = os.environ["PYTHON_STANDALONE_HOME"]
 
     ni = get_executable(os.path.join(java_home, "bin", "native-image"))
     jc = get_executable(os.path.join(java_home, "bin", "javac"))
-    graalpy = get_executable(os.path.join(java_home, "bin", "graalpy"))
+    graalpy = get_executable(os.path.join(graalpy_home, "bin", "graalpy"))
     java = get_executable(os.path.join(java_home, "bin", "java"))
 
     if not os.path.isfile(graalpy) or not os.path.isfile(java) or not os.path.isfile(jc) or not os.path.isfile(ni):
         print(
-            "Standalone module tests require a GraalVM installation including graalpy, java, javac and native-image",
-            "Please point the JAVA_HOME environment variable to such a GraalVM root.",
-            "__graalpython__.home : " + java_home,
+            "Standalone module tests require a GraalVM JDK and a GraalPy standalone.",
+            "Please point the JAVA_HOME and PYTHON_STANDALONE_HOME environment variables properly.",
+            f"{java_home=}",
+            f"{graalpy_home=}",
             "native-image exists: " + str(os.path.exists(ni)),
             "javac exists: " + str(os.path.exists(jc)),
             "graalpy exits: " + str(os.path.exists(graalpy)),
@@ -82,40 +84,19 @@ def get_gp():
         assert False
 
     print("Running tests for standalone module:")
-    print("  __graalpython__.home:", __graalpython__.home)
+    print("  graalpy_home:", graalpy_home)
     print("  java_home:", java_home)
     print("  graalpy:", graalpy)
     print("  java:", java)
 
     return java_home, graalpy, java
 
-def get_env(java_home):
-    env = os.environ.copy()
-    env.update({"JAVA_HOME" : java_home})
-
-    graalvm_home = os.environ.get("GRAALVM_HOME", java_home)
-    if "*" in graalvm_home:
-        graalvm_home = os.path.abspath(glob.glob(graalvm_home)[0])
-        print("Patching GRAALVM_HOME: ", graalvm_home)
-        env.update({"GRAALVM_HOME" : graalvm_home})
-
-    to_be_removed = []
-    for k in env:
-        # subprocess complaining about key names with "=" in them
-        if "=" in k:
-            to_be_removed.append(k)
-    for k in to_be_removed:
-        del env[k]
-    if len(to_be_removed) > 0:
-        print("\ntest_standalone: removed keys from subprocess environment :", to_be_removed)
-
-    return env
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_polyglot_app():
 
     java_home, graalpy, java = get_gp()
-    env = get_env(java_home)
+    env = os.environ.copy()
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
