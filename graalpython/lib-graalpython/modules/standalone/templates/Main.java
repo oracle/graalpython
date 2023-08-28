@@ -55,7 +55,7 @@ public class Main {
     private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     private static String PYTHON = "python";
-    
+
     public static void main(String[] args) throws IOException {
         VirtualFileSystem vfs = new VirtualFileSystem();
         Builder builder = Context.newBuilder()
@@ -83,19 +83,21 @@ public class Main {
             .option("python.ForceImportSite", "true")
             // The sys.executable path
             .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-            // Used by the launcher to pass the path to be executed. 
-            // VirtualFilesystem will take care, that at runtime this will be 
+            // Used by the launcher to pass the path to be executed.
+            // VirtualFilesystem will take care, that at runtime this will be
             // the python sources stored in src/main/resources/{vfs-proj-prefix}
             .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
             // Value of the --check-hash-based-pycs command line option
             .option("python.CheckHashPycsMode", "never")
-            // Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable
+            // Do not warn if running without JIT. This can be desirable for short running scripts
+            // to reduce memory footprint.
             .option("engine.WarnInterpreterOnly", "false");
         if(ImageInfo.inImageRuntimeCode()) {
+            // Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable
             builder.option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX));
         }
         Context context = builder.build();
-                
+
         try {
             Source source;
             try {
@@ -105,14 +107,14 @@ public class Main {
             }
             // eval the snipet __graalpython__.run_path() which executes what the option python.InputFilePath points to
             context.eval(source);
-            
+
             // retrieve the python PyHello class
             Value pyHelloClass = context.getPolyglotBindings().getMember("PyHello");
             Value pyHello = pyHelloClass.newInstance();
             // and cast it to the Hello interface which matches PyHello
             Hello hello = pyHello.as(Hello.class);
             hello.hello("java");
-            
+
         } catch (PolyglotException e) {
             if (e.isExit()) {
                 System.exit(e.getExitStatus());
