@@ -1485,12 +1485,12 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
-            os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            os.environ['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
-            try:
-                run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
-            finally:
-                del os.environ['ENABLE_STANDALONE_UNITTESTS']
+            home = _graalvm_home(envfile=os.path.join(mx.suite('truffle').dir, '..', 'vm', 'mx.vm', 'ce'), extra_dy="/vm")
+            env = os.environ.copy()
+            env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            env['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
+            env['JAVA_HOME'] = home
+            run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report(), env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
