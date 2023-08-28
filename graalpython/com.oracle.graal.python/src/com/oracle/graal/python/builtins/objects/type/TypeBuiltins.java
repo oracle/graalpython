@@ -1405,17 +1405,12 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode) {
-            PSet names = dir(frame, klass,
-                            inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode);
+            PSet names = dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode);
             return names;
         }
 
-        private PSet dir(VirtualFrame frame, Object klass,
-                        Node inliningTarget,
-                        PyObjectLookupAttr lookupAttrNode,
-                        com.oracle.graal.python.nodes.call.CallNode callNode,
-                        GetFixedAttributeNode getBasesNode,
-                        ToArrayNode toArrayNode) {
+        private PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
+                        GetFixedAttributeNode getBasesNode, ToArrayNode toArrayNode) {
             PSet names = factory().createSet();
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, klass, T___DICT__);
@@ -1428,8 +1423,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 for (Object cls : bases) {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant
-                    Object baseNames = dir(frame, cls,
-                                    inliningTarget, lookupAttrNode, callNode, getBasesNode, toArrayNode);
+                    Object baseNames = dir(frame, inliningTarget, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode);
                     callNode.execute(frame, updateCallable, baseNames);
                 }
             }
