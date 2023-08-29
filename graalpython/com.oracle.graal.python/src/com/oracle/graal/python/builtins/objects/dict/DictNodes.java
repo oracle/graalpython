@@ -131,8 +131,9 @@ public abstract class DictNodes {
                         @Exclusive @Cached PyObjectGetItem getItem,
                         @Shared @Cached GetNextNode nextNode,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
-            HashingStorage storage = HashingStorage.copyToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
-                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
+            Object keysIterable = callKeysNode.executeObject(frame, other);
+            HashingStorage storage = HashingStorage.copyToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
+                            inliningTarget, keysIterable, getItem, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
@@ -152,9 +153,9 @@ public abstract class DictNodes {
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
-            HashingStorage storage = HashingStorage.addSequenceToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
-                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raiseNode, getItem, isTypeErrorProfile,
-                            errorProfile, setHasihngStorageItem, addAllToOther);
+            HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, inliningTarget,
+                            storageSupplier, getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raiseNode, getItem,
+                            isTypeErrorProfile, errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
