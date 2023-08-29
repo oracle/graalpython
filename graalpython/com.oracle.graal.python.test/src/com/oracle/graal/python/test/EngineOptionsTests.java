@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,59 +38,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
+package com.oracle.graal.python.test;
+
+import static org.junit.Assert.assertEquals;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.junit.Test;
 
-import com.oracle.graal.python.test.PythonTests;
-
-public class MultiContextTest extends PythonTests {
-    @Test
-    public void testSharingWithMemoryview() {
-        Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
-                context.eval("python", "memoryview(b'abc')");
-            }
-        }
-    }
+public class EngineOptionsTests {
 
     @Test
-    public void testSharingWithStruct() {
-        // With the default value of NativeModules=true, this test is going to use the NFI C API
-        // backend for the first context, but then it is going to use the Sulong backend for
-        // consecutive contexts (as long as this is the only test that executes native code,
-        // which it seems to be). This is why we need "sulong:SULONG_NATIVE" among the
-        // dependencies for GRAALPYTHON_UNIT_TESTS distribution
+    public void engineOptions() {
         Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
-                context.eval("python", "import struct\n" +
-                                "n = struct.unpack('<q', struct.pack('<d', 1.1))[0]\n");
-            }
-        }
+
+        assertEquals("java", doit(engine, null));
+        assertEquals("java", doit(engine, "java"));
+        assertEquals("native", doit(engine, "native"));
     }
 
-    @Test
-    public void testTryCatch() {
-        Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
-                context.eval("python", "last_val = -1\n" +
-                                "try:\n" +
-                                "    riter = iter(range(1000000))\n" +
-                                "    while True:\n" +
-                                "        last_val = next(riter)\n" +
-                                "except StopIteration:\n" +
-                                "    pass\n" +
-                                "last_val");
-            }
+    private static String doit(Engine engine, String backend) {
+        Context.Builder builder = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true);
+        if (backend != null) {
+            builder.option("python.PosixModuleBackend", backend);
         }
-    }
-
-    private static Context newContext(Engine engine) {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+        try (Context context = builder.build()) {
+            return context.eval("python", "__graalpython__.posix_module_backend()").asString();
+        }
     }
 }

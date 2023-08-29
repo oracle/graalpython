@@ -55,7 +55,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.junit.Rule;
 
-import com.oracle.graal.python.CleanupRule;
+import com.oracle.graal.python.test.CleanupRule;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Consumer;
 

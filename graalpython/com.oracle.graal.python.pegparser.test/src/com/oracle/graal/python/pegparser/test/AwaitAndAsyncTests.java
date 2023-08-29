@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+package com.oracle.graal.python.pegparser.test;
 
-import java.io.File;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
-import org.junit.Before;
 import org.junit.Test;
 
-public class ResourcesTest {
-    @Before
-    public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+public class AwaitAndAsyncTests extends ParserTestBase {
+
+    @Test
+    public void await01() throws Exception {
+        checkScopeAndTree("async def f():\n await smth()");
     }
 
     @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
-
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
-        }
+    public void await02() throws Exception {
+        checkScopeAndTree("async def f():\n foo = await smth()");
     }
 
     @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
+    public void await03() throws Exception {
+        checkScopeAndTree("async def f():\n foo, bar = await smth()");
+    }
+
+    @Test
+    public void await04() throws Exception {
+        checkScopeAndTree("async def f():\n (await smth())");
+    }
+
+    @Test
+    public void await05() throws Exception {
+        checkScopeAndTree("async def f():\n foo((await smth()))");
+    }
+
+    @Test
+    public void await06() throws Exception {
+        checkScopeAndTree("async def f():\n await foo(); return 42");
+    }
+
+    @Test
+    public void asyncWith01() throws Exception {
+        checkScopeAndTree("async def f():\n async with 1: pass");
+    }
+
+    @Test
+    public void asyncWith02() throws Exception {
+        checkScopeAndTree("async def f():\n async with a as b, c as d: pass");
+    }
+
+    @Test
+    public void asyncFor01() throws Exception {
+        checkScopeAndTree("async def f():\n async for i in (): pass");
+    }
+
+    @Test
+    public void asyncFor02() throws Exception {
+        checkScopeAndTree("async def f():\n async for i, b in (): pass");
+    }
+
+    @Test
+    public void asyncComprehension() throws Exception {
+        checkScopeAndTree("[i async for i in foo()]");
     }
 }

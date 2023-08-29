@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
+package com.oracle.graal.python.test;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+import java.util.ArrayList;
 
-import java.io.File;
+import org.junit.rules.MethodRule;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
-import org.junit.Before;
-import org.junit.Test;
+public class CleanupRule implements MethodRule {
 
-public class ResourcesTest {
-    @Before
-    public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+    @FunctionalInterface
+    public interface CleanupTask {
+        void run() throws Throwable;
     }
 
-    @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
+    private final ArrayList<CleanupTask> cleanupTasks = new ArrayList<>();
 
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
-        }
+    public void add(CleanupTask cleanupTask) {
+        cleanupTasks.add(cleanupTask);
     }
 
-    @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
+    @Override
+    public Statement apply(Statement base, FrameworkMethod method, Object target) {
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                try {
+                    base.evaluate();
+                } finally {
+                    for (CleanupTask cleanupTask : cleanupTasks) {
+                        try {
+                            cleanupTask.run();
+                        } catch (Throwable e) {
+                            System.err.println("Warning: exception thrown during cleanup:");
+                            e.printStackTrace();
+                        }
+                    }
+                    cleanupTasks.clear();
+                }
+            }
+        };
     }
 }

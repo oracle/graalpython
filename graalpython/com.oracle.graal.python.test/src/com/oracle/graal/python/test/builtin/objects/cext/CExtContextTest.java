@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
+package com.oracle.graal.python.test.builtin.objects.cext;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ResourcesTest {
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.strings.TruffleString;
+
+public class CExtContextTest {
+
     @Before
     public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+        PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
+    }
+
+    static TruffleString ts(String s) {
+        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
     }
 
     @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
+    public void testGetBaseName() {
+        assertEquals(ts(""), TestCExtContext.getBN(ts("")));
+        assertEquals(ts("a"), TestCExtContext.getBN(ts("a")));
+        assertEquals(ts("aa"), TestCExtContext.getBN(ts("aa")));
+        assertEquals(ts("aa"), TestCExtContext.getBN(ts("a.aa")));
+        assertEquals(ts("bb"), TestCExtContext.getBN(ts("a.aa.bb")));
+        assertEquals(ts(""), TestCExtContext.getBN(ts("a.aa.bb.")));
+        assertEquals(ts("b"), TestCExtContext.getBN(ts("a.b")));
+        assertEquals(ts(""), TestCExtContext.getBN(ts("a.b.")));
+    }
+
+    private static class TestCExtContext extends CExtContext {
+        public TestCExtContext(PythonContext context, Object llvmLibrary) {
+            super(context, llvmLibrary, false);
         }
 
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
+        @Override
+        protected Store initializeSymbolCache() {
+            throw new RuntimeException("should not reach here");
+        }
+
+        public static TruffleString getBN(TruffleString s) {
+            return getBaseName(s);
         }
     }
 
-    @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
-    }
 }

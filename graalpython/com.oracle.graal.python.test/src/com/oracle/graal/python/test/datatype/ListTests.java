@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,9 +27,6 @@ package com.oracle.graal.python.test.datatype;
 
 import static com.oracle.graal.python.test.PythonTests.assertLastLineError;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 
@@ -240,11 +237,4 @@ public class ListTests {
                         "print(s2)\n";
         assertPrints("[0, 1, 2, 3, 4]\n", source);
     }
-
-    // Disabled for now.
-    public void moreSlice() {
-        Path script = Paths.get("slice-test.py");
-        assertPrints("[1, 2]\n", script);
-    }
-
 }

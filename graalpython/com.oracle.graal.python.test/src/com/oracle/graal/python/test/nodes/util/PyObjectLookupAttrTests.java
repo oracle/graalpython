@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+package com.oracle.graal.python.test.nodes.util;
 
-import java.io.File;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ResourcesTest {
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
+
+public class PyObjectLookupAttrTests {
+
     @Before
     public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+        PythonTests.enterContext();
     }
 
-    @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
-
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
-        }
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
+    // Regression test to ensure that super class attributes are evaluated for BuiltinClassType
+    // attribute lookup.
+    // Booleans super class PInt defines "real" which we expect to find in an attribute lookup.
     @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
+    public void lookupThroughMRO() {
+        Object v = new RootNode(null) {
+            @Node.Child private PyObjectLookupAttr lookupNode = PyObjectLookupAttr.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                return lookupNode.executeCached(frame, PythonBuiltinClassType.Boolean, tsLiteral("real"));
+            }
+        }.getCallTarget().call();
+        Assert.assertNotSame(PNone.NO_VALUE, v);
     }
 }
