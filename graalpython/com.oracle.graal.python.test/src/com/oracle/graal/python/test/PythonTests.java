@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,23 +25,17 @@
  */
 package com.oracle.graal.python.test;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
-import java.net.JarURLConnection;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,11 +45,11 @@ import java.util.Map;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
 
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -64,23 +58,14 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonTests {
-    static {
-        URLConnection openConnection;
-        try {
-            openConnection = JavaInteropTest.class.getProtectionDomain().getCodeSource().getLocation().openConnection();
-            if (!(openConnection instanceof JarURLConnection)) {
-                System.setProperty("org.graalvm.language.python.home", GraalPythonEnvVars.graalpythonHome());
-            }
-        } catch (IOException e) {
-        }
-    }
+    private static final Source PRINT_EXC_TO_STDERR = Source.create("python", "import traceback; traceback.print_exception");
 
     static final ByteArrayOutputStream errArray = new ByteArrayOutputStream();
     static final ByteArrayOutputStream outArray = new ByteArrayOutputStream();
     static final PrintStream errStream = new PrintStream(errArray);
     static final PrintStream outStream = new PrintStream(outArray);
 
-    private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
+    private static final Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
 
     protected static final String executable;
@@ -153,7 +138,7 @@ public class PythonTests {
         PythonTests.runThrowableScript(new String[0], source, System.out, printStream);
         String[] output = byteArray.toString().split("\n");
         // ignore the traceback
-        assertEquals(expected.trim(), output[0].trim());
+        assertEquals(expected.trim(), output[output.length - 1].trim());
     }
 
     public static void assertLastLineErrorContains(String expected, String code) {
@@ -163,17 +148,7 @@ public class PythonTests {
         PythonTests.runThrowableScript(new String[0], source, System.out, printStream);
         String[] output = byteArray.toString().split("\n");
         // ignore the traceback
-        assertTrue(output[0].contains(expected.trim()));
-    }
-
-    public static void assertPrintContains(String expected, Path scriptName) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-
-        String source = getSource(getTestFile(scriptName));
-        PythonTests.runScript(new String[0], source, printStream, System.err);
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertTrue(result.contains(expected));
+        Assert.assertThat(output[output.length - 1], containsString(expected.trim()));
     }
 
     public static void assertPrintContains(String expected, String code) {
@@ -183,18 +158,6 @@ public class PythonTests {
         PythonTests.runScript(new String[0], source, printStream, System.err);
         String result = byteArray.toString().replaceAll("\r\n", "\n");
         assertTrue(result.contains(expected));
-    }
-
-    public static void assertPrints(Path expected, Path scriptName) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-
-        File scriptFile = getTestFile(scriptName);
-        String source = getSource(scriptFile);
-        String output = getFileContent(getTestFile(expected));
-        PythonTests.runScript(new String[0], source, printStream, System.err);
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(output, result);
     }
 
     public static void assertPrints(String expected, Path scriptName) {
@@ -245,7 +208,7 @@ public class PythonTests {
     }
 
     public static File getBenchFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.benchmarks", "python");
+        Path path = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(), "com.oracle.graal.python.benchmarks", "python");
         if (!Files.isDirectory(path)) {
             throw new RuntimeException("Unable to locate com.oracle.graal.python.benchmarks/python/");
         }
@@ -259,43 +222,8 @@ public class PythonTests {
         return file;
     }
 
-    private static String getFileContent(File file) {
-        String ret = null;
-        Reader reader;
-        try {
-            reader = new InputStreamReader(new FileInputStream(file), "UTF-8");
-            final BufferedReader bufferedReader = new BufferedReader(reader);
-            final StringBuilder content = new StringBuilder();
-            final char[] buffer = new char[1024];
-
-            try {
-                int n = 0;
-                while (n != -1) {
-                    n = bufferedReader.read(buffer);
-                    if (n != -1) {
-                        content.append(buffer, 0, n);
-                    }
-                }
-            } finally {
-                bufferedReader.close();
-            }
-            ret = content.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return ret;
-    }
-
-    private static String getSource(File file) {
-        try {
-            return new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
     public static File getTestFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
+        Path path = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
         if (Files.isReadable(path)) {
             return new File(path.toString());
         } else {
@@ -374,23 +302,11 @@ public class PythonTests {
             enterContext(args);
             context.eval(createSource(source));
         } catch (PolyglotException t) {
-            Object e;
             try {
-                Field field = t.getClass().getDeclaredField("impl");
-                field.setAccessible(true);
-                Object object = field.get(t);
-                Field field2 = object.getClass().getDeclaredField("exception");
-                field2.setAccessible(true);
-                e = field2.get(object);
-            } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
-                throw new RuntimeException(ex);
-            }
-            if (e instanceof PException) {
-                ((PException) e).printStackTrace(new PrintStream(err));
-            } else if (e instanceof Exception) {
-                throw new RuntimeException((Exception) e);
-            } else {
-                throw new RuntimeException(e.toString());
+                Value printExc = context.eval(PRINT_EXC_TO_STDERR);
+                printExc.execute(t.getGuestObject());
+            } catch (Throwable ex) {
+                throw new RuntimeException("Error while printing the PolyglotException message to stderr.", ex);
             }
         } finally {
             flush(out, err);

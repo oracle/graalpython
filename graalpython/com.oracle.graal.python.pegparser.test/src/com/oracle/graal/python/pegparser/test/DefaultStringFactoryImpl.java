@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
+package com.oracle.graal.python.pegparser.test;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+import com.oracle.graal.python.pegparser.PythonStringFactory;
 
-import java.io.File;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
-import org.junit.Before;
-import org.junit.Test;
-
-public class ResourcesTest {
-    @Before
-    public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+public class DefaultStringFactoryImpl implements PythonStringFactory<String> {
+    @Override
+    public PythonStringBuilder<String> createBuilder(int initialCodePointLength) {
+        return new StringBuilderWrapper(initialCodePointLength);
     }
 
-    @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
-
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
-        }
+    @Override
+    public String emptyString() {
+        return "";
     }
 
-    @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
+    @Override
+    public String fromJavaString(String s) {
+        return s;
+    }
+
+    private static class StringBuilderWrapper implements PythonStringBuilder<String> {
+        private final StringBuilder sb;
+
+        StringBuilderWrapper(int initialCapacity) {
+            this.sb = new StringBuilder(initialCapacity);
+        }
+
+        @Override
+        public PythonStringBuilder<String> appendString(String s) {
+            sb.append(s);
+            return this;
+        }
+
+        @Override
+        public PythonStringBuilder<String> appendPythonString(String s) {
+            sb.append(s);
+            return null;
+        }
+
+        @Override
+        public PythonStringBuilder<String> appendCodePoint(int codePoint) {
+            sb.appendCodePoint(codePoint);
+            return null;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return sb.length() == 0;
+        }
+
+        @Override
+        public String build() {
+            return sb.toString();
         }
     }
 }
