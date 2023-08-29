@@ -85,7 +85,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class HashingStorage {
@@ -189,11 +188,11 @@ public abstract class HashingStorage {
                         @Exclusive @Cached PyObjectGetItem getItemNode,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Cached ConditionProfile hasKeyProfile,
+                        @Cached InlinedConditionProfile hasKeyProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             Object keyAttr = lookupKeysAttributeNode.execute(frame, inliningTarget, arg, T_KEYS);
-            if (hasKeyProfile.profile(keyAttr != PNone.NO_VALUE)) {
+            if (hasKeyProfile.profile(inliningTarget, keyAttr != PNone.NO_VALUE)) {
                 HashingStorage curStorage = PDict.createNewStorage(0);
                 // We don't need to pass self as the attribute object has it already.
                 Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
