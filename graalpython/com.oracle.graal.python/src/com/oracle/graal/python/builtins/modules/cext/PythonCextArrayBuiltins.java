@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -48,10 +47,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextArrayBuiltins {
 
@@ -61,13 +62,12 @@ public final class PythonCextArrayBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class _PyArray_Resize extends CApiBinaryBuiltinNode {
         @Specialization
-        int resize(PArray object, long newSize) {
-            try {
-                object.resize((int) newSize);
-            } catch (OverflowException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
-            }
+        int resize(PArray object, long newSize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Cached ArrayNodes.SetLengthNode setLengthNode) {
+            ensureCapacityNode.execute(inliningTarget, object, (int) newSize);
+            setLengthNode.execute(inliningTarget, object, (int) newSize);
             return 0;
         }
     }

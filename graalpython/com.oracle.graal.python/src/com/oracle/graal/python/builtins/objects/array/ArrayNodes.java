@@ -40,9 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes.UnpackValueNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -50,6 +58,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class ArrayNodes {
     @GenerateInline
@@ -88,6 +97,86 @@ public abstract class ArrayNodes {
         static void check(VirtualFrame frame, Node inliningTarget, PArray array, Object value,
                         @Cached BufferStorageNodes.PackValueNode packValueNode) {
             packValueNode.execute(frame, inliningTarget, array.getFormat(), value, new ByteSequenceStorage(new byte[8]), 0);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class EnsureCapacityNode extends Node {
+        public abstract void execute(Node inliningTarget, PArray array, int newCapacity);
+
+        @Specialization
+        static void ensure(Node inliningTarget, PArray array, int newCapacity,
+                        @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Cached InlinedBranchProfile updateProfile) {
+            try {
+                int internalCapacity = PythonUtils.multiplyExact(newCapacity, array.getItemSize());
+                SequenceStorage newStorage = ensureCapacityNode.execute(inliningTarget, array.getSequenceStorage(), internalCapacity);
+                if (array.getSequenceStorage() != newStorage) {
+                    updateProfile.enter(inliningTarget);
+                    array.setSequenceStorage(newStorage);
+                }
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetLengthNode extends Node {
+        public abstract void execute(Node inliningTarget, PArray array, int newLength);
+
+        @Specialization
+        static void set(Node inliningTarget, PArray array, int newLength,
+                        @Cached SequenceStorageNodes.SetLenNode setLenNode) {
+            try {
+                int internalLength = PythonUtils.multiplyExact(newLength, array.getItemSize());
+                setLenNode.execute(inliningTarget, array.getSequenceStorage(), internalLength);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DeleteArraySliceNode extends Node {
+        public abstract void execute(Node inliningTarget, PArray array, int from, int length);
+
+        @Specialization
+        static void del(Node inliningTarget, PArray array, int from, int length,
+                        @Cached SequenceStorageNodes.DeleteSliceNode deleteSliceNode) {
+            assert from + length <= array.getLength();
+            SliceInfo info = new SliceInfo(from * array.getItemSize(), (from + length) * array.getItemSize(), 1);
+            deleteSliceNode.execute(inliningTarget, array.getSequenceStorage(), info);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ShiftNode extends Node {
+        public abstract void execute(Node inliningTarget, PArray array, int from, int by);
+
+        @Specialization
+        static void shift(Node inliningTarget, PArray array, int from, int by,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached SetLengthNode setLengthNode,
+                        @Cached SequenceStorageNodes.MemMoveNode memMoveNode) {
+            try {
+                int newLength = PythonUtils.addExact(array.getLength(), by);
+                ensureCapacityNode.execute(inliningTarget, array, newLength);
+                int internalFrom = from * array.getItemSize();
+                int internalBy = by * array.getItemSize();
+                int internalLength = array.getSequenceStorage().length();
+                memMoveNode.execute(inliningTarget, array.getSequenceStorage(), internalFrom + internalBy, internalFrom, internalLength - internalFrom);
+                setLengthNode.execute(inliningTarget, array, newLength);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+            }
         }
     }
 }

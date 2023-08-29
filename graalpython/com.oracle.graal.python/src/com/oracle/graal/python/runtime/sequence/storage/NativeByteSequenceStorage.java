@@ -49,7 +49,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
-public final class NativeByteSequenceStorage extends NativeSequenceStorage implements BufferStorage {
+public final class NativeByteSequenceStorage extends NativeSequenceStorage {
 
     private NativeByteSequenceStorage(Object ptr, int length, int capacity) {
         super(ptr, length, capacity);
