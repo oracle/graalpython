@@ -907,6 +907,13 @@ suite = {
                     },
                 },
             },
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
             "description": "Contains the JNI native lib, the C API and support libs.",
             "maven": False,
         },
@@ -1204,6 +1211,13 @@ suite = {
                     },
                 },
             },
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
             "maven": False,
         },
 
