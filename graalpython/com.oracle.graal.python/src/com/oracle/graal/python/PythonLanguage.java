@@ -86,7 +86,6 @@ import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.resources.PythonResource;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -148,7 +147,6 @@ import com.oracle.truffle.api.strings.TruffleString;
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //
-                internalResources = PythonResource.class, //
                 website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,
@@ -187,17 +185,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MAJOR = 24;
     public static final int GRAALVM_MINOR = 0;
 
-    public static final Class<PythonResource> PYTHON_RESOURCE_CLASS;
-
-    @SuppressWarnings("unchecked")
-    private static Class<PythonResource> getPythonResourceClass() {
-        try {
-            return (Class<PythonResource>) Class.forName("com.oracle.graal.python.resources.PythonResource");
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
@@ -214,7 +201,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 RELEASE_LEVEL_STRING = tsLiteral("final");
         }
 
-        PYTHON_RESOURCE_CLASS = getPythonResourceClass();
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
             if (MAJOR != (ch = is.read() - ' ')) {
