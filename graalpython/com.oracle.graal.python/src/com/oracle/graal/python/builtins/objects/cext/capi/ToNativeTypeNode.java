@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ALLOC;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -80,11 +82,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetWeakListOffsetNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONodeGen;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen;
@@ -262,6 +265,7 @@ public abstract class ToNativeTypeNode extends Node {
 
             PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
             PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
+            LookupAttributeInMRONode.Dynamic lookupAttrNode = LookupAttributeInMRONodeGen.DynamicNodeGen.getUncached();
             CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
             CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
             CStructAccess.WriteLongNode writeI64Node = CStructAccessFactory.WriteLongNodeGen.getUncached();
@@ -292,7 +296,19 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
             writeI64Node.write(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
             writeI64Node.write(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNode.executeUncached(clazz));
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, GetWeakListOffsetNode.executeUncached(clazz));
+            // writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset,
+            // GetWeakListOffsetNode.executeUncached(clazz));
+            /*
+             * TODO msimacek: this should use GetWeakListOffsetNode as in the commented out code
+             * above. Unfortunately, it causes memory corruption in several libraries
+             */
+            long weaklistoffset;
+            if (clazz instanceof PythonBuiltinClass builtin) {
+                weaklistoffset = builtin.getType().getWeaklistoffset();
+            } else {
+                weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
+            }
+            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
             writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
