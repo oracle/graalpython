@@ -41,9 +41,11 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.objects.common.HashingStorage.addKeyValuesToStorage;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.ObjectToArrayPairNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
@@ -52,30 +54,19 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageTransferItem;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.lib.GetNextNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class DictNodes {
     @ImportStatic(HashingStorageGuards.class)
@@ -120,51 +111,20 @@ public abstract class DictNodes {
             self.setDictStorage(selfStorage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, inliningTarget, other, lookupKeys)"}, limit = "1")
-        static void updateMapping(VirtualFrame frame, PDict self, Object other,
+        @Specialization(guards = "!isDict(other)")
+        static void updateArg(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupKeys,
-                        @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Exclusive @Cached PyObjectGetIter getIter,
-                        @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Exclusive @Cached PyObjectGetItem getItem,
-                        @Shared @Cached GetNextNode nextNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
-            Object keysIterable = callKeysNode.executeObject(frame, other);
-            HashingStorage storage = HashingStorage.copyToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
-                            inliningTarget, keysIterable, getItem, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
-            self.setDictStorage(storage);
-        }
-
-        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, inliningTarget, other, lookupKeys)"}, limit = "1")
-        static void updateSequence(VirtualFrame frame, PDict self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyObjectLookupAttr lookupKeys,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Exclusive @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared @Cached GetNextNode nextNode,
-                        @Cached ListNodes.FastConstructListNode createListNode,
-                        @Exclusive @Cached PyObjectGetItem getItem,
-                        @Cached SequenceNodes.LenNode seqLenNode,
-                        @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
-            HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
-            HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, inliningTarget,
-                            storageSupplier, getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raiseNode, getItem,
-                            isTypeErrorProfile, errorProfile, setHasihngStorageItem, addAllToOther);
+                        @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Cached PyObjectLookupAttr lookupKeys,
+                        @Cached ObjectToArrayPairNode toArrayPair) {
+            Object keyAttr = lookupKeys.execute(frame, inliningTarget, other, T_KEYS);
+            HashingStorage storage = addKeyValuesToStorage(frame, self, other, keyAttr,
+                            inliningTarget, toArrayPair, setHasihngStorageItem);
             self.setDictStorage(storage);
         }
 
         protected static boolean isIdentical(PDict dict, Object other) {
             return dict == other;
-        }
-
-        protected static boolean hasKeysAttr(VirtualFrame frame, Node inliningTarget, Object other, PyObjectLookupAttr lookupKeys) {
-            return lookupKeys.execute(frame, inliningTarget, other, SpecialMethodNames.T_KEYS) != PNone.NO_VALUE;
         }
 
         @NeverDefault

@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -81,6 +80,9 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -157,16 +159,12 @@ public abstract class HashingStorage {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Exclusive @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Exclusive @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Exclusive @Cached PyObjectGetItem getItemNode,
-                        @Exclusive @Cached GetNextNode nextNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(0);
-            Object keysIterable = callKeysNode.executeObject(frame, col);
-            return copyToStorage(frame, col, kwargs, curStorage, inliningTarget, keysIterable, getItemNode, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
+                        @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
+                        @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
+                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
+            return updateArg(frame, col, kwargs, inliningTarget, lookupKeysAttributeNode,
+                            toArrayPair, setHasihngStorageItem, addAllToOther);
         }
 
         protected static boolean hasIterAttrButNotBuiltin(Node inliningTarget, PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
@@ -177,34 +175,16 @@ public abstract class HashingStorage {
         @Specialization(guards = {"!isNoValue(arg)", "!isPDict(arg)"})
         static HashingStorage updateArg(VirtualFrame frame, Object arg, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupKeysAttributeNode,
-                        @Cached CallVarargsMethodNode callKeysMethod,
+                        @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
+                        @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
                         @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Exclusive @Cached PyObjectGetIter getIter,
-                        @Cached PRaiseNode.Lazy raise,
-                        @Exclusive @Cached GetNextNode nextNode,
-                        @Cached FastConstructListNode createListNode,
-                        @Exclusive @Cached PyObjectGetItem getItemNode,
-                        @Cached SequenceNodes.LenNode seqLenNode,
-                        @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Cached InlinedConditionProfile hasKeyProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             Object keyAttr = lookupKeysAttributeNode.execute(frame, inliningTarget, arg, T_KEYS);
-            if (hasKeyProfile.profile(inliningTarget, keyAttr != PNone.NO_VALUE)) {
-                HashingStorage curStorage = PDict.createNewStorage(0);
-                // We don't need to pass self as the attribute object has it already.
-                Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
-                return copyToStorage(frame, arg, kwargs, curStorage,
-                                inliningTarget, keysIterable, getItemNode, getIter, nextNode,
-                                errorProfile, setHasihngStorageItem, addAllToOther);
-            } else {
-                return addSequenceToStorage(frame, arg, kwargs,
-                                inliningTarget, PDict::createNewStorage, getIter, nextNode, createListNode,
-                                seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
-                                errorProfile, setHasihngStorageItem, addAllToOther);
-            }
+            ArrayBuilder<KeyValue> elements = toArrayPair.execute(frame, arg, keyAttr);
+            HashingStorage storage = PDict.createNewStorage(elements.size() + kwargs.length);
+            storage = addKeyValuesToStorage(frame, elements, storage, inliningTarget, setHasihngStorageItem);
+            storage = addKeywordsToStorage(frame, kwargs, storage, inliningTarget, addAllToOther);
+            return storage;
         }
 
         @NeverDefault
@@ -227,90 +207,120 @@ public abstract class HashingStorage {
         return addAllToOther.executeCached(null, other, newStore);
     }
 
-    /**
-     * Adds all items from the given mapping object to storage. It is the caller responsibility to
-     * ensure, that mapping has the 'keys' attribute.
-     */
-    public static HashingStorage copyToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
+    public static HashingStorage addKeywordsToStorage(VirtualFrame frame, PKeyword[] kwargs, HashingStorage storage,
                     Node inliningTarget,
-                    Object keysIterable,
-                    PyObjectGetItem callGetItemNode,
-                    PyObjectGetIter getIter,
-                    GetNextNode nextNode,
-                    IsBuiltinObjectProfile errorProfile,
-                    HashingStorageSetItem setHashingStorageItem,
-                    HashingStorageAddAllToOther addAllToOtherNode) {
-        Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
-        HashingStorage curStorage = storage;
-        while (true) {
-            try {
-                Object keyObj = nextNode.execute(frame, keysIt);
-                Object valueObj = callGetItemNode.execute(frame, inliningTarget, mapping, keyObj);
-
-                curStorage = setHashingStorageItem.execute(frame, inliningTarget, curStorage, keyObj, valueObj);
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, errorProfile);
-                break;
-            }
-        }
+                    HashingStorageAddAllToOther addAllToOther) {
         if (kwargs.length > 0) {
-            curStorage = addAllToOtherNode.execute(frame, inliningTarget, new KeywordsStorage(kwargs), curStorage);
-        }
-        return curStorage;
-    }
-
-    @FunctionalInterface
-    public interface StorageSupplier {
-        HashingStorage get(int length);
-    }
-
-    public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, Node inliningTarget,
-                    StorageSupplier storageSupplier,
-                    PyObjectGetIter getIter,
-                    GetNextNode nextNode,
-                    FastConstructListNode createListNode,
-                    LenNode seqLenNode,
-                    InlinedConditionProfile lengthTwoProfile,
-                    PRaiseNode.Lazy raise,
-                    PyObjectGetItem getItemNode,
-                    IsBuiltinObjectProfile isTypeErrorProfile,
-                    IsBuiltinObjectProfile errorProfile,
-                    HashingStorageSetItem setHashingStorageItem,
-                    HashingStorageAddAllToOther addAllToOther) throws PException {
-        Object it = getIter.execute(frame, inliningTarget, iterable);
-        ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
-        try {
-            while (true) {
-                Object next = nextNode.execute(frame, it);
-                PSequence element = createListNode.execute(frame, inliningTarget, next);
-                assert element != null;
-                // This constructs a new list using the builtin type. So, the object cannot
-                // be subclassed and we can directly call 'len()'.
-                int len = seqLenNode.execute(inliningTarget, element);
-
-                if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
-                    throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
-                }
-
-                elements.add(element);
-            }
-        } catch (PException e) {
-            if (isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
-                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
-            } else {
-                e.expectStopIteration(inliningTarget, errorProfile);
-            }
-        }
-        HashingStorage storage = storageSupplier.get(elements.size() + kwargs.length);
-        for (int j = 0; j < elements.size(); j++) {
-            PSequence element = elements.get(j);
-            Object key = getItemNode.execute(frame, inliningTarget, element, 0);
-            Object value = getItemNode.execute(frame, inliningTarget, element, 1);
-            storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
-        }
-        if (kwargs.length > 0) {
-            storage = addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), storage);
+            return addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), storage);
         }
         return storage;
+    }
+
+    protected static final class KeyValue {
+        final Object key;
+        final Object value;
+
+        private KeyValue(Object key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, ArrayBuilder<KeyValue> elements, HashingStorage storage,
+                    Node inliningTarget,
+                    HashingStorageSetItem setHashingStorageItem) {
+        for (int i = 0; i < elements.size(); i++) {
+            Object key = elements.get(i).key;
+            Object value = elements.get(i).value;
+            storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
+        }
+        return storage;
+    }
+
+    public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, PDict self, Object other, Object keyAttr,
+                    Node inliningTarget,
+                    ObjectToArrayPairNode toArrayPair,
+                    HashingStorageSetItem setHashingStorageItem) {
+        ArrayBuilder<KeyValue> elements = toArrayPair.execute(frame, other, keyAttr);
+        HashingStorage storage = self.getDictStorage();
+        return addKeyValuesToStorage(frame, elements, storage, inliningTarget, setHashingStorageItem);
+    }
+
+    // partial impl dict_update_arg
+    @GenerateCached
+    @GenerateInline(false)
+    public abstract static class ObjectToArrayPairNode extends PNodeWithContext {
+        public abstract ArrayBuilder<KeyValue> execute(VirtualFrame frame, Object mapping, Object keyAttr);
+
+        /**
+         * Adds all items from the given mapping object to storage. It is the caller responsibility
+         * to ensure, that mapping has the 'keys' attribute.
+         */
+        // partial impl PyDict_Merge
+        @Specialization(guards = "!isNoValue(keyAttr)")
+        static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode nextNode,
+                        @Shared @Cached PyObjectGetItem getItemNode,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached CallVarargsMethodNode callKeysMethod) {
+            // We don't need to pass self as the attribute object has it already.
+            Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
+            Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
+            ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
+            while (true) {
+                try {
+                    Object keyObj = nextNode.execute(frame, keysIt);
+                    Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
+                    elements.add(new KeyValue(keyObj, valueObj));
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                    break;
+                }
+            }
+            return elements;
+        }
+
+        // partial impl PyDict_MergeFromSeq2
+        @Specialization
+        static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode nextNode,
+                        @Shared @Cached PyObjectGetItem getItemNode,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached FastConstructListNode createListNode,
+                        @Cached LenNode seqLenNode,
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached InlinedConditionProfile lengthTwoProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
+            Object it = getIter.execute(frame, inliningTarget, iterable);
+            ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
+            try {
+                while (true) {
+                    Object next = nextNode.execute(frame, it);
+                    PSequence element = createListNode.execute(frame, inliningTarget, next);
+                    assert element != null;
+                    // This constructs a new list using the builtin type. So, the object cannot
+                    // be subclassed and we can directly call 'len()'.
+                    int len = seqLenNode.execute(inliningTarget, element);
+
+                    if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
+                        throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
+                    }
+                    Object key = getItemNode.execute(frame, inliningTarget, element, 0);
+                    Object value = getItemNode.execute(frame, inliningTarget, element, 1);
+                    elements.add(new KeyValue(key, value));
+                }
+            } catch (PException e) {
+                if (isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
+                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
+                } else {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                }
+            }
+            return elements;
+        }
     }
 }
