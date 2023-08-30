@@ -867,13 +867,8 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "buildDependencies": [
-                            "com.oracle.graal.python.cext",
-                            "com.oracle.graal.python.jni",
-                            "com.oracle.graal.python.hpy.llvm"
-                        ],
                         "layout": {
-                            "./": [
+                            "<os>/<arch>/": [
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
@@ -883,17 +878,8 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "buildDependencies": [
-                            "com.oracle.graal.python.cext",
-                            "com.oracle.graal.python.jni",
-                            "python-libzsupport",
-                            "python-libposix",
-                            "python-libbz2",
-                            "python-liblzma",
-                            "com.oracle.graal.python.hpy.llvm"
-                        ],
                         "layout": {
-                            "./": [
+                            "<os>/<arch>/": [
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:python-libzsupport/*",
@@ -906,6 +892,13 @@ suite = {
                     },
                 },
             },
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
             "description": "Contains the JNI native lib, the C API and support libs.",
             "maven": False,
         },
@@ -1145,11 +1138,6 @@ suite = {
             "fileListEntry": "META-INF/resources/include.files",
             "type": "dir",
             "description": "GraalVM Python header resources",
-            "buildDependencies": [
-                "GRAALPYTHON_NATIVE_LIBS",
-                "com.oracle.graal.python.cext",
-                "com.oracle.graal.python.hpy.llvm",
-            ],
             "layout": {
                 "./META-INF/resources/include/": [
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
@@ -1169,23 +1157,18 @@ suite = {
             "fileListEntry": "META-INF/resources/<os>/<arch>/native.files",
             "type": "dir",
             "description": "GraalVM Python platform dependent resources",
-            "buildDependencies": [
-                "GRAALPYTHON_NATIVE_LIBS",
-                "com.oracle.graal.python.cext",
-                "com.oracle.graal.python.hpy.llvm"
-            ],
             "os_arch": {
                 "windows": {
                     "<others>": {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/libs/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/python-native.lib",
                             ],
                             "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
-                                    "path": "*",
+                                    "path": "<os>/<arch>/*",
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
@@ -1196,12 +1179,19 @@ suite = {
                     "<others>": {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/*",
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
                         },
                     },
                 },
             },
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
             "maven": False,
         },
 
@@ -1220,13 +1210,6 @@ suite = {
                 "darwin-amd64",
                 "darwin-aarch64",
                 "windows-amd64",
-            ],
-            "buildDependencies": [
-                "GRAALPYTHON_LIBPYTHON_RESOURCES",
-                "GRAALPYTHON_LIBGRAALPY_RESOURCES",
-                "GRAALPYTHON_NI_RESOURCES",
-                "GRAALPYTHON_INCLUDE_RESOURCES",
-                "GRAALPYTHON_NATIVE_RESOURCES",
             ],
             "os_arch": {
                 "windows": {
