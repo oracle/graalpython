@@ -60,7 +60,6 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -332,7 +331,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class PointerLookupNode extends PNodeWithRaise {
+    abstract static class PointerLookupNode extends Node {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PyNumberAsSizeNode asSizeNode;
 
@@ -341,7 +340,7 @@ public class MemoryViewNodes {
 
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile) {
+        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile, PRaiseNode.Lazy raiseNode) {
             int index = initialIndex;
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
@@ -349,7 +348,7 @@ public class MemoryViewNodes {
                 index += nitems;
             }
             if (index < 0 || index >= nitems) {
-                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
             }
 
             ptr.offset += self.getBufferStrides()[dim] * index;
@@ -363,22 +362,23 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = "self.getDimensions() == 1")
+        @Specialization
         MemoryPointer resolveInt(PMemoryView self, int index,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile) {
-            MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
-            lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile);
-            return ptr;
-        }
-
-        @Specialization(guards = "self.getDimensions() != 1")
-        MemoryPointer resolveIntError(PMemoryView self, @SuppressWarnings("unused") int index) {
-            if (self.getDimensions() == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                        @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (hasOneDimensionProfile.profile(inliningTarget, self.getDimensions() == 1)) {
+                MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
+                lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile, raiseNode);
+                return ptr;
             }
-            // CPython doesn't implement this either, as of 3.8
-            throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            if (self.getDimensions() == 0) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            } else {
+                // CPython doesn't implement this either, as of 3.8
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            }
         }
 
         @Specialization(guards = {"cachedDimensions == self.getDimensions()", "cachedDimensions <= 8"}, limit = "3")
@@ -390,14 +390,15 @@ public class MemoryViewNodes {
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
-            checkTupleLength(indicesStorage, cachedDimensions);
+            checkTupleLength(inliningTarget, indicesStorage, cachedDimensions, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < cachedDimensions; dim++) {
                 Object indexObj = getItemNode.execute(inliningTarget, indicesStorage, dim);
-                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
+                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile, raiseNode);
             }
             return ptr;
         }
@@ -408,15 +409,16 @@ public class MemoryViewNodes {
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
             int ndim = self.getDimensions();
-            checkTupleLength(indicesStorage, ndim);
+            checkTupleLength(inliningTarget, indicesStorage, ndim, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(inliningTarget, indicesStorage, dim);
-                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
+                int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile, raiseNode);
             }
             return ptr;
         }
@@ -424,35 +426,33 @@ public class MemoryViewNodes {
         @Specialization(guards = "!isPTuple(indexObj)")
         MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
-                        @Shared @Cached PyIndexCheckNode indexCheckNode) {
-            final int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj);
-            if (self.getDimensions() == 1) {
-                return resolveInt(self, index, inliningTarget, hasSuboffsetsProfile);
-            } else {
-                return resolveIntError(self, index);
-            }
+                        @Shared @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            final int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
+            return resolveInt(self, index, inliningTarget, hasOneDimensionProfile, hasSuboffsetsProfile, raiseNode);
         }
 
-        private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
+        private static void checkTupleLength(Node inliningTarget, SequenceStorage indicesStorage, int ndim, PRaiseNode.Lazy raiseNode) {
             int length = indicesStorage.length();
             if (length == ndim) {
                 return;
             }
             // Error cases
             if (ndim == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             } else if (length > ndim) {
-                throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
             } else {
                 // CPython doesn't implement this either, as of 3.8
-                throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
             }
         }
 
-        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj) {
+        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj, PRaiseNode.Lazy raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, indexObj)) {
-                throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
             }
             return getAsSizeNode().executeExact(frame, inliningTarget, indexObj, IndexError);
         }

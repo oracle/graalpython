@@ -293,7 +293,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                 (p, s) -> p.accept(s, self.getFd()),
                                 false, false);
                 try {
-                    Object pythonAddr = makeSockAddrNode.execute(frame, acceptResult.sockAddr);
+                    Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
                     posixLib.setInheritable(getPosixSupport(), acceptResult.socketFd, false);
                     return factory.createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
                 } catch (Exception e) {
@@ -476,7 +476,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                return makeSockAddrNode.execute(frame, addr);
+                return makeSockAddrNode.execute(frame, inliningTarget, addr);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -502,7 +502,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                return makeSockAddrNode.execute(frame, addr);
+                return makeSockAddrNode.execute(frame, inliningTarget, addr);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -652,7 +652,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     // TODO maybe resize if much smaller?
                     resultBytes = factory.createBytes(bytes, result.readBytes);
                 }
-                return factory.createTuple(new Object[]{resultBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
+                return factory.createTuple(new Object[]{resultBytes, makeSockAddrNode.execute(frame, inliningTarget, result.sockAddr)});
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -782,7 +782,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, result.readBytes);
                     }
-                    return factory.createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
+                    return factory.createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, inliningTarget, result.sockAddr)});
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -978,7 +978,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            long timeout = parseTimeoutNode.execute(frame, seconds);
+            long timeout = parseTimeoutNode.execute(frame, inliningTarget, seconds);
             socket.setTimeoutNs(timeout);
             try {
                 posixLib.setBlocking(getPosixSupport(), socket.getFd(), timeout < 0);

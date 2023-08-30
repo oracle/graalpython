@@ -881,8 +881,9 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doit(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object ignored,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
-            return commonReduceNode.execute(frame, obj, 0);
+            return commonReduceNode.execute(frame, inliningTarget, obj, 0);
         }
     }
 
@@ -915,7 +916,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return callNode.execute(frame, _reduce);
                 }
             }
-            return commonReduceNode.execute(frame, obj, proto);
+            return commonReduceNode.execute(frame, inliningTarget, obj, proto);
         }
     }
 

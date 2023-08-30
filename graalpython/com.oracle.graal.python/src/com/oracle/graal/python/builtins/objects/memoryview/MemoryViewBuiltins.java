@@ -537,7 +537,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 return T_EMPTY_STRING;
             }
             byte[] b = toJavaBytesNode.execute(self);
-            return toHexNode.execute(b, b.length, sep, bytesPerSepGroup);
+            return toHexNode.execute(inliningTarget, b, b.length, sep, bytesPerSepGroup);
         }
 
         @Override

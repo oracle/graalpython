@@ -187,7 +187,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -2383,16 +2382,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class UpdateBasesNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 53
+    abstract static class UpdateBasesNode extends Node {
 
         abstract PTuple execute(PTuple bases, Object[] arguments, int nargs);
 
         @Specialization
-        PTuple update(PTuple bases, Object[] arguments, int nargs,
+        static PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PyObjectLookupAttr getMroEntries,
-                        @Cached CallUnaryMethodNode callMroEntries) {
+                        @Cached CallUnaryMethodNode callMroEntries,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
             for (int i = 0; i < nargs; i++) {
@@ -2415,7 +2416,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 Object newBase = callMroEntries.executeObject(null, meth, bases);
                 if (!PGuards.isPTuple(newBase)) {
-                    throw raise(PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
                 PTuple newBaseTuple = (PTuple) newBase;
                 if (newBases == null) {
@@ -2438,17 +2439,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    abstract static class CalculateMetaclassNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
+    abstract static class CalculateMetaclassNode extends Node {
 
         abstract Object execute(Object metatype, PTuple bases);
 
         /* Determine the most derived metatype. */
         @Specialization
-        Object calculate(Object metatype, PTuple bases,
+        static Object calculate(Object metatype, PTuple bases,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
-                        @Cached IsSubtypeNode isSubTypeReverse) {
+                        @Cached IsSubtypeNode isSubTypeReverse,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             CompilerAsserts.neverPartOfCompilation();
             /*
              * Determine the proper metatype to deal with this, and check for metatype conflicts
@@ -2467,7 +2470,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } else if (isSubTypeReverse.execute(tmpType, winner)) {
                     winner = tmpType;
                 } else {
-                    throw raise(PythonErrorType.TypeError, ErrorMessages.METACLASS_CONFLICT);
+                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.METACLASS_CONFLICT);
                 }
             }
             return winner;

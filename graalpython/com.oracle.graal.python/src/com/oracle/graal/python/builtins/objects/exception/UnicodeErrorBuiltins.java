@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -87,14 +86,6 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeErrorBuiltinsFactory.getFactories();
-    }
-
-    public static Object getArgAsObject(Object[] args, int index, PNodeWithRaise raiseNode) {
-        if (args.length < index + 1 || !PGuards.isString(args[index])) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
-        } else {
-            return args[index];
-        }
     }
 
     public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToTruffleStringNode castNode) {

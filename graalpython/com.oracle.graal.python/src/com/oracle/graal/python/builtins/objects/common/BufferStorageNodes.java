@@ -327,13 +327,12 @@ public abstract class BufferStorageNodes {
         }
 
         @Specialization(guards = "format == UNICODE")
-        @SuppressWarnings("truffle-static-method")
         static void packDouble(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object object, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached StringNodes.CastToTruffleStringCheckedNode cast,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString str = cast.cast(inliningTarget, object, ErrorMessages.ARRAY_ITEM_MUST_BE_UNICODE);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
                 int codePoint = codePointAtIndexNode.execute(str, 0, TS_ENCODING);

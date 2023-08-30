@@ -90,7 +90,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -1876,11 +1875,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @SuppressWarnings("truffle-static-method")
-    abstract static class UtimeArgsToTimespecNode extends PNodeWithRaise {
+    @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    abstract static class UtimeArgsToTimespecNode extends Node {
         abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 
-        Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
+        final Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
             long[] timespec = execute(frame, times, ns);
             return timespec == null ? null : new Timeval[]{new Timeval(timespec[0], timespec[1] / 1000), new Timeval(timespec[2], timespec[3] / 1000)};
         }
@@ -1892,51 +1892,57 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(ns)"})
-        long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
+        static long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached ObjectToTimespecNode objectToTimespecNode) {
-            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode);
+                        @Cached ObjectToTimespecNode objectToTimespecNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode, raiseNode);
         }
 
         @Specialization
-        long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
+        static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached LenNode lenNode,
                         @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
-            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode);
+                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode, raiseNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
         @SuppressWarnings("unused")
-        long[] bothSpecified(VirtualFrame frame, Object times, Object ns) {
-            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
+        static long[] bothSpecified(VirtualFrame frame, Object times, Object ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)", "isNoValue(ns)"})
         @SuppressWarnings("unused")
-        long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns) {
-            throw timesTupleError();
+        static long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw timesTupleError(raiseNode);
         }
 
         @Specialization(guards = {"!isNoValue(ns)", "!isPTuple(ns)"})
         @SuppressWarnings("unused")
-        long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns) {
+        static long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns,
+                        @Shared @Cached PRaiseNode raiseNode) {
             // ns can actually also contain objects implementing __divmod__, but CPython produces
             // this error message
-            throw raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
         }
 
-        private PException timesTupleError() {
+        private static PException timesTupleError(PRaiseNode raiseNode) {
             // times can actually also contain floats, but CPython produces this error message
-            throw raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
         }
 
-        private long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode) {
+        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode,
+                        PRaiseNode.Lazy raiseNode) {
             if (lenNode.execute(inliningTarget, times) != 2) {
-                throw timesTupleError();
+                throw timesTupleError(raiseNode.get(inliningTarget));
             }
             long[] timespec = new long[4];
             convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);

@@ -49,11 +49,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -185,22 +185,24 @@ public abstract class SequenceNodes {
         }
 
         @Specialization(replaces = "doSpecial")
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         static void doGeneric(PSequence s, SequenceStorage storage) {
             s.setSequenceStorage(storage);
         }
     }
 
-    public abstract static class CheckIsSequenceNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CheckIsSequenceNode extends Node {
 
-        public abstract void execute(Object seq);
+        public abstract void execute(Node inliningTarget, Object seq);
 
         @Specialization
-        void check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PySequenceCheckNode sequenceCheckNode) {
+        static void check(Node inliningTarget, Object obj,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!sequenceCheckNode.execute(inliningTarget, obj)) {
-                throw raise(TypeError, IS_NOT_A_SEQUENCE, obj);
+                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A_SEQUENCE, obj);
             }
         }
     }

@@ -76,7 +76,8 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -100,6 +101,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -292,18 +294,20 @@ public final class ModuleBuiltins extends PythonBuiltins {
             return getattributeString(frame, self, key, objectGetattrNode, handleException);
         }
 
-        protected abstract static class HandleGetattrExceptionNode extends PNodeWithRaise {
+        @GenerateInline(false) // footprint reduction 56 -> 37
+        protected abstract static class HandleGetattrExceptionNode extends PNodeWithContext {
             public abstract Object execute(VirtualFrame frame, PythonModule self, TruffleString key, PException e);
 
             @Specialization
-            Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
+            static Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
                             @Bind("this") Node inliningTarget,
                             @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached InlinedConditionProfile customGetAttr,
                             @Cached CallNode callNode,
                             @Cached CoerceToBooleanNode.YesNode castToBooleanNode,
-                            @Cached CastToTruffleStringNode castNameToStringNode) {
+                            @Cached CastToTruffleStringNode castNameToStringNode,
+                            @Cached PRaiseNode.Lazy raiseNode) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, T___GETATTR__);
                 if (customGetAttr.profile(inliningTarget, getAttr != PNone.NO_VALUE)) {
@@ -321,12 +325,12 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         if (moduleSpec != PNone.NO_VALUE) {
                             Object isInitializing = readGetattr.execute(moduleSpec, T__INITIALIZING);
                             if (isInitializing != PNone.NO_VALUE && castToBooleanNode.executeBoolean(frame, inliningTarget, isInitializing)) {
-                                throw raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
+                                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
                             }
                         }
-                        throw raise(AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
+                        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_S_HAS_NO_ATTR_S, moduleName, key);
                     }
-                    throw raise(AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_HAS_NO_ATTR_S, key);
                 }
             }
         }

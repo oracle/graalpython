@@ -75,7 +75,7 @@ import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -256,7 +256,8 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:setipaddr}.
      */
-    public abstract static class SetIpAddrNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 29
+    public abstract static class SetIpAddrNode extends Node {
 
         private static final byte[] BROADCAST_IP = "255.255.255.255".getBytes();
         private static final byte[] BROADCAST = "<broadcast>".getBytes();
@@ -264,14 +265,15 @@ public abstract class SocketNodes {
         public abstract UniversalSockAddr execute(VirtualFrame frame, byte[] name, int family);
 
         @Specialization
-        UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
+        static UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached InetPtoNCachedPNode inetPtoNCachedPNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached GilNode gil) {
-            PythonContext context = PythonContext.get(this);
+                        @Cached GilNode gil,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             Object posixSupport = context.getPosixSupport();
             try {
                 if (name.length == 0) {
@@ -282,7 +284,7 @@ public abstract class SocketNodes {
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
                         try {
                             if (addrInfoLib.next(cursor)) {
-                                throw raise(OSError, ErrorMessages.WILD_CARD_RESOLVED_TO_MULTIPLE_ADDRESS);
+                                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.WILD_CARD_RESOLVED_TO_MULTIPLE_ADDRESS);
                             }
                             return addrInfoLib.getSockAddr(cursor);
                         } finally {
@@ -295,7 +297,7 @@ public abstract class SocketNodes {
                 /* special-case broadcast - inet_addr() below can return INADDR_NONE for this */
                 if (Arrays.equals(name, BROADCAST_IP) || Arrays.equals(name, BROADCAST)) {
                     if (family != AF_INET.value && family != AF_UNSPEC.value) {
-                        throw raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
+                        throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
                     }
                     return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(0, INADDR_BROADCAST.value));
                 }
@@ -376,22 +378,23 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code makesockaddr}
      */
-    public abstract static class MakeSockAddrNode extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MakeSockAddrNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @Bind("this") Node inliningTarget,
+        static Object makeSockAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
-                        @Cached PythonObjectFactory factory,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PythonContext context = PythonContext.get(this);
+                PythonContext context = PythonContext.get(inliningTarget);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -415,7 +418,7 @@ public abstract class SocketNodes {
                     // Can be returned from recvfrom when used on a connected socket
                     return PNone.NONE;
                 } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
@@ -436,19 +439,20 @@ public abstract class SocketNodes {
     /**
      * Converts address to string, like CPython's {@code make_ipv4_addr} and {@code make_ipv6_addr}.
      */
-    public abstract static class MakeIpAddrNode extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class MakeIpAddrNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @Bind("this") Node inliningTarget,
+        static Object makeAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                PythonContext context = PythonContext.get(this);
+                PythonContext context = PythonContext.get(inliningTarget);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -459,7 +463,7 @@ public abstract class SocketNodes {
                     Object posixSupport = context.getPosixSupport();
                     return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                 } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
@@ -528,8 +532,11 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socket_parse_timeout}
      */
-    public abstract static class ParseTimeoutNode extends PNodeWithRaise {
-        public abstract long execute(VirtualFrame frame, Object value);
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    public abstract static class ParseTimeoutNode extends Node {
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, Object value);
 
         @Specialization(guards = "isNone(none)")
         static long parse(@SuppressWarnings("unused") PNone none) {
@@ -537,12 +544,12 @@ public abstract class SocketNodes {
         }
 
         @Specialization(guards = "!isNone(seconds)")
-        long parse(VirtualFrame frame, Object seconds,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+        static long parse(VirtualFrame frame, Node inliningTarget, Object seconds,
+                        @Cached PyTimeFromObjectNode timeFromObjectNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             long timeout = timeFromObjectNode.execute(frame, inliningTarget, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
             if (timeout < 0) {
-                throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }
             return timeout;
         }

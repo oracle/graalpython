@@ -1168,7 +1168,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, self)")
-        TruffleString none(Object self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+        static TruffleString none(Object self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,
                         @Shared @Cached GetBytesStorage getBytesStorage,
@@ -1179,7 +1179,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, self)")
-        TruffleString hex(Object self, byte sep, int bytesPerSepGroup,
+        static TruffleString hex(Object self, byte sep, int bytesPerSepGroup,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached BytesLikeCheck check,
                         @Shared @Cached GetBytesStorage getBytesStorage,
@@ -1192,7 +1192,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                 return T_EMPTY_STRING;
             }
             byte[] b = getBytes.execute(inliningTarget, storage);
-            return toHexNode.execute(b, len, sep, bytesPerSepGroup);
+            return toHexNode.execute(inliningTarget, b, len, sep, bytesPerSepGroup);
         }
 
         @SuppressWarnings("unused")

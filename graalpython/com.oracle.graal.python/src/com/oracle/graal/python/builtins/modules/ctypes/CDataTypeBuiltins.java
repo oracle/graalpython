@@ -91,7 +91,6 @@ import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -142,16 +141,17 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T__HANDLE = tsLiteral(J__HANDLE);
 
     @ImportStatic(CDataTypeBuiltins.class)
-    protected abstract static class CDataTypeFromParamNode extends PNodeWithRaise {
+    protected abstract static class CDataTypeFromParamNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Object type, Object value);
 
         @Specialization
-        Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
+        static Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached IsInstanceNode isInstanceNode) {
+                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isInstanceNode.executeWith(frame, value, type)) {
                 return value;
             }
@@ -169,16 +169,16 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         return value;
                     }
                 }
-                throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
             }
 
             Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
 
             if (as_parameter != PNone.NO_VALUE) {
                 return CDataType_from_param(frame, type, as_parameter, inliningTarget,
-                                pyTypeStgDictNode, lookupAttr, isInstanceNode);
+                                pyTypeStgDictNode, lookupAttr, isInstanceNode, raiseNode);
             }
-            throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
+            throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
         }
     }
 
@@ -343,7 +343,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    protected abstract static class PyCDataAtAddress extends PNodeWithRaise {
+    protected abstract static class PyCDataAtAddress extends Node {
 
         abstract CDataObject execute(Object type, Pointer pointer);
 
@@ -351,14 +351,15 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
          * Box a memory block into a CData instance.
          */
         @Specialization
-        CDataObject PyCData_AtAddress(Object type, Pointer pointer,
+        static CDataObject PyCData_AtAddress(Object type, Pointer pointer,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode) {
+                        @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode,
+                        @Cached PRaiseNode raiseNode) {
             // auditNode.audit("ctypes.cdata", buf);
             // assert(PyType_Check(type));
-            StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
             stgdict.flags |= DICTFLAG_FINAL;
 
             CDataObject pd = createCDataObjectNode.execute(inliningTarget, type, pointer, stgdict.size, false);
@@ -370,7 +371,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
-    protected abstract static class PyCDataGetNode extends PNodeWithRaise {
+    protected abstract static class PyCDataGetNode extends Node {
         protected abstract Object execute(Object type, FieldGet getfunc, CDataObject src, int index, int size, Pointer adr);
 
         @Specialization(guards = "getfunc != nil")
@@ -400,12 +401,12 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     /*
      * Set a slice in object 'dst', which has the type 'type', to the value 'value'.
      */
-    protected abstract static class PyCDataSetNode extends PNodeWithRaise {
+    protected abstract static class PyCDataSetNode extends Node {
 
         abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr);
 
         @Specialization
-        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr,
+        static void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr,
                         @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
@@ -416,9 +417,10 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached KeepRefNode keepRefNode,
                         @Cached PointerNodes.MemcpyNode memcpyNode,
                         @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(dst)) {
-                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
             Object result = PyCDataSetInternal(frame, inliningTarget, type, setfunc, value, size, ptr,
@@ -430,7 +432,8 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                             pyTypeStgDictNode,
                             pyObjectStgDictNode,
                             memcpyNode,
-                            writePointerNode);
+                            writePointerNode,
+                            raiseNode);
 
             keepRefNode.execute(frame, dst, index, result);
         }
@@ -439,7 +442,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
          * Helper function for PyCData_set below.
          */
         // corresponds to _PyCData_set
-        Object PyCDataSetInternal(VirtualFrame frame, Node inliningTarget, Object type, FieldSet setfunc, Object value, int size, Pointer ptr,
+        static Object PyCDataSetInternal(VirtualFrame frame, Node inliningTarget, Object type, FieldSet setfunc, Object value, int size, Pointer ptr,
                         PythonObjectFactory factory,
                         PyTypeCheck pyTypeCheck,
                         SetFuncNode setFuncNode,
@@ -448,7 +451,8 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         PyObjectStgDictNode pyObjectStgDictNode,
                         PointerNodes.MemcpyNode memcpyNode,
-                        PointerNodes.WritePointerNode writePointerNode) {
+                        PointerNodes.WritePointerNode writePointerNode,
+                        PRaiseNode.Lazy raiseNode) {
             if (setfunc != FieldSet.nil) {
                 return setFuncNode.execute(frame, setfunc, ptr, value, size);
             }
@@ -472,12 +476,13 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                                     pyTypeStgDictNode,
                                     pyObjectStgDictNode,
                                     memcpyNode,
-                                    writePointerNode);
+                                    writePointerNode,
+                                    raiseNode);
                 } else if (value instanceof PNone && pyTypeCheck.isPyCPointerTypeObject(type)) {
                     writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                     return PNone.NONE;
                 } else {
-                    throw raise(TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
                 }
             }
             CDataObject src = (CDataObject) value;
@@ -494,7 +499,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 assert p2 != null : "Cannot be NULL for pointer types";
 
                 if (p1.proto != p2.proto) {
-                    throw raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
                 }
 
                 writePointerNode.execute(inliningTarget, ptr, src.b_ptr);
@@ -510,7 +515,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                  */
                 return factory.createTuple(new Object[]{keep, value});
             }
-            throw raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
+            throw raiseNode.get(inliningTarget).raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
         }
 
     }
@@ -554,7 +559,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
      * Note: This function steals a refcount of the third argument, even if it fails!
      */
     @ImportStatic(PGuards.class)
-    protected abstract static class KeepRefNode extends PNodeWithRaise {
+    protected abstract static class KeepRefNode extends Node {
 
         abstract void execute(VirtualFrame frame, CDataObject target, int index, Object keep);
 
@@ -565,28 +570,29 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(keep)")
-        void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep,
+        static void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached HashingStorageSetItem setItem,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             CDataObject ob = PyCData_GetContainer(target, factory);
             if (!PGuards.isDict(ob.b_objects)) {
                 ob.b_objects = keep;
                 return;
             }
             PDict dict = (PDict) ob.b_objects;
-            Object key = unique_key(target, index, getRaiseNode(), appendStringNode, toStringNode, fromJavaStringNode);
+            Object key = unique_key(inliningTarget, target, index, raiseNode, appendStringNode, toStringNode, fromJavaStringNode);
             dict.setDictStorage(setItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keep));
         }
     }
 
     private static final int MAX_KEY_SIZE = 256;
 
-    static TruffleString unique_key(CDataObject cdata, int index,
-                    PRaiseNode raiseNode, TruffleStringBuilder.AppendStringNode appendStringNode,
+    static TruffleString unique_key(Node inliningTarget, CDataObject cdata, int index,
+                    PRaiseNode.Lazy raiseNode, TruffleStringBuilder.AppendStringNode appendStringNode,
                     TruffleStringBuilder.ToStringNode toStringNode, TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert TS_ENCODING == Encoding.UTF_32;
         final int bytesPerCodepoint = 4;      // assumes utf-32
@@ -598,7 +604,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
             int bytesLeft = MAX_KEY_SIZE - sb.byteLength() / bytesPerCodepoint - 1;
             /* Hex format needs 2 characters per byte */
             if (bytesLeft < Integer.BYTES * 2) {
-                throw raiseNode.raise(ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
+                throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
             }
             appendStringNode.execute(sb, T_COLON);
             appendStringNode.execute(sb, fromJavaStringNode.execute(toHex(target.b_index), TS_ENCODING));

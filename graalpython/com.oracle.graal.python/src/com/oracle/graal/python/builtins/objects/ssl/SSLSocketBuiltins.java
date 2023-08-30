@@ -100,6 +100,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         @Cached PythonObjectFactory factory) {
             if (len == 0) {
@@ -108,13 +109,14 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
-            sslOperationNode.read(frame, self, output);
+            sslOperationNode.read(frame, inliningTarget, self, output);
             PythonUtils.flipBuffer(output);
             return factory.createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
         }
 
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
         Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached SSLOperationNode sslOperationNode) {
@@ -136,7 +138,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                     bytes = new byte[toReadLen];
                 }
                 ByteBuffer output = PythonUtils.wrapByteBuffer(bytes, 0, toReadLen);
-                sslOperationNode.read(frame, self, output);
+                sslOperationNode.read(frame, inliningTarget, self, output);
                 PythonUtils.flipBuffer(output);
                 int readBytes = PythonUtils.getBufferRemaining(output);
                 if (!directWrite) {
@@ -159,14 +161,16 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int length = bufferLib.getBufferLength(buffer);
                 ByteBuffer input = PythonUtils.wrapByteBuffer(bytes, 0, length);
-                sslOperationNode.write(frame, self, input);
+                sslOperationNode.write(frame, inliningTarget, self, input);
                 return length;
             } finally {
                 bufferLib.release(buffer, frame, this);
@@ -184,8 +188,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class DoHandshakeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doHandshake(VirtualFrame frame, PSSLSocket self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SSLOperationNode sslOperationNode) {
-            sslOperationNode.handshake(frame, self);
+            sslOperationNode.handshake(frame, inliningTarget, self);
             return PNone.NONE;
         }
     }
@@ -195,8 +200,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ShutdownNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object shutdown(VirtualFrame frame, PSSLSocket self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SSLOperationNode sslOperationNode) {
-            sslOperationNode.shutdown(frame, self);
+            sslOperationNode.shutdown(frame, inliningTarget, self);
             return self.getSocket() != null ? self.getSocket() : PNone.NONE;
         }
     }

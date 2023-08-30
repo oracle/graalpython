@@ -40,63 +40,59 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
+@GenerateInline
+@GenerateCached(false)
 @TypeSystemReference(PythonArithmeticTypes.class)
-@ImportStatic(MathGuards.class)
-public abstract class CoerceToComplexNode extends PNodeWithRaise {
-    @Child private LookupAndCallUnaryNode callComplexFunc;
+@ImportStatic(PGuards.class)
+public abstract class CoerceToComplexNode extends PNodeWithContext {
 
-    public abstract PComplex execute(VirtualFrame frame, Object x);
+    public abstract PComplex execute(VirtualFrame frame, Node inliningTarget, Object x);
 
     @Specialization
-    PComplex toComplex(long x,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    static PComplex doLong(long x,
+                    @Shared @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createComplex(x, 0);
     }
 
     @Specialization
-    PComplex toComplex(double x,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    static PComplex doDouble(double x,
+                    @Shared @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createComplex(x, 0);
     }
 
     @Specialization
-    @SuppressWarnings("truffle-static-method")
-    PComplex toComplex(VirtualFrame frame, Object x,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedConditionProfile complexProfile,
+    static PComplex doComplex(PComplex x) {
+        return x;
+    }
+
+    @Specialization(guards = "!isPComplex(x)")
+    static PComplex toComplex(VirtualFrame frame, Node inliningTarget, Object x,
+                    @Cached(value = "create(T___COMPLEX__)", inline = false) LookupAndCallUnaryNode callComplexFunc,
                     @Cached PyFloatAsDoubleNode asDoubleNode,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        if (complexProfile.profile(inliningTarget, x instanceof PComplex)) {
-            return (PComplex) x;
-        }
-        // TODO taken from BuiltinConstructors, should probably be refactored somehow
-        if (callComplexFunc == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callComplexFunc = insert(LookupAndCallUnaryNode.create(T___COMPLEX__));
-        }
+                    @Shared @Cached(inline = false) PythonObjectFactory factory,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object result = callComplexFunc.executeObject(frame, x);
         if (result != PNone.NO_VALUE) {
             if (result instanceof PComplex) {
@@ -107,7 +103,7 @@ public abstract class CoerceToComplexNode extends PNodeWithRaise {
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
             } else {
-                throw raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
         return factory.createComplex(asDoubleNode.execute(frame, inliningTarget, x), 0);

@@ -95,7 +95,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -159,7 +158,8 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    abstract static class CheckClosedNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 28 -> 9
+    abstract static class CheckClosedNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PTextIO self);
 
@@ -169,36 +169,38 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"self.isFileIO()", "self.getFileIO().isClosed()"})
-        void error(@SuppressWarnings("unused") PTextIO self) {
-            throw raise(ValueError, ErrorMessages.IO_CLOSED);
+        static void error(@SuppressWarnings("unused") PTextIO self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, ErrorMessages.IO_CLOSED);
         }
 
         @Specialization(guards = "!self.isFileIO()")
-        @SuppressWarnings("truffle-static-method")
-        void checkGeneric(VirtualFrame frame, PTextIO self,
+        static void checkGeneric(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object res = getAttr.execute(frame, inliningTarget, self.getBuffer(), T_CLOSED);
             if (isTrueNode.execute(frame, inliningTarget, res)) {
-                error(self);
+                error(self, raiseNode.get(inliningTarget));
             }
         }
     }
 
-    protected abstract static class WriteFlushNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    protected abstract static class WriteFlushNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self);
 
         @Specialization(guards = "!self.hasPendingBytes()")
-        void nothingTodo(@SuppressWarnings("unused") PTextIO self) {
+        static void nothingTodo(@SuppressWarnings("unused") PTextIO self) {
             // nothing to do. there is no pending bytes to write.
         }
 
         @Specialization(guards = "self.hasPendingBytes()")
-        static void writeflush(VirtualFrame frame, PTextIO self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+        static void writeflush(VirtualFrame frame, Node inliningTarget, PTextIO self,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             byte[] pending = self.getAndClearPendingBytes();
             PBytes b = factory.createBytes(pending);
@@ -210,30 +212,31 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:textiowrapper_read_chunk
      */
-    protected abstract static class ChangeEncodingNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    protected abstract static class ChangeEncodingNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self, Object encodingObj, Object errorsObj, boolean newline_changed);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self, Object encodingObj, Object errorsObj, boolean newline_changed);
 
         protected static boolean isNothingTodo(Object encodingObj, Object errorsObj, boolean newline_changed) {
             return isPNone(encodingObj) && isPNone(errorsObj) && !newline_changed;
         }
 
         @Specialization(guards = "isNothingTodo(encodingObj, errorsObj, newline_changed)")
-        void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object encodingObj, @SuppressWarnings("unused") Object errorsObj,
+        static void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object encodingObj, @SuppressWarnings("unused") Object errorsObj,
                         @SuppressWarnings("unused") boolean newline_changed) {
             // no change
         }
 
         @Specialization(guards = "!isNothingTodo(encodingObj, errorsObj, newline_changed)")
-        static void changeEncoding(VirtualFrame frame, PTextIO self, Object encodingObj, Object errorsObj, @SuppressWarnings("unused") boolean newline_changed,
-                        @Bind("this") Node inliningTarget,
+        static void changeEncoding(VirtualFrame frame, Node inliningTarget, PTextIO self, Object encodingObj, Object errorsObj, @SuppressWarnings("unused") boolean newline_changed,
                         @Cached IONodes.ToTruffleStringNode asString,
-                        @Cached CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
                         @Cached SetDecoderNode setDecoderNode,
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached FixEncoderStateNode fixEncoderStateNode) {
             /* Use existing settings where new settings are not specified */
-            TruffleString encoding = isPNone(encodingObj) ? self.getEncoding() : asString.execute(encodingObj);
+            TruffleString encoding = isPNone(encodingObj) ? self.getEncoding() : asString.execute(inliningTarget, encodingObj);
             TruffleString errors;
             if (isPNone(errorsObj)) {
                 if (isPNone(encodingObj)) {
@@ -242,7 +245,7 @@ public abstract class TextIOWrapperNodes {
                     errors = T_STRICT;
                 }
             } else {
-                errors = asString.execute(errorsObj);
+                errors = asString.execute(inliningTarget, errorsObj);
             }
 
             // Create new encoder & decoder
@@ -354,7 +357,8 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    protected abstract static class ReadlineNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
+    protected abstract static class ReadlineNode extends Node {
 
         public abstract TruffleString execute(VirtualFrame frame, PTextIO self, int limit);
 
@@ -369,7 +373,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.ConcatNode concatNode) {
-            writeFlushNode.execute(frame, self);
+            writeFlushNode.execute(frame, inliningTarget, self);
 
             int chunked = 0;
             int start, endpos, offsetToBuffer;
@@ -600,7 +604,8 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_decode
      */
-    protected abstract static class DecodeNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 80 -> 62
+    protected abstract static class DecodeNode extends Node {
         public abstract TruffleString execute(VirtualFrame frame, Object decoder, Object bytes, boolean eof);
 
         /*
@@ -611,7 +616,7 @@ public abstract class TextIOWrapperNodes {
          */
 
         @Specialization
-        TruffleString decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
+        static TruffleString decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castNode,
                         @Cached PyObjectCallMethodObjArgs callMethodDecode) {
@@ -620,12 +625,14 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    protected abstract static class DecoderSetStateNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    protected abstract static class DecoderSetStateNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory);
 
         @Specialization(guards = "!self.hasDecoder()")
-        void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory) {
             // nothing to do.
         }
 
@@ -641,15 +648,13 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
-        static void atInit(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @Bind("this") Node inliningTarget,
+        static void atInit(VirtualFrame frame, Node inliningTarget, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
             callMethodReset.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
 
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
-        static void decoderSetstate(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
-                        @Bind("this") Node inliningTarget,
+        static void decoderSetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
             callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
@@ -657,38 +662,39 @@ public abstract class TextIOWrapperNodes {
         }
     }
 
-    protected abstract static class DecoderResetNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    protected abstract static class DecoderResetNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self);
 
         @Specialization(guards = "!self.hasDecoder()")
-        void nothing(@SuppressWarnings("unused") PTextIO self) {
+        static void nothing(@SuppressWarnings("unused") PTextIO self) {
             // nothing to do.
         }
 
         @Specialization(guards = "self.hasDecoder()")
-        static void reset(VirtualFrame frame, PTextIO self,
-                        @Bind("this") Node inliningTarget,
+        static void reset(VirtualFrame frame, Node inliningTarget, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             callMethod.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
     }
 
-    protected abstract static class EncoderResetNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    protected abstract static class EncoderResetNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self, boolean startOfStream);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self, boolean startOfStream);
 
         @Specialization(guards = "startOfStream")
-        static void encoderResetStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Bind("this") Node inliningTarget,
+        static void encoderResetStart(VirtualFrame frame, Node inliningTarget, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
             callMethodReset.execute(frame, inliningTarget, self.getEncoder(), T_RESET);
             self.setEncodingStartOfStream(true);
         }
 
         @Specialization(guards = "!startOfStream")
-        static void encoderResetNotStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Bind("this") Node inliningTarget,
+        static void encoderResetNotStart(VirtualFrame frame, Node inliningTarget, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             callMethodSetState.execute(frame, inliningTarget, self.getEncoder(), T_SETSTATE, 0);
             self.setEncodingStartOfStream(false);

@@ -62,7 +62,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -502,8 +502,10 @@ public class IONodes {
         }
     }
 
-    public abstract static class ToTruffleStringNode extends PNodeWithRaise {
-        public abstract TruffleString execute(Object str);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ToTruffleStringNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, Object str);
 
         public static boolean isString(Object s) {
             return s instanceof TruffleString;
@@ -515,13 +517,13 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isString(s)")
-        TruffleString str(Object s,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode str) {
+        static TruffleString str(Node inliningTarget, Object s,
+                        @Cached CastToTruffleStringNode str,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return str.execute(inliningTarget, s);
             } catch (CannotCastException e) {
-                throw raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
+                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }
         }
     }

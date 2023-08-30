@@ -286,7 +286,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             } else if (newlineArg == PNone.NONE) {
                 newline = null;
             } else {
-                newline = toTruffleStringNode.execute(newlineArg);
+                newline = toTruffleStringNode.execute(inliningTarget, newlineArg);
             }
 
             if (newline != null) {
