@@ -51,6 +51,10 @@ def reference_array_resize(args):
     return a
 
 
+# Globally referenced array for tests that need the memory to stay alive after the C function exits
+TEST_ARRAY = array('i', [1, 2, 3])
+
+
 class TestPyArray(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -76,5 +80,26 @@ class TestPyArray(CPyExtTestCase):
             resultspec="O",
             argspec='On',
             arguments=["PyObject* array", "Py_ssize_t new_size"],
+            cmpfunc=unhandled_error_compare,
+        )
+
+        test__PyArray_Data = CPyExtFunction(
+            lambda args: bytes(args[0]),
+            lambda: (
+                # Array needs to be kept alive after the function
+                (TEST_ARRAY, len(TEST_ARRAY) * TEST_ARRAY.itemsize),
+            ),
+            code="""
+            PyObject* wrap__PyArray_Data(PyObject* array, Py_ssize_t size) {
+                char* data = _PyArray_Data(array);
+                if (data == NULL)
+                    return NULL;
+                return PyBytes_FromStringAndSize(data, size);
+            }
+            """,
+            callfunction="wrap__PyArray_Data",
+            resultspec="O",
+            argspec='On',
+            arguments=["PyObject* array", "Py_ssize_t size"],
             cmpfunc=unhandled_error_compare,
         )

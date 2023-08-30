@@ -41,14 +41,23 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,6 +78,21 @@ public final class PythonCextArrayBuiltins {
             ensureCapacityNode.execute(inliningTarget, object, (int) newSize);
             setLengthNode.execute(inliningTarget, object, (int) newSize);
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
+    abstract static class _PyArray_Data extends CApiUnaryBuiltinNode {
+        @Specialization
+        Object get(PArray object,
+                   @Cached StorageToNativeNode storageToNativeNode) {
+            if (object.getSequenceStorage() instanceof NativeByteSequenceStorage storage) {
+                return storage.getPtr();
+            } else if (object.getSequenceStorage() instanceof ByteSequenceStorage storage) {
+                NativeSequenceStorage nativeStorage = storageToNativeNode.execute(storage.getInternalByteArray(), storage.length());
+                return nativeStorage.getPtr();
+            }
+            throw CompilerDirectives.shouldNotReachHere("invalid storage for PArray");
         }
     }
 }
