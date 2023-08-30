@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -160,20 +159,23 @@ public abstract class HashingStorage {
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
-        @Specialization(guards = {"!isNoValue(arg)", "!isPDict(arg) || hasIterAttrButNotBuiltin(inliningTarget, arg, getClassNode, lookupIter)"})
+        @Specialization(guards = {"!isNoValue(arg)", "!isPDict(arg) || hasIterAttrButNotBuiltin(inliningTarget, arg, getClassNode, lookupIter)"}, limit = "2")
         static HashingStorage updateArg(VirtualFrame frame, Object arg, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
                         @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
-                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Exclusive @Cached HashingStorageSetItem setItem,
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Cached InlinedConditionProfile hasKwds) {
             Object keyAttr = lookupKeysAttributeNode.execute(frame, inliningTarget, arg, T_KEYS);
             ArrayBuilder<KeyValue> elements = toArrayPair.execute(frame, arg, keyAttr);
             HashingStorage storage = PDict.createNewStorage(elements.size() + kwargs.length);
-            storage = addKeyValuesToStorage(frame, elements, storage, inliningTarget, setHasihngStorageItem);
-            storage = addKeywordsToStorage(frame, kwargs, storage, inliningTarget, addAllToOther);
+            storage = addKeyValuesToStorage(frame, elements, storage, inliningTarget, setItem);
+            if (hasKwds.profile(inliningTarget, kwargs.length > 0)) {
+                storage = addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), storage);
+            }
             return storage;
         }
 
@@ -197,15 +199,6 @@ public abstract class HashingStorage {
         return addAllToOther.executeCached(null, other, newStore);
     }
 
-    public static HashingStorage addKeywordsToStorage(VirtualFrame frame, PKeyword[] kwargs, HashingStorage storage,
-                    Node inliningTarget,
-                    HashingStorageAddAllToOther addAllToOther) {
-        if (kwargs.length > 0) {
-            return addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), storage);
-        }
-        return storage;
-    }
-
     @ValueType
     protected static final class KeyValue {
         final Object key;
@@ -219,11 +212,11 @@ public abstract class HashingStorage {
 
     public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, ArrayBuilder<KeyValue> elements, HashingStorage storage,
                     Node inliningTarget,
-                    HashingStorageSetItem setHashingStorageItem) {
+                    HashingStorageSetItem setItem) {
         for (int i = 0; i < elements.size(); i++) {
             Object key = elements.get(i).key;
             Object value = elements.get(i).value;
-            storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
+            storage = setItem.execute(frame, inliningTarget, storage, key, value);
         }
         return storage;
     }
@@ -231,10 +224,10 @@ public abstract class HashingStorage {
     public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, PDict self, Object other, Object keyAttr,
                     Node inliningTarget,
                     ObjectToArrayPairNode toArrayPair,
-                    HashingStorageSetItem setHashingStorageItem) {
+                    HashingStorageSetItem setItem) {
         ArrayBuilder<KeyValue> elements = toArrayPair.execute(frame, other, keyAttr);
         HashingStorage storage = self.getDictStorage();
-        return addKeyValuesToStorage(frame, elements, storage, inliningTarget, setHashingStorageItem);
+        return addKeyValuesToStorage(frame, elements, storage, inliningTarget, setItem);
     }
 
     // partial impl dict_update_arg
@@ -252,23 +245,17 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached GetNextNode nextNode,
+                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CallVarargsMethodNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
             Object keysIterable = callKeysMethod.execute(frame, keyAttr, EMPTY_OBJECT_ARRAY, EMPTY_KEYWORDS);
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
-            while (true) {
-                try {
-                    Object keyObj = nextNode.execute(frame, keysIt);
-                    Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
-                    elements.add(new KeyValue(keyObj, valueObj));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    break;
-                }
+            Object keyObj;
+            while ((keyObj = nextNode.execute(frame, keysIt)) != null) {
+                Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
+                elements.add(new KeyValue(keyObj, valueObj));
             }
             return elements;
         }
@@ -278,19 +265,17 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached GetNextNode nextNode,
+                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached FastConstructListNode createListNode,
                         @Cached LenNode seqLenNode,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
+                        @Cached InlinedConditionProfile lengthTwoProfile) throws PException {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
+            Object next;
             try {
-                while (true) {
-                    Object next = nextNode.execute(frame, it);
+                while ((next = nextNode.execute(frame, it)) != null) {
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot
@@ -305,11 +290,7 @@ public abstract class HashingStorage {
                     elements.add(new KeyValue(key, value));
                 }
             } catch (PException e) {
-                if (isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
-                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
-                } else {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                }
+                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             }
             return elements;
         }

@@ -114,12 +114,12 @@ public abstract class DictNodes {
         @Specialization(guards = "!isDict(other)")
         static void updateArg(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached PyObjectLookupAttr lookupKeys,
                         @Cached ObjectToArrayPairNode toArrayPair) {
             Object keyAttr = lookupKeys.execute(frame, inliningTarget, other, T_KEYS);
             HashingStorage storage = addKeyValuesToStorage(frame, self, other, keyAttr,
-                            inliningTarget, toArrayPair, setHasihngStorageItem);
+                            inliningTarget, toArrayPair, setItem);
             self.setDictStorage(storage);
         }
 
