@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.test.builtin.modules;
 
+import static com.oracle.graal.python.test.GraalPythonEnvVars.IS_WINDOWS;
 import static com.oracle.graal.python.test.PythonTests.ts;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -84,6 +85,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Before
     public void setUp() {
+        org.junit.Assume.assumeTrue(backendName.equals("java") || !IS_WINDOWS);
         PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
         pathToString = backendName.equals("java") ? p -> (String) p.value : p -> {
             Buffer b = (Buffer) p.value;

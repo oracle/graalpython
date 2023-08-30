@@ -28,6 +28,7 @@ package com.oracle.graal.python.test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 public class GraalPythonEnvVars {
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
