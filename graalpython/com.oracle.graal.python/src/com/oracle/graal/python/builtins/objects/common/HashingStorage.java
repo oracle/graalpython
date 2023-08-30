@@ -76,6 +76,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -154,27 +155,16 @@ public abstract class HashingStorage {
             }
         }
 
-        @Specialization(guards = "hasIterAttrButNotBuiltin(inliningTarget, col, getClassNode, lookupIter)", limit = "1")
-        static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
-                        @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
-                        @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
-            return updateArg(frame, col, kwargs, inliningTarget, lookupKeysAttributeNode,
-                            toArrayPair, setHasihngStorageItem, addAllToOther);
-        }
-
-        protected static boolean hasIterAttrButNotBuiltin(Node inliningTarget, PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+        protected static boolean hasIterAttrButNotBuiltin(Node inliningTarget, Object col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
             Object attr = lookupIter.execute(getClassNode.execute(inliningTarget, col));
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
-        @Specialization(guards = {"!isNoValue(arg)", "!isPDict(arg)"})
+        @Specialization(guards = {"!isNoValue(arg)", "!isPDict(arg) || hasIterAttrButNotBuiltin(inliningTarget, arg, getClassNode, lookupIter)"})
         static HashingStorage updateArg(VirtualFrame frame, Object arg, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Exclusive @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Exclusive @Cached PyObjectLookupAttr lookupKeysAttributeNode,
                         @Exclusive @Cached ObjectToArrayPairNode toArrayPair,
                         @Exclusive @Cached HashingStorageSetItem setHasihngStorageItem,
@@ -216,6 +206,7 @@ public abstract class HashingStorage {
         return storage;
     }
 
+    @ValueType
     protected static final class KeyValue {
         final Object key;
         final Object value;
