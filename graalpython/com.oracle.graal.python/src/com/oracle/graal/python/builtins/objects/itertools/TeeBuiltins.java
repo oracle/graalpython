@@ -146,7 +146,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
         Object next(VirtualFrame frame, PTee self,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode) {
-            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, this);
+            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, getRaiseNode());
             self.setIndex(self.getIndex() + 1);
             return value;
         }
@@ -156,7 +156,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached PythonObjectFactory factory) {
             self.setDataObj(self.getDataobj().jumplink(factory));
-            Object value = self.getDataobj().getItem(frame, 0, nextNode, this);
+            Object value = self.getDataobj().getItem(frame, 0, nextNode, getRaiseNode());
             self.setIndex(1);
             return value;
         }

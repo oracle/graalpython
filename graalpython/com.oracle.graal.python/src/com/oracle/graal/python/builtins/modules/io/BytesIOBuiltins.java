@@ -173,7 +173,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PNone init(PBytesIO self, PNone initvalue) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             self.setPos(0);
             return PNone.NONE;
         }
@@ -184,7 +184,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             /* In case, __init__ is called multiple times. */
             self.setStringSize(0);
             self.setPos(0);
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             writeNode.execute(frame, self, initvalue);
             self.setPos(0);
             return PNone.NONE;
@@ -386,7 +386,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         Object truncate(PBytesIO self, int size,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PythonObjectFactory factory) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             if (size < 0) {
                 throw raise(ValueError, NEGATIVE_SIZE_VALUE_D, size);
             }
@@ -424,7 +424,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PythonObjectFactory factory) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             Object buffer = acquireLib.acquireReadonly(b, frame, this);
             try {
                 int len = bufferLib.getBufferLength(buffer);
@@ -457,7 +457,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached WriteNode writeNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
                 Object line;
@@ -627,7 +627,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
@@ -734,7 +734,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization
         Object close(PBytesIO self) {
-            self.checkExports(this);
+            self.checkExports(getRaiseNode());
             self.setBuf(null);
             return PNone.NONE;
         }

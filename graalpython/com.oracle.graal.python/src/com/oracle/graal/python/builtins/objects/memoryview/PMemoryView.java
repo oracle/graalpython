@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
@@ -266,7 +266,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         }
     }
 
-    public void checkReleased(PNodeWithRaise node) {
+    public void checkReleased(PNodeWithRaiseAndIndirectCall node) {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }

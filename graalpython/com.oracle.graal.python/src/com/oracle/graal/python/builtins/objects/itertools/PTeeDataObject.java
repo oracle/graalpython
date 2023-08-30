@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.object.Shape;
@@ -120,7 +120,7 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         return nextlink;
     }
 
-    Object getItem(VirtualFrame frame, int i, BuiltinFunctions.NextNode nextNode, PNodeWithRaise node) {
+    Object getItem(VirtualFrame frame, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode node) {
         assert i < TeeDataObjectBuiltins.LINKCELLS;
         if (i < numread) {
             return values[i];
