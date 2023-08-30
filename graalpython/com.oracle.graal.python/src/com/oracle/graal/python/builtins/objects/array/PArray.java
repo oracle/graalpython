@@ -102,11 +102,11 @@ public final class PArray extends PythonBuiltinObject {
      * The underlying storage is always bytes regardless of array item type. Don't use nodes for
      * SequenceStorage nodes unless they are agnostic of item type.
      */
-    SequenceStorage getSequenceStorage() {
+    public SequenceStorage getSequenceStorage() {
         return storage;
     }
 
-    void setSequenceStorage(SequenceStorage storage) {
+    public void setSequenceStorage(SequenceStorage storage) {
         assert storage instanceof ByteSequenceStorage || storage instanceof NativeByteSequenceStorage;
         this.storage = storage;
     }

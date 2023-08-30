@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -809,6 +810,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(bytes.getSequenceStorage(), true);
             bytes.setSequenceStorage(newStorage);
             return bytes;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object toNative(PArray array) {
+            ensureCapi();
+            NativeSequenceStorage newStorage = ToNativeStorageNode.getUncached().execute(array.getSequenceStorage(), true);
+            array.setSequenceStorage(newStorage);
+            return array;
         }
 
         @Specialization
