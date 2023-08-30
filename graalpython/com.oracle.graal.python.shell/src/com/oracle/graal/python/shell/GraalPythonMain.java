@@ -955,7 +955,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "PYTHONPYCACHEPREFIX: if this is set, GraalPython will write .pyc files in a mirror\n" +
                         "   directory tree at this path, instead of in __pycache__ directories within the source tree.\n" +
                         "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
-                        "   commandline. There are two special cases: any `$$' in the value is replaced\n" +
+                        "   commandline. Arguments are split on whitespace - you can use \" and/or ' as required to\n" +
+                        "   group them. Alternatively, if the value starts with a vertical tab character, the entire\n" +
+                        "   value is split at vertical tabs and the elements are used as arguments without any further\n" +
+                        "   escaping.\n" +
+                        "   There are two special substitutions for this variable: any `$$' in the value is replaced\n" +
                         "   with the current process id, and any $UUID$ is replaced with random unique string\n" +
                         "   that may contain letters, digits, and '-'. To pass a literal `$$', you must escape the\n" +
                         "   second `$' like so: `$\\$'\n" +
@@ -1285,6 +1289,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         DOUBLE_QUOTE,
         ESCAPE_SINGLE_QUOTE,
         ESCAPE_DOUBLE_QUOTE,
+        VTAB_DELIMITED,
     }
 
     private static List<String> getDefaultEnvironmentArgs() {
@@ -1300,8 +1305,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (envArgsOpt != null) {
             State s = State.NORMAL;
             StringBuilder sb = new StringBuilder();
-            for (char x : envArgsOpt.toCharArray()) {
-                if (s == State.NORMAL && Character.isWhitespace(x)) {
+            char[] charArray = envArgsOpt.toCharArray();
+            for (int i = 0; i < charArray.length; i++) {
+                char x = charArray[i];
+                if (i == 0 && x == '\013') {
+                    s = State.VTAB_DELIMITED;
+                } else if (s == State.VTAB_DELIMITED && x == '\013') {
+                    addArgument(pid, uuid, envArgs, sb);
+                } else if (s == State.VTAB_DELIMITED && x != '\013') {
+                    sb.append(x);
+                } else if (s == State.NORMAL && Character.isWhitespace(x)) {
                     addArgument(pid, uuid, envArgs, sb);
                 } else {
                     if (x == '"') {
@@ -1312,6 +1325,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         } else if (s == State.ESCAPE_DOUBLE_QUOTE) {
                             s = State.DOUBLE_QUOTE;
                             sb.append(x);
+                        } else {
+                            sb.append(x);
                         }
                     } else if (x == '\'') {
                         if (s == State.NORMAL) {
@@ -1320,6 +1335,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             s = State.NORMAL;
                         } else if (s == State.ESCAPE_SINGLE_QUOTE) {
                             s = State.SINGLE_QUOTE;
+                            sb.append(x);
+                        } else {
                             sb.append(x);
                         }
                     } else if (x == '\\') {
