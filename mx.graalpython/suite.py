@@ -963,6 +963,7 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:TRUFFLE_NFI",
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
                 "truffle:TRUFFLE_ICU4J",
             ],
