@@ -158,8 +158,8 @@ def _get_stdlib_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-python", "3")
 
 
-def _get_capi_home():
-    return mx.distribution("GRAALPYTHON_NATIVE_LIBS").get_output()
+def _get_capi_home(args=None):
+    return os.path.join(mx.distribution("GRAALPYTHON_NATIVE_LIBS").get_output(), mx.get_os(), mx.get_arch())
 
 
 _get_jni_home = _get_capi_home
