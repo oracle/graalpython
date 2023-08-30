@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -270,7 +271,8 @@ public abstract class HashingStorage {
                         @Cached FastConstructListNode createListNode,
                         @Cached LenNode seqLenNode,
                         @Cached PRaiseNode.Lazy raise,
-                        @Cached InlinedConditionProfile lengthTwoProfile) throws PException {
+                        @Cached InlinedConditionProfile lengthTwoProfile,
+                        @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             Object next;
@@ -291,10 +293,11 @@ public abstract class HashingStorage {
                     elements.add(new KeyValue(key, value));
                 }
             } catch (PException e) {
-                if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
-                    throw e;
+                if (!lengthTwoProfile.profile(inliningTarget, len != 2) &&
+                                isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
+                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
                 }
-                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
+                throw e;
             }
             return elements;
         }
