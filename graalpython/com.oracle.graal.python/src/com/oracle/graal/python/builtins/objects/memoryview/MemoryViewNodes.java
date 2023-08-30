@@ -55,8 +55,6 @@ import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
-import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -70,7 +68,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
@@ -281,7 +278,7 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), buffer, offset);
         }
 
-        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"})
+        @Specialization(guards = "ptr == null")
         static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -289,25 +286,6 @@ public class MemoryViewNodes {
             int itemSize = self.getItemSize();
             checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
             return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), self.getBuffer(), offset);
-        }
-
-        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
-        static Object doManagedPMMap(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Bind("this") Node inliningTarget,
-                        @Cached MMapBuiltins.GetItemNode getItem,
-                        @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Shared @Cached UnpackValueNode unpackValueNode) {
-            int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            for (int i = 0; i < itemSize; i++) {
-                bytes[i] = castToByteNode.execute(frame, getItem.execute(frame, self.getOwner(), offset + i));
-            }
-            Object ret = unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), bytes, 0);
-            return ret;
-        }
-
-        protected boolean isPMMap(Object owner) {
-            return owner instanceof PMMap;
         }
 
         @NeverDefault
@@ -331,7 +309,7 @@ public class MemoryViewNodes {
             packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, buffer, offset);
         }
 
-        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"})
+        @Specialization(guards = "ptr == null")
         static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -339,24 +317,6 @@ public class MemoryViewNodes {
             int itemSize = self.getItemSize();
             checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
             packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, self.getBuffer(), offset);
-        }
-
-        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
-        static void doPMMapGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PackValueNode packValueNode,
-                        @Cached MMapBuiltins.SetItemNode setItemNode) {
-            int itemSize = self.getItemSize();
-            byte[] bytes = new byte[itemSize];
-            ByteSequenceStorage buffer = new ByteSequenceStorage(bytes);
-            packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, buffer, 0);
-            for (int i = 0; i < itemSize; i++) {
-                setItemNode.execute(frame, self.getOwner(), offset + i, bytes[i]);
-            }
-        }
-
-        protected boolean isPMMap(Object owner) {
-            return owner instanceof PMMap;
         }
     }
 
