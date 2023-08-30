@@ -2895,21 +2895,19 @@ def run_leak_launcher(input_args):
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
     args = input_args
-    capi_home = _get_capi_home()
     args = [
         "--keep-dump",
         "--experimental-options",
-        f"--python.CAPI={capi_home}",
         *args,
     ]
 
     env = os.environ.copy()
-    env.setdefault("GRAAL_PYTHONHOME", _pythonhome())
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
