@@ -274,13 +274,14 @@ public abstract class HashingStorage {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             Object next;
+            int len = 2;
             try {
                 while ((next = nextNode.execute(frame, it)) != null) {
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot
                     // be subclassed and we can directly call 'len()'.
-                    int len = seqLenNode.execute(inliningTarget, element);
+                    len = seqLenNode.execute(inliningTarget, element);
 
                     if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
                         throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
@@ -290,6 +291,9 @@ public abstract class HashingStorage {
                     elements.add(new KeyValue(key, value));
                 }
             } catch (PException e) {
+                if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
+                    throw e;
+                }
                 throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             }
             return elements;
