@@ -874,7 +874,7 @@ suite = {
                             "com.oracle.graal.python.hpy.llvm"
                         ],
                         "layout": {
-                            "./": [
+                            "<os>/<arch>/": [
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
@@ -894,7 +894,7 @@ suite = {
                             "com.oracle.graal.python.hpy.llvm"
                         ],
                         "layout": {
-                            "./": [
+                            "<os>/<arch>/": [
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:python-libzsupport/*",
@@ -1188,13 +1188,13 @@ suite = {
                     "<others>": {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/libs/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/python-native.lib",
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/python-native.lib",
                             ],
                             "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
                                 {
                                     "source_type": "dependency",
                                     "dependency": "GRAALPYTHON_NATIVE_LIBS",
-                                    "path": "*",
+                                    "path": "<os>/<arch>/*",
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
@@ -1205,7 +1205,7 @@ suite = {
                     "<others>": {
                         "layout": {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/*",
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
                         },
                     },
