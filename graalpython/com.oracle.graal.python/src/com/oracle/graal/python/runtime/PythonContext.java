@@ -2514,14 +2514,16 @@ public final class PythonContext extends Python3Core {
 
     @TruffleBoundary
     public String getLLVMSupportExt(String libName) {
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String toolchainIdentifier = toolchain.getIdentifier();
-        if (J_NATIVE.equals(toolchainIdentifier)) {
-            return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
+        if (!getOption(PythonOptions.NativeModules)) {
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainIdentifier = toolchain.getIdentifier();
+            if (!J_NATIVE.equals(toolchainIdentifier)) {
+                // if not native, we always assume a Linux-like system
+                return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
+            }
         }
-        // if not native, we always assume a Linux-like system
-        return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
+        return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
     }
 
     @TruffleBoundary
