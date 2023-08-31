@@ -305,7 +305,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
             ],
@@ -363,7 +363,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
@@ -396,7 +396,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sulong:SULONG_API",
                 "XZ-1.9",
                 "truffle:TRUFFLE_ICU4J",
@@ -476,7 +476,7 @@ suite = {
             "sourceDirs": ["java"],
             "dependencies": [
                 "com.oracle.graal.python",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
@@ -848,7 +848,7 @@ suite = {
                 "com.oracle.graal.python.shell",
             ],
             "distDependencies": [
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
             ],
@@ -961,7 +961,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "truffle:TRUFFLE_NFI",
                 "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
@@ -1051,7 +1051,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
             ],
             "testDistribution": True,
             "maven": False,
