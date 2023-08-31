@@ -98,6 +98,27 @@ index 7361a55..6c4d9d9 100644
          entry.in_cinclude = self.in_cinclude
          entry.create_wrapper = create_wrapper
          if name:
+diff --git a/Cython/Includes/cpython/datetime.pxd b/Cython/Includes/cpython/datetime.pxd
+index cd0f907..712cd92 100644
+--- a/Cython/Includes/cpython/datetime.pxd
++++ b/Cython/Includes/cpython/datetime.pxd
+@@ -201,12 +201,13 @@ cdef inline int datetime_microsecond(object o):
+ 
+ # Get days of timedelta
+ cdef inline int timedelta_days(object o):
+-    return (<PyDateTime_Delta*>o).days
++    return PyDateTime_DELTA_GET_DAYS(o)
+ 
+ # Get seconds of timedelta
+ cdef inline int timedelta_seconds(object o):
+-    return (<PyDateTime_Delta*>o).seconds
++    return PyDateTime_DELTA_GET_SECONDS(o)
++
+ 
+ # Get microseconds of timedelta
+ cdef inline int timedelta_microseconds(object o):
+-    return (<PyDateTime_Delta*>o).microseconds
++    return PyDateTime_DELTA_GET_MICROSECONDS(o)
 diff --git a/Cython/Includes/cpython/slice.pxd b/Cython/Includes/cpython/slice.pxd
 index 202dea7..1e83e66 100644
 --- a/Cython/Includes/cpython/slice.pxd
