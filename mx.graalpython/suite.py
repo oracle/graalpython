@@ -962,8 +962,9 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
+                "truffle:TRUFFLE_NFI",
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
-                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
                 "truffle:TRUFFLE_ICU4J",
             ],
             "requires": [
