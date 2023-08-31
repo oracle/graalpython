@@ -51,7 +51,11 @@ def reference_array_resize(args):
     return a
 
 
-# Globally referenced array for tests that need the memory to stay alive after the C function exits
+def reference_getbuffer(args):
+    [a] = args
+    return a, bytes(a), len(a) * a.itemsize, a.itemsize, 0, 1, a.typecode, len(a), a.itemsize
+
+
 TEST_ARRAY = array('i', [1, 2, 3])
 
 
@@ -86,7 +90,6 @@ class TestPyArray(CPyExtTestCase):
         test__PyArray_Data = CPyExtFunction(
             lambda args: bytes(args[0]),
             lambda: (
-                # Array needs to be kept alive after the function
                 (TEST_ARRAY, len(TEST_ARRAY) * TEST_ARRAY.itemsize),
             ),
             code="""
@@ -103,3 +106,29 @@ class TestPyArray(CPyExtTestCase):
             arguments=["PyObject* array", "Py_ssize_t size"],
             cmpfunc=unhandled_error_compare,
         )
+
+    test_array_getbuffer = CPyExtFunction(
+        reference_getbuffer,
+        lambda: (
+            (array('h', [1, 2, 3]),),
+        ),
+        code="""
+        PyObject* wrap_array_getbuffer(PyObject* array) {
+            Py_buffer buf;
+            if (PyObject_GetBuffer(array, &buf, PyBUF_FULL) != 0)
+                return NULL;
+            PyObject* bytes = PyBytes_FromStringAndSize(buf.buf, buf.len);
+            if (!bytes)
+                return NULL;
+            PyObject* result = Py_BuildValue("OOnniisnn", buf.obj, bytes, buf.len, buf.itemsize, buf.readonly, buf.ndim,
+                                             buf.format, buf.shape[0], buf.strides[0]);
+            PyBuffer_Release(&buf);
+            return result;
+        }
+        """,
+        callfunction="wrap_array_getbuffer",
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* array"],
+        cmpfunc=unhandled_error_compare,
+    )

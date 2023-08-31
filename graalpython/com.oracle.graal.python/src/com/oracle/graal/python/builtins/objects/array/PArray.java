@@ -33,6 +33,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -61,7 +62,9 @@ public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final TruffleString formatString;
     private SequenceStorage storage;
-    private volatile int exports;
+
+    // Count of exports via native buffer interface
+    private final AtomicLong exports = new AtomicLong();
 
     public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format) {
         super(clazz, instanceShape);
@@ -115,16 +118,12 @@ public final class PArray extends PythonBuiltinObject {
         return storage.length() / getItemSize();
     }
 
-    public int getExports() {
+    public AtomicLong getExports() {
         return exports;
     }
 
-    public void setExports(int exports) {
-        this.exports = exports;
-    }
-
     public void checkCanResize(PythonBuiltinBaseNode node) {
-        if (exports != 0) {
+        if (exports.get() != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
     }

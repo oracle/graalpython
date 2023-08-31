@@ -293,6 +293,12 @@ static void initialize_bufferprocs() {
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
+
+    static PyBufferProcs array_as_buffer;
+    array_as_buffer.bf_getbuffer = GraalPyTruffle_Array_getbuffer,
+    array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
+    Arraytype.tp_as_buffer = &array_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
 }
 
 PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {

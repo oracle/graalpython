@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -176,6 +177,26 @@ public abstract class ArrayNodes {
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class EnsureNativeStorage extends Node {
+        public abstract NativeByteSequenceStorage execute(Node inliningTarget, PArray array);
+
+        @Specialization
+        NativeByteSequenceStorage toNative(PArray array,
+                        @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+            if (array.getSequenceStorage() instanceof NativeByteSequenceStorage storage) {
+                return storage;
+            } else if (array.getSequenceStorage() instanceof ByteSequenceStorage storage) {
+                NativeByteSequenceStorage nativeStorage = (NativeByteSequenceStorage) storageToNativeNode.execute(storage.getInternalByteArray(), storage.length());
+                array.setSequenceStorage(nativeStorage);
+                return nativeStorage;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("invalid storage for PArray");
             }
         }
     }

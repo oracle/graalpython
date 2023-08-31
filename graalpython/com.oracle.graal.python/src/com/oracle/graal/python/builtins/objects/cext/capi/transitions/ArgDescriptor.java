@@ -184,7 +184,7 @@ public enum ArgDescriptor {
     PyASCIIObject(ArgBehavior.PyObject, "PyASCIIObject*"),
     PY_AUDITHOOKFUNCTION("Py_AuditHookFunction"),
     Py_buffer("Py_buffer"),
-    PY_BUFFER_PTR("Py_buffer*"),
+    PY_BUFFER_PTR(ArgBehavior.Pointer, "Py_buffer*"),
     PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),

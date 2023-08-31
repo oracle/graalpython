@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructs.PyMemoryViewObject;
 
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapperFactory.AllocateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -125,13 +126,16 @@ public final class PyMemoryViewWrapper extends PythonReplacingNativeWrapper {
 
             Object buf;
             if (object.getBufferPointer() == null) {
-                // TODO GR-21120: Add support for PArray
-                PSequence owner = (PSequence) object.getOwner();
-                NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(inliningTarget, owner), owner instanceof PBytesLike);
-                if (nativeStorage == null) {
-                    throw CompilerDirectives.shouldNotReachHere("cannot allocate native storage");
+                NativeSequenceStorage nativeStorage;
+                if (object.getOwner() instanceof PSequence owner) {
+                    nativeStorage = toNativeStorageNode.execute(getStorage.execute(inliningTarget, owner), owner instanceof PBytesLike);
+                    setStorage.execute(inliningTarget, owner, nativeStorage);
+                } else if (object.getOwner() instanceof PArray owner) {
+                    nativeStorage = toNativeStorageNode.execute(owner.getSequenceStorage(), true);
+                    owner.setSequenceStorage(nativeStorage);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot convert managed object to native storage");
                 }
-                setStorage.execute(inliningTarget, owner, nativeStorage);
                 Object pointer = nativeStorage.getPtr();
                 if (object.getOffset() == 0) {
                     buf = pointer;
