@@ -157,6 +157,15 @@ def _reference_find(args):
         return s.rfind(sub, start, end)
 
 
+def _decoder_for_utf16(byteorder):
+    if byteorder == 0:
+        return codecs.utf_16_decode
+    elif byteorder < 0:
+        return codecs.utf_16_le_decode
+    else:
+        return codecs.utf_16_be_decode
+
+
 class CustomString(str):
     pass
 
@@ -551,6 +560,56 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec='y#y',
         arguments=["char* bytes", "Py_ssize_t size", "char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeUTF16 = CPyExtFunction(
+        lambda args: _decoder_for_utf16(args[2])(args[0], args[1].decode('ascii'), True)[0],
+        lambda: (
+            ('skål'.encode('utf-16'), b'strict', 0),
+            ('skål'.encode('utf-16-le'), b'strict', -1),
+            ('skål'.encode('utf-16-be'), b'strict', 1),
+            (b'a', b'strict', 0),
+            (b'=\xd8', b'strict', 0),
+            (b'\x02\xde', b'strict', 0),
+            (b'\x02\xde', b'replace', 0),
+        ),
+        code='''
+            PyObject* wrap_PyUnicode_DecodeUTF16(const char* bytes, Py_ssize_t size, const char* errors, int byteorder) {
+                return PyUnicode_DecodeUTF16(bytes, size, errors, &byteorder);
+            }
+        ''',
+        callfunction="wrap_PyUnicode_DecodeUTF16",
+        resultspec="O",
+        argspec='y#yi',
+        arguments=["char* bytes", "Py_ssize_t size", "char* errors", "int byteorder"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeUTF16Stateful = CPyExtFunction(
+        lambda args: _decoder_for_utf16(args[2])(args[0], args[1].decode('ascii'), False),
+        lambda: (
+            ('skål'.encode('utf-16'), b'strict', 0),
+            ('skål'.encode('utf-16-le'), b'strict', -1),
+            ('skål'.encode('utf-16-be'), b'strict', 1),
+            (b'a', b'strict', 0),
+            (b'=\xd8', b'strict', 0),
+            (b'\x02\xde', b'strict', 0),
+            (b'\x02\xde', b'replace', 0),
+        ),
+        code='''
+            PyObject* wrap_PyUnicode_DecodeUTF16Stateful(const char* bytes, Py_ssize_t size, const char* errors, int byteorder) {
+                Py_ssize_t consumed = 0;
+                PyObject* res = PyUnicode_DecodeUTF16Stateful(bytes, size, errors, &byteorder, &consumed);
+                if (!res)
+                    return NULL;
+                return Py_BuildValue("On", res, consumed);
+            }
+        ''',
+        callfunction="wrap_PyUnicode_DecodeUTF16Stateful",
+        resultspec="O",
+        argspec='y#yi',
+        arguments=["char* bytes", "Py_ssize_t size", "char* errors", "int byteorder"],
         cmpfunc=unhandled_error_compare
     )
 

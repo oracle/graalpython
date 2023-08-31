@@ -46,6 +46,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeDecodeError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16_BE;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
@@ -839,6 +842,32 @@ public final class PythonCextUnicodeBuiltins {
             try {
                 PBytes bytes = factory().createBytes(getByteArrayNode.execute(cByteArray, size));
                 return decode.call(null, bytes, T_UTF8, errors, reportConsumed == 0);
+            } catch (OverflowException e) {
+                throw raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+            } catch (InteropException e) {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
+    abstract static class PyTruffleUnicode_DecodeUTF16Stateful extends CApi5BuiltinNode {
+
+        @Specialization
+        Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached CodecsModuleBuiltins.CodecsDecodeNode decode) {
+            try {
+                PBytes bytes = factory().createBytes(getByteArrayNode.execute(cByteArray, size));
+                TruffleString encoding;
+                if (byteorder == 0) {
+                    encoding = T_UTF_16;
+                } else if (byteorder < 0) {
+                    encoding = T_UTF_16_LE;
+                } else {
+                    encoding = T_UTF_16_BE;
+                }
+                return decode.call(null, bytes, encoding, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
             } catch (InteropException e) {
