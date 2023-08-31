@@ -394,7 +394,6 @@ PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const ch
 		Py_DecRef(result);
 		return string;
 	}
-	PyErr_SetString(PyExc_SystemError, "expected tuple but got NULL");
 	return NULL;
 }
 

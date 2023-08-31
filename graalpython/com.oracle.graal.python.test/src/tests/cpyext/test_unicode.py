@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import codecs
 import re
 import sys
 
@@ -513,21 +514,43 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyUnicode_DecodeUTF8Stateful = CPyExtFunction(
-        lambda args: args[0],
+    test_PyUnicode_DecodeUTF8 = CPyExtFunction(
+        lambda args: args[0].decode('utf-8', errors=args[1].decode('ascii')),
         lambda: (
-            ("_type_",),
+            ('skål'.encode('utf-8'), b'strict'),
+            (b'\xc3', b'strict'),
+            (b'\xa5l', b'strict'),
+            (b'\xc3', b'replace'),
+            (b'\xa5l', b'replace'),
         ),
-        code="""PyObject* wrap_PyUnicode_DecodeUTF8Stateful(PyObject* _type_str) {
-            _Py_IDENTIFIER(_type_);
-            // _PyUnicode_FromId --> PyUnicode_DecodeUTF8Stateful
-            return _PyUnicode_FromId(&PyId__type_);
-        }
-        """,
         resultspec="O",
-        argspec='O',
-        arguments=["PyObject* s"],
+        argspec='y#y',
+        arguments=["char* bytes", "Py_ssize_t size", "char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeUTF8Stateful = CPyExtFunction(
+        lambda args: codecs.utf_8_decode(args[0], args[1].decode('ascii'), False),
+        lambda: (
+            ('skål'.encode('utf-8'), b'strict'),
+            (b'\xc3', b'strict'),
+            (b'\xa5l', b'strict'),
+            (b'\xc3', b'replace'),
+            (b'\xa5l', b'replace'),
+        ),
+        code='''
+            PyObject* wrap_PyUnicode_DecodeUTF8Stateful(const char* bytes, Py_ssize_t size, const char* errors) {
+                Py_ssize_t consumed = 0;
+                PyObject* res = PyUnicode_DecodeUTF8Stateful(bytes, size, errors, &consumed);
+                if (!res)
+                    return NULL;
+                return Py_BuildValue("On", res, consumed);
+            }
+        ''',
         callfunction="wrap_PyUnicode_DecodeUTF8Stateful",
+        resultspec="O",
+        argspec='y#y',
+        arguments=["char* bytes", "Py_ssize_t size", "char* errors"],
         cmpfunc=unhandled_error_compare
     )
 

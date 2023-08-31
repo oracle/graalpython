@@ -62,7 +62,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
@@ -76,7 +75,6 @@ import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
 
-import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -835,37 +833,17 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
     abstract static class PyTruffleUnicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {
         @Specialization
-        Object doUtf8Decode(Object cByteArray, long size, TruffleString errors, @SuppressWarnings("unused") int reportConsumed,
-                        @Cached GetByteArrayNode getByteArrayNode) {
-
+        Object doUtf8Decode(Object cByteArray, long size, TruffleString errors, int reportConsumed,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached CodecsModuleBuiltins.CodecsDecodeNode decode) {
             try {
-                byte[] bytes = getByteArrayNode.execute(cByteArray, size);
-                return factory().createTuple(decode(errors, bytes));
+                PBytes bytes = factory().createBytes(getByteArrayNode.execute(cByteArray, size));
+                return decode.call(null, bytes, T_UTF8, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
             } catch (InteropException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             }
-        }
-
-        @TruffleBoundary
-        private static Object[] decode(TruffleString errors, byte[] bytes) {
-            ByteBuffer inputBuffer = wrap(bytes);
-            int n = inputBuffer.remaining();
-            CharBuffer resultBuffer = CharBuffer.allocate(n * 4);
-
-            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            CodingErrorAction action = CodecsModuleBuiltins.convertCodingErrorAction(errors, TruffleString.EqualNode.getUncached());
-            decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
-            int len = resultBuffer.position();
-            TruffleString string;
-            if (len > 0) {
-                resultBuffer.rewind();
-                string = toTruffleStringUncached(resultBuffer.subSequence(0, len).toString());
-            } else {
-                string = T_EMPTY_STRING;
-            }
-            return new Object[]{string, n - inputBuffer.remaining()};
         }
     }
 
