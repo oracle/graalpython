@@ -49,6 +49,9 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UN
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16_BE;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_16_LE;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_BE;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
@@ -69,20 +72,14 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.ISO_8859_1;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
 
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -100,12 +97,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHandlerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
@@ -148,7 +143,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -876,6 +870,32 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
+    abstract static class PyTruffleUnicode_DecodeUTF32Stateful extends CApi5BuiltinNode {
+
+        @Specialization
+        Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached CodecsModuleBuiltins.CodecsDecodeNode decode) {
+            try {
+                PBytes bytes = factory().createBytes(getByteArrayNode.execute(cByteArray, size));
+                TruffleString encoding;
+                if (byteorder == 0) {
+                    encoding = T_UTF_32;
+                } else if (byteorder < 0) {
+                    encoding = T_UTF_32_LE;
+                } else {
+                    encoding = T_UTF_32_BE;
+                }
+                return decode.call(null, bytes, encoding, errors, reportConsumed == 0);
+            } catch (OverflowException e) {
+                throw raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+            } catch (InteropException e) {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+            }
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class PyTruffleUnicode_Decode extends CApiTernaryBuiltinNode {
 
@@ -1026,35 +1046,6 @@ public final class PythonCextUnicodeBuiltins {
         Object doUnicode(PString s) {
             // PyTruffle_Unicode_AsUnicodeAndSize_CharPtr must have been be called before
             return s.getWCharBytes().getSequenceStorage().length() / CStructs.wchar_t.size();
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    abstract static class PyTruffle_Unicode_DecodeUTF32 extends CApiQuaternaryBuiltinNode {
-
-        @Specialization
-        Object doUnicodeStringErrors(Object o, long size, TruffleString errors, int byteorder,
-                        @Cached GetByteArrayNode getByteArrayNode) {
-            try {
-                return decodeUTF32(getByteArrayNode.execute(o, size), (int) size, errors, byteorder);
-            } catch (CharacterCodingException e) {
-                throw raise(PythonErrorType.UnicodeEncodeError, ErrorMessages.M, e);
-            } catch (IllegalArgumentException e) {
-                TruffleString csName = Charsets.getUTF32Name(byteorder);
-                throw raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, csName);
-            } catch (InteropException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
-            } catch (OverflowException e) {
-                throw raise(OverflowError, ErrorMessages.INPUT_TOO_LONG);
-            }
-        }
-
-        @TruffleBoundary
-        private TruffleString decodeUTF32(byte[] data, int size, TruffleString errors, int byteorder) throws CharacterCodingException {
-            CharsetDecoder decoder = Charsets.getUTF32Charset(byteorder).newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this, TruffleString.EqualNode.getUncached());
-            CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(data, 0, size));
-            return toTruffleStringUncached(decode.toString());
         }
     }
 
