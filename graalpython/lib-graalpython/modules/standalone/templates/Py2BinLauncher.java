@@ -74,7 +74,6 @@ public class Py2BinLauncher {
             .fileSystem(vfs)
             .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
             .option("python.PosixModuleBackend", "java")
-            .option("python.NativeModules", "false")
             .option("python.DontWriteBytecodeFlag", "true")
             .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
             .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")

@@ -50,7 +50,6 @@ script, module, and optionally venv.
 
 import abc
 import argparse
-import io
 import os
 import shutil
 import subprocess
@@ -63,15 +62,12 @@ import urllib.request
 import tarfile
 import zipfile
 
-import _frozen_importlib_external
-
 assert sys.pycache_prefix is None
 
 MVN_COMPILER_SOURCE = "17"
 MVN_COMPILER_TARGET = "17"
 MVN_JAR_PLUGIN = "3.1.0"
-MVN_GRAAL_SDK_VERSION = "23.0.0"
-MVN_NATIVE_IMAGE_MVN_PLUGIN = "0.9.23"
+MVN_NATIVE_IMAGE_MVN_PLUGIN = "0.9.25"
 
 MVN_POM_FILE = "pom.xml"
 
@@ -157,8 +153,6 @@ class AbstractStandalone:
                     line = line.replace("{mvn-compiler-target}", MVN_COMPILER_TARGET)
                 if "{mvn-jar-plugin}" in line:
                     line = line.replace("{mvn-jar-plugin}", MVN_JAR_PLUGIN)
-                if "{graal-sdk-version}" in line:
-                    line = line.replace("{graal-sdk-version}", MVN_GRAAL_SDK_VERSION)
                 if "{native-image-mvn-plugin}" in line:
                     line = line.replace("{native-image-mvn-plugin}", MVN_NATIVE_IMAGE_MVN_PLUGIN)
                 if "{vfs-prefix}" in line:
@@ -261,7 +255,6 @@ class Standalone(AbstractStandalone):
 
         os.makedirs(os.path.dirname(target_dir), exist_ok=True)
 
-        # XXX do we get capi_home and stdlib_home from downloaded python-resources jar or from current instance?
         lib_source = __graalpython__.capi_home
         self.copy_folder_to_target(
             target_dir,
@@ -395,7 +388,7 @@ class NativeExecutable(Standalone):
 
     def get_tools(self):
         if os.getenv("JAVA_HOME"):
-            graalvm_home = os.getenv("JAV_HOME")
+            graalvm_home = os.getenv("JAVA_HOME")
         else:
             self.modules_path = os.path.join(self.target_dir, "lib")
             graalvm_url = self.get_graalvm_url()
@@ -492,12 +485,9 @@ class NativeExecutable(Standalone):
             mp = f":{self.modules_path}/".join(modules)
             modulepath = f"{self.modules_path}/{mp}:."
 
-            # XXX org.graalvm.llvm.nativemode.resources,org.graalvm.py.resources soon obsolete so remove
-            add_modules = "standalone,org.graalvm.llvm.nativemode.resources,org.graalvm.py.resources"
+            add_modules = "standalone"
             cmd = [ni, "--module-path", modulepath, "--add-modules", add_modules] + self.parsed_args.ni_args[:]
 
-            # XXX soon obsolete remove me
-            cmd += ["--initialize-at-build-time=org.bouncycastle.jce.provider.BouncyCastleProvider"]
             if self.parsed_args.Os:
                 cmd +=[
                     "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
