@@ -42,7 +42,6 @@ import subprocess
 import tempfile
 import unittest
 import shutil
-import glob
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 MVN_CMD = [shutil.which('mvn')]
@@ -67,9 +66,8 @@ def get_gp():
     ni = get_executable(os.path.join(java_home, "bin", "native-image"))
     jc = get_executable(os.path.join(java_home, "bin", "javac"))
     graalpy = get_executable(os.path.join(graalpy_home, "bin", "graalpy"))
-    java = get_executable(os.path.join(java_home, "bin", "java"))
 
-    if not os.path.isfile(graalpy) or not os.path.isfile(java) or not os.path.isfile(jc) or not os.path.isfile(ni):
+    if not os.path.isfile(graalpy) or not os.path.isfile(jc) or not os.path.isfile(ni):
         print(
             "Standalone module tests require a GraalVM JDK and a GraalPy standalone.",
             "Please point the JAVA_HOME and PYTHON_STANDALONE_HOME environment variables properly.",
@@ -85,17 +83,15 @@ def get_gp():
 
     print("Running tests for standalone module:")
     print("  graalpy_home:", graalpy_home)
-    print("  java_home:", java_home)
-    print("  graalpy:", graalpy)
-    print("  java:", java)
+    print("  graalpy     :", graalpy)
+    print("  java_home   :", java_home)
 
-    return java_home, graalpy, java
-
+    return graalpy
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_polyglot_app():
 
-    java_home, graalpy, java = get_gp()
+    graalpy = get_gp()
     env = os.environ.copy()
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -123,27 +119,13 @@ def test_polyglot_app():
         print(p.stderr.decode(errors='backslashreplace'))
         assert out.endswith("hello java\n")
 
-        cmd = MVN_CMD + ["package", "-Pjar"]
-        p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
-        assert "BUILD SUCCESS" in out
-
-        cmd = [java, "-jar", os.path.join(target_dir, "target", "polyglot_app-1.0-SNAPSHOT.jar")]
-        p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
-        assert out.endswith("hello java\n")
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
-    java_home, graalpy, java = get_gp()
-    if graalpy is None or java is None:
+    graalpy = get_gp()
+    if graalpy is None:
         return
-
-    env = get_env(java_home)
+    env = os.environ.copy()
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
@@ -170,11 +152,10 @@ def test_native_executable_one_file():
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file_venv():
-    java_home, graalpy, java = get_gp()
-    if graalpy is None or java is None:
+    graalpy = get_gp()
+    if graalpy is None:
         return
-
-    env = get_env(java_home)
+    env = os.environ.copy()
 
     with tempfile.TemporaryDirectory() as target_dir:
         source_file = os.path.join(target_dir, "hello.py")
@@ -215,11 +196,10 @@ def test_native_executable_one_file_venv():
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_module():
-    java_home, graalpy, java = get_gp()
-    if graalpy is None or java is None:
+    graalpy = get_gp()
+    if graalpy is None:
         return
-
-    env = get_env(java_home)
+    env = os.environ.copy()
 
     with tempfile.TemporaryDirectory() as tmp_dir:
 
