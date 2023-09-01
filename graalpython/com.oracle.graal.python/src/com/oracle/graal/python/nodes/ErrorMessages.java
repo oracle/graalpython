@@ -1485,6 +1485,13 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG = tsLiteral("cannot specify .legacy_slots without setting .builtin_shape=HPyType_BuiltinShape_Legacy");
     public static final TruffleString HPY_CANNOT_USE_CALL_WITH_LEGACY = tsLiteral("Cannot use HPy call protocol with legacy types that inherit the struct. " +
                     "Either set the basicsize to a non-zero value or use legacy slot 'Py_tp_call'.");
+    public static final TruffleString NFI_NOT_AVAILABLE = tsLiteral("GraalPy option '%s' is set to '%s, but the 'nfi' language, which is required for this feature, is not available. " +
+                    "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: " +
+                    "are you missing a runtime dependency 'org.graalvm.truffle:truffle-nfi-libffi', which should be a dependency of 'org.graalvm.polyglot:python{-community}'?");
+
+    public static final TruffleString LLVM_NOT_AVAILABLE = tsLiteral("GraalPy option 'NativeModules' is set to false, but the 'llvm' language, which is required for this feature, is not available. " +
+                    "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: are you missing a runtime dependency " +
+                    "'org.graalvm.polyglot:llvm{-community}'?");
     private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
                     "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
                     "define anything else but the HPy_mod_create slot.";
