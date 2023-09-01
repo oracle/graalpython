@@ -1488,7 +1488,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = {}
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            env['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             # build graalvm jdk
             mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
             if not DISABLE_REBUILD:
@@ -1526,6 +1525,10 @@ def graalpython_gate_runner(args, tasks):
                 os.mkdir(path)
                 mx.maven_deploy(deploy_args)
             # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+                f"{pathlib.Path(path).as_uri()}/",
+            ])
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(path).as_uri()}/"
             # run the test
