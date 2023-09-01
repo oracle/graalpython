@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,26 +23,40 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class BinaryBitwiseTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void bitwiseShifts() {
+        assertPrints("8\n", "print(1 << 3)");
+        assertPrints("2\n", "print(8 >> 2)");
+        assertPrints("680564733841876926926749214863536422912\n", "print(1 << 129)");
+        assertPrints("0\n", "print(8 >> 20)");
+        assertPrints("-256\n", "print(-1 << 8)");
+        assertPrints("-1\n", "print(-20 >> 12)");
     }
+
+    @Test
+    public void bitwiseAnd() {
+        assertPrints("0\n", "print(32 & 8)");
+        assertPrints("0\n", "print(32 & 8484324820482048)");
+    }
+
+    @Test
+    public void bitwiseOr() {
+        assertPrints("441\n", "print(432 | 9)");
+        assertPrints("943824320482304948\n", "print(432 | 943824320482304820)");
+    }
+
+    @Test
+    public void bitwiseXor() {
+        assertPrints("415\n", "print(425 ^ 54)");
+        assertPrints("544382094820482034324155\n", "print(425 ^ 544382094820482034324242)");
+    }
+
 }

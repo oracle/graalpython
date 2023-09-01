@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,26 +23,24 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class LambdaTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void lambdaTest() {
+        String source = "def make_incrementor (n):\n" + //
+                        "    return lambda x: x + n\n" + //
+                        "f = make_incrementor(2)\n" + //
+                        "g = make_incrementor(6)\n" + //
+                        "print(f(42))\n" + //
+                        "print(g(42))\n" + //
+                        "print(make_incrementor(22)(33))\n";
+        assertPrints("44\n48\n55\n", source);
     }
+
 }

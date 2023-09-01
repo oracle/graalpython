@@ -23,26 +23,40 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.builtin;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrintContains;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
 public class ImportTests {
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void importStandardLib() {
+        String source = "import bisect\n" + //
+                        "bisect.foo = 42\n" + //
+                        "print(bisect.foo)\n";
+        assertPrints("42\n", source);
+    }
+
+    @Test
+    public void module__file__() {
+        String source = "import bisect\n" + //
+                        "print(bisect.__file__)\n";
+        assertPrintContains("bisect.py\n", source);
+    }
+
+    @Test
+    public void module__file__1() {
+        String source = "import __future__\n" + //
+                        "print(__future__.__file__)\n";
+        assertPrintContains("__future__.py\n", source);
+    }
+
+    @Test
+    public void testFromImport() {
+        String souce = "from math import sqrt, sin as sine\n" +
+                        "print(sqrt.__name__, sine.__name__)\n";
+        assertPrints("sqrt sin\n", souce);
     }
 }

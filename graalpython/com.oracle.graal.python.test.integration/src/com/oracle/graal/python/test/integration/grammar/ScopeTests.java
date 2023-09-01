@@ -23,26 +23,41 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class ScopeTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void implicitNonLocal() {
+        String source = "def foo():\n" + //
+                        "    a = 42\n" + //
+                        "    def bar():\n" + //
+                        "        print(a)\n" + //
+                        "    \n" + //
+                        "    return bar\n" + //
+                        "\n" + //
+                        "foo()()\n";
+
+        assertPrints("42\n", source);
+    }
+
+    @Test
+    public void explicitNonLocal() {
+        String source = "def foo():\n" +
+                        "    x = 1\n" +
+                        "    def bar():\n" +
+                        "        nonlocal x\n" +
+                        "        print(x)\n" +
+                        "        x = 2\n" +
+                        "    bar()\n" +
+                        "    print(x)\n" +
+                        "    x = 3\n" +
+                        "    print(x)\n" +
+                        "foo()";
+        assertPrints("1\n2\n3\n", source);
     }
 }

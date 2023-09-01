@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,26 +23,50 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class WhileTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void test0() {
+        String source = "a = 1\n" + //
+                        "while a:\n" + //
+                        "  print(a)\n" + //
+                        "  a = a - 1\n";
+        assertPrints("1\n", source);
     }
+
+    @Test
+    public void test1() {
+        String source = "a = 0\n" + //
+                        "b = 5\n" + //
+                        "while a < b:\n" + //
+                        "  print(a, \" < \", b)\n" + //
+                        "  b = b - 1\n";
+        assertPrints("0  <  5\n0  <  4\n0  <  3\n0  <  2\n0  <  1\n", source);
+    }
+
+    @Test
+    public void test2() {
+        String source = "a = 1\n" + //
+                        "while not a:\n" + //
+                        "  print(a)\n" + //
+                        "  a = a - 1\n";
+        assertPrints("", source);
+    }
+
+    @Test
+    public void test3() {
+        String source = "a = 1\n" + //
+                        "b = 5\n" + //
+                        "while not a > b:\n" + //
+                        "  print(a, \" > \", b)\n" + //
+                        "  b = b - 1\n";
+        assertPrints("1  >  5\n1  >  4\n1  >  3\n1  >  2\n1  >  1\n", source);
+    }
+
 }
