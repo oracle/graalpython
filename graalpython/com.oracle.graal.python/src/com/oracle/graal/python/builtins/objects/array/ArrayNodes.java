@@ -183,12 +183,12 @@ public abstract class ArrayNodes {
 
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class EnsureNativeStorage extends Node {
+    public abstract static class EnsureNativeStorageNode extends Node {
         public abstract NativeByteSequenceStorage execute(Node inliningTarget, PArray array);
 
         @Specialization
         NativeByteSequenceStorage toNative(PArray array,
-                        @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+                        @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             if (array.getSequenceStorage() instanceof NativeByteSequenceStorage storage) {
                 return storage;
             } else if (array.getSequenceStorage() instanceof ByteSequenceStorage storage) {

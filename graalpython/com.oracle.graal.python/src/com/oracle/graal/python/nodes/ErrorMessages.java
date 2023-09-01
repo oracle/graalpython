@@ -1000,7 +1000,6 @@ public abstract class ErrorMessages {
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
-    public static final TruffleString ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED = tsLiteral("Array conversion to native memory not implemented");
     public static final TruffleString INTERNAL_INT_OVERFLOW = tsLiteral("internal error: value too large to cast to i32 int");
 
     // SSL errors

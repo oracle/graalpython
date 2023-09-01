@@ -131,6 +131,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -781,16 +783,21 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class BufferInfoNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @SuppressWarnings("unused")
-        Object bufferinfo(PArray self) {
-            /*
-             * TODO return the C pointer.
-             *
-             * Don't expose buffer_info unless we give out a valid pointer, otherwise people use the
-             * pointer and segfault.
-             */
-            throw raise(NotImplementedError, ErrorMessages.ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED);
-            // return factory().createTuple(new Object[]{POINTER, self.getLength()})
+        static Object bufferinfo(PArray self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode,
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            Object nativePointer = ensureNativeStorageNode.execute(inliningTarget, self).getPtr();
+            if (!(nativePointer instanceof Long)) {
+                try {
+                    nativePointer = lib.asPointer(nativePointer);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError);
+                }
+            }
+            return factory.createTuple(new Object[]{nativePointer, self.getLength()});
         }
     }
 

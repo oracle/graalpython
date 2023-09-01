@@ -60,12 +60,7 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,12 +77,12 @@ public final class PythonCextArrayBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class _PyArray_Resize extends CApiBinaryBuiltinNode {
         @Specialization
-        int resize(PArray object, long newSize,
+        static int resize(PArray array, long newSize,
                         @Bind("this") Node inliningTarget,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode) {
-            ensureCapacityNode.execute(inliningTarget, object, (int) newSize);
-            setLengthNode.execute(inliningTarget, object, (int) newSize);
+            ensureCapacityNode.execute(inliningTarget, array, (int) newSize);
+            setLengthNode.execute(inliningTarget, array, (int) newSize);
             return 0;
         }
     }
@@ -95,15 +90,10 @@ public final class PythonCextArrayBuiltins {
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
     abstract static class _PyArray_Data extends CApiUnaryBuiltinNode {
         @Specialization
-        Object get(PArray object,
-                        @Cached StorageToNativeNode storageToNativeNode) {
-            if (object.getSequenceStorage() instanceof NativeByteSequenceStorage storage) {
-                return storage.getPtr();
-            } else if (object.getSequenceStorage() instanceof ByteSequenceStorage storage) {
-                NativeSequenceStorage nativeStorage = storageToNativeNode.execute(storage.getInternalByteArray(), storage.length());
-                return nativeStorage.getPtr();
-            }
-            throw CompilerDirectives.shouldNotReachHere("invalid storage for PArray");
+        static Object get(PArray array,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode) {
+            return ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
         }
     }
 
@@ -112,7 +102,7 @@ public final class PythonCextArrayBuiltins {
         @Specialization
         static int getbuffer(PArray array, Object pyBufferPtr, int flags,
                         @Bind("this") Node inliningTarget,
-                        @Cached ArrayNodes.EnsureNativeStorage ensureNativeStorage,
+                        @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached CApiTransitions.PythonToNativeNewRefNode toNativeNewRefNode,
@@ -121,7 +111,7 @@ public final class PythonCextArrayBuiltins {
                         @Cached CStructAccess.WriteIntNode writeIntNode,
                         @Cached CStructAccess.WriteByteNode writeByteNode,
                         @Cached CStructAccess.AllocateNode allocateNode) {
-            Object bufPtr = ensureNativeStorage.execute(inliningTarget, array).getPtr();
+            Object bufPtr = ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
             Object nativeNull = PythonContext.get(inliningTarget).getNativeNull().getPtr();
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__obj, toNativeNewRefNode.execute(array));
