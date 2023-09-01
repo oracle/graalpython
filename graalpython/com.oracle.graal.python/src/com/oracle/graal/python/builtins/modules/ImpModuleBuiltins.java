@@ -280,7 +280,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
 
         @Child private CheckFunctionResultNode checkResultNode;
-        @Child private HPyCheckFunctionResultNode checkHPyResultNode;
 
         public abstract Object execute(VirtualFrame frame, PythonObject moduleSpec, Object filename);
 
@@ -317,7 +316,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             if (existingModule != null) {
                 return existingModule;
             }
-            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
+            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode());
         }
 
         @SuppressWarnings({"static-method", "unused"})
@@ -333,14 +332,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
-        }
-
-        private HPyCheckFunctionResultNode getCheckHPyResultNode() {
-            if (checkHPyResultNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                checkHPyResultNode = insert(HPyCheckHandleResultNodeGen.create());
-            }
-            return checkHPyResultNode;
         }
     }
 
