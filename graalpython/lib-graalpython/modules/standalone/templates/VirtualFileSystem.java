@@ -51,6 +51,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
@@ -76,9 +77,9 @@ public final class VirtualFileSystem implements FileSystem {
     /*
      * Root of the virtual filesystem in the resources.
      */
-    private static final String VFS_PREFIX = "/vfs";
-    
-    /* 
+    private static final Path VFS_PREFIX = Path.of("/vfs");
+
+    /*
      * Index of all files and directories available in the resources at runtime.
      * - paths are absolute
      * - directory paths end with a '/' 
@@ -113,42 +114,72 @@ public final class VirtualFileSystem implements FileSystem {
     
     /*
      * Determines where the virtual filesystem lives in the real filesystem,
-     * e.g. if set to "X:\graalpy_vfs", then a resource with path /vfx/xyz/abc
+     * e.g. if set to "X:\graalpy_vfs", then a resource with path /vfs/xyz/abc
      * is visible as "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path
      * with platform-specific separators without any trailing separator.
      * If that file or directory actually exists, it will not be accessible.
      */
-    private final String mountPoint;
+    private final Path mountPoint;
+    private final Path extractDir;
+    private final DirectoryStream.Filter<Path> extractFilter;
     private static final boolean caseInsensitive = isWindows();
-    
+
     public VirtualFileSystem() {
+        this(null);
+    }
+
+    /**
+     * If an extract filter is given, the virtual file system will lazily extract files and
+     * directories matching the filter to a temporary directory. This happens if the
+     * {@link #toAbsolutePath(Path) absolute path} is computed. This argument may be {@code null}
+     * causing that no extraction will happen.
+     */
+    public VirtualFileSystem(DirectoryStream.Filter<Path> extractFilter) {
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
             mp = isWindows() ? "X:\\graalpy_vfs" : "/graalpy_vfs";
         }
-        if (mp.endsWith(PLATFORM_SEPARATOR) || !Path.of(mp).isAbsolute()) {
+        this.mountPoint = Path.of(mp);
+        if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
             throw new IllegalArgumentException("GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator");
         }
-        this.mountPoint = mp;
+        this.extractFilter = extractFilter;
+        if (extractFilter != null) {
+            try {
+                this.extractDir = Files.createTempDirectory("vfsx");
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        } else {
+            this.extractDir = null;
+        }
     }
 
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
-    
-    public String resourcePathToPlatformPath(String path) {
+
+    public String resourcePathToPlatformPath(String spath) {
+        Path path = Path.of(spath);
         assert path.startsWith(VFS_PREFIX);
-        path = path.substring(VFS_PREFIX.length());
-        if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
-            path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
+        Path mountPoint = this.mountPoint;
+        if (path.startsWith(VFS_PREFIX)) {
+            path = VFS_PREFIX.relativize(path);
         }
-        return mountPoint + path;
+        String result = mountPoint.resolve(path).toString();
+        if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
+            result = result.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
+        }
+        return result;
     }
 
     private String platformPathToResourcePath(String path) throws IOException {
+        String mountPoint = this.mountPoint.toString();
         assert path.startsWith(mountPoint);
-        
-        path = path.substring(mountPoint.length());
+
+        if (path.startsWith(mountPoint)) {
+            path = path.substring(mountPoint.length());
+        }
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(PLATFORM_SEPARATOR, RESOURCE_SEPARATOR);
         }
@@ -161,7 +192,7 @@ public final class VirtualFileSystem implements FileSystem {
         }
         return path;
     }
-    
+
     private static Set<String> getFilesList() throws IOException {
         if (filesList == null) {
             initFilesAndDirsList();
@@ -260,8 +291,15 @@ public final class VirtualFileSystem implements FileSystem {
         }
     }
 
+    private Path toAbsolutePathInternal(Path path) {
+        if (path.startsWith(mountPoint)) {
+            return path;
+        }
+        return mountPoint.resolve(path);
+    }
+
     private Entry file(Path path) throws IOException {
-        path = toRealPath(toAbsolutePath(path));
+        path = toAbsolutePathInternal(path).normalize();
         String pathString = path.toString();
         String entryKey = caseInsensitive ? pathString.toLowerCase(Locale.ROOT) : pathString;
         Entry e = VFS_ENTRIES.get(entryKey);
@@ -282,6 +320,64 @@ public final class VirtualFileSystem implements FileSystem {
             }
         }
         return e;
+    }
+
+    /**
+     * Determines if the given platform path should be extracted to a temp directory. This is
+     * determined by the provided filter accepts the path.
+     */
+    private boolean shouldExtract(Path path) {
+        try {
+            return extractFilter != null && extractFilter.accept(path);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Extracts a file or directory from the resource to the temporary directory and returns the
+     * path to the extracted file. Inexisting parent directories will also be created (recursively).
+     * If the extracted file or directory already exists, nothing will be done.
+     */
+    private Path getExtractedPath(Path path) {
+        assert extractDir != null;
+        assert shouldExtract(path);
+        try {
+            /*
+             * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is
+             * able to handle relative paths and we need it to compute the extract path.
+             */
+            Path relPath;
+            if (path.startsWith(mountPoint)) {
+                relPath = mountPoint.relativize(path);
+            } else {
+                relPath = path;
+            }
+
+            // create target path
+            Path xPath = extractDir.resolve(relPath);
+            if (!Files.exists(xPath)) {
+                Entry e = file(relPath);
+                if (e == null) {
+                    return path;
+                }
+                if (e.isFile()) {
+                    // first create parent dirs
+                    Path parent = xPath.getParent();
+                    assert parent == null || Files.isDirectory(parent);
+                    Files.createDirectories(parent);
+
+                    // write data extracted file
+                    Files.write(xPath, (byte[]) e.data());
+                } else {
+                    Files.createDirectories(xPath);
+                }
+            }
+
+            return xPath;
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
@@ -434,16 +530,24 @@ public final class VirtualFileSystem implements FileSystem {
 
     @Override
     public Path toAbsolutePath(Path path) {
-        if (path.startsWith(mountPoint)) {
-            return path;
+        Path result;
+        if (shouldExtract(path)) {
+            result = getExtractedPath(path);
         } else {
-            return Paths.get(mountPoint, path.toString());
+            result = path;
         }
+        return toAbsolutePathInternal(result);
     }
 
     @Override
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
-        return path.normalize();
+        Path result;
+        if (shouldExtract(path)) {
+            result = getExtractedPath(path);
+        } else {
+            result = path;
+        }
+        return result.normalize();
     }
 
     @Override
