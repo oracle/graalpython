@@ -2768,7 +2768,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
+        static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, int cap,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached(inline = false) CStructAccess.AllocateNode alloc,
                         @Cached(inline = false) CStructAccess.ReadByteNode read,
@@ -2791,7 +2791,7 @@ public abstract class SequenceStorageNodes {
                     throw raiseNode.get(inliningTarget).raise(MemoryError);
                 }
                 // TODO: turn this into a memcpy
-                for (long i = 0; i < capacity; i++) {
+                for (long i = 0; i < capacity * elementSize; i++) {
                     write.writeArrayElement(newMem, i, read.readArrayElement(mem, i));
                 }
                 free.free(mem);
