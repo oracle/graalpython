@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,26 +23,39 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.module;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class MathTests {
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void piAndE() {
+        String source = "import math\n" + //
+                        "print(math.e)\n" + //
+                        "print(math.pi)\n" + //
+                        "print(math.e + math.pi)\n";
+        assertPrints("2.718281828459045\n" + "3.141592653589793\n" + "5.859874482048838\n", source);
     }
+
+    @Test
+    public void logAndExp() {
+        String source = "import math\n" + //
+                        "a = math.log(1 + math.e)\n" + //
+                        "b = 10\n" + //
+                        "c = math.exp(b)\n" + //
+                        "print(a // c)\n";
+        assertPrints("0.0\n", source);
+    }
+
+    @Test
+    public void sinAndCos() {
+        String source = "import math\n" + //
+                        "x = math.pi\n" + //
+                        "y = math.sin(x)\n" + //
+                        "print(y // math.cos(math.e))\n";
+        assertPrints("-1.0\n", source);
+    }
+
 }

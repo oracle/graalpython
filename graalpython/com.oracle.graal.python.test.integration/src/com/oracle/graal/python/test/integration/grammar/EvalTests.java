@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
- * Copyright (c) 2013, Regents of the University of California
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
  *
@@ -23,26 +23,19 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class EvalTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void simple() {
+        String source = "expr = '1 + 1'\n" + //
+                        "print(eval(expr))\n";
+        assertPrints("2\n", source);
     }
+
 }

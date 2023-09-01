@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,26 +23,30 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class BinaryBooleanTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void logicAnd() {
+        assertPrints("0\n", "print(0 and 1)");
+        assertPrints("0\n", "print(2 and 0)");
+        assertPrints("0\n", "print(0 and 12953285437432947239)");
+        assertPrints("9.9292\n", "print(2.4343 and 9.9292)");
+        assertPrints("None\n", "print(None and 8)");
     }
+
+    @Test
+    public void logicOr() {
+        assertPrints("1\n", "print(0 or 1)");
+        assertPrints("2\n", "print(2 or 0)");
+        assertPrints("12953285437432947239\n", "print(0 or 12953285437432947239)");
+        assertPrints("2.4343\n", "print(2.4343 or 9.9292)");
+        assertPrints("8\n", "print(None or 8)");
+    }
+
 }
