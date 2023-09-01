@@ -55,37 +55,23 @@
         <graalpy.venv.executable>/bin/python</graalpy.venv.executable>
     </properties>
 
-    <!-- XXX remove me -->
-    <repositories>
-        <repository>
-            <id>myrepo</id>
-            <url>file:///tmp/local_repo</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-  
     <dependencies>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>23.1.0-dev</version>
+            <version>{graal-version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>python-community</artifactId>
-            <version>23.1.0-dev</version>
+            <version>{graal-version}</version>
             <scope>runtime</scope>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.graalvm.python</groupId>
             <artifactId>python-launcher</artifactId>
-            <version>23.1.0-dev</version>
+            <version>{graal-version}</version>
             <scope>runtime</scope>
         </dependency>
     </dependencies>

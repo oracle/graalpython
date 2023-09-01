@@ -16,7 +16,7 @@ del VTabCreator.java
 REM Store each argument separated by vtab
 for %%I in (%*) do call :sub %%I
 
-mvn -f "%~dp0"pom.xml exec:java -Dexec.mainClass=com.oracle.graal.python.shell.GraalPythonMain -Dorg.graalvm.launcher.executablename=%0
+mvn -f "%~dp0"pom.xml exec:exec -Dexec.executable=java -Dexec.args="--module-path %%classpath -Dorg.graalvm.launcher.executablename=%0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
 
 goto :eof
 

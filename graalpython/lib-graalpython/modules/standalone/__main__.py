@@ -126,6 +126,7 @@ class AbstractStandalone:
 
     def __init__(self, parsed_args):
         self.parsed_args = parsed_args
+        self.graalvm_version = MVN_PYTHON_COMMUNITY_VERSION if MVN_PYTHON_COMMUNITY_VERSION else __graalpython__.get_graalvm_version()
 
     @abc.abstractmethod
     def create(self):
@@ -163,6 +164,8 @@ class AbstractStandalone:
                     line = line.replace("{vfs-venv-prefix}", VFS_VENV_PREFIX)
                 if "{files-list-name}" in line:
                     line = line.replace("{files-list-name}", FILES_LIST_NAME)
+                if "{graal-version}" in line:
+                    line = line.replace("{graal-version}", self.graalvm_version)
                 f.write(line)
 
     def create_launcher_file(self, template, launcher, java_pkg=""):
@@ -322,15 +325,11 @@ class NativeExecutable(Standalone):
 
     def __init__(self, parsed_args):
         super().__init__(parsed_args)
-
         self.target_dir = tempfile.mkdtemp()
         self.modules_path = os.path.join(self.target_dir, "modules")
         self.mvn_code_prefix = ""
         self.mvn_resource_prefix = ""
         self.launcher_file = os.path.join(self.target_dir, MODULE_NAME, JAVA_BINDING_LAUNCHER_FILE)
-
-        self.graalvm_version = MVN_PYTHON_COMMUNITY_VERSION if MVN_PYTHON_COMMUNITY_VERSION else __graalpython__.get_graalvm_version()
-
         self.jdk_version = __graalpython__.get_jdk_version()
 
     def create(self):
