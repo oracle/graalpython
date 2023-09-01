@@ -449,11 +449,10 @@ class NativeExecutable(Standalone):
         if self.parsed_args.verbose:
             print(f"downloading graalpython maven artefacts: {' '.join(cmd)}")
 
-        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
         if self.parsed_args.verbose:
-            print(p.stdout.decode())
-            print(p.stderr.decode())
+            p = subprocess.run(cmd)
+        else:
+            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if p.returncode != 0:
             if not self.parsed_args.verbose:
@@ -467,9 +466,7 @@ class NativeExecutable(Standalone):
         os.chdir(self.target_dir)
 
         try:
-            modulepath = f"{self.modules_path}/org.graalvm.polyglot-polyglot-{self.graalvm_version}.jar"
-            # it would seem it is enough to compile the launcher file, but on some linux setups it isn't
-            cmd = [jc, "--module-path", modulepath, os.path.join(self.target_dir,MODULE_INFO_FILE), os.path.join(self.target_dir, MODULE_NAME, "VirtualFileSystem.java"), self.launcher_file]
+            cmd = [jc, "--module-path", self.modules_path, os.path.join(self.target_dir,MODULE_INFO_FILE), os.path.join(self.target_dir, MODULE_NAME, "VirtualFileSystem.java"), self.launcher_file]
             if self.parsed_args.verbose:
                 print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
             p = subprocess.run(cmd, cwd=self.target_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -478,15 +475,8 @@ class NativeExecutable(Standalone):
                 print(p.stderr.decode())
                 exit(1)
 
-            modules = []
-            for f in os.listdir(self.modules_path):
-                if f.endswith("jar"):
-                    modules.append(f)
-            mp = f":{self.modules_path}/".join(modules)
-            modulepath = f"{self.modules_path}/{mp}:."
-
-            add_modules = "standalone"
-            cmd = [ni, "--module-path", modulepath, "--add-modules", add_modules] + self.parsed_args.ni_args[:]
+            ni_modules = ":".join([os.path.join(self.modules_path, f) for f in os.listdir(self.modules_path) if f.endswith(".jar")] + [self.target_dir])
+            cmd = [ni, "--module-path", ni_modules] + self.parsed_args.ni_args[:]
 
             if self.parsed_args.Os:
                 cmd +=[
@@ -496,7 +486,7 @@ class NativeExecutable(Standalone):
             cmd += [
                 "--no-fallback",
                 "-H:-CopyLanguageResources",
-                "-H:ResourceConfigurationFiles=native-image-resources.json",
+                f"-H:ResourceConfigurationFiles={self.target_dir}/native-image-resources.json",
                 "-o",
                 output,
                 f"{MODULE_NAME}.{NATIVE_EXEC_LAUNCHER}",

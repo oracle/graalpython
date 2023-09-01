@@ -1075,25 +1075,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString get() {
             Version current = Version.getCurrent();
-            // TODO according to Version java doc, the output of toString is not standardized and may change without notice.
-            // Unfortunately, we have no way to tell what is the minimum count of version components and the snapshot suffix
-            // and have to guess is. For now, we can either do the same as version.toString does, or simply call it.
-//            String snapshotSuffix = "-dev";
-//            int min_version_components = 3;
-//
-//            int i = 1;
-//            String format = "";
-//            while (true) {
-//                if (current.format("%[" + i + "XX]").isEmpty() && i > min_version_components) {
-//                    break;
-//                }
-//                format += (format.isEmpty() ? "%d" : ".%d");
-//                i++;
-//            }
-//            String ret = current.format(format);
-//            if(current.isSnapshot()) {
-//                ret += snapshotSuffix;
-//            }
             return TruffleString.fromJavaStringUncached(current.toString(), TS_ENCODING);
         }
     }
