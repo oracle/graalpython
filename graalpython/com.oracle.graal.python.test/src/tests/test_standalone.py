@@ -48,6 +48,14 @@ MVN_CMD = [shutil.which('mvn')]
 if 'MAVEN_REPO_OVERRIDE' in os.environ:
     MVN_CMD += ['-Dmaven.repo.remote=' + os.environ['MAVEN_REPO_OVERRIDE']]
 
+def run_cmd(cmd, env, cwd=None):
+    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True)
+    out = []
+    for line in iter(process.stdout.readline, ""):
+        print(line, end="")
+        out.append(line)
+    return "".join(out)
+
 def get_executable(file):
     if os.path.isfile(file):
         return file
@@ -99,24 +107,15 @@ def test_polyglot_app():
         target_dir = os.path.join(tmpdir, "polyglot_app_test")
 
         cmd = [graalpy, "-m", "standalone", "--verbose", "polyglot_app", "-o", target_dir]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(p.stdout.decode(errors='backslashreplace'))
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "Creating polyglot java python application in directory " + target_dir in out
 
         cmd = MVN_CMD + ["package", "-Pnative"]
-        p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env, cwd=target_dir)
         assert "BUILD SUCCESS" in out
 
         cmd = [os.path.join(target_dir, "target", "polyglot_app")]
-        p = subprocess.run(cmd, cwd=target_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env, cwd=target_dir)
         assert out.endswith("hello java\n")
 
 
@@ -137,21 +136,15 @@ def test_native_executable_one_file():
         target_file = os.path.join(tmpdir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-m", source_file, "-o", target_file]
 
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file, "arg1", "arg2"]
-        p = subprocess.run(" ".join(cmd), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-def test_native_executable_one_file_venv():
+def test_native_executable_venv_and_one_file():
     graalpy = get_gp()
     if graalpy is None:
         return
@@ -166,31 +159,19 @@ def test_native_executable_one_file_venv():
 
         venv_dir = os.path.join(target_dir, "venv")
         cmd = [graalpy, "-m", "venv", venv_dir]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
 
         venv_python = os.path.join(venv_dir, "Scripts", "python.cmd") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
         cmd = [venv_python, "-m", "pip", "--no-cache-dir", "install", "termcolor"]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
 
         target_file = os.path.join(target_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
 
         assert "hello standalone world" in out
 
@@ -219,15 +200,9 @@ def test_native_executable_module():
         target_file = os.path.join(tmp_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", module_dir, "-o", target_file]
 
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file]
-        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.stdout.decode(errors='backslashreplace')
-        print(out)
-        print(p.stderr.decode(errors='backslashreplace'))
+        out = run_cmd(cmd, env)
         assert "hello standalone world" in out
