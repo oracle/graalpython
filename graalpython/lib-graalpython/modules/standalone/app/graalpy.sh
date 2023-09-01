@@ -13,8 +13,8 @@ done
 location="$( cd -P "$( dirname "$source" )" && pwd )"
 
 for var in "$@"; do    
-    args="$args$(printf "\v")$var"
+    args="${args}$(printf "\v")${var}"
 done
 
 export GRAAL_PYTHON_ARGS=$args
-mvn -f $location/pom.xml exec:java -Dexec.mainClass=com.oracle.graal.python.shell.GraalPythonMain -Dorg.graalvm.launcher.executablename=$0
+mvn -f "${location}/pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %classpath '-Dorg.graalvm.launcher.executablename=$0' --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
