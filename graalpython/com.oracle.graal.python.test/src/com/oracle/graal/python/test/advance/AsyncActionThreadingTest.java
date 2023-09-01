@@ -49,9 +49,9 @@ import java.util.stream.Stream;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
+import org.junit.Assume;
 import org.junit.Test;
 
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.test.PythonTests;
 
 public class AsyncActionThreadingTest extends PythonTests {
@@ -75,9 +75,7 @@ public class AsyncActionThreadingTest extends PythonTests {
 
     @Test
     public void testNoNewThreadsWithoutAutomaticAsyncActions() {
-        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
-            return;
-        }
+        Assume.assumeTrue("false".equalsIgnoreCase(System.getProperty("python.AutomaticAsyncActions")));
         long threadCount = pythonThreadCount();
         Context c = PythonTests.enterContext();
         try {

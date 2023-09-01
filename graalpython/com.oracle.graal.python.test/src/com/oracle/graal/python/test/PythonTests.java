@@ -49,12 +49,6 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
 
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonTests {
@@ -192,10 +186,6 @@ public class PythonTests {
         return PythonTests.runScript(new String[0], code, printStream, System.err);
     }
 
-    public static VirtualFrame createVirtualFrame() {
-        return Truffle.getRuntime().createVirtualFrame(null, new FrameDescriptor());
-    }
-
     static void flush(OutputStream out, OutputStream err) {
         PythonTests.outStream.flush();
         PythonTests.errStream.flush();
@@ -311,24 +301,6 @@ public class PythonTests {
         } finally {
             flush(out, err);
             closeContext();
-        }
-    }
-
-    /**
-     * This method returns the properly formatted error message of the given Python exception. It
-     * does not use {@code PException.toString} since this method is just meant for debugging an
-     * does not reliably return a properly formatted string. Instead, this method uses the
-     * {@link InteropLibrary} which provides interop messages to get the error message.
-     */
-    public static String getExceptionMessage(PException e) {
-        InteropLibrary interop = InteropLibrary.getUncached();
-        Assert.assertTrue("PException claims to be not an exception", interop.isException(e));
-        try {
-            Object exceptionMessageObject = interop.getExceptionMessage(e);
-            Assert.assertTrue("returned message object is not a string", interop.isString(exceptionMessageObject));
-            return interop.asString(exceptionMessageObject);
-        } catch (UnsupportedMessageException ume) {
-            throw new IllegalStateException("should not be reached");
         }
     }
 

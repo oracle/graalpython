@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -57,7 +58,6 @@ import org.junit.Rule;
 
 import com.oracle.graal.python.test.CleanupRule;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.graal.python.util.Consumer;
 
 /**
  * Base class for tests that run in multiple context with a shared engine and in parallel.

@@ -73,8 +73,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -854,6 +854,36 @@ public class JavaInteropTest {
                 Value result = check.builder.option(check.option, value).build().eval(check.source);
                 return result.toString();
             }).distinct().count());
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class InteropArray implements TruffleObject {
+        @CompilationFinal(dimensions = 1) private final Object[] array;
+
+        public InteropArray(Object[] array) {
+            this.array = array;
+        }
+
+        @ExportMessage(name = "readArrayElement")
+        Object get(long idx) {
+            return array[(int) idx];
+        }
+
+        @ExportMessage(name = "getArraySize")
+        int size() {
+            return array.length;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long idx) {
+            return idx < array.length;
         }
     }
 }
