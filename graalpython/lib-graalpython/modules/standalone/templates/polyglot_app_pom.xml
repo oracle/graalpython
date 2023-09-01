@@ -187,10 +187,12 @@
                                 by specifying the list of interfaces they implement. -->
                                 <buildArg>-H:DynamicProxyConfigurationFiles=native-image-proxy-configuration.json</buildArg>
                             </buildArgs>
-                            <!-- Remove the properties below to include the Python JIT compiler -->
-                            <jvmArgs>
+                            <!-- Uncomment the property below to include the Python JIT compiler, 
+                            which will optimize the binary for size, not speed. 
+                            This is equivalent to the '-Os' arg in 'graalpy -m standalone native -->
+                            <!-- <jvmArgs>
                                 <arg>-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime</arg>                                
-                            </jvmArgs>
+                            </jvmArgs>-->
                             <!-- Flip the property below for verbose or quiet image build -->
                             <verbose>true</verbose>
                             <!-- Flip the property below to include debug symbols in the native executable -->
