@@ -180,3 +180,48 @@ def test_descr_call_with_none():
     assert None.__class__ is type(None)
     assert descr.__get__(None, type(None)) is descr
     assert_raises(TypeError, descr.__get__, None, None)
+
+def test_custom_getattribute():
+    class AAA:
+        __slots__ = '__wrapped__'
+
+        def __init__(self, wrapped):
+            object.__setattr__(self, '__wrapped__', wrapped)
+
+        def __index__(self):
+            return self.__wrapped__.__index__()
+
+        def __len__(self):
+            return len(self.__wrapped__)
+
+        def __contains__(self, value):
+            return value in self.__wrapped__
+
+        def __getitem__(self, key):
+            return self.__wrapped__[key]
+
+        def __setitem__(self, key, value):
+            self.__wrapped__[key] = value
+
+        def __getattr__(self, name):
+            if name == '__wrapped__':
+                raise ValueError('wrapper has not been initialised')
+
+            return getattr(self.__wrapped__, name)
+        
+        def __iter__(self):
+            return iter(self.__wrapped__)
+
+    class BBB(AAA):
+        def __init__(self, wrapped_dict=None):
+            AAA.__init__(self, wrapped_dict)
+        
+        def __getattribute__(self, name):
+            if (hasattr(type(self), name)
+                and isinstance(getattr(type(self), name), property)):
+                return object.__getattribute__(self, name)
+            else:
+                return super().__getattribute__(name)
+
+    d = {"abc": 1}
+    assert dict(BBB(d)) == d
