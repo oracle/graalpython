@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -307,15 +306,13 @@ public abstract class CExtContext {
      * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
      *            check could raise an exception and only an adopted node will report useful source
      *            locations.
-     * @param checkHPyResultNode Similar to {@code checkFunctionResultNode} but for an HPy
-     *            extension.
      * @return A Python module.
      * @throws IOException If the specified file cannot be loaded.
      * @throws ApiInitException If the corresponding native context could not be initialized.
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode, HPyCheckFunctionResultNode checkHPyResultNode)
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
 
         // we always need to load the CPython C API (even for HPy modules)
