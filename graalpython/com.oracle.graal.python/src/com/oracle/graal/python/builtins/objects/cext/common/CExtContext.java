@@ -52,7 +52,9 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.nio.file.LinkOption;
 
+import com.oracle.truffle.api.TruffleFile;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
@@ -319,10 +321,12 @@ public abstract class CExtContext {
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         Object library = null;
 
+
         if (cApiContext.useNativeBackend) {
             GraalHPyJNIContext.loadJNIBackend();
-            getLogger().config("loading module " + spec.path + " as native");
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, realPath));
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), realPath);
             if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                 loadExpr = "with panama " + loadExpr;
             }
@@ -359,7 +363,8 @@ public abstract class CExtContext {
         Env env = context.getEnv();
         try {
             TruffleString extSuffix = context.getSoAbi();
-            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(path, extSuffix).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, realPath).build());
             return callTarget.call();
         } catch (SecurityException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);

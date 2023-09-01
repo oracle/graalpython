@@ -56,7 +56,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -353,9 +354,10 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public static void loadJNIBackend() {
         if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
-            String pythonJNIPath = getJNILibrary();
-            LOGGER.fine("Loading HPy JNI backend from " + pythonJNIPath);
+            String pythonJNIPath;
+            pythonJNIPath = getJNILibrary();
             try {
+                LOGGER.fine("Loading HPy JNI backend from " + pythonJNIPath);
                 System.load(pythonJNIPath);
                 jniBackendLoaded = true;
             } catch (NullPointerException | UnsatisfiedLinkError e) {
@@ -367,7 +369,14 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public static String getJNILibrary() {
         CompilerAsserts.neverPartOfCompilation();
-        return Paths.get(PythonContext.get(null).getJNIHome().toJavaStringUncached(), PythonContext.J_PYTHON_JNI_LIBRARY_NAME).toString();
+        PythonContext context = PythonContext.get(null);
+        TruffleFile libPath = context.getPublicTruffleFileRelaxed(context.getJNIHome()).resolve(PythonContext.J_PYTHON_JNI_LIBRARY_NAME).getAbsoluteFile();
+        try {
+            return libPath.getCanonicalFile(LinkOption.NOFOLLOW_LINKS).toString();
+        } catch (IOException e) {
+            LOGGER.severe(String.format("Cannot determine canonical path for %s: %s", libPath, e));
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
