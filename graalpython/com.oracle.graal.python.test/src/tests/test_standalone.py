@@ -45,8 +45,6 @@ import shutil
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 MVN_CMD = [shutil.which('mvn')]
-if 'MAVEN_REPO_OVERRIDE' in os.environ:
-    MVN_CMD += ['-Dmaven.repo.remote=' + os.environ['MAVEN_REPO_OVERRIDE']]
 
 def run_cmd(cmd, env, cwd=None):
     process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True)
@@ -109,6 +107,31 @@ def test_polyglot_app():
         cmd = [graalpy, "-m", "standalone", "--verbose", "polyglot_app", "-o", target_dir]
         out = run_cmd(cmd, env)
         assert "Creating polyglot java python application in directory " + target_dir in out
+
+        if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
+            repos = []
+            for idx, custom_repo in enumerate(custom_repos.split(",")):
+                repos.append(f"""
+                    <repository>
+                        <id>myrepo{idx}</id>
+                        <url>{custom_repo}</url>
+                        <releases>
+                            <enabled>true</enabled>
+                        </releases>
+                        <snapshots>
+                            <enabled>true</enabled>
+                        </snapshots>
+                    </repository>
+                """)
+            with open(os.path.join(target_dir, "pom.xml"), "r") as f:
+                contents = f.read()
+            with open(os.path.join(target_dir, "pom.xml"), "w") as f:
+                f.write(contents.replace("</project>", """
+                <repositories>
+                """ + '\n'.join(repos) + """
+                </repositories>
+                </project>
+                """))
 
         cmd = MVN_CMD + ["package", "-Pnative"]
         out = run_cmd(cmd, env, cwd=target_dir)

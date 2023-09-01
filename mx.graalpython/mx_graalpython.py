@@ -1526,8 +1526,8 @@ def graalpython_gate_runner(args, tasks):
                 mx.maven_deploy(deploy_args)
             # setup maven downloader overrides
             env['MAVEN_REPO_OVERRIDE'] = ",".join([
-                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
                 f"{pathlib.Path(path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(path).as_uri()}/"
