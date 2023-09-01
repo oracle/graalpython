@@ -420,7 +420,6 @@ class StructTest(unittest.TestCase):
         self.assertEqual(s.unpack_from(buffer=test_string, offset=2),
                          (b'cd01',))
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_pack_into(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -449,7 +448,6 @@ class StructTest(unittest.TestCase):
         self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
                           None)
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_pack_into_fn(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -473,7 +471,6 @@ class StructTest(unittest.TestCase):
         self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
                           test_string)
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_unpack_with_buffer(self):
         # SF bug 1563759: struct.unpack doesn't support buffer protocol objects
         data1 = array.array('B', b'\x12\x34\x56\x78')
