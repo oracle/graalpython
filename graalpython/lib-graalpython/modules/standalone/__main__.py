@@ -225,7 +225,6 @@ class PolyglotJavaPython(AbstractStandalone):
         # misc
         shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), target_dir)
         shutil.copy(get_file(NATIVE_IMAGE_PROXY_CONF_PATH), target_dir)
-        shutil.copy(get_file(MODULE_INFO_PATH), os.path.join(target_dir, MVN_CODE_PREFIX))
         self.create_pom_file(get_file(POLYGLOT_APP_POM_TEMPLATE_PATH), os.path.join(target_dir, MVN_POM_FILE))
 
 class Standalone(AbstractStandalone):
