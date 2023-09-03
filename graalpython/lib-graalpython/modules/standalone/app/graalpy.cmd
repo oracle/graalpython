@@ -14,12 +14,9 @@ for /f "delims=" %%i in ('%JAVA% VTabCreator.java') do set VTAB=%%i
 del VTabCreator.java
 
 REM Store each argument separated by vtab
-for %%I in (%*) do call :sub %%I
-
-mvn -f "%~dp0"pom.xml exec:exec -Dexec.executable=java -Dexec.args="--module-path %%classpath -Dorg.graalvm.launcher.executablename=%0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
-
-goto :eof
-
-:sub
+:loop
 set GRAAL_PYTHON_ARGS=%GRAAL_PYTHON_ARGS%%VTAB%%~1
-goto :eof
+shift /1
+if not "%~1"=="" goto loop
+
+mvn -f "%~dp0pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %%classpath -Dorg.graalvm.launcher.executablename=%~0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"

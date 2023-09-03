@@ -366,6 +366,7 @@ class EnvBuilder:
                 base_exe = os.path.basename(context.env_exe)
                 suffixes.add(base_exe)
 
+            copier(context.executable, os.path.join(binpath, "graalpy.cmd"))
             for suffix in suffixes:
                 # Truffle change: we look in 'bin'
                 src = os.path.join(dirname, 'bin', suffix)
