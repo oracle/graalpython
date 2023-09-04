@@ -7,6 +7,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Oracle GraalPy standalones (also known as GraalPy Enterprise) are now available under GFTC. The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
 * Support compilation and execution of C extensions using the native MSVC toolchain on Windows.
 * Add support for the sqlite3 module.
+* Foreign big integers are now supported and work with all `Numeric` operators.
 
 ## Version 23.0.0
 * Update `numpy` and `pandas` versions, add support for `scipy` and `scikit_learn` with `ginstall`. This automatically applies some fixes that make it possible to use these new versions with GraalPy.
