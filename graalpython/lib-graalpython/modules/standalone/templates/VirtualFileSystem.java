@@ -381,7 +381,7 @@ public final class VirtualFileSystem implements FileSystem {
 
             return xPath;
         } catch (IOException e) {
-            throw new IllegalStateException(e);
+            throw new RuntimeException(String.format("Error while extracting virtual filesystem path '%s' to the disk", path), e);
         }
     }
 
