@@ -203,7 +203,7 @@ def get_jdk():
         tag = 'jvmci'
     else:
         tag = None
-    return mx.get_jdk(tag=tag)
+    return mx.get_jdk()
 
 
 def full_python(args, **kwargs):
@@ -1506,10 +1506,11 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = {}
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            jdk_version = mx.get_jdk().javaCompliance  # Not our "get_jdk", because we do not want the jvmci tag.
             # build graalvm jdk
             mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
             if not DISABLE_REBUILD:
-                mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{get_jdk().javaCompliance}"])
+                mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_version}"])
             out = mx.OutputCapture()
             mx.run_mx(mx_args + ["graalvm-home"], out=out)
             home = out.data.splitlines()[-1].strip()
@@ -1517,11 +1518,13 @@ def graalpython_gate_runner(args, tasks):
             # build python standalone
             mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce-python']
             if not DISABLE_REBUILD:
-                mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_JAVA_STANDALONE_SVM_JAVA{get_jdk().javaCompliance}"])
+                mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_JAVA_STANDALONE_SVM_JAVA{jdk_version}"])
             out = mx.OutputCapture()
             mx.run_mx(mx_args + ["standalone-home", "--type", "jvm", "python"], out=out)
             python_home = out.data.splitlines()[-1].strip()
             env['PYTHON_STANDALONE_HOME'] = python_home
+            # build GraalPy and all the necessary dependencies, so that we can deploy them
+            mx.run_mx(["build"])
             # deploy maven artifacts
             import mx_sdk_vm_impl
             version = mx_sdk_vm_impl.graalvm_version('graalvm')
