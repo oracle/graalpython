@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -201,7 +200,7 @@ public final class StructureBuiltins extends PythonBuiltins {
             return _init_pos_args(null, null, self, type, args, kwds, idx, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
-                            GetBaseClassNodeGen.getUncached(), TruffleString.EqualNode.getUncached(), 0);
+                            GetBaseClassNode.getUncached(), TruffleString.EqualNode.getUncached(), 0);
         }
     }
 
