@@ -2534,9 +2534,7 @@ public final class PythonContext extends Python3Core {
             // sys.implementation._multiarch
             TruffleString multiArch = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T__MULTIARCH);
 
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
+            TruffleString toolchainId = getPlatformId();
 
             // only use '.pyd' if we are on 'Win32-native'
             TruffleString soExt;
@@ -2553,6 +2551,16 @@ public final class PythonContext extends Python3Core {
             soABI = cat(T_DOT, cacheTag, T_DASH, toolchainId, T_DASH, multiArch, soExt);
         }
         return soABI;
+    }
+
+    public TruffleString getPlatformId() {
+        if (!getOption(PythonOptions.NativeModules)) {
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            return toTruffleStringUncached(toolchain.getIdentifier());
+        } else {
+            return T_NATIVE;
+        }
     }
 
     public Thread getMainThread() {
