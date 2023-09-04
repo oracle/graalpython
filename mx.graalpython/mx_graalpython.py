@@ -2001,8 +2001,7 @@ def _python_checkpatchfiles():
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/.*?([^/]*\.patch)")
         checked = {
             # meson-python puts the whole license text in the field. It's MIT
-            'meson-python-0.12.patch',
-            'meson-python-0.13.patch',
+            'meson-python.patch',
             # scipy puts the whole license text in the field, skip it. It's new BSD
             'scipy-1.3.1.patch',
             'scipy-1.4.1.patch',
@@ -2023,11 +2022,14 @@ def _python_checkpatchfiles():
             # Empty license field. It's MIT
             'urllib3-2.patch',
             # Empty license field. It's MIT
+            'wheel-0.41.2.patch',
             'wheel-0.40.patch',
             'wheel-0.38.patch',
             'wheel-0.37.patch',
             'wheel-0.35.patch',
             'wheel-pre-0.35.patch',
+            # Empty license field. It's ASL 2.0 or BSD 2-Clause
+            'packaging.patch',
         }
         allowed_licenses = [
             "MIT",

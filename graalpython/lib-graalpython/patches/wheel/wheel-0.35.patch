@@ -1,8 +1,25 @@
 diff --git a/wheel/bdist_wheel.py b/wheel/bdist_wheel.py
-index 5dee1b7..4e24a02 100644
+index 5dee1b7..de7af43 100644
 --- a/wheel/bdist_wheel.py
 +++ b/wheel/bdist_wheel.py
-@@ -93,6 +93,9 @@ def get_abi_tag():
+@@ -11,6 +11,7 @@ import stat
+ import sys
+ import re
+ import warnings
++import struct
+ from collections import OrderedDict
+ from email.generator import Generator
+ from distutils.core import Command
+@@ -46,7 +47,7 @@ def get_platform(archive_root):
+     result = distutils.util.get_platform()
+     if result.startswith("macosx") and archive_root is not None:
+         result = calculate_macosx_platform_tag(archive_root, result)
+-    if result == "linux_x86_64" and sys.maxsize == 2147483647:
++    if result == "linux_x86_64" and struct.calcsize("P") == 4:
+         # pip pull request #3497
+         result = "linux_i686"
+     return result
+@@ -93,6 +94,9 @@ def get_abi_tag():
          abi = '%s%s%s%s%s' % (impl, tags.interpreter_version(), d, m, u)
      elif soabi and soabi.startswith('cpython-'):
          abi = 'cp' + soabi.split('-')[1]
@@ -12,10 +29,28 @@ index 5dee1b7..4e24a02 100644
      elif soabi:
          abi = soabi.replace('.', '_').replace('-', '_')
      else:
+@@ -251,7 +255,7 @@ class bdist_wheel(Command):
+                 # modules, use the default platform name.
+                 plat_name = get_platform(self.bdist_dir)
+ 
+-            if plat_name in ('linux-x86_64', 'linux_x86_64') and sys.maxsize == 2147483647:
++            if plat_name in ('linux-x86_64', 'linux_x86_64') and struct.calcsize("P") == 4:
+                 plat_name = 'linux_i686'
+ 
+         plat_name = plat_name.lower().replace('-', '_').replace('.', '_')
 diff --git a/wheel/vendored/packaging/tags.py b/wheel/vendored/packaging/tags.py
-index ee529c8..f17868d 100644
+index ee529c8..b8c1b6f 100644
 --- a/wheel/vendored/packaging/tags.py
 +++ b/wheel/vendored/packaging/tags.py
+@@ -56,7 +56,7 @@ INTERPRETER_SHORT_NAMES = {
+ }  # type: Dict[str, str]
+ 
+ 
+-_32_BIT_INTERPRETER = sys.maxsize <= 2 ** 32
++_32_BIT_INTERPRETER = struct.calcsize("P") == 4
+ 
+ 
+ class Tag(object):
 @@ -270,10 +270,44 @@ def cpython_tags(
  
  
