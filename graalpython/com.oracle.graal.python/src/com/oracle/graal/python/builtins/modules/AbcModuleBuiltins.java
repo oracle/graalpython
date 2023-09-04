@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
@@ -139,7 +139,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                 return;
             }
             TypeNodes.SetTypeFlagsNode.executeUncached(child, tpFlags);
-            Set<PythonAbstractClass> grandchildren = TypeNodes.GetSubclassesNode.executeUncached(child);
+            PythonAbstractClass[] grandchildren = GetSubclassesAsArrayNode.executeUncached(child);
             for (PythonAbstractClass c : grandchildren) {
                 if (TypeNodes.IsTypeNode.executeUncached(c)) {
                     setCollectionFlagRecursive(c, flag);

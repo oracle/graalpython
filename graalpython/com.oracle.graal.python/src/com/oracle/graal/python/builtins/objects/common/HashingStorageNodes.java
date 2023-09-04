@@ -48,8 +48,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageForEachNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorNextNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
@@ -114,6 +116,11 @@ public class HashingStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class HashingStorageGetItemWithHash extends Node {
+
+        public static Object getItemWithHash(HashingStorage self, Object key, long keyHash) {
+            return HashingStorageGetItemWithHashNodeGen.getUncached().execute(null, null, self, key, keyHash);
+        }
+
         public abstract Object execute(Frame frame, Node inliningTarget, HashingStorage self, Object key, long keyHash);
 
         @Specialization
@@ -479,6 +486,10 @@ public class HashingStorageNodes {
             HashingStorageDelItemNodeGen.getUncached().executeWithAsserts(null, null, self, key, false, toUpdate);
         }
 
+        public static void executeUncachedWithHash(EconomicMapStorage storage, Object key, long hash) {
+            ObjectHashMapFactory.RemoveNodeGen.getUncached().execute(null, null, storage.map, key, hash);
+        }
+
         public final void execute(Node inliningTarget, HashingStorage self, TruffleString key, PHashingCollection toUpdate) {
             // Shortcut for frequent usage with TruffleString. We do not need a frame in such case,
             // because the string's __hash__ does not need it. Some fast-paths avoid even invoking
@@ -642,6 +653,10 @@ public class HashingStorageNodes {
         @NeverDefault
         public static HashingStorageCopy create() {
             return HashingStorageCopyNodeGen.create();
+        }
+
+        public static HashingStorage executeUncached(HashingStorage source) {
+            return HashingStorageCopyNodeGen.getUncached().execute(null, source);
         }
 
         public final HashingStorage executeCached(HashingStorage source) {
@@ -997,6 +1012,11 @@ public class HashingStorageNodes {
     @GenerateCached(false)
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageIteratorKeyHash extends Node {
+
+        public static long executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorKeyHashNodeGen.getUncached().execute(null, storage, it);
+        }
+
         public abstract long execute(Node node, HashingStorage storage, HashingStorageIterator it);
 
         @Specialization

@@ -571,6 +571,36 @@ class TestObject(object):
         assert tester.year == 1, "year was %s "% tester.year
         assert tester.is_binary_compatible()
 
+    def test_subclasses(self):
+        TestSubclasses = CPyExtType(
+            'TestSubclasses',
+            '''
+            static PyObject* create_type(PyObject* unused, PyObject* args) {
+                PyObject* bases;
+                if (!PyArg_ParseTuple(args, "O", &bases))
+                    return NULL;
+                PyType_Slot slots[] = {
+                    { 0 }
+                };
+                PyType_Spec spec = { "DynamicType", sizeof(PyHeapTypeObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots };
+                PyObject* result = PyType_FromSpecWithBases(&spec, bases);
+                return result;
+            }
+            ''',
+            tp_methods='{"create_type", (PyCFunction)create_type, METH_VARARGS | METH_STATIC, ""}'
+        )
+
+        class ManagedBase:
+            pass
+        DynamicType = TestSubclasses.create_type((ManagedBase,))
+        assert ManagedBase.__subclasses__() == [DynamicType]
+
+        def add(a, b):
+            return 42
+        ManagedBase.__add__ = add
+        foo = DynamicType()
+        assert foo + foo == 42
+
     def test_tp_name(self):
         TestTpName = CPyExtType("TestTpName",
                                 '''
