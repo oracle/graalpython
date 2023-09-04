@@ -1272,7 +1272,7 @@ public final class PythonContext extends Python3Core {
         return getImportFunc();
     }
 
-    public Object getPosixSupport() {
+    public PosixSupport getPosixSupport() {
         return posixSupport;
     }
 

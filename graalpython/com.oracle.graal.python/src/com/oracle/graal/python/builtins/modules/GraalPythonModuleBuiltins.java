@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -158,7 +159,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -396,24 +396,20 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public PBytes doString(VirtualFrame frame, TruffleString filename,
-                        @Shared @Cached TruffleString.EqualNode eqNode) {
+        PBytes doString(VirtualFrame frame, Object filenameObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
+                TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
                 return factory().createBytes(bytes);
             } catch (Exception ex) {
                 ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
-                throw raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
             }
-        }
-
-        @Specialization
-        public Object doGeneric(VirtualFrame frame, Object filename,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Shared @Cached TruffleString.EqualNode eqNode) {
-            return doString(frame, castToTruffleStringNode.execute(inliningTarget, filename), eqNode);
         }
     }
 
@@ -501,7 +497,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinModule = (PythonModule) globals;
             } else {
                 TruffleString moduleName = (TruffleString) getItem.execute(frame, inliningTarget, globals, T___NAME__);
-                builtinModule = getCore().lookupBuiltinModule(moduleName);
+                builtinModule = getContext().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
             return factory().createBuiltinMethod(builtinModule, builtinFunc);
@@ -940,15 +936,17 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     abstract static class DumpHeapNode extends PythonBuiltinNode {
         @Specialization
         TruffleString doit(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             TruffleFile tempFile;
             try {
                 PythonContext context = getContext();
                 tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), J_GRAALPYTHON_ID, ".hprof");
                 tempFile.delete();
             } catch (IOException e) {
-                throw raiseOSError(frame, e, eqNode);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e, eqNode);
             }
             PythonUtils.dumpHeap(tempFile.getPath());
             return fromJavaStringNode.execute(tempFile.getPath(), TS_ENCODING);

@@ -213,6 +213,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactoryNodeGen.LazyNodeGen;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -232,6 +233,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1547,5 +1549,25 @@ public abstract class PythonObjectFactory extends Node {
 
     public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
         return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
+    }
+
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class Lazy extends Node {
+        public static Lazy getUncached() {
+            return LazyNodeGen.getUncached();
+        }
+
+        public final PythonObjectFactory get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract PythonObjectFactory execute(Node inliningTarget);
+
+        @Specialization
+        static PythonObjectFactory doIt(@Cached(inline = false) PythonObjectFactory node) {
+            return node;
+        }
     }
 }

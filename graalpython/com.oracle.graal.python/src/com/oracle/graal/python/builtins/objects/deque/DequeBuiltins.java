@@ -981,7 +981,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached InlinedConditionProfile profile) {
-            Object clazz = getPythonClass(inliningTarget, getClassNode.execute(inliningTarget, self), profile);
+            Object clazz = getClassNode.execute(inliningTarget, self);
             Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
             if (PGuards.isNoValue(dict) || sizeNode.execute(frame, inliningTarget, dict) <= 0) {
                 dict = PNone.NONE;

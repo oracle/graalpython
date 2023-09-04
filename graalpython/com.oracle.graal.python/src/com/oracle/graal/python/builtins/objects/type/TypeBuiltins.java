@@ -270,7 +270,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
-            return getDoc(getCore().lookupType(self), value);
+            return getDoc(getContext().lookupType(self), value);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -846,7 +846,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
                     if (a[i] instanceof PythonBuiltinClassType) {
-                        baseClasses[i] = getCore().lookupType((PythonBuiltinClassType) a[i]);
+                        baseClasses[i] = getContext().lookupType((PythonBuiltinClassType) a[i]);
                     } else {
                         baseClasses[i] = (PythonAbstractClass) a[i];
                     }
@@ -916,7 +916,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object doType(PythonBuiltinClassType self,
                         @Shared @Cached GetDictIfExistsNode getDict) {
-            return doManaged(getCore().lookupType(self), getDict);
+            return doManaged(getContext().lookupType(self), getDict);
         }
 
         @Specialization
@@ -1113,7 +1113,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         Object setName(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
@@ -1123,7 +1123,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
                 }
                 if (!isValidNode.execute(string, TS_ENCODING)) {
-                    throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
+                    throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
                 }
                 cls.setName(string);
                 return PNone.NONE;

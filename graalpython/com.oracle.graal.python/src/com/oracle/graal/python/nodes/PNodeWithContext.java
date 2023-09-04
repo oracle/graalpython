@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -91,5 +92,9 @@ public abstract class PNodeWithContext extends Node {
 
     public ValueProfile createValueIdentityProfile() {
         return getLanguage().isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
+    }
+
+    public final PosixSupport getPosixSupport() {
+        return getContext().getPosixSupport();
     }
 }

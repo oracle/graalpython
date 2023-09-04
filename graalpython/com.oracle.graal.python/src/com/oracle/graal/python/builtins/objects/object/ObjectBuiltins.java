@@ -297,7 +297,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int hash(PythonBuiltinClassType self) {
-            return hash(getCore().lookupType(self));
+            return hash(getContext().lookupType(self));
         }
 
         @TruffleBoundary

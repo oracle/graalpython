@@ -407,10 +407,6 @@ public final class PythonCextBuiltins {
             throw raise(SystemError, INDEX_OUT_OF_RANGE);
         }
 
-        public final Object getPosixSupport() {
-            return getContext().getPosixSupport();
-        }
-
         protected void checkNonNullArg(Object obj) {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
@@ -1800,13 +1796,14 @@ public final class PythonCextBuiltins {
 
         @ExportMessage
         byte readBufferByte(long idx,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixSupportLib,
-                        @Cached PConstructAndRaiseNode raise) throws InvalidBufferOffsetException {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws InvalidBufferOffsetException {
             checkIndex(idx);
             try {
                 return (posixSupportLib.mmapReadByte(PythonContext.get(posixSupportLib).getPosixSupport(), delegate.getPosixSupportHandle(), idx));
             } catch (PosixException e) {
-                throw raise.raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
             }
         }
 

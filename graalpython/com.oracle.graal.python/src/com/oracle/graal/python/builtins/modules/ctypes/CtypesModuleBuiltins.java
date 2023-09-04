@@ -103,11 +103,11 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
@@ -288,9 +288,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
                 setCtypeLLVMHelpers(this, handle);
             } catch (ApiInitException e) {
-                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
             } catch (ImportException e) {
-                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+                throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
             } catch (IOException e) {
                 throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, EqualNode.getUncached());
             }
@@ -1099,11 +1099,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object check(VirtualFrame frame, int hresult) {
+        static Object check(VirtualFrame frame, int hresult,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (hresult >= 0) {
                 return hresult;
             } else {
-                throw raiseOSError(frame, hresult, T_WINDOWS_ERROR);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, hresult, T_WINDOWS_ERROR);
             }
         }
     }

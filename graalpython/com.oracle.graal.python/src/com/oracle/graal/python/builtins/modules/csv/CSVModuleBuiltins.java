@@ -334,7 +334,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         PNone strict,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect) {
-            PythonModule module = getCore().lookupBuiltinModule(T__CSV);
+            PythonModule module = getContext().lookupBuiltinModule(T__CSV);
             return getDialect.execute(frame, module, dialectName);
         }
 
@@ -359,7 +359,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
-            PythonModule module = getCore().lookupBuiltinModule(T__CSV);
+            PythonModule module = getContext().lookupBuiltinModule(T__CSV);
             CSVDialect dialectObj = getDialect.execute(frame, module, dialectName);
 
             if (delimiterObj == PNone.NO_VALUE) {
@@ -431,7 +431,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             TruffleString dialectNameStr = castToStringNode.execute(inliningTarget, dialectName);
-            PythonModule module = getCore().lookupBuiltinModule(T__CSV);
+            PythonModule module = getContext().lookupBuiltinModule(T__CSV);
             CSVDialect dialectObj = getDialect.execute(frame, module, dialectNameStr);
 
             if (delimiterObj == PNone.NO_VALUE) {
