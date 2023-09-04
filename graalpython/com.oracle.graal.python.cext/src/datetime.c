@@ -59,6 +59,23 @@ static PyTypeObject PyDateTime_DeltaType;
 static PyTypeObject PyDateTime_TimeType;
 static PyTypeObject PyDateTime_TZInfoType;
 
+long PyTruffle_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name) {
+    PyObject* attr = PyObject_GetAttrString(o, field_name);
+    if (!attr) {
+        goto error;
+    }
+    long res = PyLong_AsLong(attr);
+    if (res == -1 && PyErr_Occurred()) {
+        goto error;
+    }
+    return res;
+error:
+    /* Some packages, such as oracledb, use these access macros on unintended types, i.e. getting "hour" of a "date" object.
+     * It's an out-of-bounds memory read, but it tends to work on CPython, so just shut up and return 0 */
+    PyErr_Clear();
+    return 0;
+}
+
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
 PyAPI_FUNC(void) set_PyDateTime_types() {
     /* safe native get/set descriptors */

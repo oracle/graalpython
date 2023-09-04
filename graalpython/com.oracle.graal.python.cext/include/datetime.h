@@ -120,35 +120,36 @@ typedef struct
 
 
 PyAPI_FUNC(PyObject*) PyTruffle_PyDateTime_GET_TZINFO(PyObject*);
+PyAPI_FUNC(long) PyTruffle_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name);
 
 /* Apply for date and datetime instances. */
 
 // o is a pointer to a time or a datetime object.
 #define _PyDateTime_HAS_TZINFO(o)  (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o) != Py_None)
 
-#define PyDateTime_GET_YEAR(o)     ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "year")))
-#define PyDateTime_GET_MONTH(o)    ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "month")))
-#define PyDateTime_GET_DAY(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "day")))
+#define PyDateTime_GET_YEAR(o)     ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "year"))
+#define PyDateTime_GET_MONTH(o)    ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "month"))
+#define PyDateTime_GET_DAY(o)      ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "day"))
 
-#define PyDateTime_DATE_GET_HOUR(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "hour")))
-#define PyDateTime_DATE_GET_MINUTE(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "minute")))
-#define PyDateTime_DATE_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
-#define PyDateTime_DATE_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
-#define PyDateTime_DATE_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
+#define PyDateTime_DATE_GET_HOUR(o)        ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "hour"))
+#define PyDateTime_DATE_GET_MINUTE(o)      ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "minute"))
+#define PyDateTime_DATE_GET_SECOND(o)      ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "second"))
+#define PyDateTime_DATE_GET_MICROSECOND(o)              ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "microsecond"))
+#define PyDateTime_DATE_GET_FOLD(o)        ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "fold"))
 #define PyDateTime_DATE_GET_TZINFO(o)      (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o))
 
 /* Apply for time instances. */
-#define PyDateTime_TIME_GET_HOUR(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "hour")))
-#define PyDateTime_TIME_GET_MINUTE(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "minute")))
-#define PyDateTime_TIME_GET_SECOND(o)      ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "second")))
-#define PyDateTime_TIME_GET_MICROSECOND(o)              ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microsecond")))
-#define PyDateTime_TIME_GET_FOLD(o)        ((unsigned char)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "fold")))
+#define PyDateTime_TIME_GET_HOUR(o)        ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "hour"))
+#define PyDateTime_TIME_GET_MINUTE(o)      ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "minute"))
+#define PyDateTime_TIME_GET_SECOND(o)      ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "second"))
+#define PyDateTime_TIME_GET_MICROSECOND(o)              ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "microsecond"))
+#define PyDateTime_TIME_GET_FOLD(o)        ((unsigned char)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "fold"))
 #define PyDateTime_TIME_GET_TZINFO(o)      (PyTruffle_PyDateTime_GET_TZINFO((PyObject*)o))
 
 /* Apply for time delta instances */
-#define PyDateTime_DELTA_GET_DAYS(o)         ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "days")))
-#define PyDateTime_DELTA_GET_SECONDS(o)      ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "seconds")))
-#define PyDateTime_DELTA_GET_MICROSECONDS(o)            ((int)PyLong_AsLong(PyObject_GetAttrString((PyObject*)o, "microseconds")))
+#define PyDateTime_DELTA_GET_DAYS(o)         ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "days"))
+#define PyDateTime_DELTA_GET_SECONDS(o)      ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "seconds"))
+#define PyDateTime_DELTA_GET_MICROSECONDS(o)            ((int)PyTruffle_PyDateTime_GET_LONG_FIELD((PyObject*)o, "microseconds"))
 
 
 
