@@ -1,3 +1,62 @@
+diff --git a/pandas/_libs/src/klib/khash_python.h b/pandas/_libs/src/klib/khash_python.h
+index 5ae3c19..b9c6784 100644
+--- a/pandas/_libs/src/klib/khash_python.h
++++ b/pandas/_libs/src/klib/khash_python.h
+@@ -178,28 +178,30 @@ int PANDAS_INLINE floatobject_cmp(PyFloatObject* a, PyFloatObject* b){
+ // PyObject_RichCompareBool for complexobjects has a different behavior
+ // needs to be replaced
+ int PANDAS_INLINE complexobject_cmp(PyComplexObject* a, PyComplexObject* b){
++    Py_complex a_cval = PyComplex_AsCComplex((PyObject*)a);
++    Py_complex b_cval = PyComplex_AsCComplex((PyObject*)b);
+     return (
+-                Py_IS_NAN(a->cval.real) &&
+-                Py_IS_NAN(b->cval.real) &&
+-                Py_IS_NAN(a->cval.imag) &&
+-                Py_IS_NAN(b->cval.imag)
++                Py_IS_NAN(a_cval.real) &&
++                Py_IS_NAN(b_cval.real) &&
++                Py_IS_NAN(a_cval.imag) &&
++                Py_IS_NAN(b_cval.imag)
+            )
+            ||
+            (
+-                Py_IS_NAN(a->cval.real) &&
+-                Py_IS_NAN(b->cval.real) &&
+-                a->cval.imag == b->cval.imag
++                Py_IS_NAN(a_cval.real) &&
++                Py_IS_NAN(b_cval.real) &&
++                a_cval.imag == b_cval.imag
+            )
+            ||
+            (
+-                a->cval.real == b->cval.real &&
+-                Py_IS_NAN(a->cval.imag) &&
+-                Py_IS_NAN(b->cval.imag)
++                a_cval.real == b_cval.real &&
++                Py_IS_NAN(a_cval.imag) &&
++                Py_IS_NAN(b_cval.imag)
+            )
+            ||
+            (
+-                a->cval.real == b->cval.real &&
+-                a->cval.imag == b->cval.imag
++                a_cval.real == b_cval.real &&
++                a_cval.imag == b_cval.imag
+            );
+ }
+ 
+@@ -276,8 +278,9 @@ Py_hash_t PANDAS_INLINE floatobject_hash(PyFloatObject* key) {
+ 
+ // replaces _Py_HashDouble with _Pandas_HashDouble
+ Py_hash_t PANDAS_INLINE complexobject_hash(PyComplexObject* key) {
+-    Py_uhash_t realhash = (Py_uhash_t)_Pandas_HashDouble(key->cval.real);
+-    Py_uhash_t imaghash = (Py_uhash_t)_Pandas_HashDouble(key->cval.imag);
++    Py_complex cval = PyComplex_AsCComplex((PyObject*)key);
++    Py_uhash_t realhash = (Py_uhash_t)_Pandas_HashDouble(cval.real);
++    Py_uhash_t imaghash = (Py_uhash_t)_Pandas_HashDouble(cval.imag);
+     if (realhash == (Py_uhash_t)-1 || imaghash == (Py_uhash_t)-1) {
+         return -1;
+     }
 diff --git a/pandas/io/common.py b/pandas/io/common.py
 index f31de63..1858912 100644
 --- a/pandas/io/common.py
