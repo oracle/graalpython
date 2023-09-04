@@ -40,28 +40,24 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -87,14 +83,14 @@ public abstract class GetMethodsFlagsNode extends Node {
     public static final HiddenKey METHODS_FLAGS = new HiddenKey("__methods_flags__");
 
     @TruffleBoundary
-    private static long populateMethodsFlags(PythonAbstractNativeObject cls, PDict dict) {
+    private static long populateMethodsFlags(PythonAbstractNativeObject cls, DynamicObjectLibrary dynlib) {
         Long flags = (Long) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
-        dict.setDictStorage(HashingStorageSetItem.executeUncached(dict.getDictStorage(), METHODS_FLAGS, flags));
+        dynlib.putLong(cls, METHODS_FLAGS, flags);
         return flags;
     }
 
     protected static long getMethodsFlags(PythonAbstractNativeObject cls) {
-        return doNative(null, cls, CStructAccessFactory.ReadObjectNodeGen.getUncached(), HashingStorageGetItemNodeGen.getUncached());
+        return doNative(cls, DynamicObjectLibrary.getUncached());
     }
 
     // The assumption should hold unless `PyType_Modified` is called.
@@ -110,16 +106,17 @@ public abstract class GetMethodsFlagsNode extends Node {
     }
 
     @Specialization(replaces = "doNativeCached")
-    static long doNative(Node inliningTarget, PythonAbstractNativeObject cls,
-                    @Cached(inline = false) CStructAccess.ReadObjectNode getTpDictNode,
-                    @Cached HashingStorageGetItem getItem) {
+    static long doNative(PythonAbstractNativeObject cls,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dynlib) {
         // classes must have tp_dict since they are set during PyType_Ready
-        PDict dict = (PDict) getTpDictNode.readFromObj(cls, PyTypeObject__tp_dict);
-        Object f = getItem.execute(inliningTarget, dict.getDictStorage(), METHODS_FLAGS);
-        if (f == null) {
-            return populateMethodsFlags(cls, dict);
+        if (!dynlib.containsKey(cls, METHODS_FLAGS)) {
+            return populateMethodsFlags(cls, dynlib);
         }
-        return (Long) f;
+        try {
+            return dynlib.getLongOrDefault(cls, METHODS_FLAGS, 0L);
+        } catch (UnexpectedResultException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     @Fallback

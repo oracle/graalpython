@@ -305,6 +305,9 @@ class TestObject(object):
         assert X.B_has_add_slot()
         assert Y.E_has_add_slot()
 
+        # check dir & __dir__
+        assert sorted(list(B.__dir__())) == dir(B)
+
     def test_managed_class_with_native_base(self):
         NativeModule = CPyExtType("NativeModule_", 
                             '''

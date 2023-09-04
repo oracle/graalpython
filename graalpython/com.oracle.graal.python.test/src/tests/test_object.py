@@ -104,6 +104,8 @@ def test_set_dict_attr():
     assert "d" in m.__dict__
     assert m.__dict__ == {'a': 10, 'd': 20}
 
+    # check dir & __dir__
+    assert sorted(list(m.__dir__())) == dir(m)
 
 def test_set_attr_builtins():
     lst = list()
