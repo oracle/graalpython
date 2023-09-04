@@ -172,6 +172,7 @@ public class PythonProvider implements LanguageProvider {
             "bool:True", BOOL, "True",
             "bool:False", BOOL, "False",
             "int", INT, "1",
+            "int:BigInteger", INT, "1 << 92",
             // "int:0", INT, "0", // disabled due to GR-45046
             "float", FLOAT, "1.1",
             "complex", COMPLEX, "1.0j",
@@ -551,7 +552,7 @@ public class PythonProvider implements LanguageProvider {
                 if (!actualParameter.isBoolean() && !actualParameter.isNumber()) {
                     numberOrBooleanParameters = false;
                 }
-                if (actualParameter.isNumber() && !actualParameter.fitsInLong() && !actualParameter.fitsInDouble()) {
+                if (actualParameter.isNumber() && !actualParameter.fitsInBigInteger() && !actualParameter.fitsInDouble()) {
                     nonPrimitiveNumberParameter = true;
                 }
             }

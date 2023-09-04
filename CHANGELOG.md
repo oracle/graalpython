@@ -8,6 +8,10 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Add support for the sqlite3 module. This allows many packages like `coverage` or `Flask-SQLAlchemy` to work on top of this embedded database.
 * Provide Windows distributions of GraalPy. This is the first preview of Windows support for this feature, and there are limitations, but pure Python packages like Pygal can be installed with `python -m pip --no-cache install pygal`.
 * The GraalPy standalone tool was updated. You can now build single-file executable Python binaries for Linux, Windows, and macOS. The tool can also generate a skeleton Maven project that sets up a polyglot embedding of Python packages into Java.
+* Oracle GraalPy standalones (also known as GraalPy Enterprise) are now available under GFTC. The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.
+* Support compilation and execution of C extensions using the native MSVC toolchain on Windows.
+* Add support for the sqlite3 module.
+* Foreign big integers are now supported and work with all `Numeric` operators.
 
 ## Version 23.0.0
 * Update `numpy` and `pandas` versions, add support for `scipy` and `scikit_learn` with `ginstall`. This automatically applies some fixes that make it possible to use these new versions with GraalPy.
