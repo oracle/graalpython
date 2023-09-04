@@ -38,13 +38,14 @@
 # SOFTWARE.
 
 # Set library search path so that binaries built with sulong toolchain can find libc++.so
-import os, sys
-if sys.platform == "linux":
-    var = "LD_LIBRARY_PATH"
-elif sys.platform == "darwin":
-    var = "DYLD_LIBRARY_PATH"
-elif sys.platform == "win32":
-    var = "PATH"
-path = os.environ.get(var, '')
-sulong_path = os.pathsep.join(__graalpython__.get_toolchain_paths('LD_LIBRARY_PATH'))
-os.environ[var] = f"{path}{os.pathsep}{sulong_path}" if path else sulong_path
+if __graalpython__.ext_mode == "llvm":
+    import os, sys
+    if sys.platform == "linux":
+        var = "LD_LIBRARY_PATH"
+    elif sys.platform == "darwin":
+        var = "DYLD_LIBRARY_PATH"
+    elif sys.platform == "win32":
+        var = "PATH"
+    path = os.environ.get(var, '')
+    sulong_path = os.pathsep.join(__graalpython__.get_toolchain_paths('LD_LIBRARY_PATH'))
+    os.environ[var] = f"{path}{os.pathsep}{sulong_path}" if path else sulong_path
