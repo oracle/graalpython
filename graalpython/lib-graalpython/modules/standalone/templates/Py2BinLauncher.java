@@ -66,11 +66,10 @@ public class Py2BinLauncher {
     private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     public static void main(String[] args) throws IOException {
-        VirtualFileSystem vfs;
-            vfs = new VirtualFileSystem(p -> {
-                String s = p.toString();
-                return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd");
-            });
+        VirtualFileSystem vfs = new VirtualFileSystem(p -> {
+            String s = p.toString();
+            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd");
+        });
         var builder = Context.newBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
