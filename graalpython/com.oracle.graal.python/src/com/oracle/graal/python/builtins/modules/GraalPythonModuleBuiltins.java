@@ -78,7 +78,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -1021,15 +1023,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
 
             try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
-                getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
-                List<String> ret = list(dir);
-                String parentPathString = dir.getParent().getAbsoluteFile().getPath();
-                for (String f : ret) {
-                    String tt = f.substring(parentPathString.length());
-                    if (tt.charAt(0) == '\\') {
-                        tt = tt.replace("\\", "/");
+                TruffleFile p = getContext().getPublicTruffleFileRelaxed(filesListPath).getParent();
+                if(!p.exists()) {
+                    getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
+                }
+                Set<String> ret = list(dir, null);
+                String[] a = ret.toArray(new String[ret.size()]);
+                Arrays.sort(a);
+                for (String f : a) {
+                    if (f.charAt(0) == '\\') {
+                        f = f.replace("\\", "/");
                     }
-                    bw.write(tt);
+
+                    bw.write(f);
                     bw.write("\n");
                 }
             } catch (IOException e) {
@@ -1039,24 +1045,44 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static List<String> list(TruffleFile dir) throws IOException {
-            List<String> ret = new ArrayList<>();
+        private static Set<String> list(TruffleFile dir, TruffleFile rd) throws IOException {
+            HashSet<String> ret = new HashSet<>();
             Collection<TruffleFile> files = dir.list();
-            String dirPath = dir.getAbsoluteFile().getPath();
-            if (!dirPath.endsWith("/")) {
-                dirPath = dirPath + "/";
+            String dirPath = makeDirPath(dir.getAbsoluteFile().getPath());
+
+            // add dir
+            TruffleFile rootDir = rd == null ? dir : rd;
+            String rootPath = makeDirPath(rootDir.getAbsoluteFile().getPath());
+            int rootEndIdx = rootPath.lastIndexOf("/", rootPath.lastIndexOf("/") - 1);
+            ret.add(dirPath.substring(rootEndIdx));
+
+            // add parents up to root
+            TruffleFile parent = dir;
+            while(!parent.equals(rootDir)) {
+                String p = makeDirPath(parent.getAbsoluteFile().getPath());
+                p = p.substring(rootEndIdx);
+                ret.add(p);
+                parent = parent.getParent();
             }
-            ret.add(dirPath);
+
+            // add children
             if (files != null) {
                 for (TruffleFile f : files) {
                     if (f.isRegularFile()) {
-                        ret.add(f.getAbsoluteFile().getPath());
+                        ret.add(f.getAbsoluteFile().getPath().substring(rootEndIdx));
                     } else {
-                        ret.addAll(list(f));
+                        ret.addAll(list(f, rootDir));
                     }
                 }
             }
             return ret;
+        }
+
+        private static String makeDirPath(String p) {
+            if (!p.endsWith("/")) {
+                p = p + "/";
+            }
+            return p;
         }
 
         private void print(OutputStream out, String msg) {
