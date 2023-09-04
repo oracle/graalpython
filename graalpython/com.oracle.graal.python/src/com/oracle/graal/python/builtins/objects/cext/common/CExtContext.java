@@ -54,7 +54,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 
-import com.oracle.truffle.api.TruffleFile;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
@@ -82,6 +81,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -319,8 +319,8 @@ public abstract class CExtContext {
 
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        Object library = null;
-
+        Object library;
+        InteropLibrary interopLib;
 
         if (cApiContext.useNativeBackend) {
             GraalHPyJNIContext.loadJNIBackend();
@@ -333,6 +333,7 @@ public abstract class CExtContext {
             try {
                 Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
                 library = context.getEnv().parseInternal(librarySource).call();
+                interopLib = InteropLibrary.getUncached(library);
             } catch (PException e) {
                 throw e;
             } catch (AbstractTruffleException e) {
@@ -340,20 +341,18 @@ public abstract class CExtContext {
             }
         } else {
             library = loadLLVMLibrary(location, context, spec.name, spec.path);
+            interopLib = InteropLibrary.getUncached(library);
             try {
-                if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
+                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
                     throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(library);
 
-        // Now, try to detect the C extension's API by looking for the appropriate init
-        // functions.
         try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
