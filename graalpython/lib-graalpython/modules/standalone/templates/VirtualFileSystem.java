@@ -70,6 +70,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
+
 import org.graalvm.polyglot.io.FileSystem;
 
 public final class VirtualFileSystem implements FileSystem {
@@ -120,8 +122,16 @@ public final class VirtualFileSystem implements FileSystem {
      * If that file or directory actually exists, it will not be accessible.
      */
     private final Path mountPoint;
+
+    /**
+     * The temporary directory where to extract files/directories to.
+     */
     private final Path extractDir;
-    private final DirectoryStream.Filter<Path> extractFilter;
+
+    /**
+     * A filter to determine if a path should be extracted (see {@link #shouldExtract(Path)}).
+     */
+    private final Predicate<Path> extractFilter;
     private static final boolean caseInsensitive = isWindows();
 
     public VirtualFileSystem() {
@@ -134,7 +144,7 @@ public final class VirtualFileSystem implements FileSystem {
      * {@link #toAbsolutePath(Path) absolute path} is computed. This argument may be {@code null}
      * causing that no extraction will happen.
      */
-    public VirtualFileSystem(DirectoryStream.Filter<Path> extractFilter) {
+    public VirtualFileSystem(Predicate<Path> extractFilter) {
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
             mp = isWindows() ? "X:\\graalpy_vfs" : "/graalpy_vfs";
@@ -323,15 +333,10 @@ public final class VirtualFileSystem implements FileSystem {
     }
 
     /**
-     * Determines if the given platform path should be extracted to a temp directory. This is
-     * determined by the provided filter accepts the path.
+     * Uses {@link #extractFilter} to determine if the given platform path should be extracted.
      */
     private boolean shouldExtract(Path path) {
-        try {
-            return extractFilter != null && extractFilter.accept(path);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return extractFilter != null && extractFilter.test(path);
     }
 
     /**
