@@ -180,13 +180,16 @@ def test_native_executable_venv_and_one_file():
             f.write("from termcolor import colored, cprint\n")
             f.write("colored_text = colored('hello standalone world', 'red', attrs=['reverse', 'blink'])\n")
             f.write("print(colored_text)\n")
+            f.write("import ujson\n")
+            f.write('d = ujson.loads("""{"key": "value"}""")\n')
+            f.write("print('key=' + d['key'])\n")
 
         venv_dir = os.path.join(target_dir, "venv")
         cmd = [graalpy, "-m", "venv", venv_dir]
         out = run_cmd(cmd, env)
 
         venv_python = os.path.join(venv_dir, "Scripts", "python.cmd") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
-        cmd = [venv_python, "-m", "pip", "--no-cache-dir", "install", "termcolor"]
+        cmd = [venv_python, "-m", "pip", "--no-cache-dir", "install", "termcolor", "ujson"]
         out = run_cmd(cmd, env)
 
         target_file = os.path.join(target_dir, "hello")
@@ -198,6 +201,7 @@ def test_native_executable_venv_and_one_file():
         out = run_cmd(cmd, env)
 
         assert "hello standalone world" in out
+        assert "key=value" in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_module():
