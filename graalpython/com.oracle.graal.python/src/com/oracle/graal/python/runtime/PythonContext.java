@@ -1151,6 +1151,7 @@ public final class PythonContext extends Python3Core {
                         forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
                         inheritAllAccess(true).//
                         initializeCreatorContext(true).//
+                        option("python.NativeModules", "false").//
                         // TODO always force java posix in spawned: test_multiprocessing_spawn fails
                         // with that. Gives "OSError: [Errno 9] Bad file number"
                         // option("python.PosixModuleBackend", "java").//
