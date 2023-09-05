@@ -396,32 +396,36 @@ PyObject * PyUnicode_DecodeUTF16(const char *s, Py_ssize_t size, const char *err
 }
 
 PyObject * PyUnicode_DecodeUTF16Stateful(const char *s, Py_ssize_t size, const char *errors, int *byteorder, Py_ssize_t *consumed) {
+    const unsigned char* q = (const unsigned char*) s;
     int bo = byteorder ? *byteorder : 0;
+    int skip = 0;
     /* Check for BOM marks (U+FEFF) in the input and adjust current
        byte order setting accordingly. In native mode, the leading BOM
        mark is skipped, in all other modes, it is copied to the output
        stream as-is (giving a ZWNBSP character). */
     if (bo == 0 && size >= 2) {
-        const Py_UCS4 bom = (s[1] << 8) | s[0];
+        const Py_UCS4 bom = (q[1] << 8) | q[0];
         if (bom == 0xFEFF) {
-            s += 2;
             bo = -1;
+            skip = 2;
         }
         else if (bom == 0xFFFE) {
-            s += 2;
             bo = 1;
+            skip = 2;
         }
         if (byteorder)
             *byteorder = bo;
     }
+    q += skip;
+    size -= skip;
     PyObject* result = GraalPyTruffleUnicode_DecodeUTF16Stateful(
-                                                (void*) s, size,
+                                                (void*) q, size,
                                                 convert_errors(errors),
                                                 bo,
                                                 consumed != NULL ? 1 : 0);
     if (result != NULL) {
         if (consumed != NULL) {
-            *consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+            *consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1)) + skip;
         }
         PyObject* string = PyTuple_GetItem(result, 0);
         Py_IncRef(string);
@@ -436,32 +440,36 @@ PyObject * PyUnicode_DecodeUTF32(const char *s, Py_ssize_t size, const char *err
 }
 
 PyObject * PyUnicode_DecodeUTF32Stateful(const char *s, Py_ssize_t size, const char *errors, int *byteorder, Py_ssize_t *consumed) {
+    const unsigned char* q = (const unsigned char*) s;
     int bo = byteorder ? *byteorder : 0;
+    int skip = 0;
     /* Check for BOM marks (U+FEFF) in the input and adjust current
        byte order setting accordingly. In native mode, the leading BOM
        mark is skipped, in all other modes, it is copied to the output
        stream as-is (giving a ZWNBSP character). */
     if (bo == 0 && size >= 4) {
-        Py_UCS4 bom = ((unsigned int)s[3] << 24) | (s[2] << 16) | (s[1] << 8) | s[0];
+        Py_UCS4 bom = ((unsigned int)q[3] << 24) | (q[2] << 16) | (q[1] << 8) | q[0];
         if (bom == 0x0000FEFF) {
             bo = -1;
-            s += 4;
+            skip = 4;
         }
         else if (bom == 0xFFFE0000) {
             bo = 1;
-            s += 4;
+            skip = 4;
         }
         if (byteorder)
             *byteorder = bo;
     }
+    q += skip;
+    size -= skip;
     PyObject* result = GraalPyTruffleUnicode_DecodeUTF32Stateful(
-                                                (void*) s, size,
+                                                (void*) q, size,
                                                 convert_errors(errors),
                                                 bo,
                                                 consumed != NULL ? 1 : 0);
     if (result != NULL) {
         if (consumed != NULL) {
-            *consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+            *consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1)) + skip;
         }
         PyObject* string = PyTuple_GetItem(result, 0);
         Py_IncRef(string);
