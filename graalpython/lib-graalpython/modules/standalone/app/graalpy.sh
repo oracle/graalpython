@@ -17,4 +17,5 @@ for var in "$@"; do
 done
 
 export GRAAL_PYTHON_ARGS=$args
+echo graalpy.sh is going to execute: mvn -f "${location}/pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %classpath '-Dorg.graalvm.launcher.executablename=$0' --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
 mvn -f "${location}/pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %classpath '-Dorg.graalvm.launcher.executablename=$0' --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
