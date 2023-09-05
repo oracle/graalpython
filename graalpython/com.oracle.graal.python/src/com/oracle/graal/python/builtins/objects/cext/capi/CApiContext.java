@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.graalvm.collections.EconomicMap;
@@ -526,7 +527,8 @@ public final class CApiContext extends CExtContext {
      * This represents whether the current process has already loaded an instance of the native CAPI
      * extensions - this can only be loaded once per process.
      */
-    private static boolean nativeCAPILoaded = false;
+    private static AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
+    private static AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
@@ -540,11 +542,27 @@ public final class CApiContext extends CExtContext {
             TruffleFile capiFile = homePath.resolve(libName);
             try {
                 SourceBuilder capiSrcBuilder;
-                boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions()) && !nativeCAPILoaded;
-                nativeCAPILoaded |= useNative;
+                final boolean useNative;
+                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
+                    useNative = nativeCAPILoaded.compareAndSet(false, true);
+                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
+                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
+                                        "but only one context in the process can use native modules, " +
+                                        "second and other contexts fallback to NativeModules=false and " +
+                                        "will use LLVM bitcode execution via GraalVM LLVM.");
+                    }
+                } else {
+                    useNative = false;
+                }
                 if (useNative) {
+                    if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
+                        throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, "NativeModules", "true");
+                    }
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getAbsoluteFile().getPath() + "\"", "<libpython>");
                 } else {
+                    if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
+                        throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
+                    }
                     capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 }
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
