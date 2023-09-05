@@ -374,7 +374,10 @@ class TestCase(object):
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
-                print(u"\n\t\u21B3 ", func.__qualname__, " ", end="", flush=True)
+                if sys.platform == 'win32':
+                    print(u"\n\t> ", func.__qualname__, " ", end="", flush=True)
+                else:
+                    print(u"\n\t\u21B3 ", func.__qualname__, " ", end="", flush=True)
 
         if func.__code__ is Mark.xfail(func).__code__:
             return _skipped_marker
@@ -768,7 +771,10 @@ class TestRunner(object):
                 self.load_conftest(conftest)
 
             if verbose:
-                print(u"\n\u25B9 ", module.__name__, end="")
+                if sys.platform == 'win32':
+                    print(u"\n> ", module.__name__, end="")
+                else:
+                    print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
             for k, v in module_dict.items():
