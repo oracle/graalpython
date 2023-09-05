@@ -102,6 +102,8 @@ public class Py2BinLauncher {
                     throw e;
                 }
             }
+        } finally {
+            vfs.close();
         }
     }
 

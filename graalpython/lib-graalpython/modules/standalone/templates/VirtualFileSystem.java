@@ -51,13 +51,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -74,7 +77,7 @@ import java.util.function.Predicate;
 
 import org.graalvm.polyglot.io.FileSystem;
 
-public final class VirtualFileSystem implements FileSystem {
+public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     
     /*
      * Root of the virtual filesystem in the resources.
@@ -162,6 +165,28 @@ public final class VirtualFileSystem implements FileSystem {
             }
         } else {
             this.extractDir = null;
+        }
+    }
+
+    public void close() {
+        if (extractDir != null) {
+            try {
+                Files.walkFileTree(extractDir, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException e) {
+                System.err.format("Could not delete temp directory '%s': %s", extractDir, e);
+            }
         }
     }
 
