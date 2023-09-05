@@ -174,7 +174,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     return lib.asLong(receiver) != 0;
                 }
                 if (lib.fitsInBigInteger(receiver)) {
-                    return !lib.asBigInteger(receiver).equals(BigInteger.ZERO);
+                    return !isBigIntegerZero(lib.asBigInteger(receiver));
                 }
                 if (lib.fitsInDouble(receiver)) {
                     return lib.asDouble(receiver) != 0.0;
@@ -194,6 +194,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+        
+        @TruffleBoundary
+        static boolean isBigIntegerZero(BigInteger number) {
+            return number.equals(BigInteger.ZERO);
         }
     }
 
