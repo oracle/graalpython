@@ -13,9 +13,9 @@ done
 location="$( cd -P "$( dirname "$source" )" && pwd )"
 
 if [ -z "$JAVA_HOME" ]; then
-    JAVA=$JAVA_HOME/bin/java
-else
     JAVA=java
+else
+    JAVA="${JAVA_HOME}/bin/java"
 fi
 
 for var in "$@"; do    
