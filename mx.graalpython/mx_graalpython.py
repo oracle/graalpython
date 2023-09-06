@@ -48,6 +48,7 @@ if sys.version_info[0] < 3:
 import tempfile
 import urllib.request as urllib_request
 from argparse import ArgumentParser
+from dataclasses import dataclass
 
 import mx
 import mx_benchmark
@@ -325,10 +326,6 @@ def node_footprint_analyzer(args, **kwargs):
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
 
-def _pythonhome_context():
-    return set_env(GRAAL_PYTHONHOME=_pythonhome())
-
-
 def _pythonhome():
     return mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output()
 
@@ -342,47 +339,68 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(ars, report=False):
+def punittest(args, report=False):
     """
     Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
 
     Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
     in the arguments array, then we append filter that includes all GraalPython junit tests.
     """
-    args = []
-    args2 = []
+    @dataclass
+    class TestConfig:
+        args: list
+        useResources: bool
+        reportConfig: bool = report
+        def __str__(self):
+            return f"args={self.args!r}, useResources={self.useResources}, report={self.reportConfig}"
+
+    configs = []
     skip_leak_tests = False
-    if "--regex" not in ars:
-        args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
-        args2 += ['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest']
-    if "--no-leak-tests" in ars:
+    if "--no-leak-tests" in args:
         skip_leak_tests = True
-        ars.remove("--no-leak-tests")
-    args += ars
-    args2 += ars
-    with _pythonhome_context():
-        mx_unittest.unittest(args, test_report_tags=({"task": "punittest"} if report else None))
-        if len(args2) > len(ars):
-            mx_unittest.unittest(args2)
+        args.remove("--no-leak-tests")
 
-        if skip_leak_tests:
-            return
+    if "--regex" in args:
+        configs += [
+            TestConfig(args, True),
+            TestConfig(args, False),
+        ]
+    else:
+        configs += [
+            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], True),
+            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], False),
+            TestConfig(['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest'], True, False),
+        ]
+        for c in configs:
+            c.args += args
 
-        common_args = ["--lang", "python",
-                       "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-                       "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+    # Workaround until imports update pulls in GR-48113
+    sulong_native = mx.distribution('SULONG_NATIVE', fatalIfMissing=True)
+    sulong_native._use_module_path = True
 
-        if not all([
-            # test leaks with Python code only
-            run_leak_launcher(common_args + ["--code", "pass", ]),
-            # test leaks when some C module code is involved
-            run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
-            # test leaks with shared engine Python code only
-            run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-            # test leaks with shared engine when some C module code is involved
-            run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
-        ]):
-            mx.abort(1)
+    for c in configs:
+        mx.log(f"Python JUnit tests configuration: {c}")
+        PythonMxUnittestConfig.useResources = c.useResources
+        mx_unittest.unittest(c.args, test_report_tags=({"task": "punittest"} if c.reportConfig else None))
+
+    if skip_leak_tests:
+        return
+
+    common_args = ["--lang", "python",
+                   "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+                   "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+
+    if not all([
+        # test leaks with Python code only
+        run_leak_launcher(common_args + ["--code", "pass", ]),
+        # test leaks when some C module code is involved
+        run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
+        # test leaks with shared engine Python code only
+        run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+        # test leaks with shared engine when some C module code is involved
+        run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    ]):
+        mx.abort(1)
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -2877,21 +2895,19 @@ def run_leak_launcher(input_args):
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
     args = input_args
-    capi_home = _get_capi_home()
     args = [
         "--keep-dump",
         "--experimental-options",
-        f"--python.CAPI={capi_home}",
         *args,
     ]
 
     env = os.environ.copy()
-    env.setdefault("GRAAL_PYTHONHOME", _pythonhome())
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'GRAALPYTHON_RESOURCES', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
@@ -2937,11 +2953,32 @@ def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_d
     if extra_vm_args:
         vm_args += extra_vm_args
 
-    vm_args.append("com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen")
+    vm_args += ["--module", "org.graalvm.py/com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen"]
 
     print("\nGraalPython needs to be built before executing this command. If you encounter build errors because of changed builtin definitions, manually remove the contents of com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry.createBuiltinNode before building.\n")
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, cwd=SUITE.dir, **kwargs)
 
+
+class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
+    # We use global state, which influences what this unit-test config is going to do
+    # The global state can be adjusted before a test run to achieve a different tests configuration
+    useResources = True # Whether to use resources, or language home of filesystem
+    # Possible future extensions: useSulong = True
+
+    def apply(self, config):
+        (vmArgs, mainClass, mainClassArgs) = config
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
+        if not PythonMxUnittestConfig.useResources:
+            vmArgs.append('-Dorg.graalvm.language.python.home=' + _pythonhome())
+        return (vmArgs, mainClass, mainClassArgs)
+
+    def processDeps(self, deps):
+        if PythonMxUnittestConfig.useResources:
+            deps.add(mx.distribution('GRAALPYTHON_RESOURCES', fatalIfMissing=True))
+
+
+mx_unittest.register_unittest_config(PythonMxUnittestConfig('python-internal'))
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

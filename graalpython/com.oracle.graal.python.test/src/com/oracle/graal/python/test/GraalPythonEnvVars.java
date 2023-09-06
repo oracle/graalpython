@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,74 +26,42 @@
 package com.oracle.graal.python.test;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.CodeSource;
+import java.util.Locale;
 
 public class GraalPythonEnvVars {
-    private static final String PROP_HOME = "test.graalpython.home";
-    private static final String LIB_GRAALPYTHON = "lib-graalpython";
-    private static final String NO_CORE = "Fatal: You need to pass --python.CoreHome because its location could not be discovered.";
+    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
-    public static String graalpythonHome() {
+    /**
+     * Whether the tests are running with language home or with internal resources.
+     */
+    public static final boolean RUNNING_WITH_LANGUAGE_HOME = System.getProperty("org.graalvm.language.python.home") != null;
+
+    private static final String PROP_TESTS_HOME = "test.graalpython.home";
+    private static final String NO_TESTS_HOME = "Fatal: You need to set Java property '%s' to a directory that " +
+                    "contains additional test files, e.g., to the root of the GraalPython source tree. If the tests are " +
+                    "executed via mx, then mx should set this property automatically as specified in suite.py";
+
+    public static String graalPythonTestsHome() {
         try {
-            return discoverHomeFromSource();
+            return getGraalPythonTestsHome();
         } catch (IOException e) {
-            graalpythonExit(NO_CORE);
+            throw new RuntimeException(String.format(NO_TESTS_HOME, PROP_TESTS_HOME));
         }
-        return null;
     }
 
-    private static void graalpythonExit(String msg) {
-        System.err.println("GraalPython unexpected failure: " + msg);
-        System.exit(1);
-    }
-
-    private static String discoverHomeFromSource() throws IOException {
+    private static String getGraalPythonTestsHome() throws IOException {
         /*
-         * If the tests are executed via MX then there should be a Java property telling us the
-         * Graal Python home.
+         * There should be a Java property telling us where to find additional files needed for the
+         * tests. If the tests are executed via MX then the Java property should be set
+         * automatically (see the test project definition in suite.py)
          */
-        String homeProperty = System.getProperty(PROP_HOME);
+        String homeProperty = System.getProperty(PROP_TESTS_HOME);
         if (homeProperty != null) {
             final Path candidate = Paths.get(homeProperty);
-            if (isGraalPythonHome(candidate)) {
-                return candidate.toRealPath().toString();
-            }
-        }
-
-        final CodeSource codeSource = GraalPythonEnvVars.class.getProtectionDomain().getCodeSource();
-        if (codeSource != null && codeSource.getLocation().getProtocol().equals("file")) {
-            final Path codeLocation = Paths.get(codeSource.getLocation().getFile());
-            final Path codeDir = codeLocation.getParent();
-
-            // executing from jar file in GraalVM build or distribution
-            if (codeDir.getFileName().toString().equals("python")) {
-                if (isGraalPythonHome(codeDir)) {
-                    // GraalVM build or distribution
-                    return codeDir.toFile().getCanonicalPath().toString();
-                }
-            }
-
-            // executing from binary import
-            if (codeDir.endsWith(Paths.get("mx.imports", "binary", "graalpython"))) {
-                final Path candidate = codeDir.resolve(Paths.get("mxbuild", "graalpython-zip"));
-                if (isGraalPythonHome(candidate)) {
-                    return candidate.toFile().getCanonicalPath().toString();
-                }
-            } else if (codeDir.endsWith(Paths.get("mx.imports", "binary", "graalpython", "mxbuild", "dists"))) {
-                // executing from another binary import layout
-                final Path candidate = codeDir.resolveSibling(Paths.get("graalpython-zip"));
-                if (isGraalPythonHome(candidate)) {
-                    return candidate.toFile().getCanonicalPath().toString();
-                }
-            }
+            return candidate.toRealPath().toString();
         }
         throw new IOException();
-    }
-
-    private static boolean isGraalPythonHome(Path src) {
-        return Files.isDirectory(src.resolve(LIB_GRAALPYTHON));
     }
 }

@@ -63,6 +63,7 @@ import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.test.GraalPythonEnvVars;
 import com.oracle.graal.python.test.PythonTests;
 
 public class CompilerTests extends PythonTests {
@@ -1103,7 +1104,7 @@ public class CompilerTests extends PythonTests {
 
     private void checkCodeUnit(CodeUnit co) {
         String coString = co.toString();
-        Path goldenFile = Paths.get(System.getProperty("org.graalvm.language.python.home"),
+        Path goldenFile = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(),
                         "com.oracle.graal.python.test", "testData", "goldenFiles",
                         this.getClass().getSimpleName(),
                         name.getMethodName() + ".co");

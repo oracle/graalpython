@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
-import static org.junit.Assert.assertTrue;
+package com.oracle.graal.python.pegparser.test;
 
-import java.io.File;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.io.IOAccess;
-import org.junit.Before;
 import org.junit.Test;
 
-public class ResourcesTest {
-    @Before
-    public void setUp() {
-        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
-    }
+public class BenchmarkTest extends ParserTestBase {
 
     @Test
-    public void testResourcesAsHome() {
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
-
-        try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
-            String foundHome = context.eval("python", "__graalpython__.home").asString();
-            assertTrue(foundHome, !foundHome.contains("graalpython"));
-        }
-    }
-
-    @Test
-    public void testResourcesAlwaysAllowReading() {
-        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
-            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
-            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
-        }
+    public void arithBinop() throws Exception {
+        String source = "def docompute(num):\n" +
+                        "    for i in range(num):\n" +
+                        "        sum_ = 0.0\n" +
+                        "        j = 0\n" +
+                        "        while j < num:\n" +
+                        "            sum_ += 1.0 / (((i + j) * (i + j + 1) >> 1) + i + 1)\n" +
+                        "            j += 1\n" +
+                        "\n" +
+                        "    return sum_\n" +
+                        "\n" +
+                        "\n" +
+                        "def measure(num):\n" +
+                        "    for run in range(num):\n" +
+                        "        sum_ = docompute(10000)  # 10000\n" +
+                        "    print('sum', sum_)\n" +
+                        "\n" +
+                        "\n" +
+                        "def __benchmark__(num=5):\n" +
+                        "    measure(num)\n";
+        checkScopeAndTree(source);
     }
 }
