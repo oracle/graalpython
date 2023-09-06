@@ -82,7 +82,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     /*
      * Root of the virtual filesystem in the resources.
      */
-    private static final Path VFS_PREFIX = Path.of("/vfs");
+    private static final String VFS_PREFIX = "/vfs";
 
     /*
      * Index of all files and directories available in the resources at runtime.
@@ -194,18 +194,14 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    public String resourcePathToPlatformPath(String spath) {
-        Path path = Path.of(spath);
+    public String resourcePathToPlatformPath(String path) {
         assert path.startsWith(VFS_PREFIX);
-        Path mountPoint = this.mountPoint;
-        if (path.startsWith(VFS_PREFIX)) {
-            path = VFS_PREFIX.relativize(path);
-        }
-        String result = mountPoint.resolve(path).toString();
+	path = path.substring(VFS_PREFIX.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
-            result = result.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
+            path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
-        return result;
+        Path mountPoint = this.mountPoint;
+        return mountPoint.resolve(path).toString();
     }
 
     private String platformPathToResourcePath(String path) throws IOException {
