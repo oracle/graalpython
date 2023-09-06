@@ -198,7 +198,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         
         @TruffleBoundary
         static boolean isBigIntegerZero(BigInteger number) {
-            return number.equals(BigInteger.ZERO);
+            return number.compareTo(BigInteger.ZERO) == 0;
         }
     }
 
@@ -305,7 +305,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached GilNode gil,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached.Exclusive @Cached PythonObjectFactory factory) {
             assert !lib.isBoolean(left);
             BigInteger leftBigInteger;
             PInt leftInt;
