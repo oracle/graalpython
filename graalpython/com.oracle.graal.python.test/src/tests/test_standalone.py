@@ -42,6 +42,7 @@ import subprocess
 import tempfile
 import unittest
 import shutil
+import sys
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 MVN_CMD = [shutil.which('mvn')]
@@ -96,6 +97,7 @@ def get_gp():
     return graalpy
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+@unittest.skipUnless(sys.platform != 'win32', 'not supported on Windows')
 def test_polyglot_app():
 
     graalpy = get_gp()
