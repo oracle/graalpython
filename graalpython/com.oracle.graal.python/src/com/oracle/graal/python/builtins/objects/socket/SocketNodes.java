@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.StringLiterals.T_IDNA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
@@ -58,19 +60,16 @@ import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.net.IDN;
+import java.util.Arrays;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
@@ -80,9 +79,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -101,11 +100,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.TimeUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -139,7 +136,7 @@ public abstract class SocketNodes {
             if (hostAndPort.length != 2) {
                 throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
             }
-            TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
+            byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
             int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
             Object posixSupport = context.getPosixSupport();
@@ -164,7 +161,7 @@ public abstract class SocketNodes {
             if (hostAndPort.length < 2 || hostAndPort.length > 4) {
                 throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
             }
-            TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
+            byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
             int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             int flowinfo = 0;
             if (hostAndPort.length > 2) {
@@ -260,23 +257,21 @@ public abstract class SocketNodes {
      */
     public abstract static class SetIpAddrNode extends PNodeWithRaise {
 
-        private static final TruffleString T_BROADCAST_IP = tsLiteral("255.255.255.255");
-        private static final TruffleString T_BROADCAST = tsLiteral("<broadcast>");
+        private static final byte[] BROADCAST_IP = "255.255.255.255".getBytes();
+        private static final byte[] BROADCAST = "<broadcast>".getBytes();
 
-        public abstract UniversalSockAddr execute(VirtualFrame frame, TruffleString name, int family);
+        public abstract UniversalSockAddr execute(VirtualFrame frame, byte[] name, int family);
 
         @Specialization
-        UniversalSockAddr setipaddr(VirtualFrame frame, TruffleString name, int family,
+        UniversalSockAddr setipaddr(VirtualFrame frame, byte[] name, int family,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Cached GilNode gil) {
             try {
                 PythonContext context = PythonContext.get(this);
-                if (name.isEmpty()) {
+                if (name.length == 0) {
                     gil.release(true);
                     try {
                         Object posixSupport = context.getPosixSupport();
@@ -296,7 +291,7 @@ public abstract class SocketNodes {
                     }
                 }
                 /* special-case broadcast - inet_addr() below can return INADDR_NONE for this */
-                if (equalNode.execute(name, T_BROADCAST_IP, TS_ENCODING) || equalNode.execute(name, T_BROADCAST, TS_ENCODING)) {
+                if (Arrays.equals(name, BROADCAST_IP) || Arrays.equals(name, BROADCAST)) {
                     if (family != AF_INET.value && family != AF_UNSPEC.value) {
                         throw raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
                     }
@@ -308,7 +303,7 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value || family == AF_UNSPEC.value) {
                     try {
                         Object posixSupport = context.getPosixSupport();
-                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET.value, posixLib.createPathFromString(posixSupport, name));
+                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET.value, posixLib.createPathFromBytes(posixSupport, name));
                         return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(0, bytes));
                     } catch (PosixException | InvalidAddressException e) {
                         // fallthrough
@@ -319,10 +314,10 @@ public abstract class SocketNodes {
                  * getaddrinfo(), which can handle translation from interface name to interface
                  * index
                  */
-                if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name, byteIndexOfCodePointNode)) {
+                if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name)) {
                     try {
                         Object posixSupport = context.getPosixSupport();
-                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET6.value, posixLib.createPathFromString(posixSupport, name));
+                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET6.value, posixLib.createPathFromBytes(posixSupport, name));
                         return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(0, bytes, 0, 0));
                     } catch (PosixException | InvalidAddressException e) {
                         // fallthrough
@@ -333,7 +328,7 @@ public abstract class SocketNodes {
                 try {
                     Object posixSupport = context.getPosixSupport();
                     // TODO getaddrinfo lock?
-                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromString(posixSupport, name), null,
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromBytes(posixSupport, name), null,
                                     family, 0, 0, 0);
                     try {
                         return addrInfoLib.getSockAddr(cursor);
@@ -348,8 +343,13 @@ public abstract class SocketNodes {
             }
         }
 
-        private static boolean hasScopeId(TruffleString name, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
-            return byteIndexOfCodePointNode.execute(name, '%', 0, name.byteLength(TS_ENCODING), TS_ENCODING) >= 0;
+        private static boolean hasScopeId(byte[] name) {
+            for (byte b : name) {
+                if (b == '%') {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -447,7 +447,7 @@ public abstract class SocketNodes {
         }
     }
 
-    public abstract static class IdnaFromStringOrBytesConverterNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class IdnaFromStringOrBytesConverterNode extends ArgumentCastNode {
         private final String builtinName;
         private final int argumentIndex;
 
@@ -457,51 +457,42 @@ public abstract class SocketNodes {
         }
 
         @Override
-        public abstract TruffleString execute(VirtualFrame frame, Object value);
+        public abstract byte[] execute(VirtualFrame frame, Object value);
 
         @Specialization
-        TruffleString convert(TruffleString value,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(idna(toJavaStringNode.execute(value)), TS_ENCODING);
-        }
-
-        @Specialization
-        TruffleString convert(PString value,
-                        @Cached CastToJavaStringNode cast,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(idna(cast.execute(value)), TS_ENCODING);
-        }
-
-        @Specialization
-        TruffleString convert(PBytesLike value,
-                        @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            // TODO construct TruffleString from bytes directly - but which encoding to use?
-            return fromJavaStringNode.execute(newString(toBytesNode.execute(value)), TS_ENCODING);
-        }
-
-        @TruffleBoundary
-        private static String newString(byte[] bytes) {
-            return new String(bytes);
-        }
-
-        @Fallback
-        TruffleString error(Object value) {
-            if (builtinName != null) {
-                throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_BYTEARRAY, builtinName, argumentIndex, value);
+        byte[] convert(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached BytesNodes.BytesLikeCheck bytesLikeCheck,
+                        @Cached CastToTruffleStringNode castToString,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
+                        @Cached PRaiseNode.Lazy raise) {
+            Object bytes;
+            if (unicodeCheckNode.execute(inliningTarget, value)) {
+                TruffleString string = castToString.execute(inliningTarget, value);
+                if (getCodeRangeNode.execute(string, TS_ENCODING) == TruffleString.CodeRange.ASCII) {
+                    /*
+                     * Skip IDNA for ASCII-only strings. Even though, technically, some ASCII string
+                     * might still be invalid IDNA, CPython ignores this possibility and so do we.
+                     */
+                    return copyToByteArrayNode.execute(switchEncodingNode.execute(string, Encoding.US_ASCII), Encoding.US_ASCII);
+                } else {
+                    bytes = encodeNode.execute(frame, value, T_IDNA, T_STRICT);
+                }
+            } else if (bytesLikeCheck.execute(inliningTarget, value)) {
+                bytes = value;
             } else {
-                throw raise(TypeError, ErrorMessages.STR_BYTES_OR_BYTEARRAY_EXPECTED, value);
+                if (builtinName != null) {
+                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_BYTEARRAY, builtinName, argumentIndex, value);
+                } else {
+                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.STR_BYTES_OR_BYTEARRAY_EXPECTED, value);
+                }
             }
-        }
-
-        @TruffleBoundary
-        private String idna(String name) {
-            try {
-                return IDN.toASCII(name);
-            } catch (IllegalArgumentException e) {
-                throw raise(PythonBuiltinClassType.UnicodeError, ErrorMessages.IDN_ENC_FAILED, e.getMessage());
-            }
+            return bufferLib.getCopiedByteArray(bytes);
         }
 
         @ClinicConverterFactory

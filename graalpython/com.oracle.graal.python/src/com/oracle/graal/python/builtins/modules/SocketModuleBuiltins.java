@@ -276,16 +276,16 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"ip"})
-    @ArgumentClinic(name = "ip", conversion = ArgumentClinic.ClinicConversion.TString)
+    @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class GetHostByAddrNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class GetHostByAddrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, TruffleString ip,
+        Object doGeneric(VirtualFrame frame, Object ip,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Bind("this") Node inliningTarget,
+                        @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached SocketNodes.MakeIpAddrNode makeIpAddrNode,
@@ -298,7 +298,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              * might want to use the legacy API in the future
              */
             auditNode.audit(inliningTarget, "socket.gethostbyaddr", ip);
-            UniversalSockAddr addr = setIpAddrNode.execute(frame, ip, AF_UNSPEC.value);
+            UniversalSockAddr addr = setIpAddrNode.execute(frame, idnaConverter.execute(frame, ip), AF_UNSPEC.value);
             int family = sockAddrLibrary.getFamily(addr);
             try {
                 Object[] getnameinfoResult = posixLib.getnameinfo(getPosixSupport(), addr, NI_NAMEREQD.value);
@@ -333,9 +333,9 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SocketModuleBuiltinsClinicProviders.GetHostByAddrNodeClinicProviderGen.INSTANCE;
+        @NeverDefault
+        protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
+            return IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
         }
     }
 
@@ -352,7 +352,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            TruffleString name = idnaConverter.execute(frame, nameObj);
+            byte[] name = idnaConverter.execute(frame, nameObj);
             auditNode.audit(inliningTarget, "socket.gethostbyname", factory.createTuple(new Object[]{nameObj}));
             UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
             Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -620,7 +620,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             Object host = null;
             if (hostObject != PNone.NONE) {
-                host = posixLib.createPathFromString(getPosixSupport(), idna.execute(frame, hostObject));
+                host = posixLib.createPathFromBytes(getPosixSupport(), idna.execute(frame, hostObject));
             }
 
             Object port;
