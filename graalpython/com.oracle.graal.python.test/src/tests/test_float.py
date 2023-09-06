@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -228,6 +228,58 @@ class BasicTests(unittest.TestCase):
         self.assertFalse(i <= f)
         self.assertTrue(i > f)
         self.assertTrue(i >= f)
+
+    def test_compare_infinite(self):
+        nan = float('nan')
+        inf = float('inf')
+        ninf = float('-inf')
+        positives = [0.0, 1.0, 1, 1125899906842624, 1 << 100]
+        negatives = [-x for x in positives]
+        for num in [nan, inf, ninf, *positives, *negatives]:
+            self.assertFalse(nan == num)
+            self.assertTrue(nan != num)
+            self.assertFalse(nan < num)
+            self.assertFalse(nan <= num)
+            self.assertFalse(nan > num)
+            self.assertFalse(nan >= num)
+            self.assertFalse(num == nan)
+            self.assertTrue(num != nan)
+            self.assertFalse(num < nan)
+            self.assertFalse(num <= nan)
+            self.assertFalse(num > nan)
+            self.assertFalse(num >= nan)
+
+        self.assertTrue(inf == inf)
+        self.assertFalse(inf != inf)
+        for num in [ninf, *positives, *negatives]:
+            self.assertFalse(inf == num)
+            self.assertFalse(num == inf)
+            self.assertTrue(inf != num)
+            self.assertTrue(num != inf)
+            self.assertTrue(inf > num)
+            self.assertTrue(inf >= num)
+            self.assertFalse(inf < num)
+            self.assertFalse(inf <= num)
+            self.assertFalse(num > inf)
+            self.assertFalse(num >= inf)
+            self.assertTrue(num < inf)
+            self.assertTrue(num <= inf)
+
+        self.assertTrue(ninf == ninf)
+        self.assertFalse(ninf != ninf)
+        for num in [*positives, *negatives]:
+            self.assertFalse(ninf == num)
+            self.assertFalse(num == ninf)
+            self.assertTrue(ninf != num)
+            self.assertTrue(num != ninf)
+            self.assertFalse(ninf > num)
+            self.assertFalse(ninf >= num)
+            self.assertTrue(ninf < num)
+            self.assertTrue(ninf <= num)
+            self.assertTrue(num > ninf)
+            self.assertTrue(num >= ninf)
+            self.assertFalse(num < ninf)
+            self.assertFalse(num <= ninf)
 
 
 fromHex = float.fromhex

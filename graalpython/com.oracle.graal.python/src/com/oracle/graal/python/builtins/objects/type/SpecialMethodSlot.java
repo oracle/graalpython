@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_SUBT
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
+import static com.oracle.graal.python.lib.GetMethodsFlagsNode.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
@@ -149,15 +150,20 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
+import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -172,6 +178,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
@@ -297,6 +304,7 @@ public enum SpecialMethodSlot {
     }
 
     public static final SpecialMethodSlot[] VALUES = values();
+
     private final TruffleString name;
     @CompilationFinal private SpecialMethodSlot reverse;
     /**
@@ -487,9 +495,8 @@ public enum SpecialMethodSlot {
     }
 
     private static void reinitializeSpecialMethodSlots(Object klass, PythonLanguage language) {
-        java.util.Set<PythonAbstractClass> subClasses;
-        if (klass instanceof PythonManagedClass) {
-            PythonManagedClass managedClass = (PythonManagedClass) klass;
+        PythonAbstractClass[] subClasses;
+        if (klass instanceof PythonManagedClass managedClass) {
             // specialMethodSlots can be null if the type is just being initialized, for example,
             // when the initialization calls the "mro" method, which may execute arbitrary code
             // including setting its __bases__ to something.
@@ -500,9 +507,9 @@ public enum SpecialMethodSlot {
                 managedClass.specialMethodSlots = null;
                 initializeSpecialMethodSlots(managedClass, GetMroStorageNode.executeUncached(managedClass), language);
             }
-            subClasses = managedClass.getSubClasses();
-        } else if (klass instanceof PythonNativeClass) {
-            subClasses = GetSubclassesNode.executeUncached(klass);
+            subClasses = GetSubclassesAsArrayNode.executeUncached(managedClass);
+        } else if (klass instanceof PythonNativeClass clazz) {
+            subClasses = GetSubclassesAsArrayNode.executeUncached(clazz);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }
@@ -532,6 +539,7 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
+                        fixupNewSlot(result, klass);
                         setMethodsFlags(result, klass);
                         return result;
                     }
@@ -573,6 +581,7 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
+        fixupNewSlot(slots, klass);
         setMethodsFlags(slots, klass);
         return slots;
     }
@@ -595,6 +604,33 @@ public enum SpecialMethodSlot {
         return isMroSubtype;
     }
 
+    private static void setMethodsFlag(PythonManagedClass klass, long flag, PythonContext context) {
+        if (flag == 0) {
+            return;
+        }
+
+        long isHeaptype = context.isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
+        klass.setMethodsFlags(flag | isHeaptype);
+    }
+
+    private static void setMethodsFlag(PythonNativeClass cls, long flag, PythonContext context) {
+        if (flag == 0) {
+            return;
+        }
+
+        long flags = GetMethodsFlagsNodeGen.getUncached().execute(null, cls);
+        if ((flags & flag) == 0) {
+            // mq: We should put a wrapped function in the native slot.
+            CyclicAssumption assumption = context.getNativeClassStableAssumption(cls, false);
+            if (assumption != null && assumption.getAssumption().isValid()) {
+                assumption.invalidate("methods flags have changed after class creation");
+            }
+            if (cls instanceof PythonAbstractNativeObject nclass) {
+                DynamicObjectLibrary.getUncached().putLong(nclass, METHODS_FLAGS, flags | flag);
+            }
+        }
+    }
+
     private static void setMethodsFlags(Object[] slots, PythonManagedClass klass) {
         long methodsFlags = 0;
         for (SpecialMethodSlot slot : VALUES) {
@@ -607,9 +643,58 @@ public enum SpecialMethodSlot {
             methodsFlags |= builtinClass.getMethodsFlags();
         }
 
-        if (methodsFlags != 0) {
-            long isHeaptype = PythonContext.get(null).isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
-            klass.setMethodsFlags(methodsFlags | isHeaptype);
+        setMethodsFlag(klass, methodsFlags, PythonContext.get(null));
+    }
+
+    /**
+     * CPython has a bug in their {@code tp_new} slot inheritance. Packages, notably pandas, rely on
+     * the bug being present, so we have to try to replicate the same behavior.
+     * <p>
+     * CPython first inherits {@code tp_new} from the dominant base ({@code tp_base}) and creates a
+     * {@code __new__} special method for it. Later, they update all slots to match what's in the
+     * object's special methods, which are looked up in MRO. In case of multiple inheritance, the
+     * MRO-inherited {@code __new__} may be different from the {@code tp_base}-inherited one.
+     * Normally, one would expect that the MRO-inherited one wins, as is the case for all other
+     * slots. See the code in {@code update_one_slot}, it does this:
+     * 
+     * <pre>
+        ...
+        void **ptr = slotptr(type, offset);
+        ...
+        descr = find_name_in_mro(type, p->name_strobj, &error);
+        ...
+        else if (Py_IS_TYPE(descr, &PyCFunction_Type) &&
+                 PyCFunction_GET_FUNCTION(descr) ==
+                 (PyCFunction)(void(*)(void))tp_new_wrapper &&
+                 ptr == (void**)&type->tp_new)
+        {
+            specific = (void *)type->tp_new;
+        }
+     * </pre>
+     * 
+     * Apparently, they wanted to make an optimization that avoids using the wrapper if the wrapper
+     * was for the same {@code tp_new} as was inherited from {@code tp_base}. But they only check
+     * that it's a wrapper, but they forgot to check that it's for the same type. The wrapper
+     * function carries the type in its self, so they should have also checked that
+     * {@code PyCFunction_GET_SELF(descr) == type}. So in summary, {@code tp_new} is inherited
+     * through {@code tp_base} when the one in MRO is builtin/native, and it's inherited through MRO
+     * otherwise.
+     * <p>
+     * We approximate the check for the wrapper by checking that it's a builtin method, and it's
+     * named {@code __new__}.
+     */
+    private static void fixupNewSlot(Object[] slots, Object type) {
+        Object mroInheritedNew = slots[New.ordinal()];
+        if (mroInheritedNew instanceof PBuiltinMethod builtinMethod) {
+            mroInheritedNew = builtinMethod.getBuiltinFunction();
+        }
+        if (mroInheritedNew instanceof PBuiltinFunction builtinFunction && builtinFunction.getName().equalsUncached(New.name, TS_ENCODING)) {
+            Object tpBaseInheritedNew = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, New.name);
+            if (tpBaseInheritedNew == PNone.NO_VALUE) {
+                Object base = GetBaseClassNode.executeUncached(type);
+                tpBaseInheritedNew = LookupCallableSlotInMRONode.getUncached(New).execute(base);
+            }
+            slots[New.ordinal()] = tpBaseInheritedNew;
         }
     }
 
@@ -653,7 +738,7 @@ public enum SpecialMethodSlot {
             // proceed with that
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
-        fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, PythonContext.get(null));
+        fixupSpecialMethodInSubClasses(GetSubclassesAsArrayNode.executeUncached(klass), slot, newValue, PythonContext.get(null));
     }
 
     @TruffleBoundary
@@ -680,11 +765,10 @@ public enum SpecialMethodSlot {
 
         PythonContext context = PythonContext.get(null);
         slot.setValue(klass, newValue, context);
-        if (oldValue == PNone.NO_VALUE && slot.getMethodsFlag() != 0) {
-            long isHeaptype = context.isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
-            klass.setMethodsFlags(isHeaptype | slot.getMethodsFlag());
+        if (oldValue == PNone.NO_VALUE) {
+            setMethodsFlag(klass, slot.getMethodsFlag(), context);
         }
-        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value, context);
+        fixupSpecialMethodInSubClasses(GetSubclassesAsArrayNode.executeUncached(klass), slot, value, context);
     }
 
     // Note: originalValue == null means originalValue is not available
@@ -705,24 +789,25 @@ public enum SpecialMethodSlot {
         if (currentOldValue != currentNewValue) {
             // Something actually changed, fixup subclasses...
             slot.setValue(klass, currentNewValue, context);
-            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, newValue, context);
+            fixupSpecialMethodInSubClasses(GetSubclassesAsArrayNode.executeUncached(klass), slot, newValue, context);
         }
     }
 
     private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object newValue, PythonContext context) {
-        if (klass instanceof PythonManagedClass) {
+        if (klass instanceof PythonManagedClass clazz) {
+            setMethodsFlag(clazz, slot.getMethodsFlag(), context);
             fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue, context);
-        } else if (klass instanceof PythonNativeClass) {
-            fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, context);
+        } else if (klass instanceof PythonNativeClass clazz) {
+            setMethodsFlag(clazz, slot.getMethodsFlag(), context);
+            fixupSpecialMethodInSubClasses(GetSubclassesAsArrayNode.executeUncached(clazz), slot, newValue, context);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }
     }
 
-    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue, PythonContext context) {
+    private static void fixupSpecialMethodInSubClasses(PythonAbstractClass[] subClasses, SpecialMethodSlot slot, Object newValue, PythonContext context) {
         for (PythonAbstractClass subClass : subClasses) {
             fixupSpecialMethodSlot(subClass, slot, newValue, context);
-            // mq: TODO: we might need to update methods flags for subclasses
         }
     }
 

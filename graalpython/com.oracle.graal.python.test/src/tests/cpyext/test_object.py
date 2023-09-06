@@ -231,7 +231,7 @@ class TestObject(object):
                             }
 
                             static PyObject* B_has_add_slot(PyObject* cls) {
-                                return (&B_Type)->tp_as_number != NULL && (&B_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                                return Py_NewRef((&B_Type)->tp_as_number != NULL && (&B_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False);
                             }
 
                             ''',
@@ -282,7 +282,7 @@ class TestObject(object):
                             }
 
                             static PyObject* E_has_add_slot(PyObject* cls) {
-                                return (&E_Type)->tp_as_number != NULL && (&E_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                                return Py_NewRef((&E_Type)->tp_as_number != NULL && (&E_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False);
                             }
                             ''',
                             tp_methods='''{"create_E", (PyCFunction)create_E, METH_NOARGS | METH_CLASS, ""},
@@ -304,6 +304,9 @@ class TestObject(object):
         assert E + B == 4242
         assert X.B_has_add_slot()
         assert Y.E_has_add_slot()
+
+        # check dir & __dir__
+        assert sorted(list(B.__dir__())) == dir(B)
 
     def test_managed_class_with_native_base(self):
         NativeModule = CPyExtType("NativeModule_", 
@@ -571,6 +574,36 @@ class TestObject(object):
         assert tester.year == 1, "year was %s "% tester.year
         assert tester.is_binary_compatible()
 
+    def test_subclasses(self):
+        TestSubclasses = CPyExtType(
+            'TestSubclasses',
+            '''
+            static PyObject* create_type(PyObject* unused, PyObject* args) {
+                PyObject* bases;
+                if (!PyArg_ParseTuple(args, "O", &bases))
+                    return NULL;
+                PyType_Slot slots[] = {
+                    { 0 }
+                };
+                PyType_Spec spec = { "DynamicType", sizeof(PyHeapTypeObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots };
+                PyObject* result = PyType_FromSpecWithBases(&spec, bases);
+                return result;
+            }
+            ''',
+            tp_methods='{"create_type", (PyCFunction)create_type, METH_VARARGS | METH_STATIC, ""}'
+        )
+
+        class ManagedBase:
+            pass
+        DynamicType = TestSubclasses.create_type((ManagedBase,))
+        assert ManagedBase.__subclasses__() == [DynamicType]
+
+        def add(a, b):
+            return 42
+        ManagedBase.__add__ = add
+        foo = DynamicType()
+        assert foo + foo == 42
+
     def test_tp_name(self):
         TestTpName = CPyExtType("TestTpName",
                                 '''
@@ -668,7 +701,7 @@ class TestObject(object):
                                                    return new_fp(PyLong_AsLong(l) + PyLong_AsLong(r));
                                                }
                                            }
-                                           return Py_NotImplemented;
+                                           return Py_NewRef(Py_NotImplemented);
                                        }
                                        """,
                                        cmembers="PyFloatObject base;",
@@ -716,20 +749,14 @@ class TestObject(object):
                                       '''
                                           Py_ssize_t global_basicsize = -1;
 
-                                          static PyObject* get_basicsize(PyObject* self, PyObject* is_graalpython) {
-                                              // The basicsize will be the struct's size plus a pointer to the object's dict and weaklist.
-                                              // Graalpython does currently not implement the weaklist, so do not add in this case.
-                                              if (PyObject_IsTrue(is_graalpython)) {
-                                                  return PyLong_FromSsize_t(global_basicsize + sizeof(PyObject*));
-                                              } else {
-                                                  return PyLong_FromSsize_t(global_basicsize + 2 * sizeof(PyObject*));
-                                              }
+                                          static PyObject* get_basicsize(PyObject* self, PyObject* ignored) {
+                                              return PyLong_FromSsize_t(global_basicsize + 2 * sizeof(PyObject*));
                                           }
                                       ''',
                                       cmembers='''long long field0;
                                       int field1;
                                       ''',
-                                      tp_methods='{"get_basicsize", (PyCFunction)get_basicsize, METH_O, ""}',
+                                      tp_methods='{"get_basicsize", (PyCFunction)get_basicsize, METH_NOARGS, ""}',
                                       post_ready_code="global_basicsize = TestCustomBasicsizeType.tp_basicsize;"
                                       )
         class TestCustomBasicsizeSubclass(TestCustomBasicsize):
@@ -737,10 +764,120 @@ class TestObject(object):
         
         obj = TestCustomBasicsizeSubclass()
 
-        # TODO pass False as soon as we implement 'tp_weaklistoffset'
-        expected_basicsize = obj.get_basicsize(GRAALPYTHON)
+        expected_basicsize = obj.get_basicsize()
         actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
+
+    def test_tp_basicsize(self):
+        TpBasicsize1Type = CPyExtType("TpBasicsize1",
+                             '''
+                                int vv = 0;
+
+                                static PyObject* set_values(PyObject* oself) {
+                                    TpBasicsize1Object * self = (TpBasicsize1Object *) oself;
+                                    for (int i = 0; i < 20; i++) {
+                                        self->f[i] = vv++;
+                                    }
+                                    Py_RETURN_NONE;
+                                }
+                                static PyObject* get_values(PyObject* self, PyObject* idx) {
+                                    int i = (int)PyNumber_AsSsize_t(idx, NULL);
+                                    return PyLong_FromLong(((TpBasicsize1Object *) self)->f[i]);
+                                }
+                            ''',
+                            tp_methods='''
+                            {"set_values", (PyCFunction)set_values, METH_NOARGS, NULL},
+                            {"get_value", (PyCFunction)get_values, METH_O, NULL}
+                            ''',
+                            cmembers='Py_ssize_t f[20];',
+        )
+
+        TpBasicsize2Type = CPyExtType("TpBasicsize2",
+                             '''
+                                int vvv = 0;
+
+                                static PyObject* set_values(PyObject* oself) {
+                                    TpBasicsize2Object * self = (TpBasicsize2Object *) oself;
+                                    for (int i = 0; i < 10; i++) {
+                                        self->f[i] = vvv++;
+                                    }
+                                    Py_RETURN_NONE;
+                                }
+                                static PyObject* get_values(PyObject* self, PyObject* idx) {
+                                    int i = (int)PyNumber_AsSsize_t(idx, NULL);
+                                    return PyLong_FromLong(((TpBasicsize2Object *) self)->f[i]);
+                                }
+                            ''',
+                            tp_methods='''
+                            {"set_values", (PyCFunction)set_values, METH_NOARGS, NULL},
+                            {"get_value", (PyCFunction)get_values, METH_O, NULL}
+                            ''',
+                            cmembers='Py_ssize_t f[10];',
+        )
+        
+        TpBasicsize3Type = CPyExtType("TpBasicsize3",
+                            '''
+                            ''',
+                            cmembers='',
+        )
+        
+        try:
+            class Foo(TpBasicsize2Type, TpBasicsize1Type):
+                pass
+        except TypeError:
+            pass
+        else:
+            assert False, "should raise: TypeError: multiple bases have instance lay-out conflict"
+
+        class Foo(TpBasicsize3Type, TpBasicsize1Type):
+            pass
+
+        assert Foo.__base__ == TpBasicsize1Type
+        assert Foo.__basicsize__ == 192, "Foo.__basicsize__ %d != 192" % Foo.__basicsize__
+        objs = [Foo() for i in range(5)]
+        for foo in objs:
+            foo.set_values()
+        vv = 0
+        for foo in objs:
+            for i in range(20):
+                assert foo.get_value(i) == vv
+                vv += 1
+
+        class Foo(TpBasicsize2Type, TpBasicsize3Type):
+            pass
+
+        assert Foo.__base__ == TpBasicsize2Type
+        assert Foo.__basicsize__ == 112, "Foo.__basicsize__ %d != 112" % Foo.__basicsize__
+        objs = [Foo() for i in range(5)]
+        for foo in objs:
+            foo.set_values()
+        vvv = 0
+        for foo in objs:
+            for i in range(10):
+                assert foo.get_value(i) == vvv, "Failed"
+                vvv += 1
+
+    def test_new_inherited_from_dominant_base(self):
+        DominantBase = CPyExtType(
+            'DominantBase',
+            '''
+            PyObject* base_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                return Py_NewRef(Py_Ellipsis);
+            }
+            ''',
+            cmembers='int foo; int bar;',
+            tp_new='base_new',
+        )
+        assert DominantBase() is Ellipsis
+
+        WeakBase = CPyExtType('WeakBase')
+
+        class Subclass(WeakBase, DominantBase):
+            pass
+
+        # In CPython 3.10, Subclass.__new__ is WeakBase.__new__, but Subclass.tp_new is DominantBase.tp_new
+
+        assert Subclass() is Ellipsis
 
     def test_descrget(self):
         TestDescrGet = CPyExtType(
@@ -748,10 +885,10 @@ class TestObject(object):
             '''
             PyObject* testdescr_get(PyObject* self, PyObject* obj, PyObject* type) {
                 if (obj == NULL) {
-                    obj = Py_Ellipsis;
+                    obj = Py_NewRef(Py_Ellipsis);
                 }
                 if (type == NULL) {
-                    type = Py_Ellipsis;
+                    type = Py_NewRef(Py_Ellipsis);
                 }
                 return Py_BuildValue("OOO", self, obj, type);
             }
@@ -1248,7 +1385,7 @@ class TestObjectFunctions(CPyExtTestCase):
             // this will free the tuple
             Py_DECREF(object);
             
-            return Py_None;
+            Py_RETURN_NONE;
         }
         ''',
         arguments=["PyObject* element"],

@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -62,11 +63,14 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
@@ -102,7 +106,9 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         PDirEntry next(VirtualFrame frame, PScandirIterator self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (self.ref.isReleased()) {
                 throw raiseStopIteration();
             }
@@ -115,7 +121,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                 return factory().createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
                 self.ref.rewindAndClose(posixLib, getPosixSupport());
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
     }

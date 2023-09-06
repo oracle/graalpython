@@ -465,7 +465,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unchecked")
         private ReferenceQueue<Object> getWeakReferenceQueue() {
-            Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
+            Object queueObject = readQueue.execute(getContext().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
             if (queueObject instanceof ReferenceQueue) {
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;

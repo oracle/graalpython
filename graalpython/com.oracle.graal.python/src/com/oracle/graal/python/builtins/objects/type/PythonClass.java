@@ -34,6 +34,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyTypeExtra;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -82,12 +83,12 @@ public final class PythonClass extends PythonManagedClass {
     private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
     private byte mroShapeInvalidationsCount;
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, base, baseClasses);
     }
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, invokeMro, false, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses);
     }
 
     public Assumption getSlotsFinalAssumption() {
@@ -373,7 +374,7 @@ public final class PythonClass extends PythonManagedClass {
             if (next instanceof PythonClass) {
                 ((PythonClass) next).updateMroShapeSubTypes(lang);
             } else {
-                toProcess.addAll(((PythonBuiltinClass) next).getSubClasses());
+                toProcess.addAll(Arrays.asList(GetSubclassesAsArrayNode.executeUncached(next)));
             }
         }
     }

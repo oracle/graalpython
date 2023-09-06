@@ -76,7 +76,10 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -349,6 +352,12 @@ public final class NFIPosixSupport extends PosixSupport {
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
             String backend = posix.nfiBackend.toJavaStringUncached();
+            Env env = posix.context.getEnv();
+
+            if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, "PosixModuleBackend", "native");
+            }
+
             String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
@@ -357,9 +366,13 @@ public final class NFIPosixSupport extends PosixSupport {
                 LOGGER.fine(String.format("Loading native library: %s", src));
             }
             try {
-                posix.nfiLibrary = posix.context.getEnv().parseInternal(loadSrc).call();
+                posix.nfiLibrary = env.parseInternal(loadSrc).call();
             } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere("Unable to load native posix support library", e);
+                throw new UnsupportedOperationException(String.format("""
+                                Could not load posix support library from path '%s'. Troubleshooting:\s
+                                Check permissions of the file.
+                                Missing runtime Maven dependency 'org.graalvm.truffle:truffle-nfi-libffi' (should be a dependency of `org.graalvm.polyglot:python{-community}`)?""",
+                                path));
             }
         }
 

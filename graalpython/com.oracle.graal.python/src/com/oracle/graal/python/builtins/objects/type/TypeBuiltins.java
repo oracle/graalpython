@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
@@ -80,7 +81,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -123,7 +123,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -199,6 +199,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class TypeBuiltins extends PythonBuiltins {
 
     public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(J___DICTOFFSET__);
+    public static final HiddenKey TYPE_WEAKLISTOFFSET = new HiddenKey(J___WEAKLISTOFFSET__);
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(J___ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(J___BASICSIZE__);
     public static final HiddenKey TYPE_ALLOC = new HiddenKey(J___ALLOC__);
@@ -270,7 +271,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
-            return getDoc(getCore().lookupType(self), value);
+            return getDoc(getContext().lookupType(self), value);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -846,7 +847,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
                     if (a[i] instanceof PythonBuiltinClassType) {
-                        baseClasses[i] = getCore().lookupType((PythonBuiltinClassType) a[i]);
+                        baseClasses[i] = getContext().lookupType((PythonBuiltinClassType) a[i]);
                     } else {
                         baseClasses[i] = (PythonAbstractClass) a[i];
                     }
@@ -863,7 +864,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object oldBase = getBase.execute(inliningTarget, cls);
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
-            cls.setSuperClass(baseClasses);
+            cls.setBases(newBestBase, baseClasses);
             SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, getLanguage());
 
             return PNone.NONE;
@@ -904,7 +905,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object base(Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
+                        @Cached GetBaseClassNode getBaseClassNode) {
             Object baseClass = getBaseClassNode.execute(inliningTarget, self);
             return baseClass != null ? baseClass : PNone.NONE;
         }
@@ -916,7 +917,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object doType(PythonBuiltinClassType self,
                         @Shared @Cached GetDictIfExistsNode getDict) {
-            return doManaged(getCore().lookupType(self), getDict);
+            return doManaged(getContext().lookupType(self), getDict);
         }
 
         @Specialization
@@ -1070,14 +1071,12 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         PList getSubclasses(Object cls,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetSubclassesNode getSubclassesNode) {
+                        @Cached(inline = true) GetSubclassesAsArrayNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
-            return factory().createList(toArray(getSubclassesNode.execute(inliningTarget, cls)));
-        }
-
-        @TruffleBoundary
-        private static <T> Object[] toArray(Set<T> subclasses) {
-            return subclasses.toArray();
+            PythonAbstractClass[] array = getSubclassesNode.execute(inliningTarget, cls);
+            Object[] classes = new Object[array.length];
+            PythonUtils.arraycopy(array, 0, classes, 0, array.length);
+            return factory().createList(classes);
         }
     }
 
@@ -1113,7 +1112,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         Object setName(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
@@ -1123,7 +1122,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
                 }
                 if (!isValidNode.execute(string, TS_ENCODING)) {
-                    throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
+                    throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
                 }
                 cls.setName(string);
                 return PNone.NONE;

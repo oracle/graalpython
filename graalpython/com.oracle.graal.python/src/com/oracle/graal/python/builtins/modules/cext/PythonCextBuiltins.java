@@ -77,6 +77,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -405,10 +406,6 @@ public final class PythonCextBuiltins {
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw raise(SystemError, INDEX_OUT_OF_RANGE);
-        }
-
-        public final Object getPosixSupport() {
-            return getContext().getPosixSupport();
         }
 
         protected void checkNonNullArg(Object obj) {
@@ -1711,10 +1708,14 @@ public final class PythonCextBuiltins {
                 }
                 return 1;
             }
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            if ("native".equals(toolchain.getIdentifier())) {
+            if (!getContext().getOption(PythonOptions.NativeModules)) {
+                Env env = getContext().getEnv();
+                LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+                Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+                if (J_NATIVE.equals(toolchain.getIdentifier())) {
+                    InteropLibrary.getUncached().toNative(object);
+                }
+            } else {
                 InteropLibrary.getUncached().toNative(object);
             }
             return 0;
@@ -1800,13 +1801,14 @@ public final class PythonCextBuiltins {
 
         @ExportMessage
         byte readBufferByte(long idx,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixSupportLib,
-                        @Cached PConstructAndRaiseNode raise) throws InvalidBufferOffsetException {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws InvalidBufferOffsetException {
             checkIndex(idx);
             try {
                 return (posixSupportLib.mmapReadByte(PythonContext.get(posixSupportLib).getPosixSupport(), delegate.getPosixSupportHandle(), idx));
             } catch (PosixException e) {
-                throw raise.raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
             }
         }
 

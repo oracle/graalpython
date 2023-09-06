@@ -401,7 +401,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
-            PythonModule builtins = getCore().getBuiltins();
+            PythonModule builtins = getContext().getBuiltins();
             Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
             PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});
@@ -413,7 +413,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
-            PythonModule builtins = getCore().getBuiltins();
+            PythonModule builtins = getContext().getBuiltins();
             Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
             PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});

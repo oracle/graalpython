@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,7 @@
 
 import itertools
 import sys
+import struct
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
 
@@ -445,6 +446,29 @@ class TestPyMemoryView(CPyExtTestCase):
 
 
 class TestObject(object):
+    def test_memoryview_fromobject_multidim(self):
+        TestType = CPyExtType(
+            "TestMemoryViewMultidim",
+            """
+            PyObject* get_converted_view(PyObject* self, PyObject* obj) {
+                PyObject *mv = PyMemoryView_FromObject(obj);
+                if (!mv) {
+                    return NULL;
+                }
+
+                Py_buffer *view = PyMemoryView_GET_BUFFER(mv);
+                // int i = (int)PyNumber_AsSsize_t(idx, NULL);
+                return PyMemoryView_FromBuffer(view);
+            }
+            """,
+            tp_methods='{"get_converted_view", get_converted_view, METH_O, ""}',
+        )
+
+        obj = TestType()
+        t1_buf = struct.pack("d"*12, *[1.5*x for x in range(12)])
+        t1_mv = memoryview(t1_buf).cast('d', shape=[3,4])
+        assert t1_mv == obj.get_converted_view(t1_mv)
+
     def test_memoryview_acquire_release(self):
         TestType = CPyExtType(
             "TestMemoryViewBuffer1",

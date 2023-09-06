@@ -38,6 +38,8 @@ import sys
 import time
 from functools import wraps
 
+import mx_urlrewrites
+
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 if sys.version_info[0] < 3:
@@ -271,6 +273,12 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if minimal:
         x = [x for x in SUITE.dists if x.name == "GRAALPYTHON"][0]
         dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
+        # Hack: what we should just do is + ['GRAALPYTHON_VERSIONS_MAIN'] and let MX figure out
+        # the class-path and other VM arguments necessary for it. However, due to a bug in MX,
+        # LayoutDirDistribution causes an exception if passed to mx.get_runtime_jvm_args,
+        # because it does not properly initialize its super class ClasspathDependency, see MX PR: 1665.
+        ver_dep = mx.dependency('GRAALPYTHON_VERSIONS_MAIN').get_output()
+        cp_prefix = ver_dep if cp_prefix is None else (ver_dep + os.pathsep + cp_prefix)
     else:
         dists = ['GRAALPYTHON']
     dists += ['TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON-LAUNCHER']
@@ -1108,7 +1116,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,
             "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpy' else 'cpython'))"],
+            "import sys; print('C EXT MODE: ' + (__graalpython__.get_platform_id() if sys.implementation.name == 'graalpy' else 'cpython'))"],
             nonZeroIsFatal=True, env=env, out=out, err=err)
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
@@ -1412,6 +1420,14 @@ def graalpython_gate_runner(args, tasks):
                 )
             else:
                 punittest(['--verbose'], report=report())
+                # Run tests with static exclusion paths
+                jdk = mx.get_jdk()
+                prev = jdk.java_args_pfx
+                try:
+                    jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
+                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advance.ExclusionsTest'])
+                finally:
+                    jdk.java_args_pfx = prev
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
@@ -1470,6 +1486,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
             os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            os.environ['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             try:
                 run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
             finally:
@@ -1993,8 +2010,7 @@ def _python_checkpatchfiles():
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/.*?([^/]*\.patch)")
         checked = {
             # meson-python puts the whole license text in the field. It's MIT
-            'meson-python-0.12.patch',
-            'meson-python-0.13.patch',
+            'meson-python.patch',
             # scipy puts the whole license text in the field, skip it. It's new BSD
             'scipy-1.3.1.patch',
             'scipy-1.4.1.patch',
@@ -2015,11 +2031,14 @@ def _python_checkpatchfiles():
             # Empty license field. It's MIT
             'urllib3-2.patch',
             # Empty license field. It's MIT
+            'wheel-0.41.2.patch',
             'wheel-0.40.patch',
             'wheel-0.38.patch',
             'wheel-0.37.patch',
             'wheel-0.35.patch',
             'wheel-pre-0.35.patch',
+            # Empty license field. It's ASL 2.0 or BSD 2-Clause
+            'packaging.patch',
         }
         allowed_licenses = [
             "MIT",
@@ -2150,11 +2169,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     }},
     truffle_jars=[
         'graalpython:GRAALPYTHON',
-        'graalpython:GRAALPYTHON_RESOURCES',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
-        'graalpython:XZ-1.8',
+        'graalpython:XZ-1.9',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',

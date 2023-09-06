@@ -170,14 +170,14 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile importFuncProfile,
-                        @Cached PConstructAndRaiseNode raiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
             Object importFunc = builtinsDylib.getOrDefault(builtins, T___IMPORT__, null);
             if (importFunc == null) {
-                throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raiseImportError(frame, IMPORT_NOT_FOUND);
             }
             if (importFuncProfile.profile(inliningTarget, context.importFunc() != importFunc)) {
                 Object globalsArg;

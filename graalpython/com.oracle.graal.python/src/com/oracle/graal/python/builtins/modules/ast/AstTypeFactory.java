@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,7 @@ final class AstTypeFactory {
     }
 
     PythonClass makeType(TruffleString name, PythonAbstractClass base, TruffleString[] fields, TruffleString[] attributes, TruffleString[] optional, TruffleString docString) {
-        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, name, new PythonAbstractClass[]{base});
+        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, name, base, new PythonAbstractClass[]{base});
         newType.setAttribute(T___MODULE__, T_AST);
         newType.setAttribute(T___DOC__, docString);
         newType.setAttribute(T__FIELDS, factory.createTuple(convertToObjectArray(fields)));

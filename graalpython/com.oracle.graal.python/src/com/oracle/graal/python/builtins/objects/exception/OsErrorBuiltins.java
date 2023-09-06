@@ -272,7 +272,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             Object type = subType;
             Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
-            final Python3Core core = getCore();
+            final Python3Core core = getContext();
             if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr)) {
                 if (kwds.length != 0) {
                     throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
@@ -315,7 +315,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             final Object type = getClassNode.execute(inliningTarget, self);
-            if (!osErrorUseInit(frame, inliningTarget, getCore(), type, getAttr)) {
+            if (!osErrorUseInit(frame, inliningTarget, getContext(), type, getAttr)) {
                 // Everything already done in OSError_new
                 return PNone.NONE;
             }

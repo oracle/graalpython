@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "6.41.0",
+    "mxversion": "6.43.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "1db08bf12b2042ceb82bead9be9c73a47cfc9b6f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "1db08bf12b2042ceb82bead9be9c73a47cfc9b6f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "1db08bf12b2042ceb82bead9be9c73a47cfc9b6f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "ce7e2791bb11eee493e6c332efe73f589e289e5f",
+                "version": "1db08bf12b2042ceb82bead9be9c73a47cfc9b6f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -108,7 +108,7 @@ suite = {
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
-        "XZ-1.8": {
+        "XZ-1.9": {
             "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
             "maven": {
                 "groupId": "org.tukaani",
@@ -305,7 +305,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
             ],
@@ -363,7 +363,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
@@ -393,13 +393,12 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
-                "com.oracle.graal.python.resources",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sulong:SULONG_API",
-                "XZ-1.8",
+                "XZ-1.9",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
@@ -477,7 +476,7 @@ suite = {
             "sourceDirs": ["java"],
             "dependencies": [
                 "com.oracle.graal.python",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
@@ -849,10 +848,10 @@ suite = {
                 "com.oracle.graal.python.shell",
             ],
             "distDependencies": [
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
+                "sdk:JLINE3",
             ],
-            "exclude": ["sdk:JLINE3"],
             "description": "GraalPython launcher",
             "maven": {
                 "groupId": "org.graalvm.python",
@@ -908,9 +907,6 @@ suite = {
             "platformDependent": False,
             "moduleInfo": {
                 "name": "org.graalvm.py.resources",
-                "exports": [
-                    "com.oracle.graal.python.resources to org.graalvm.py",
-                ],
             },
             # "useModulePath": True,
             "dependencies": [
@@ -950,9 +946,10 @@ suite = {
                 "uses": [
                     "com.oracle.graal.python.builtins.PythonBuiltins",
                 ],
-                "requires": [
-                    "static org.graalvm.py.resources",
-                ],
+                "opens": [
+                    # needed to find resources in it
+                    "com.oracle.graal.python.niresources"
+                ]
             },
             # "useModulePath": True,
             "dependencies": [
@@ -964,11 +961,11 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
+                "truffle:TRUFFLE_NFI",
+                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
-                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
                 "truffle:TRUFFLE_ICU4J",
-                "GRAALPYTHON_RESOURCES", # overridden below to make this an optional dependency
             ],
             "requires": [
                 "java.base",
@@ -982,7 +979,7 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
-                "XZ-1.8",
+                "XZ-1.9",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
@@ -1005,6 +1002,7 @@ suite = {
             "type": "pom",
             "runtimeDependencies": [
                 "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
             "description": "GraalPython engine.",
@@ -1038,6 +1036,7 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_TCK",
             ],
@@ -1052,7 +1051,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
-                "sdk:GRAAL_SDK",
+                "sdk:POLYGLOT",
             ],
             "testDistribution": True,
             "maven": False,

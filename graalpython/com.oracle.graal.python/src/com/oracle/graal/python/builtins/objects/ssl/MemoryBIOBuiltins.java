@@ -59,12 +59,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryBIO)
 public final class MemoryBIOBuiltins extends PythonBuiltins {
@@ -121,12 +123,14 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 if (self.didWriteEOF()) {
-                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
                 }
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);

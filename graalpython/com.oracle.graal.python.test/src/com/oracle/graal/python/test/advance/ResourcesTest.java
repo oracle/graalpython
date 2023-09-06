@@ -43,7 +43,9 @@ package com.oracle.graal.python.test.advance;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.io.IOAccess;
 import org.junit.Test;
 
 public class ResourcesTest {
@@ -57,6 +59,14 @@ public class ResourcesTest {
         try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "").build()) {
             String foundHome = context.eval("python", "__graalpython__.home").asString();
             assertTrue(foundHome, !foundHome.contains("graalpython"));
+        }
+    }
+
+    @Test
+    public void testResourcesAlwaysAllowReading() {
+        try (Context context = Context.newBuilder("python").allowIO(IOAccess.NONE).option("python.PythonHome", "/path/that/does/not/exist").build()) {
+            String foundHome = context.eval("python", "import email; email.__spec__.origin").asString();
+            assertTrue(foundHome, foundHome.contains("python" + File.separator + "python-home"));
         }
     }
 }

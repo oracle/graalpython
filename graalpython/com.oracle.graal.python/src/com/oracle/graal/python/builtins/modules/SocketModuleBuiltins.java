@@ -259,7 +259,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(inliningTarget, "socket.gethostname");
             try {
                 gil.release(true);
@@ -269,7 +270,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
@@ -287,7 +288,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached SocketNodes.MakeIpAddrNode makeIpAddrNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil) {
             /*
@@ -326,7 +327,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new Object[]{hostname, factory().createList(), factory().createList(storage)});
             } catch (GetAddrInfoException e) {
                 // TODO convert error code from gaierror to herror
-                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessageAsTruffleString()});
             }
         }
 
@@ -346,7 +347,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached SocketNodes.SetIpAddrNode setIpAddrNode) {
+                        @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             TruffleString name = idnaConverter.execute(frame, nameObj);
             auditNode.audit(inliningTarget, "socket.gethostbyname", factory().createTuple(new Object[]{nameObj}));
             UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
@@ -354,7 +356,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 return posixLib.getPathAsString(getPosixSupport(), posixLib.inet_ntop(getPosixSupport(), AF_INET.value, inet4SockAddr.getAddressAsBytes()));
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -505,7 +507,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castAddress,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addrLen = addr.length();
@@ -572,7 +574,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 TruffleString service = posixLib.getPathAsString(getPosixSupport(), getnameinfo[1]);
                 return factory().createTuple(new Object[]{host, service});
             } catch (GetAddrInfoException e) {
-                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
             }
         }
 
@@ -609,7 +611,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @Cached TruffleString.FromLongNode fromLongNode) {
+                        @Cached TruffleString.FromLongNode fromLongNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object host = null;
             if (hostObject != PNone.NONE) {
                 host = posixLib.createPathFromString(getPosixSupport(), idna.execute(frame, hostObject));
@@ -641,7 +644,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
-                throw getConstructAndRaiseNode().executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
             }
             try {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
@@ -679,7 +682,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Cached GilNode gil,
-                        @Cached PyLongAsIntNode asIntNode) {
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int fd = asIntNode.execute(frame, inliningTarget, fdObj);
             try {
                 gil.release(true);
@@ -691,7 +695,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 // CPython ignores ECONNRESET on close
                 if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
             return PNone.NONE;
@@ -706,7 +710,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Cached GilNode gil,
-                        @Cached PyLongAsIntNode asIntNode) {
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             int fd = asIntNode.execute(frame, inliningTarget, fdObj);
             try {
                 gil.release(true);
@@ -726,7 +731,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
@@ -784,12 +789,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     abstract static class InetPtoNNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PBytes doConvert(VirtualFrame frame, int family, TruffleString addr,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 byte[] bytes = posixLib.inet_pton(getPosixSupport(), family, posixLib.createPathFromString(getPosixSupport(), addr));
                 return factory().createBytes(bytes);
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
                 throw raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
             }
@@ -806,10 +813,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -829,7 +839,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
                     return posixLib.getPathAsString(getPosixSupport(), result);
                 } catch (PosixException e) {
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
                 bufferLib.release(buffer, frame, this);

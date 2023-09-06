@@ -1,0 +1,21 @@
+diff --git a/mesonpy/_tags.py b/mesonpy/_tags.py
+index 7416008..d7ca216 100644
+--- a/mesonpy/_tags.py
++++ b/mesonpy/_tags.py
+@@ -2,6 +2,7 @@
+ 
+ import os
+ import platform
++import struct
+ import sys
+ import sysconfig
+ 
+@@ -18,7 +19,7 @@ INTERPRETERS = {
+ }
+ 
+ 
+-_32_BIT_INTERPRETER = sys.maxsize <= 2**32
++_32_BIT_INTERPRETER = struct.calcsize("P") == 4
+ 
+ 
+ def get_interpreter_tag() -> str:

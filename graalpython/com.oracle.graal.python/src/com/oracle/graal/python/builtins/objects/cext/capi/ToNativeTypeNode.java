@@ -50,14 +50,10 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ALLOC;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeI64MemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.LookupNativeMemberInMRONodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -77,21 +73,22 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONodeGen;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNodeGen.LookupNativeGetattroSlotNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
@@ -269,8 +266,6 @@ public abstract class ToNativeTypeNode extends Node {
             PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
             PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
             LookupAttributeInMRONode.Dynamic lookupAttrNode = LookupAttributeInMRONodeGen.DynamicNodeGen.getUncached();
-            PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNodeGen.getUncached();
-            PInteropGetAttributeNode getAttrNode = PInteropGetAttributeNodeGen.getUncached();
             CastToTruffleStringNode castToStringNode = CastToTruffleStringNode.getUncached();
             CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
             CStructAccess.WriteLongNode writeI64Node = CStructAccessFactory.WriteLongNodeGen.getUncached();
@@ -289,18 +284,31 @@ public abstract class ToNativeTypeNode extends Node {
                 writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
             }
 
-            Object superClass = GetSuperClassNode.executeUncached(clazz);
-            if (superClass == null) {
-                superClass = ctx.getNativeNull();
-            } else if (superClass instanceof PythonBuiltinClassType builtinClass) {
-                superClass = ctx.lookupType(builtinClass);
+            Object base = GetBaseClassNode.executeUncached(clazz);
+            if (base == null) {
+                base = ctx.getNativeNull();
+            } else if (base instanceof PythonBuiltinClassType builtinClass) {
+                base = ctx.lookupType(builtinClass);
             }
 
             writeI64Node.write(mem, CFields.PyVarObject__ob_size, 0L);
 
             writePtrNode.write(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNodeGen.getUncached().execute(null, clazz));
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNodeGen.getUncached().execute(null, clazz));
+            writeI64Node.write(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
+            writeI64Node.write(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNode.executeUncached(clazz));
+            // writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset,
+            // GetWeakListOffsetNode.executeUncached(clazz));
+            /*
+             * TODO msimacek: this should use GetWeakListOffsetNode as in the commented out code
+             * above. Unfortunately, it causes memory corruption in several libraries
+             */
+            long weaklistoffset;
+            if (clazz instanceof PythonBuiltinClass builtin) {
+                weaklistoffset = builtin.getType().getWeaklistoffset();
+            } else {
+                weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
+            }
+            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, TypeBuiltins.TYPE_DEALLOC));
             writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, TypeBuiltins.TYPE_VECTORCALL_OFFSET));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
@@ -333,13 +341,6 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
-            long weaklistoffset;
-            if (clazz instanceof PythonBuiltinClass builtin) {
-                weaklistoffset = builtin.getType().getWeaklistoffset();
-            } else {
-                weaklistoffset = LookupNativeI64MemberInMRONodeGen.getUncached().execute(clazz, PyTypeObject__tp_weaklistoffset, T___WEAKLISTOFFSET__);
-            }
-            writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
@@ -347,7 +348,7 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);
             if (!isType) {
                 // "object" base needs to be initialized explicitly in capi.c
-                writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(superClass));
+                writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(base));
             }
 
             // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -373,7 +374,7 @@ public abstract class ToNativeTypeNode extends Node {
             writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, TYPE_ALLOC));
             // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
             // expects to get the function
-            Object newFunction = lookupAttrNode.execute(clazz, T___NEW__);
+            Object newFunction = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.New).execute(clazz);
             if (newFunction instanceof PDecoratedMethod) {
                 newFunction = ((PDecoratedMethod) newFunction).getCallable();
             }
@@ -389,7 +390,8 @@ public abstract class ToNativeTypeNode extends Node {
             }
             writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(factory.createDict()));
+            PDict subclasses = GetSubclassesNode.executeUncached(clazz);
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
             writePtrNode.write(mem, CFields.PyTypeObject__tp_weaklist, nullValue);
             writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, TypeBuiltins.TYPE_DEL));
             writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);

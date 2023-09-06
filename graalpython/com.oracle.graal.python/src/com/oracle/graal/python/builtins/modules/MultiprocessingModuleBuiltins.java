@@ -172,10 +172,11 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
         PNone doit(VirtualFrame frame, TruffleString name,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {
-                throw constructAndRaiseNode.raiseFileNotFoundError(frame, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
+                throw constructAndRaiseNode.get(inliningTarget).raiseFileNotFoundError(frame, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
             }
             return PNone.NONE;
         }
@@ -396,7 +397,8 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached CastToJavaDoubleNode castToDouble,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             PythonContext context = getContext();
             SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
 
@@ -438,7 +440,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
                 return factory().createList(result.toArray(new Object[0]));
             } catch (PosixSupportLibrary.PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
                 gil.acquire();
             }

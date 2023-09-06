@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -176,6 +176,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (Object[]) arrayObject;
+        this.capacity = values.length;
         assertContainsNoJavaString(values);
     }
 

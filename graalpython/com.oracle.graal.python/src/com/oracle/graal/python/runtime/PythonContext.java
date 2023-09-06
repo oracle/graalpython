@@ -1151,6 +1151,7 @@ public final class PythonContext extends Python3Core {
                         forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
                         inheritAllAccess(true).//
                         initializeCreatorContext(true).//
+                        option("python.NativeModules", "false").//
                         // TODO always force java posix in spawned: test_multiprocessing_spawn fails
                         // with that. Gives "OSError: [Errno 9] Bad file number"
                         // option("python.PosixModuleBackend", "java").//
@@ -1272,7 +1273,7 @@ public final class PythonContext extends Python3Core {
         return getImportFunc();
     }
 
-    public Object getPosixSupport() {
+    public PosixSupport getPosixSupport() {
         return posixSupport;
     }
 
@@ -1665,6 +1666,7 @@ public final class PythonContext extends Python3Core {
     }
 
     private TruffleString langHome, sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
+    private TruffleFile homeResourcesFile;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -1698,16 +1700,14 @@ public final class PythonContext extends Python3Core {
         }
 
         Supplier<?>[] homeCandidates = new Supplier<?>[]{
+                        () -> home,
                         () -> {
-                            return home;
-                        },
-                        () -> {
-                            if (PythonLanguage.PYTHON_RESOURCE_CLASS != null && !ImageInfo.inImageCode()) {
-                                try {
-                                    return newEnv.getInternalResource(PythonLanguage.PYTHON_RESOURCE_CLASS).getAbsoluteFile();
-                                } catch (IOException e) {
-                                    // fall through
-                                }
+                            try {
+                                TruffleFile internalResource = newEnv.getInternalResource("python-home");
+                                homeResourcesFile = internalResource == null ? null : internalResource.getAbsoluteFile();
+                                return homeResourcesFile;
+                            } catch (IOException e) {
+                                // fall through
                             }
                             return null;
                         }
@@ -2274,6 +2274,15 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     public TruffleFile getPublicTruffleFileRelaxed(TruffleString path, TruffleString... allowedSuffixes) {
+        if (homeResourcesFile != null && !env.isFileIOAllowed()) {
+            // XXX: Workaround for Truffle resources not being considered internal truffle files
+            String jlPath = path.toJavaStringUncached();
+            String jlHome = langHome.toJavaStringUncached();
+            if (jlPath.startsWith(jlHome)) {
+                String homeRelativePath = jlPath.substring(jlHome.length() + 1);
+                return homeResourcesFile.resolve(homeRelativePath);
+            }
+        }
         TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
@@ -2290,6 +2299,9 @@ public final class PythonContext extends Python3Core {
         int pathLen = path.codePointLengthUncached(TS_ENCODING);
         for (TruffleString suffix : allowedSuffixes) {
             int suffixLen = suffix.codePointLengthUncached(TS_ENCODING);
+            if (suffixLen > pathLen) {
+                continue;
+            }
             if (path.regionEqualsUncached(pathLen - suffixLen, suffix, 0, suffixLen, TS_ENCODING)) {
                 return true;
             }
@@ -2503,14 +2515,16 @@ public final class PythonContext extends Python3Core {
 
     @TruffleBoundary
     public String getLLVMSupportExt(String libName) {
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        String toolchainIdentifier = toolchain.getIdentifier();
-        if (J_NATIVE.equals(toolchainIdentifier)) {
-            return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
+        if (!getOption(PythonOptions.NativeModules)) {
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainIdentifier = toolchain.getIdentifier();
+            if (!J_NATIVE.equals(toolchainIdentifier)) {
+                // if not native, we always assume a Linux-like system
+                return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
+            }
         }
-        // if not native, we always assume a Linux-like system
-        return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
+        return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
     }
 
     @TruffleBoundary
@@ -2523,9 +2537,7 @@ public final class PythonContext extends Python3Core {
             // sys.implementation._multiarch
             TruffleString multiArch = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T__MULTIARCH);
 
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
+            TruffleString toolchainId = getPlatformId();
 
             // only use '.pyd' if we are on 'Win32-native'
             TruffleString soExt;
@@ -2542,6 +2554,16 @@ public final class PythonContext extends Python3Core {
             soABI = cat(T_DOT, cacheTag, T_DASH, toolchainId, T_DASH, multiArch, soExt);
         }
         return soABI;
+    }
+
+    public TruffleString getPlatformId() {
+        if (!getOption(PythonOptions.NativeModules)) {
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            return toTruffleStringUncached(toolchain.getIdentifier());
+        } else {
+            return T_NATIVE;
+        }
     }
 
     public Thread getMainThread() {

@@ -137,8 +137,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructorNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -2394,7 +2394,7 @@ public abstract class GraalHPyNodes {
                         @Cached HPyCreateSlotNode addSlotNode,
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
-                        @Cached GetSuperClassNode getSuperClassNode,
+                        @Cached GetBaseClassNode getBaseClassNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
@@ -2584,7 +2584,7 @@ public abstract class GraalHPyNodes {
                  * it determines which Java object we need to allocate (e.g. PInt, PythonObject,
                  * PFloat, etc.).
                  */
-                Object baseClass = getSuperClassNode.execute(inliningTarget, newType);
+                Object baseClass = getBaseClassNode.execute(inliningTarget, newType);
                 if (!seenNew && (basicSize > 0 || newType.getHPyDefaultCallFunc() != null)) {
                     Object inheritedConstructor = null;
 
