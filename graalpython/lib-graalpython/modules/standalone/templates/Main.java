@@ -57,7 +57,10 @@ public class Main {
     private static String PYTHON = "python";
 
     public static void main(String[] args) throws IOException {
-        VirtualFileSystem vfs = new VirtualFileSystem();
+        VirtualFileSystem vfs = new VirtualFileSystem(p -> {
+            String s = p.toString();
+            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd");
+        });
         Builder builder = Context.newBuilder()
             // set true to allow experimental options
             .allowExperimentalOptions(true)
@@ -121,6 +124,8 @@ public class Main {
             } else {
                 throw e;
             }
+        } finally {
+            vfs.close();
         }
     }
 
