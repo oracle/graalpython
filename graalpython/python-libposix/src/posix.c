@@ -644,14 +644,13 @@ int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
 // to (struct sockaddr *), instead we do a copy. This shouldn't be a big deal since it is
 // just 16/28 bytes (for AF_INET/AF_INET6 respectively).
 
-int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
     int res = accept(sockfd, (struct sockaddr *) &sa, &l);
     if (res >= 0) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
-        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa.ss_family;
+        *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
     }
     return res;
@@ -673,27 +672,25 @@ int32_t call_listen(int32_t sockfd, int32_t backlog) {
     return listen(sockfd, backlog);
 }
 
-int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
     int res = getpeername(sockfd, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
-        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa.ss_family;
+        *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
     }
     return res;
 }
 
-int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
     int res = getsockname(sockfd, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
-        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa.ss_family;
+        *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
     }
     return res;
@@ -714,14 +711,13 @@ int32_t call_recv(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_
     return recv(sockfd, buf + offset, len, flags);
 }
 
-int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *len_and_family) {
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
     int res = recvfrom(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
-        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = l < offsetof(struct sockaddr_storage, ss_family) + sizeof(sa.ss_family) ? AF_UNSPEC : sa.ss_family;
+        *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(src_addr, &sa, l);
     }
     return res;

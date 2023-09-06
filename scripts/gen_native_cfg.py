@@ -418,6 +418,9 @@ u x S_IFCHR
 '''
 
 layout_defs = '''
+[struct sockaddr]
+  sa_family
+
 [struct sockaddr_storage]
 
 [struct sockaddr_in]
