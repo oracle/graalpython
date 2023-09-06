@@ -473,7 +473,7 @@ class NativeExecutable(Standalone):
                 print(p.stderr.decode())
                 exit(1)
 
-            ni_modules = ":".join([os.path.join(self.modules_path, f) for f in os.listdir(self.modules_path) if f.endswith(".jar")] + [self.target_dir])
+            ni_modules = os.pathsep.join([os.path.join(self.modules_path, f) for f in os.listdir(self.modules_path) if f.endswith(".jar")] + [self.target_dir])
             cmd = [ni, "--module-path", ni_modules] + self.parsed_args.ni_args[:]
 
             if self.parsed_args.Os:
