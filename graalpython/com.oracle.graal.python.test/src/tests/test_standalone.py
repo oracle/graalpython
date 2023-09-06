@@ -49,7 +49,7 @@ MVN_CMD = [shutil.which('mvn')]
 
 def run_cmd(cmd, env, cwd=None):
     print(f"Executing:\n    {cmd=}\n    {env=}\n    {cwd=}")
-    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True)
+    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
     out = []
     for line in iter(process.stdout.readline, ""):
         print(line, end="")
@@ -170,6 +170,7 @@ def test_native_executable_one_file():
         assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+@unittest.skipUnless(sys.platform != 'win32', 'not supported on Windows')
 def test_native_executable_venv_and_one_file():
     graalpy = get_gp()
     if graalpy is None:
