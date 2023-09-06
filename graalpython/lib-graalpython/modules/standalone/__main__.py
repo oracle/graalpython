@@ -112,7 +112,6 @@ FILES_LIST_NAME = "fileslist.txt"
 FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
 
 CMD_NATIVE_EXECUTABLE = "native"
-CMD_JAVA_BINDINGS = "java_bindings"
 CMD_JAVA_PYTHON_APP = "polyglot_app"
 ATTR_STANDALONE_CMD = "command"
 
@@ -528,21 +527,6 @@ def main(args):
         default=[],
     )
 
-    parser_jar = subparsers.add_parser(
-        CMD_JAVA_BINDINGS,
-        help="Create a Java project from the Python code. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
-    )
-    parser_jar.add_argument(
-        "-m", "--module", help="Python file or module folder to run", required=True
-    )
-    parser_jar.add_argument("--venv", help="Python venv to bundle")
-    parser_jar.add_argument(
-        "-o",
-        "--output-directory",
-        help="The directory to write the Java project to.",
-        required=True,
-    )
-
     parser_app = subparsers.add_parser(
         CMD_JAVA_PYTHON_APP,
         help="Create a skeleton Java project. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
@@ -559,8 +543,6 @@ def main(args):
 
     if parsed_args.command == CMD_JAVA_PYTHON_APP:
         standalone = PolyglotJavaPython(parsed_args)
-    elif parsed_args.command == CMD_JAVA_BINDINGS:
-        standalone = JavaBinding(parsed_args)
     else :
         standalone = NativeExecutable(parsed_args)
 
