@@ -14,6 +14,7 @@ for /f "delims=" %%i in ('%JAVA% VTabCreator.java') do set VTAB=%%i
 del VTabCreator.java
 
 REM Store each argument separated by vtab
+set GRAAL_PYTHON_ARGS=
 :loop
 set GRAAL_PYTHON_ARGS=%GRAAL_PYTHON_ARGS%%VTAB%%~1
 shift /1

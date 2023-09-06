@@ -1053,7 +1053,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             // add dir
             TruffleFile rootDir = rd == null ? dir : rd;
             String rootPath = makeDirPath(rootDir.getAbsoluteFile().getPath());
-            int rootEndIdx = rootPath.lastIndexOf("/", rootPath.lastIndexOf("/") - 1);
+            int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
             ret.add(dirPath.substring(rootEndIdx));
 
             // add parents up to root
@@ -1079,8 +1079,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         private static String makeDirPath(String p) {
-            if (!p.endsWith("/")) {
-                p = p + "/";
+            if (!p.endsWith(File.separator)) {
+                p = p + File.separator;
             }
             return p;
         }
