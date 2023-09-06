@@ -55,6 +55,17 @@ import static com.oracle.graal.python.runtime.PosixConstants.INET_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_FAMILY;
 import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
@@ -63,6 +74,8 @@ import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKA
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
@@ -263,13 +276,6 @@ public final class NFIPosixSupport extends PosixSupport {
         call_freeaddrinfo("(sint64):void"),
         call_gai_strerror("(sint32, [sint8], sint32):void"),
         get_addrinfo_members("(sint64, [sint32], [sint64], [sint8]):sint32"),
-
-        get_sockaddr_in_members("([sint8], [sint32]):void"),
-        get_sockaddr_in6_members("([sint8], [sint32], [sint8]):void"),
-        get_sockaddr_un_members("([sint8], sint32, [sint8]):sint32"),
-        set_sockaddr_in_members("([sint8], sint32, sint32):sint32"),
-        set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32"),
-        set_sockaddr_un_members("([sint8], [sint8], sint32):sint32"),
 
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
@@ -1968,31 +1974,36 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     static class CreateUniversalSockAddr {
         @Specialization
-        static UniversalSockAddr inet4(NFIPosixSupport receiver, Inet4SockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        static UniversalSockAddr inet4(NFIPosixSupport receiver, Inet4SockAddr src) {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in_members, receiver.wrap(addr.data), src.getPort(), src.getAddress());
-            addr.setLenAndFamily(len, AF_INET.value);
+            ARRAY_ACCESSOR.putShort(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY.value, (short) AF_INET.value);
+            ARRAY_ACCESSOR_BE.putShort(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value, (short) src.getPort());
+            ARRAY_ACCESSOR_BE.putInt(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value, src.getAddress());
+            addr.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
             return addr;
         }
 
         @Specialization
-        static UniversalSockAddr inet6(NFIPosixSupport receiver, Inet6SockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        static UniversalSockAddr inet6(NFIPosixSupport receiver, Inet6SockAddr src) {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in6_members, receiver.wrap(addr.data), src.getPort(),
-                            receiver.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
-            addr.setLenAndFamily(len, AF_INET6.value);
+            ARRAY_ACCESSOR.putShort(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY.value, (short) AF_INET6.value);
+            ARRAY_ACCESSOR_BE.putShort(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT.value, (short) src.getPort());
+            int addrOffset = OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR.value + OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR.value;
+            PythonUtils.arraycopy(src.getAddress(), 0, addr.data, addrOffset, 16);
+            ARRAY_ACCESSOR_BE.putInt(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO.value, src.getFlowInfo());
+            ARRAY_ACCESSOR_BE.putInt(addr.data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID.value, src.getScopeId());
+            addr.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN6.value, AF_INET6.value);
             return addr;
         }
 
         @Specialization
-        static UniversalSockAddr unix(NFIPosixSupport receiver, UnixSockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        static UniversalSockAddr unix(NFIPosixSupport receiver, UnixSockAddr src) {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
+            ARRAY_ACCESSOR.putShort(addr.data, OFFSETOF_STRUCT_SOCKADDR_UN_SUN_FAMILY.value, (short) AF_UNIX.value);
             byte[] path = src.getPath();
-            assert path.length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
-            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_un_members, receiver.wrap(addr.data), receiver.wrap(path), path.length);
+            assert path.length <= SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
+            int len = path.length + OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
+            PythonUtils.arraycopy(path, 0, addr.data, OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value, path.length);
             addr.setLenAndFamily(len, AF_UNIX.value);
             return addr;
         }
@@ -2017,40 +2028,57 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @ExportMessage
-        Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        Inet4SockAddr asInet4SockAddr() {
             if (getFamily() != AF_INET.value) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
             assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
-            int[] members = new int[2];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members));
-            return new Inet4SockAddr(members[0], members[1]);
+            int port = Short.toUnsignedInt(ARRAY_ACCESSOR_BE.getShort(data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value));
+            int address = ARRAY_ACCESSOR_BE.getInt(data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value);
+            return new Inet4SockAddr(port, address);
         }
 
         @ExportMessage
-        Inet6SockAddr asInet6SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        Inet6SockAddr asInet6SockAddr() {
             if (getFamily() != AF_INET6.value) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
             assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN6.value;
-            int[] members = new int[3];
-            byte[] address = new byte[16];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in6_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members), nfiPosixSupport.wrap(address));
-            return new Inet6SockAddr(members[0], address, members[1], members[2]);
+            int port = Short.toUnsignedInt(ARRAY_ACCESSOR_BE.getShort(data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT.value));
+            int addrOffset = OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR.value + OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR.value;
+            byte[] address = PythonUtils.arrayCopyOfRange(data, addrOffset, addrOffset + 16);
+            int flowInfo = ARRAY_ACCESSOR_BE.getInt(data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO.value);
+            int scopeId = ARRAY_ACCESSOR_BE.getInt(data, OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID.value);
+            return new Inet6SockAddr(port, address, flowInfo, scopeId);
         }
 
         @ExportMessage
-        UnixSockAddr asUnixSockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        UnixSockAddr asUnixSockAddr() {
             if (getFamily() != AF_UNIX.value) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("Only AF_UNIX socket address can be converted to UnixSockAddr");
             }
-            assert getLen() <= OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value + SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
-            byte[] pathBuf = new byte[SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value];
-            int pathLen = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_sockaddr_un_members, nfiPosixSupport.wrap(data), getLen(), nfiPosixSupport.wrap(pathBuf));
-            return new UnixSockAddr(pathBuf, 0, pathLen);
+            int pathOffset = OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
+            byte[] pathBuf;
+            int linuxAddrLen = getLen() - pathOffset;
+            if (linuxAddrLen > 0 && data[pathOffset] == '\0') {
+                // Abstract Linux address
+                pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + linuxAddrLen);
+            } else {
+                // Regular NULL-terminated string
+                int pathLen = -1;
+                for (int i = pathOffset; i < data.length; i++) {
+                    if (data[i] == '\0') {
+                        pathLen = i - pathOffset;
+                        break;
+                    }
+                }
+                assert pathLen >= 0;
+                pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + pathLen);
+            }
+            return new UnixSockAddr(pathBuf);
         }
 
         int getLen() {

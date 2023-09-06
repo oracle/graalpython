@@ -426,11 +426,20 @@ layout_defs = '''
   sin_addr
 
 [struct sockaddr_in6]
+  sin6_family
+  sin6_port
+  sin6_flowinfo
+  sin6_addr
+  sin6_scope_id
 
 [struct in_addr]
   s_addr
 
+[struct in6_addr]
+  s6_addr
+
 [struct sockaddr_un] u
+  sun_family
   sun_path
 '''
 

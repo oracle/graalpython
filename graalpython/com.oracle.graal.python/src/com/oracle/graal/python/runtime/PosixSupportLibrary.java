@@ -551,13 +551,8 @@ public abstract class PosixSupportLibrary extends Library {
         private final byte[] path;
 
         public UnixSockAddr(byte[] path) {
-            this(path, 0, path.length);
-        }
-
-        public UnixSockAddr(byte[] path, int offset, int length) {
             super(AF_UNIX.value);
-            assert path != null && offset >= 0 && length >= 0 && length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value && offset + length <= path.length;
-            this.path = Arrays.copyOfRange(path, offset, offset + length);
+            this.path = path;
         }
 
         /**

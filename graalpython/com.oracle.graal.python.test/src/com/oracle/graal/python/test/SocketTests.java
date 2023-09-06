@@ -186,7 +186,7 @@ public class SocketTests {
     public void fillUniversalSockAddrUnix() {
         assumeTrue("native".equals(backendName));
         byte[] path = new byte[]{65, 0};
-        UnixSockAddr addr = new UnixSockAddr(path, 0, path.length);
+        UnixSockAddr addr = new UnixSockAddr(path);
         checkUsa(addr, createUsa(addr));
     }
 
@@ -207,7 +207,7 @@ public class SocketTests {
     public void dgramUnboundGetsocknameUnix() throws PosixException {
         assumeTrue("native".equals(backendName));
         int s = createSocket(AF_UNIX.value, SOCK_DGRAM.value, 0);
-        checkUsa(new UnixSockAddr(new byte[0], 0, 0), lib.getsockname(posixSupport, s));
+        checkUsa(new UnixSockAddr(new byte[0]), lib.getsockname(posixSupport, s));
     }
 
     @Test

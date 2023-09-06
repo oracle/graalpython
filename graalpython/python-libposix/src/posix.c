@@ -859,66 +859,6 @@ int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, i
     return 0;
 }
 
-void get_sockaddr_in_members(int8_t *addr, int32_t *members) {
-    struct sockaddr_in sa;
-    memcpy(&sa, addr, sizeof(sa));
-    assert(sa.sin_family == AF_INET);
-    members[0] = ntohs(sa.sin_port);
-    members[1] = ntohl(sa.sin_addr.s_addr);
-}
-
-void get_sockaddr_in6_members(int8_t *addr, int32_t *members, int8_t *address) {
-    struct sockaddr_in6 sa;
-    memcpy(&sa, addr, sizeof(sa));
-    assert(sa.sin_family == AF_INET6);
-    members[0] = ntohs(sa.sin6_port);
-    members[1] = ntohl(sa.sin6_flowinfo);
-    members[2] = sa.sin6_scope_id;
-    memcpy(address, &sa.sin6_addr, 16);
-}
-
-int32_t get_sockaddr_un_members(int8_t *addr, int32_t addrLen, int8_t *pathBuf) {
-    struct sockaddr_un sa;
-    memcpy(&sa, addr, sizeof(sa));
-    assert(sa.sun_family == AF_UNIX && addrLen >= offsetof(struct sockaddr_un, sun_path));
-    int32_t pathLen = addrLen - offsetof(struct sockaddr_un, sun_path);
-    assert(pathLen <= sizeof(sa.sun_path));
-    memcpy(pathBuf, sa.sun_path, pathLen);
-    return pathLen;
-}
-
-int32_t set_sockaddr_in_members(int8_t *addr, int32_t port, int32_t address) {
-    struct sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(port);
-    sa.sin_addr.s_addr = htonl(address);
-    memcpy(addr, &sa, sizeof(sa));
-    return sizeof(sa);
-}
-
-int32_t set_sockaddr_in6_members(int8_t *addr, int32_t port, int8_t *address, int32_t flowInfo, int32_t scopeId) {
-    struct sockaddr_in6 sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sin6_family = AF_INET6;
-    sa.sin6_port = htons(port);
-    sa.sin6_flowinfo = htonl(flowInfo);
-    sa.sin6_scope_id = scopeId;
-    memcpy(&sa.sin6_addr, address, 16);
-    memcpy(addr, &sa, sizeof(sa));
-    return sizeof(sa);
-}
-
-int32_t set_sockaddr_un_members(int8_t *addr, int8_t *path, int32_t pathLen) {
-    struct sockaddr_un sa;
-    assert(pathLen >= 0 && pathLen <= sizeof(sa.sun_path));
-    memset(&sa, 0, sizeof(sa));
-    sa.sun_family = AF_UNIX;
-    memcpy(sa.sun_path, path, pathLen);
-    memcpy(addr, &sa, sizeof(sa));
-    return offsetof(struct sockaddr_un, sun_path) + pathLen;
-}
-
 int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     const char *result = crypt(word, salt);
     if (result == NULL) {
