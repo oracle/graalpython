@@ -169,3 +169,14 @@ class TestSubprocess(unittest.TestCase):
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vprint('Hello', "world")"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
             assert result == 'Hello world\n'
+
+            # check that the subprocess receives the args and thus it should fail because it recurses
+            args = """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))"""
+            env = {"GRAAL_PYTHON_ARGS": args}
+            result = subprocess.check_output([sys.executable], env=env, text=True)
+            assert result == f"{args}\n"
+
+            # check that the subprocess does not receive the args when we end with \v
+            env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
+            result = subprocess.check_output([sys.executable], env=env, text=True, timeout=10)
+            assert result == 'None\n'

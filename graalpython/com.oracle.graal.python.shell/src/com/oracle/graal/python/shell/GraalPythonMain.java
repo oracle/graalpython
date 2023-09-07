@@ -964,7 +964,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   commandline. Arguments are split on whitespace - you can use \" and/or ' as required to\n" +
                         "   group them. Alternatively, if the value starts with a vertical tab character, the entire\n" +
                         "   value is split at vertical tabs and the elements are used as arguments without any further\n" +
-                        "   escaping.\n" +
+                        "   escaping. If the value ends with a vertical tab, it is also purged from the environment\n" +
+                        "   when the interpreter runs, so that GraalPy subprocess will not pick it up\n" +
                         "   There are two special substitutions for this variable: any `$$' in the value is replaced\n" +
                         "   with the current process id, and any $UUID$ is replaced with random unique string\n" +
                         "   that may contain letters, digits, and '-'. To pass a literal `$$', you must escape the\n" +
