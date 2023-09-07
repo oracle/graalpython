@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -753,7 +754,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {
-        Path binDir = Paths.get(executable).getParent();
+        Path binDir;
+        try {
+            binDir = Paths.get(executable).getParent();
+        } catch (InvalidPathException e) {
+            return;
+        }
         if (binDir == null) {
             return;
         }
