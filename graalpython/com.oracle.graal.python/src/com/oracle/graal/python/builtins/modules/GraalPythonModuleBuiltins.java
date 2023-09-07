@@ -1024,7 +1024,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
             try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filesListPath.toJavaStringUncached())))) {
                 TruffleFile p = getContext().getPublicTruffleFileRelaxed(filesListPath).getParent();
-                if(!p.exists()) {
+                if (!p.exists()) {
                     getContext().getPublicTruffleFileRelaxed(filesListPath).getParent().createDirectories();
                 }
                 Set<String> ret = list(dir, null);
@@ -1058,7 +1058,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
             // add parents up to root
             TruffleFile parent = dir;
-            while(!parent.equals(rootDir)) {
+            while (!parent.equals(rootDir)) {
                 String p = makeDirPath(parent.getAbsoluteFile().getPath());
                 p = p.substring(rootEndIdx);
                 ret.add(p);

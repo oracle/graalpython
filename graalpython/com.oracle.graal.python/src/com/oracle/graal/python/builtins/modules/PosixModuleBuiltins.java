@@ -314,7 +314,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
-            if(entry.getKey().equals("GRAAL_PYTHON_ARGS")) {
+            if (entry.getKey().equals("GRAAL_PYTHON_ARGS")) {
                 // was already processed at startup in GraalPythonMain and
                 // we don't want subprocesses to pick it up
                 continue;
