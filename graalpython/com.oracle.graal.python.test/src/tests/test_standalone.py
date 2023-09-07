@@ -54,7 +54,7 @@ def run_cmd(cmd, env, cwd=None):
     for line in iter(process.stdout.readline, ""):
         print(line, end="")
         out.append(line)
-    return "".join(out)
+    return "".join(out), process.wait()
 
 def get_executable(file):
     if os.path.isfile(file):
@@ -108,7 +108,7 @@ def test_polyglot_app():
         target_dir = os.path.join(tmpdir, "polyglot_app_test")
 
         cmd = [graalpy, "-m", "standalone", "--verbose", "polyglot_app", "-o", target_dir]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
         assert "Creating polyglot java python application in directory " + target_dir in out
 
         if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
@@ -137,11 +137,11 @@ def test_polyglot_app():
                 """))
 
         cmd = MVN_CMD + ["package", "-Pnative"]
-        out = run_cmd(cmd, env, cwd=target_dir)
+        out, return_code = run_cmd(cmd, env, cwd=target_dir)
         assert "BUILD SUCCESS" in out
 
         cmd = [os.path.join(target_dir, "target", "polyglot_app")]
-        out = run_cmd(cmd, env, cwd=target_dir)
+        out, return_code = run_cmd(cmd, env, cwd=target_dir)
         assert out.endswith("hello java\n")
 
 
@@ -162,11 +162,15 @@ def test_native_executable_one_file():
         target_file = os.path.join(tmpdir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-m", source_file, "-o", target_file]
 
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file, "arg1", "arg2"]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
+        if sys.platform == 'win32':
+            # sigh. it seems the output capture doesn't work on our CI machines (but works for the first command...)
+            # just check the return code
+            assert return_code == 0
         assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
@@ -189,19 +193,19 @@ def test_native_executable_venv_and_one_file():
 
         venv_dir = os.path.join(target_dir, "venv")
         cmd = [graalpy, "-m", "venv", venv_dir]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
 
         venv_python = os.path.join(venv_dir, "Scripts", "python.cmd") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
         cmd = [venv_python, "-m", "pip", "--no-cache-dir", "install", "termcolor", "ujson"]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
 
         target_file = os.path.join(target_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
 
         assert "hello standalone world" in out
         assert "key=value" in out
@@ -231,9 +235,13 @@ def test_native_executable_module():
         target_file = os.path.join(tmp_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-Os", "-m", module_dir, "-o", target_file]
 
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
         assert "Bundling Python resources into" in out
 
         cmd = [target_file]
-        out = run_cmd(cmd, env)
+        out, return_code = run_cmd(cmd, env)
+        if sys.platform == 'win32':
+            # sigh. it seems the output capture doesn't work on our CI machines (but works for the first command...)
+            # just check the return code
+            assert return_code == 0
         assert "hello standalone world" in out
