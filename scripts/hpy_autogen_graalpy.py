@@ -707,7 +707,8 @@ class autogen_svm_jni_upcall_config(AutoGenFilePart):
     """
     """
     LANGUAGE = 'json'
-    PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/niresources/jni-config.json'
+
+    PATH = 'graalpython/com.oracle.graal.python/src/META-INF/native-image/org.graalvm.py/jni-config.json'
     BEGIN_MARKER = '  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext",\n  "methods":[\n'
     END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] },'
 
