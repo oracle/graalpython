@@ -2265,14 +2265,14 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     launcher_configs=[
         mx_sdk.LauncherConfig(
             destination='libexec/<exe:graalpy-polyglot-get>',
-            jar_distributions=['vm:MAVEN_DOWNLOADER'],
+            jar_distributions=['sdk:MAVEN_DOWNLOADER'],
             main_class='org.graalvm.maven.downloader.Main',
             build_args=[
                 '-Dorg.graalvm.maven.downloader.relative_output_dir=../modules',
                 f'-Dorg.graalvm.maven.downloader.default_version={GRAAL_VERSION}',
             ],
         ),
-    ] if mx.suite("vm", fatalIfMissing=False) else [],
+    ],
     priority=5,
     stability="experimental",
 ))
