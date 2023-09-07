@@ -833,7 +833,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
     abstract static class PyTruffleUnicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {
-
         @Specialization
         Object doUtf8Decode(Object cByteArray, long size, TruffleString errors, @SuppressWarnings("unused") int reportConsumed,
                         @Cached GetByteArrayNode getByteArrayNode) {
@@ -855,7 +854,7 @@ public final class PythonCextUnicodeBuiltins {
             CharBuffer resultBuffer = CharBuffer.allocate(n * 4);
 
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, PRaiseNode.getUncached(), TruffleString.EqualNode.getUncached());
+            CodingErrorAction action = CodecsModuleBuiltins.convertCodingErrorAction(errors, TruffleString.EqualNode.getUncached());
             decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
             int len = resultBuffer.position();
             TruffleString string;

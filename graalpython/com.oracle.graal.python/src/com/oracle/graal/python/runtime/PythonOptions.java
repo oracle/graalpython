@@ -232,7 +232,7 @@ public final class PythonOptions {
                         }
                     }));
 
-    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm") //
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
@@ -305,16 +305,16 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "") //
     public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.") //
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set-up library search paths to include GraalPy's LLVM toolchain library directories.") //
     public static final OptionKey<Boolean> SetupLLVMLibraryPaths = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "This option is set by the Python launcher to tell the language it can print exceptions directly", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Used by the launcher to pass the path to be executed") //
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Used by the launcher to pass the path to be executed", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> InputFilePath = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     // disabling TRegex has an effect on the _sre Python functions that are

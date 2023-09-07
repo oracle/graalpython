@@ -31,6 +31,7 @@ import glob
 import itertools
 import json
 import os
+import pathlib
 import re
 import shlex
 import shutil
@@ -198,11 +199,7 @@ def check_vm(vm_warning=True, must_be_jvmci=False):
 
 
 def get_jdk():
-    if SUITE_COMPILER:
-        tag = 'jvmci'
-    else:
-        tag = None
-    return mx.get_jdk(tag=tag)
+    return mx.get_jdk()
 
 
 def full_python(args, **kwargs):
@@ -1503,12 +1500,59 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
-            os.environ['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            os.environ['MAVEN_REPO_OVERRIDE'] = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
-            try:
-                run_python_unittests(python_svm(), paths=["test_standalone.py"], javaAsserts=True, report=report())
-            finally:
-                del os.environ['ENABLE_STANDALONE_UNITTESTS']
+            env = {}
+            env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            jdk_version = mx.get_jdk().javaCompliance  # Not our "get_jdk", because we do not want the jvmci tag.
+            # build graalvm jdk
+            mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
+            if not DISABLE_REBUILD:
+                mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_version}"])
+            out = mx.OutputCapture()
+            mx.run_mx(mx_args + ["graalvm-home"], out=out)
+            home = out.data.splitlines()[-1].strip()
+            env['JAVA_HOME'] = home
+            # build python standalone
+            mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce-python']
+            if not DISABLE_REBUILD:
+                mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_JAVA_STANDALONE_SVM_JAVA{jdk_version}"])
+            out = mx.OutputCapture()
+            mx.run_mx(mx_args + ["standalone-home", "--type", "jvm", "python"], out=out)
+            python_home = out.data.splitlines()[-1].strip()
+            env['PYTHON_STANDALONE_HOME'] = python_home
+            # build GraalPy and all the necessary dependencies, so that we can deploy them
+            mx.run_mx(["build"])
+            # deploy maven artifacts
+            import mx_sdk_vm_impl
+            version = mx_sdk_vm_impl.graalvm_version('graalvm')
+            path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
+            licenses = ['EPL-2.0', 'PSF-License', 'GPLv2-CPE', 'ICU,GPLv2', 'BSD-simplified', 'BSD-new', 'UPL', 'MIT']
+            deploy_args = [
+                '--tags=public',
+                '--all-suites',
+                '--all-distribution-types',
+                f'--version-string={version}',
+                '--validate=none',
+                '--licenses', ','.join(licenses),
+                '--suppress-javadoc',
+                'local',
+                pathlib.Path(path).as_uri(),
+            ]
+            if not DISABLE_REBUILD:
+                mx.rmtree(path, ignore_errors=True)
+                os.mkdir(path)
+                mx.maven_deploy(deploy_args)
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+            env["org.graalvm.maven.downloader.version"] = version
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(path).as_uri()}/"
+            # run the test
+            mx.logv(f"running with {env=}")
+            full_env = os.environ.copy()
+            full_env.update(env)
+            mx.run([sys.executable, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests/test_standalone.py"], env=full_env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -2212,7 +2256,18 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
             ],
-        )
+        ),
+    ],
+    launcher_configs=[
+        mx_sdk.LauncherConfig(
+            destination='libexec/<exe:graalpy-polyglot-get>',
+            jar_distributions=['sdk:MAVEN_DOWNLOADER'],
+            main_class='org.graalvm.maven.downloader.Main',
+            build_args=[
+                '-Dorg.graalvm.maven.downloader.relative_output_dir=../modules',
+                f'-Dorg.graalvm.maven.downloader.default_version={GRAAL_VERSION}',
+            ],
+        ),
     ],
     priority=5,
     stability="experimental",
