@@ -119,8 +119,7 @@ ATTR_STANDALONE_CMD = "command"
 MVN_CODE_PREFIX = "src/main/java"
 MVN_RESOURCE_PREFIX = "src/main/resources"
 
-POSIX_LAUNCHER_SCRIPT = r"""
-#!/usr/bin/env bash
+POSIX_LAUNCHER_SCRIPT = r"""#!/usr/bin/env bash
 
 source="${BASH_SOURCE[0]}"
 while [ -h "$source" ] ; do
@@ -149,8 +148,7 @@ export GRAAL_PYTHON_ARGS="${args}$(printf "\v")"
 mvn -f "${location}/pom.xml" exec:exec -Dexec.executable="${JAVA}" -Dexec.workingdir="${curdir}" -Dexec.args="--module-path %classpath '-Dorg.graalvm.launcher.executablename=$0' --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
 """
 
-WIN32_LAUNCHER_SCRIPT = r"""
-@echo off
+WIN32_LAUNCHER_SCRIPT = r"""@echo off
 REM Invoke the GraalPy launcher through Maven, passing any arguments passed to
 REM this script via GRAAL_PYTHON_ARGS. To avoid having to deal with multiple
 REM layers of escaping, we store the arguments into GRAAL_PYTHON_ARGS delimited
