@@ -195,7 +195,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 gil.acquire();
             }
         }
-        
+
         @TruffleBoundary
         static boolean isBigIntegerZero(BigInteger number) {
             return number.compareTo(BigInteger.ZERO) == 0;
