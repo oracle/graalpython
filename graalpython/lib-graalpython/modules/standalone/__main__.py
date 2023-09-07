@@ -52,6 +52,7 @@ import abc
 import argparse
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -117,6 +118,62 @@ ATTR_STANDALONE_CMD = "command"
 
 MVN_CODE_PREFIX = "src/main/java"
 MVN_RESOURCE_PREFIX = "src/main/resources"
+
+POSIX_LAUNCHER_SCRIPT = r"""
+#!/usr/bin/env bash
+
+source="${BASH_SOURCE[0]}"
+while [ -h "$source" ] ; do
+    prev_source="$source"
+    source="$(readlink "$source")";
+    if [[ "$source" != /* ]]; then
+        # if the link was relative, it was relative to where it came from
+        dir="$( cd -P "$( dirname "$prev_source" )" && pwd )"
+        source="$dir/$source"
+    fi
+done
+location="$( cd -P "$( dirname "$source" )" && pwd )"
+
+if [ -z "$JAVA_HOME" ]; then
+    JAVA=java
+else
+    JAVA="${JAVA_HOME}/bin/java"
+fi
+
+for var in "$@"; do
+    args="${args}$(printf "\v")${var}"
+done
+
+curdir=`pwd`
+export GRAAL_PYTHON_ARGS="${args}$(printf "\v")"
+mvn -f "${location}/pom.xml" exec:exec -Dexec.executable="${JAVA}" -Dexec.workingdir="${curdir}" -Dexec.args="--module-path %classpath '-Dorg.graalvm.launcher.executablename=$0' --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
+"""
+
+WIN32_LAUNCHER_SCRIPT = r"""
+@echo off
+REM Invoke the GraalPy launcher through Maven, passing any arguments passed to
+REM this script via GRAAL_PYTHON_ARGS. To avoid having to deal with multiple
+REM layers of escaping, we store the arguments into GRAAL_PYTHON_ARGS delimited
+REM with vertical tabs.
+
+REM Since BAT files cannot easily generate vertical tabs, we create a helper
+REM script to do it for us. We're calling Maven soon anyway, so Java must be
+REM available.
+set JAVA="%JAVA_HOME%/bin/java"
+if not defined JAVA_HOME set JAVA=java
+echo class VTabCreator { public static void main(String[] args) { System.out.print('\013'); } } > VTabCreator.java
+for /f "delims=" %%i in ('%JAVA% VTabCreator.java') do set VTAB=%%i
+del VTabCreator.java
+
+REM Store each argument separated by vtab
+set GRAAL_PYTHON_ARGS=
+:loop
+set GRAAL_PYTHON_ARGS=%GRAAL_PYTHON_ARGS%%VTAB%%~1
+shift /1
+if not "%~1"=="" goto loop
+
+mvn -f "%~dp0pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %%classpath -Dorg.graalvm.launcher.executablename=%~0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
+"""
 
 def get_file(*paths):
     return os.path.join(os.path.dirname(__file__), *paths)
@@ -208,6 +265,14 @@ class PolyglotJavaPython(AbstractStandalone):
 
         # java sources
         shutil.copytree(os.path.join(os.path.dirname(__file__), "app"), os.path.join(target_dir))
+
+        # create launcher scripts to run graalpy
+        posix_launcher = os.path.join(target_dir, "graalpy.sh")
+        with open(posix_launcher, "w") as f:
+            f.write(POSIX_LAUNCHER_SCRIPT)
+        os.chmod(posix_launcher, os.stat(posix_launcher).st_mode | stat.S_IEXEC)
+        with open(os.path.join(target_dir, "graalpy.cmd"), "w") as f:
+            f.write(WIN32_LAUNCHER_SCRIPT)
 
         virtual_filesystem_java_file = os.path.join(target_dir, MVN_CODE_PREFIX, "com", "mycompany", "javapython", VFS_JAVA_FILE)
         self.create_virtual_filesystem_file(virtual_filesystem_java_file, POLYGLOT_APP_JAVA_PKG)
