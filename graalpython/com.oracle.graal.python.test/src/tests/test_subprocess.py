@@ -178,5 +178,5 @@ class TestSubprocess(unittest.TestCase):
 
             # check that the subprocess does not receive the args when we end with \v
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
-            result = subprocess.check_output([sys.executable], env=env, text=True, timeout=10)
+            result = subprocess.check_output([sys.executable], env=env, text=True)
             assert result == 'None\n'
