@@ -48,7 +48,7 @@ is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_
 MVN_CMD = [shutil.which('mvn')]
 
 def run_cmd(cmd, env, cwd=None):
-    print(f"Executing:\n    {cmd=}\n    {env=}\n    {cwd=}")
+    print(f"Executing:\n    {cmd=}\n")
     process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
     out = []
     for line in iter(process.stdout.readline, ""):
