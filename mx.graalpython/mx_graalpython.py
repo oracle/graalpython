@@ -198,10 +198,6 @@ def check_vm(vm_warning=True, must_be_jvmci=False):
 
 
 def get_jdk():
-    if SUITE_COMPILER:
-        tag = 'jvmci'
-    else:
-        tag = None
     return mx.get_jdk()
 
 
