@@ -63,7 +63,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -80,7 +79,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -469,7 +467,7 @@ public abstract class SocketNodes {
         }
     }
 
-    public abstract static class IdnaFromStringOrBytesConverterNode extends ArgumentCastNode {
+    public abstract static class IdnaFromStringOrBytesConverterNode extends Node {
         private final String builtinName;
         private final int argumentIndex;
 
@@ -478,7 +476,6 @@ public abstract class SocketNodes {
             this.argumentIndex = argumentIndex;
         }
 
-        @Override
         public abstract byte[] execute(VirtualFrame frame, Object value);
 
         @Specialization
@@ -517,9 +514,8 @@ public abstract class SocketNodes {
             return bufferLib.getCopiedByteArray(bytes);
         }
 
-        @ClinicConverterFactory
         @NeverDefault
-        public static IdnaFromStringOrBytesConverterNode create(@ClinicConverterFactory.BuiltinName String builtinName, @ClinicConverterFactory.ArgumentIndex int argumentIndex) {
+        public static IdnaFromStringOrBytesConverterNode create(String builtinName, int argumentIndex) {
             return SocketNodesFactory.IdnaFromStringOrBytesConverterNodeGen.create(builtinName, argumentIndex);
         }
 
