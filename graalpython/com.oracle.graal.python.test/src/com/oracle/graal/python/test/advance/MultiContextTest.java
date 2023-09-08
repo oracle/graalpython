@@ -59,6 +59,11 @@ public class MultiContextTest extends PythonTests {
 
     @Test
     public void testSharingWithStruct() {
+        // With the default value of NativeModules=true, this test is going to use the NFI C API
+        // backend for the first context, but then it is going to use the Sulong backend for
+        // consecutive contexts (as long as this is the only test that executes native code,
+        // which it seems to be). This is why we need "sulong:SULONG_NATIVE" among the
+        // dependencies for GRAALPYTHON_UNIT_TESTS distribution
         Engine engine = Engine.newBuilder().build();
         for (int i = 0; i < 10; i++) {
             try (Context context = newContext(engine)) {

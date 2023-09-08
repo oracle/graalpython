@@ -40,15 +40,22 @@
  */
 package com.oracle.graal.python.test.advance;
 
+import static com.oracle.graal.python.test.GraalPythonEnvVars.RUNNING_WITH_LANGUAGE_HOME;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.io.IOAccess;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ResourcesTest {
+    @Before
+    public void setUp() {
+        org.junit.Assume.assumeTrue(!RUNNING_WITH_LANGUAGE_HOME);
+    }
+
     @Test
     public void testResourcesAsHome() {
         try (Context context = Context.newBuilder("python").allowExperimentalOptions(true).option("python.PythonHome", "/path/that/does/not/exist").build()) {

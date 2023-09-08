@@ -52,6 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.nio.file.LinkOption;
 
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
@@ -60,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -81,6 +81,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -307,31 +308,32 @@ public abstract class CExtContext {
      * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
      *            check could raise an exception and only an adopted node will report useful source
      *            locations.
-     * @param checkHPyResultNode Similar to {@code checkFunctionResultNode} but for an HPy
-     *            extension.
      * @return A Python module.
      * @throws IOException If the specified file cannot be loaded.
      * @throws ApiInitException If the corresponding native context could not be initialized.
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode, HPyCheckFunctionResultNode checkHPyResultNode)
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
 
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        Object library = null;
+        Object library;
+        InteropLibrary interopLib;
 
         if (cApiContext.useNativeBackend) {
             GraalHPyJNIContext.loadJNIBackend();
-            getLogger().config("loading module " + spec.path + " as native");
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, realPath));
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), realPath);
             if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                 loadExpr = "with panama " + loadExpr;
             }
             try {
                 Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
                 library = context.getEnv().parseInternal(librarySource).call();
+                interopLib = InteropLibrary.getUncached(library);
             } catch (PException e) {
                 throw e;
             } catch (AbstractTruffleException e) {
@@ -339,20 +341,18 @@ public abstract class CExtContext {
             }
         } else {
             library = loadLLVMLibrary(location, context, spec.name, spec.path);
+            interopLib = InteropLibrary.getUncached(library);
             try {
-                if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
+                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
                     throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(library);
 
-        // Now, try to detect the C extension's API by looking for the appropriate init
-        // functions.
         try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
@@ -362,7 +362,8 @@ public abstract class CExtContext {
         Env env = context.getEnv();
         try {
             TruffleString extSuffix = context.getSoAbi();
-            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(path, extSuffix).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, realPath).build());
             return callTarget.call();
         } catch (SecurityException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
