@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.advance;
+package com.oracle.graal.python.test.advanced;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.min;

@@ -318,7 +318,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 
 def node_footprint_analyzer(args, **kwargs):
-    main_class = 'com.oracle.graal.python.test.advance.NodeFootprintAnalyzer'
+    main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
     vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
@@ -364,9 +364,15 @@ def punittest(args, report=False):
         ]
     else:
         configs += [
-            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], True),
-            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], False),
-            TestConfig(['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest'], True, False),
+            TestConfig(['--regex', r'graal\.python'], True),
+            TestConfig(['--regex', r'graal\.python'], False),
+            # TCK suite is not compatible with the PythonMxUnittestConfig,
+            # so it must have its own run and the useResources config is ignored
+            # On top of that mx unittest with --regex does not recognize that
+            # GRAALPYTHON_UNIT_TESTS are not needed, and still includes them
+            # and still applies PythonMxUnittestConfig
+            TestConfig(['com.oracle.truffle.tck.tests'], False),
+            TestConfig(['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest'], True, False),
         ]
         for c in configs:
             c.args += args
@@ -1429,7 +1435,16 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(integration\.)?(advance\.Benchmark|advance\.ResourcesTest|basic|builtin|decorator|generator|interop|util))'
+                        r'graal\.python\.test\.(integration\.)?(advanced\.Benchmark|advanced\.ResourcesTest|basic|builtin|decorator|generator|interop|util)'
+                    ],
+                    report=True
+                )
+                punittest(
+                    [
+                        "--verbose",
+                        "--no-leak-tests",
+                        "--regex",
+                        r'(com\.oracle\.truffle\.tck\.tests)'
                     ],
                     report=True
                 )
@@ -1440,7 +1455,7 @@ def graalpython_gate_runner(args, tasks):
                 prev = jdk.java_args_pfx
                 try:
                     jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
-                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advance.ExclusionsTest'])
+                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
 
@@ -1704,7 +1719,7 @@ def graalpython_gate_runner(args, tasks):
                     """.split()
                 ),
                 "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
-                "com.oracle.graal.python.test.advance.ExclusionsTest"
+                "com.oracle.graal.python.test.advanced.ExclusionsTest"
             ])
 
 
@@ -2964,7 +2979,7 @@ def run_leak_launcher(input_args):
     vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
-    vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
+    vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
     dump_path = out.data.strip().partition("Dump file:")[2].strip()

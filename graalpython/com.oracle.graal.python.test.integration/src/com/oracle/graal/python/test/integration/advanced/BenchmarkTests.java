@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -62,9 +62,9 @@ public class BenchmarkTests {
         final PrintStream printOutStream = new PrintStream(byteArrayOut);
         Source source = PythonTests.getScriptSource(scriptName);
         if (args == null) {
-            PythonTests.runScript(new String[]{source.toString()}, source, printOutStream, printErrStream);
+            PythonTests.runScript(new String[]{scriptName}, source, printOutStream, printErrStream);
         } else {
-            args[0] = source.toString();
+            args[0] = scriptName;
             PythonTests.runScript(args, source, printOutStream, printErrStream);
         }
 
