@@ -657,6 +657,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores',
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers',
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores',
+        # TODO try to reenable when GR-48530 is fixed
+        'graalpython.lib-python.3.test.test_decimal.*',
     ]
 
     result_tags = linux_tags & darwin_tags
