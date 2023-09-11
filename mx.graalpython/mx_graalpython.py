@@ -461,9 +461,9 @@ def run_cpython_test(raw_args):
     if args.vm:
         env = os.environ.copy()
         delete_bad_env_keys(env)
+        env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
         vm = python_gvm() if args.vm == 'gvm' else python_svm()
-        with _dev_pythonhome_context():
-            mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
+        mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
     else:
         do_run_python(python_args)
 
