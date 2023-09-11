@@ -626,6 +626,7 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import',
         'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout',
         'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_timeout',
+        'graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLogging.*',
         'graalpython.lib-python.3.test.test_pty.PtyTest.test_openpty',
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         'graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance',

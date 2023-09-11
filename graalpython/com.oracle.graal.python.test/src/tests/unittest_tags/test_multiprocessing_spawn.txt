@@ -94,8 +94,6 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestListenerClient.test_listener_client
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLock.test_lock_context
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLock.test_rlock
-*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLogging.test_enable_logging
-*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestLogging.test_level
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestManagerRestart.test_rapid_restart
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPicklingConnections.test_access
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPicklingConnections.test_pickling
