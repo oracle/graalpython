@@ -336,13 +336,13 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(args, report=False):
+def punittest(ars, report=False):
     """
-    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
-
-    Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
-    in the arguments array, then we append filter that includes all GraalPython junit tests.
+    Runs GraalPython junit tests, TCK, and memory leak tests, which can be skipped using --no-leak-tests.
+    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
+    with language home on filesystem and with language home served from the Truffle resources.
     """
+    args = [] if ars is None else ars
     @dataclass
     class TestConfig:
         args: list
@@ -357,25 +357,19 @@ def punittest(args, report=False):
         skip_leak_tests = True
         args.remove("--no-leak-tests")
 
-    if "--regex" in args:
-        configs += [
-            TestConfig(args, True),
-            TestConfig(args, False),
-        ]
-    else:
-        configs += [
-            TestConfig(['--regex', r'graal\.python'], True),
-            TestConfig(['--regex', r'graal\.python'], False),
-            # TCK suite is not compatible with the PythonMxUnittestConfig,
-            # so it must have its own run and the useResources config is ignored
-            # On top of that mx unittest with --regex does not recognize that
-            # GRAALPYTHON_UNIT_TESTS are not needed, and still includes them
-            # and still applies PythonMxUnittestConfig
-            TestConfig(['com.oracle.truffle.tck.tests'], False),
-            TestConfig(['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest'], True, False),
-        ]
-        for c in configs:
-            c.args += args
+    # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
+    # but it is OK to apply --regex on top of the filters
+    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test']
+    configs += [
+        TestConfig(graalpy_tests + args, True),
+        TestConfig(graalpy_tests + args, False),
+        # TCK suite is not compatible with the PythonMxUnittestConfig,
+        # so it must have its own run and the useResources config is ignored
+        TestConfig(['com.oracle.truffle.tck.tests'] + args, False),
+    ]
+    if '--regex' not in args:
+        async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
+        configs.append(TestConfig(['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
 
     # Workaround until imports update pulls in GR-48113
     sulong_native = mx.distribution('SULONG_NATIVE', fatalIfMissing=True)
@@ -1435,16 +1429,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'graal\.python\.test\.(integration\.)?(advanced\.Benchmark|advanced\.ResourcesTest|basic|builtin|decorator|generator|interop|util)'
-                    ],
-                    report=True
-                )
-                punittest(
-                    [
-                        "--verbose",
-                        "--no-leak-tests",
-                        "--regex",
-                        r'(com\.oracle\.truffle\.tck\.tests)'
+                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(integration\.)?(advanced\.Benchmark|advanced\.ResourcesTest|basic|builtin|decorator|generator|interop|util)))'
                     ],
                     report=True
                 )
