@@ -659,6 +659,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers*',
         # TODO try to reenable when GR-48530 is fixed
         'graalpython.lib-python.3.test.test_decimal.*',
+        # GR-48555 race condition when exitting right after join
+        'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
     ]
 
     result_tags = linux_tags & darwin_tags
