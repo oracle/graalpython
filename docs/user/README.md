@@ -48,8 +48,19 @@ To try GraalPy with a full GraalVM, including support for Java embedding and int
 
 ### Windows
 
-There is currently no installer for Windows.
-Instead, follow [these instructions](https://github.com/oracle/graalpython#user-content-building-from-source) to build GraalPy from source.
+There is a preview binary build of Windows that you can download via [www.graalvm.org](https://www.graalvm.org/downloads/).
+The Windows build has several known issues:
+
+  - JLine treats Windows a dumb terminal, no autocomplete and limited editing capabilities in the REPL
+  - Interactive help() in the REPL doesn't work
+  - Oracle GraalPy builds cannot create venvs or install packages, use community GraalPy builds to do those things.
+  - Inside venvs:
+      - graalpy.cmd and graalpy.exe are broken
+      - pip.exe cannot be used directly
+      - pip has trouble with cache file loading, use `--no-cache-dir`
+      - Only pure Python binary wheels can be installed, no native extensions or source builds
+      - To install a package, use `myvenv/Scripts/python.cmd -m pip --no-cache-dir install <pkg>`
+  - Running from PowerShell works better than running from CMD, various scripts will fail on the latter
 
 ## Running Python
 
