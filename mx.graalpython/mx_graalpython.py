@@ -655,9 +655,8 @@ def update_unittest_tags(args):
         # The whole suite transiently times out (GR-47822)
         'graalpython.lib-python.3.test.test_httpservers.*',
         # Disabled because of fatal error in Sulong (GR-47592)
-        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores',
-        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers',
-        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores',
+        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers*',
+        'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers*',
         # TODO try to reenable when GR-48530 is fixed
         'graalpython.lib-python.3.test.test_decimal.*',
     ]
