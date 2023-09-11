@@ -71,8 +71,11 @@ long PyTruffle_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name) {
     return res;
 error:
     /* Some packages, such as oracledb, use these access macros on unintended types, i.e. getting "hour" of a "date" object.
-     * It's an out-of-bounds memory read, but it tends to work on CPython, so just shut up and return 0 */
+     * It's an out-of-bounds memory read, but it tends to work on CPython, so just warn and return 0 */
     PyErr_Clear();
+    if (PyErr_WarnFormat(PyExc_RuntimeWarning, 1, "Invalid struct access of nonexistent %s field of a %s object", field_name, Py_TYPE(o)->tp_name) == -1) {
+        PyErr_WriteUnraisable(NULL);
+    }
     return 0;
 }
 
