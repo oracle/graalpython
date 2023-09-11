@@ -63,7 +63,9 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleContext;
@@ -294,7 +296,7 @@ class ProfilerBuiltins extends PythonBuiltins {
         }
 
         private static void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectSlowPathFactory factory = PythonContext.get(null).factory();
             Collection<ProfilerNode<Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
