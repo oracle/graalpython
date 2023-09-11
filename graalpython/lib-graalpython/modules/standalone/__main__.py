@@ -543,6 +543,9 @@ class NativeExecutable(Standalone):
                     "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
                     "-Dpolyglot.engine.WarnInterpreterOnly=false",
                 ]
+                # Remove once GR-48563 is fixed
+                if "Oracle GraalVM" in subprocess.check_output([ni, "--version"], text=True):
+                    cmd.append("-H:-OptConditionalMoves")
             cmd += [
                 "--no-fallback",
                 "-H:-CopyLanguageResources",
