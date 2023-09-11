@@ -1875,7 +1875,16 @@ public abstract class GraalHPyContextFunctions {
 
         @TruffleBoundary
         static Encoding getFSDefault() {
-            return Encoding.fromJCodingName(System.getProperty("file.encoding"));
+            String fileEncoding = System.getProperty("file.encoding");
+            if (fileEncoding != null) {
+                try {
+                    return Encoding.valueOf(fileEncoding.replace('-', '_'));
+                } catch (IllegalArgumentException e) {
+                    // avoid any fatal Java exceptions; fall through
+                }
+            }
+            // fall back to UTF-8
+            return Encoding.UTF_8;
         }
     }
 
