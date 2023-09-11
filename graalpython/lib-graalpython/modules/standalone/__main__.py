@@ -420,9 +420,9 @@ class NativeExecutable(Standalone):
 
     def get_graalvm_url(self):
         if "." in self.jdk_version:
-            major_version = jdk_version[:jdk_version.index(".")]
+            major_version = self.jdk_version[:self.jdk_version.index(".")]
         else:
-            major_version = jdk_version
+            major_version = self.jdk_version
 
         system = platform.system()
         sufix = 'tar.gz'
@@ -444,7 +444,7 @@ class NativeExecutable(Standalone):
         else:
             raise RuntimeError("Unknown platform machine", machine)
 
-        return f"{GRAALVM_URL_BASE}{major_version}/archive/graalvm-jdk-{jdk_version}_{system}-{machine}_bin.{sufix}"
+        return f"{GRAALVM_URL_BASE}{major_version}/archive/graalvm-jdk-{self.jdk_version}_{system}-{machine}_bin.{sufix}"
 
     def get_tools(self):
         if os.getenv("JAVA_HOME"):
