@@ -1102,6 +1102,8 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
+                # We run the TCK with Python home served from resources
+                "GRAALPYTHON_RESOURCES",
             ],
             "testDistribution": True,
             "maven": False,
