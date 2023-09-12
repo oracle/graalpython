@@ -23,40 +23,24 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static org.junit.Assert.assertEquals;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import org.junit.Test;
 
-import com.oracle.truffle.api.strings.TruffleString;
-
-public class PythonTests extends com.oracle.graal.python.test.integration.PythonTests {
-    public static void assertPrints(String expected, Path scriptName) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-
-        File scriptFile = getTestFile(scriptName);
-        runScript(new String[]{scriptFile.toString()}, scriptFile, printStream, System.err);
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(expected, result);
+public class GlobalVarTests {
+    @Test
+    public void globalStatement() {
+        String source = "x = 10\n" + //
+                        "def foo():\n" + //
+                        "  global x\n" + //
+                        "  x = 20\n" + //
+                        "  print(x)\n" + //
+                        "" + //
+                        "foo()\n" + //
+                        "print(x)\n";
+        assertPrints("20\n20\n", source);
     }
 
-    public static File getTestFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
-        if (Files.isReadable(path)) {
-            return new File(path.toString());
-        } else {
-            throw new RuntimeException("Unable to locate " + path);
-        }
-    }
-
-    public static TruffleString ts(String s) {
-        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
-    }
 }

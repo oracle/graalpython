@@ -33,11 +33,6 @@ import java.util.Locale;
 public class GraalPythonEnvVars {
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
-    /**
-     * Whether the tests are running with language home or with internal resources.
-     */
-    public static final boolean RUNNING_WITH_LANGUAGE_HOME = System.getProperty("org.graalvm.language.python.home") != null;
-
     private static final String PROP_TESTS_HOME = "test.graalpython.home";
     private static final String NO_TESTS_HOME = "Fatal: You need to set Java property '%s' to a directory that " +
                     "contains additional test files, e.g., to the root of the GraalPython source tree. If the tests are " +

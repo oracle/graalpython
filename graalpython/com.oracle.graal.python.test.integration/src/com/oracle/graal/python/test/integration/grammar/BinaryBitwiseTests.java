@@ -23,40 +23,40 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static org.junit.Assert.assertEquals;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import org.junit.Test;
 
-import com.oracle.truffle.api.strings.TruffleString;
+public class BinaryBitwiseTests {
 
-public class PythonTests extends com.oracle.graal.python.test.integration.PythonTests {
-    public static void assertPrints(String expected, Path scriptName) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-
-        File scriptFile = getTestFile(scriptName);
-        runScript(new String[]{scriptFile.toString()}, scriptFile, printStream, System.err);
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(expected, result);
+    @Test
+    public void bitwiseShifts() {
+        assertPrints("8\n", "print(1 << 3)");
+        assertPrints("2\n", "print(8 >> 2)");
+        assertPrints("680564733841876926926749214863536422912\n", "print(1 << 129)");
+        assertPrints("0\n", "print(8 >> 20)");
+        assertPrints("-256\n", "print(-1 << 8)");
+        assertPrints("-1\n", "print(-20 >> 12)");
     }
 
-    public static File getTestFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
-        if (Files.isReadable(path)) {
-            return new File(path.toString());
-        } else {
-            throw new RuntimeException("Unable to locate " + path);
-        }
+    @Test
+    public void bitwiseAnd() {
+        assertPrints("0\n", "print(32 & 8)");
+        assertPrints("0\n", "print(32 & 8484324820482048)");
     }
 
-    public static TruffleString ts(String s) {
-        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
+    @Test
+    public void bitwiseOr() {
+        assertPrints("441\n", "print(432 | 9)");
+        assertPrints("943824320482304948\n", "print(432 | 943824320482304820)");
     }
+
+    @Test
+    public void bitwiseXor() {
+        assertPrints("415\n", "print(425 ^ 54)");
+        assertPrints("544382094820482034324155\n", "print(425 ^ 544382094820482034324242)");
+    }
+
 }

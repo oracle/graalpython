@@ -23,40 +23,40 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test;
+package com.oracle.graal.python.test.integration.grammar;
 
-import static org.junit.Assert.assertEquals;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import org.junit.Test;
 
-import com.oracle.truffle.api.strings.TruffleString;
+public class UnaryOpTests {
 
-public class PythonTests extends com.oracle.graal.python.test.integration.PythonTests {
-    public static void assertPrints(String expected, Path scriptName) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-
-        File scriptFile = getTestFile(scriptName);
-        runScript(new String[]{scriptFile.toString()}, scriptFile, printStream, System.err);
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(expected, result);
+    @Test
+    public void plus() {
+        assertPrints("3\n", "print(+3)");
+        assertPrints("37857431053781905\n", "print(+37857431053781905)");
+        assertPrints("3.45\n", "print(+3.45)");
     }
 
-    public static File getTestFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalPythonTestsHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
-        if (Files.isReadable(path)) {
-            return new File(path.toString());
-        } else {
-            throw new RuntimeException("Unable to locate " + path);
-        }
+    @Test
+    public void minus() {
+        assertPrints("-129\n", "print(-129)");
+        assertPrints("-129547839057329057230\n", "print(-129547839057329057230)");
+        assertPrints("-54353.65636\n", "print(-54353.65636)");
     }
 
-    public static TruffleString ts(String s) {
-        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
+    @Test
+    public void invert() {
+        assertPrints("-346\n", "print(~345)");
+        assertPrints("-3455473924052745730\n", "print(~3455473924052745729)");
     }
+
+    @Test
+    public void not() {
+        assertPrints("False\n", "print(not 45)");
+        assertPrints("True\n", "print(not 0)");
+        assertPrints("False\n", "print(not 434432432432423423)");
+        assertPrints("False\n", "print(not 1.0)");
+    }
+
 }

@@ -318,7 +318,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 
 def node_footprint_analyzer(args, **kwargs):
-    main_class = 'com.oracle.graal.python.test.advance.NodeFootprintAnalyzer'
+    main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
     vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE'])
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
@@ -336,13 +336,13 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(args, report=False):
+def punittest(ars, report=False):
     """
-    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
-
-    Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
-    in the arguments array, then we append filter that includes all GraalPython junit tests.
+    Runs GraalPython junit tests, TCK, and memory leak tests, which can be skipped using --no-leak-tests.
+    Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
+    with language home on filesystem and with language home served from the Truffle resources.
     """
+    args = [] if ars is None else ars
     @dataclass
     class TestConfig:
         args: list
@@ -357,19 +357,19 @@ def punittest(args, report=False):
         skip_leak_tests = True
         args.remove("--no-leak-tests")
 
-    if "--regex" in args:
-        configs += [
-            TestConfig(args, True),
-            TestConfig(args, False),
-        ]
-    else:
-        configs += [
-            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], True),
-            TestConfig(['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'], False),
-            TestConfig(['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest'], True, False),
-        ]
-        for c in configs:
-            c.args += args
+    # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
+    # but it is OK to apply --regex on top of the filters
+    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test']
+    configs += [
+        TestConfig(graalpy_tests + args, True),
+        TestConfig(graalpy_tests + args, False),
+        # TCK suite is not compatible with the PythonMxUnittestConfig,
+        # so it must have its own run and the useResources config is ignored
+        TestConfig(['com.oracle.truffle.tck.tests'] + args, False),
+    ]
+    if '--regex' not in args:
+        async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
+        configs.append(TestConfig(['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test'] + async_regex + args, True, False))
 
     # Workaround until imports update pulls in GR-48113
     sulong_native = mx.distribution('SULONG_NATIVE', fatalIfMissing=True)
@@ -1429,7 +1429,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|advance\.ResourcesTest|basic|builtin|decorator|generator|interop|util))'
+                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(integration\.)?(advanced\.Benchmark|advanced\.ResourcesTest|basic|builtin|decorator|generator|interop|util)))'
                     ],
                     report=True
                 )
@@ -1440,7 +1440,7 @@ def graalpython_gate_runner(args, tasks):
                 prev = jdk.java_args_pfx
                 try:
                     jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
-                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advance.ExclusionsTest'])
+                    punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
 
@@ -1704,7 +1704,7 @@ def graalpython_gate_runner(args, tasks):
                     """.split()
                 ),
                 "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
-                "com.oracle.graal.python.test.advance.ExclusionsTest"
+                "com.oracle.graal.python.test.advanced.ExclusionsTest"
             ])
 
 
@@ -2964,7 +2964,7 @@ def run_leak_launcher(input_args):
     vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
-    vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
+    vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
     dump_path = out.data.strip().partition("Dump file:")[2].strip()

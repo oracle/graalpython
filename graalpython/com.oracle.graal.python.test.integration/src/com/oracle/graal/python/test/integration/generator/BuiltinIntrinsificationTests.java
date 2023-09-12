@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
- * Copyright (c) 2013, Regents of the University of California
+ * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
  *
@@ -23,26 +23,33 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.test.builtin;
+package com.oracle.graal.python.test.integration.generator;
 
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
 
 import org.junit.Test;
 
-public class ImportTests {
+public class BuiltinIntrinsificationTests {
+
     @Test
-    public void relativeImportTest() {
-        Path script = Paths.get("relative_import.py");
-        assertPrints("module Y\n" + //
-                        "cos(100) = 0.8623188722876839\n" + //
-                        "module X\n" + //
-                        "module Z\n" + //
-                        "module A\n" + //
-                        "module B\n" + //
-                        "module C\n" + //
-                        "after importing moduleY\n", script);
+    public void simpleListComp() {
+        String source = "for x in range(2):\n" + //
+                        "    ll = list(i for i in range(5))\n" + //
+                        "print(ll)";
+        assertPrints("[0, 1, 2, 3, 4]\n", source);
+    }
+
+    @Test
+    public void simpleListCompCondition() {
+        String source = "ll = list(i for i in range(5) if i % 2 == 0)\n" + //
+                        "print(ll)";
+        assertPrints("[0, 2, 4]\n", source);
+    }
+
+    @Test
+    public void emptyListComp() {
+        String source = "ll = list(i for i in range(5) if i == 6)\n" + //
+                        "print(ll)";
+        assertPrints("[]\n", source);
     }
 }
