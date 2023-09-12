@@ -238,6 +238,56 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void testBigIntegersAdd() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) + int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(7));
+            assertEquals("60847228810955011271841753858055\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(24).shiftLeft(101));
+            assertEquals("121694457621910022543683507716096\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("13\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, true);
+            assertEquals("2\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void testBigIntegersEg() throws UnsupportedEncodingException {
+            String source = "import polyglot\n" +
+                            "@polyglot.export_value\n" +
+                            "def foo(x, y):\n" +
+                            "    print(int(x) == int(y))\n\n";
+            Source script = Source.create("python", source);
+            context.eval(script);
+            Value main = context.getPolyglotBindings().getMember("foo");
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(7));
+            assertEquals("False\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(BigInteger.valueOf(24).shiftLeft(101), BigInteger.valueOf(24).shiftLeft(101));
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 7);
+            assertEquals("False\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(6, 6);
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, BigInteger.ONE);
+            assertEquals("True\n", out.toString("UTF-8"));
+            out.reset();
+            main.execute(true, BigInteger.ZERO);
+            assertEquals("False\n", out.toString("UTF-8"));
+        }
+
+        @Test
         public void testAsFunction() throws UnsupportedEncodingException {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +

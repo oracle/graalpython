@@ -376,6 +376,19 @@ def test_create_int_from_float():
     else:
         assert False, "expected ValueError"
 
+def test_mullnode_specialization():
+    a = (24 << 101)
+    b = 6227020800
+    assert a * 1 == a
+    assert 1 * a == a
+    assert a * 0 == 0
+    assert 0 * a == 0
+    assert a * a == 3702385253972713594848680660754038636211155697675554692534370304
+    assert a * b == 378896959428176123053993055582545143398400
+    assert b * a == 378896959428176123053993055582545143398400
+    assert b * b == 38775788043632640000
+    assert b * 622702 == 3877578306201600
+    assert 622702 * 622701 == 387757158102
 
 class FromBytesTests(unittest.TestCase):
 

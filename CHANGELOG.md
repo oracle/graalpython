@@ -3,7 +3,7 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 23.1.1
+## Version 24.0.0
 * Foreign big integers are now supported and work with all `Numeric` operators.
 
 ## Version 23.1.0

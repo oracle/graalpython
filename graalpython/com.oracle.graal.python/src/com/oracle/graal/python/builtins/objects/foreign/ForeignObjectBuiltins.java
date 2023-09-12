@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
@@ -1086,15 +1085,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
-                    }
-                }
-                if (lib.fitsInBigInteger(object)) {
-                    try {
-                        var big = lib.asBigInteger(object);
-                        return factory.createInt(big);
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
                 if (lib.fitsInBigInteger(object)) {
