@@ -38,6 +38,7 @@ import shutil
 import sys
 import time
 from functools import wraps
+from textwrap import dedent
 
 import mx_urlrewrites
 
@@ -2308,18 +2309,22 @@ def python_coverage(args):
                 # {"args": ["--llvm.managed"]},
             ]
 
+        common_coverage_args = [
+            "--experimental-options",
+            "--llvm.lazyParsing=false",
+            "--python.DisableFrozenModules",  # To have proper source information about lib-graalpython
+            "--coverage",
+            "--coverage.TrackInternal",
+            f"--coverage.FilterFile={file_filter}",
+            "--coverage.Output=lcov",
+        ]
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
             if os.path.exists(outfile):
                 os.unlink(outfile)
             extra_args = [
-                "--experimental-options",
-                "--llvm.lazyParsing=false",
-                "--coverage",
-                "--coverage.TrackInternal",
-                f"--coverage.FilterFile={file_filter}",
-                "--coverage.Output=lcov",
+                *common_coverage_args,
                 f"--coverage.OutputFile={outfile}",
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
@@ -2337,23 +2342,23 @@ def python_coverage(args):
         # coverage. this is to ensure all sources actuall show up - otherwise,
         # only loaded sources will be part of the coverage
         with tempfile.NamedTemporaryFile(mode="w", suffix='.py') as f:
-            f.write("""
-import os
-
-for dirpath, dirnames, filenames in os.walk('{0}'):
-    if "test" in dirnames:
-        dirnames.remove("test")
-    if "tests" in dirnames:
-        dirnames.remove("tests")
-    for filename in filenames:
-        if filename.endswith(".py"):
-            fullname = os.path.join(dirpath, filename)
-            with open(fullname, 'rb') as f:
-                try:
-                    compile(f.read(), fullname, 'exec')
-                except BaseException as e:
-                    print('Could not compile', fullname, e)
-            """.format(os.path.join(SUITE.dir, "graalpython", "lib-python")))
+            f.write(dedent(f"""
+                import os
+                
+                for dirpath, dirnames, filenames in os.walk({os.path.join(SUITE.dir, "graalpython", "lib-graalpython")!r}):
+                    if "test" in dirnames:
+                        dirnames.remove("test")
+                    if "tests" in dirnames:
+                        dirnames.remove("tests")
+                    for filename in filenames:
+                        if filename.endswith(".py"):
+                            fullname = os.path.join(dirpath, filename)
+                            with open(fullname, 'rb') as f:
+                                try:
+                                    compile(f.read(), fullname, 'exec')
+                                except BaseException as e:
+                                    print('Could not compile', fullname, e)
+            """))
             f.flush()
             lcov_file = 'zero.lcov'
             try:
@@ -2366,14 +2371,9 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 mx.run([
                     executable,
                     "-S",
-                    "--experimental-options",
-                    "--llvm.lazyParsing=false",
+                    *common_coverage_args,
                     "--python.PosixModuleBackend=java",
-                    "--coverage",
-                    "--coverage.TrackInternal",
-                    f"--coverage.FilterFile={file_filter}",
-                    "--coverage.Output=lcov",
-                    "--coverage.OutputFile=" + lcov_file,
+                    f"--coverage.OutputFile={lcov_file}",
                     f.name
                 ], env=None)
 
