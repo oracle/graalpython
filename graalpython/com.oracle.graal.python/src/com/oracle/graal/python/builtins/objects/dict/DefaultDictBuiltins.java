@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -122,7 +121,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             final Object defaultFactory = self.getDefaultFactory();
             PTuple args = (defaultFactory == PNone.NONE) ? factory.createEmptyTuple() : factory.createTuple(new Object[]{defaultFactory});
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, PNone.NONE, PNone.NONE, getIter.execute(frame, inliningTarget, ItemsNode.items(self, factory))});
+            Object iter = getIter.execute(frame, inliningTarget, factory.createDictItemsView(self));
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, PNone.NONE, PNone.NONE, iter});
         }
     }
 
