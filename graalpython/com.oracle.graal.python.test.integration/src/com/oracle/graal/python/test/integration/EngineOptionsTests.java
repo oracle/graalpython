@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.test.integration;
 
+import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -50,6 +52,7 @@ public class EngineOptionsTests {
 
     @Test
     public void engineOptions() {
+        assumeFalse(IS_WINDOWS);
         Engine engine = Engine.newBuilder().build();
 
         assertEquals("java", doit(engine, null));

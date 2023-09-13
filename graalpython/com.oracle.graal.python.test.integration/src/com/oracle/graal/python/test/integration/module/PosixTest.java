@@ -28,8 +28,10 @@ package com.oracle.graal.python.test.integration.module;
 import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineError;
 import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
+import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,6 +62,7 @@ public class PosixTest {
 
     @Test
     public void stat() {
+        assumeFalse(IS_WINDOWS);
         String source = "import posix\n" +
                         "result = posix.stat('/')\n" +
                         "def isdir(stat_result):\n" +
@@ -70,11 +73,13 @@ public class PosixTest {
 
     @Test
     public void open() {
+        assumeFalse(IS_WINDOWS);
         assertPrints("True\n", open("0") + "print(fd > 2)");
     }
 
     @Test
     public void openFail() {
+        assumeFalse(IS_WINDOWS);
         // TODO this should be checked for FileNotFoundError, but now randomly fails
         // because sometimes is OSError
         assertLastLineErrorContains("No such file or directory",
@@ -83,6 +88,7 @@ public class PosixTest {
 
     @Test
     public void fstatFile() {
+        assumeFalse(IS_WINDOWS);
         assertPrints("True\n", "" +
                         open("0") +
                         "print((posix.fstat(fd).st_mode & 0xf000) == 0x8000)\n");
@@ -90,6 +96,7 @@ public class PosixTest {
 
     @Test
     public void fstatDir() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Path tmp = Files.createTempDirectory("graalpython");
         assertPrints("True\n", "" +
                         "import posix\n" +
@@ -101,6 +108,7 @@ public class PosixTest {
 
     @Test
     public void openCreat() throws IOException {
+        assumeFalse(IS_WINDOWS);
         try {
             Files.delete(tmpfile);
             assertTrue(Files.notExists(tmpfile));
@@ -117,6 +125,7 @@ public class PosixTest {
 
     @Test
     public void openTrunc() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Files.write(tmpfile, "hello".getBytes());
         assertPrints("", open("posix.O_TRUNC"));
         assertTrue(Files.readAllBytes(tmpfile).length == 0);
@@ -124,6 +133,7 @@ public class PosixTest {
 
     @Test
     public void read() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Files.write(tmpfile, "hello".getBytes());
         assertPrints("b'hello'\n", open("0") +
                         "print(posix.read(fd, 5))");
@@ -131,6 +141,7 @@ public class PosixTest {
 
     @Test
     public void lseek() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Files.write(tmpfile, "hello".getBytes());
         assertPrints("b'llo'\n", open("0") +
                         "import os\n" +
@@ -140,6 +151,7 @@ public class PosixTest {
 
     @Test
     public void write() throws IOException {
+        assumeFalse(IS_WINDOWS);
         assertPrints("", open("posix.O_RDWR") +
                         "posix.write(fd, b'hello')");
         assertTrue(new String(Files.readAllBytes(tmpfile)).equals("hello"));
@@ -147,6 +159,7 @@ public class PosixTest {
 
     @Test
     public void close() throws IOException {
+        assumeFalse(IS_WINDOWS);
         assertLastLineErrorContains("OSError",
                         open("posix.O_RDWR") +
                                         "posix.write(fd, b'hello')\n" +
@@ -157,26 +170,31 @@ public class PosixTest {
 
     @Test
     public void stdout() {
+        assumeFalse(IS_WINDOWS);
         assertPrints("hello\n", "import sys; sys.stdout.write('hello\\n')");
     }
 
     @Test
     public void stderr() {
+        assumeFalse(IS_WINDOWS);
         assertLastLineError("error\n", "import sys; sys.stderr.write('error\\n')");
     }
 
     @Test
     public void printToStdout() {
+        assumeFalse(IS_WINDOWS);
         assertPrints("1-2...", "import sys; print('1', '2', sep='-', file=sys.stdout, end='...', flush=True)");
     }
 
     @Test
     public void printToStderr() {
+        assumeFalse(IS_WINDOWS);
         assertLastLineError("1-2...", "import sys; print('1', '2', sep='-', file=sys.stderr, end='...', flush=True)");
     }
 
     @Test
     public void printToFile() throws IOException {
+        assumeFalse(IS_WINDOWS);
         assertPrints("", open("posix.O_RDWR") +
                         "import _io\n" +
                         "f = _io.FileIO(fd, mode='w')\n" +
@@ -189,6 +207,7 @@ public class PosixTest {
 
     @Test
     public void readlinkWithSymlink() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Path realPath = tmpfile.toRealPath();
         Path symlinkPath = realPath.getParent().resolve(tmpfile.getFileName() + "__symlink");
         try {
@@ -202,6 +221,7 @@ public class PosixTest {
 
     @Test
     public void readlinkWithOriginalFile() throws IOException {
+        assumeFalse(IS_WINDOWS);
         Path realPath = tmpfile.toRealPath();
         assertLastLineErrorContains("OSError", "import posix\n" +
                         "print(posix.readlink('" + realPath.toString() + "'))\n");
@@ -209,6 +229,7 @@ public class PosixTest {
 
     @Test
     public void sysExcInfo0() {
+        assumeFalse(IS_WINDOWS);
         assertPrints("42\n", "import sys\n" +
                         "sys.exc_info = lambda: [42, 24, 4224]\n" +
                         "try:\n" +
