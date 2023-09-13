@@ -1353,7 +1353,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(integration\.)?(advanced\.Benchmark|advanced\.ResourcesTest|basic|builtin|decorator|generator|interop|util)))'
+                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
                     ],
                     report=True
                 )
