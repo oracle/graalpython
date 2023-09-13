@@ -55,6 +55,8 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNodeG
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -100,8 +102,9 @@ public final class TokenBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

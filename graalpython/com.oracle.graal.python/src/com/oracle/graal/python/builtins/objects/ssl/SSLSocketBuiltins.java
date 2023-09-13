@@ -73,8 +73,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -82,6 +84,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
@@ -97,16 +100,17 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
-                        @Shared @Cached SSLOperationNode sslOperationNode) {
+                        @Shared @Cached SSLOperationNode sslOperationNode,
+                        @Cached PythonObjectFactory factory) {
             if (len == 0) {
-                return factory().createBytes(new byte[0]);
+                return factory.createBytes(new byte[0]);
             } else if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             sslOperationNode.read(frame, self, output);
             PythonUtils.flipBuffer(output);
-            return factory().createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
+            return factory.createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
         }
 
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
@@ -296,14 +300,15 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPeerCertNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(guards = "der")
-        Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
+        Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
+                        @Cached PythonObjectFactory factory) {
             if (!self.isHandshakeComplete()) {
                 throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate != null) {
                 try {
-                    return factory().createBytes(getEncoded(certificate));
+                    return factory.createBytes(getEncoded(certificate));
                 } catch (CertificateEncodingException e) {
                     // Fallthrough
                 }
@@ -314,7 +319,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!der")
-        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
+        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (!self.isHandshakeComplete()) {
                 throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
@@ -323,10 +330,10 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 try {
                     return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
-                    return factory().createDict();
+                    return factory.get(inliningTarget).createDict();
                 }
             }
-            return factory().createDict();
+            return factory.get(inliningTarget).createDict();
         }
 
         @TruffleBoundary
@@ -377,7 +384,8 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CipherNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getCipher(PSSLSocket self) {
+        static Object getCipher(PSSLSocket self,
+                        @Cached PythonObjectFactory factory) {
             if (!self.isHandshakeComplete()) {
                 return PNone.NONE;
             }
@@ -385,7 +393,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             if (cipher == null) {
                 return PNone.NONE;
             }
-            return factory().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
+            return factory.createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
         }
 
         @TruffleBoundary
@@ -409,9 +417,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             Object[] result = new Object[ciphers.size()];
             for (int i = 0; i < ciphers.size(); i++) {
                 SSLCipher cipher = ciphers.get(i);
-                result[i] = factory().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
+                result[i] = PythonObjectFactory.getUncached().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
             }
-            return factory().createList(result);
+            return PythonObjectFactory.getUncached().createList(result);
         }
     }
 

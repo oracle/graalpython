@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -263,13 +264,14 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
-        protected Object newCData(VirtualFrame frame, Object subType, Object[] args, PKeyword[] kwds,
+        Object newCData(VirtualFrame frame, Object subType, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = subType;
             Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
             final Python3Core core = getContext();
@@ -290,11 +292,11 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 }
             }
 
-            PBaseException self = factory().createBaseException(type);
+            PBaseException self = factory.createBaseException(type);
             if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr)) {
                 osErrorInit(frame, inliningTarget, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             } else {
-                self.setArgs(factory().createEmptyTuple());
+                self.setArgs(factory.createEmptyTuple());
             }
             return self;
         }
@@ -458,13 +460,14 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PBaseException self,
+        static Object reduce(PBaseException self,
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached PythonObjectFactory factory) {
             PTuple args = getArgsNode.execute(inliningTarget, self);
             final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
@@ -480,15 +483,15 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                     argData[3] = PNone.NONE;
                     argData[4] = filename2;
                 }
-                args = factory().createTuple(argData);
+                args = factory.createTuple(argData);
             }
 
             final Object type = getClassNode.execute(inliningTarget, self);
             final PDict dict = getDictNode.execute(self);
             if (dict != null) {
-                return factory().createTuple(new Object[]{type, args, dict});
+                return factory.createTuple(new Object[]{type, args, dict});
             } else {
-                return factory().createTuple(new Object[]{type, args});
+                return factory.createTuple(new Object[]{type, args});
             }
         }
     }

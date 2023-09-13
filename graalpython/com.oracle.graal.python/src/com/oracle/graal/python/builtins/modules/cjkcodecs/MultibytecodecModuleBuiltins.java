@@ -128,8 +128,9 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object createCodec(PyCapsule arg,
-                        @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
-            return createCodec(this, arg, nameMatchesNode, factory(), getRaiseNode());
+                        @Cached PyCapsuleNameMatchesNode nameMatchesNode,
+                        @Cached PythonObjectFactory factory) {
+            return createCodec(this, arg, nameMatchesNode, factory, getRaiseNode());
         }
 
         static Object createCodec(Node inliningTarget, PyCapsule arg,

@@ -41,21 +41,6 @@
 package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
-    @Child private PythonObjectFactory objectFactory;
-
-    protected final PythonObjectFactory factory() {
-        if (objectFactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                objectFactory = insert(PythonObjectFactory.create());
-            } else {
-                objectFactory = getContext().factory();
-            }
-        }
-        return objectFactory;
-    }
 }

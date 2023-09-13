@@ -188,12 +188,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doBaseSet(PBaseSet self,
+        static Object doBaseSet(PBaseSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached HashingStorageGetIterator getIterator) {
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getDictStorage();
-            return factory().createBaseSetIterator(self, getIterator.execute(inliningTarget, storage), lenNode.execute(inliningTarget, storage));
+            return factory.createBaseSetIterator(self, getIterator.execute(inliningTarget, storage), lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -213,14 +214,15 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PBaseSet self,
+        static Object reduce(VirtualFrame frame, PBaseSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey getIterKey,
                         @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookup) {
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = self.getDictStorage();
             int len = lenNode.execute(inliningTarget, storage);
             Object[] keysArray = new Object[len];
@@ -230,12 +232,12 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 assert hasNext;
                 keysArray[i] = getIterKey.execute(inliningTarget, storage, it);
             }
-            PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
+            PTuple contents = factory.createTuple(new Object[]{factory.createList(keysArray)});
             Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, dict});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, dict});
         }
     }
 
@@ -441,10 +443,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageCopy copyNode,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory.Lazy factory) {
             Object hashDescr = lookupHash.execute(getClassNode.execute(inliningTarget, key));
             if (hashDescr instanceof PNone) {
-                return factory.createFrozenSet(copyNode.execute(inliningTarget, key.getDictStorage()));
+                return factory.get(inliningTarget).createFrozenSet(copyNode.execute(inliningTarget, key.getDictStorage()));
             } else {
                 return key;
             }
@@ -455,8 +457,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

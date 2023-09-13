@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -84,10 +85,11 @@ public final class PairwiseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIterable() != null")
-        Object next(VirtualFrame frame, PPairwise self,
+        static Object next(VirtualFrame frame, PPairwise self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached PythonObjectFactory factory) {
             Object item;
             Object old = self.getOld();
             if (self.getOld() == null) {
@@ -103,7 +105,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                 self.setOld(null);
                 throw e;
             }
-            return factory().createTuple(new Object[]{old, item});
+            return factory.createTuple(new Object[]{old, item});
         }
 
         @Specialization(guards = "self.getIterable() == null")

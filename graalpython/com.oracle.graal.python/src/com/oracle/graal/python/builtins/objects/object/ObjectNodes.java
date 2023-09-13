@@ -118,7 +118,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -534,7 +534,7 @@ public abstract class ObjectNodes {
             return getNewArgsInternalNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
         }
 
-        abstract static class GetNewArgsInternalNode extends PNodeWithState {
+        abstract static class GetNewArgsInternalNode extends PNodeWithRaise {
             public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
@@ -654,7 +654,7 @@ public abstract class ObjectNodes {
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
 
-        abstract static class GetSlotNamesInternalNode extends PNodeWithState {
+        abstract static class GetSlotNamesInternalNode extends PNodeWithRaise {
             public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg, Object slotNames);
 
             @Specialization(guards = "!isNoValue(slotNames)")
@@ -698,7 +698,7 @@ public abstract class ObjectNodes {
             return getStateInternalNode.execute(frame, obj, required, copyReg, getStateAttr);
         }
 
-        abstract static class GetStateInternalNode extends PNodeWithState {
+        abstract static class GetStateInternalNode extends PNodeWithRaise {
             public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg, Object getStateAttr);
 
             @Specialization(guards = "!isNoValue(getStateAttr)")
@@ -720,7 +720,8 @@ public abstract class ObjectNodes {
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached PyObjectLookupAttr lookupAttr,
                             @Cached HashingStorageSetItem setHashingStorageItem,
-                            @Cached CheckBasesizeForGetState checkBasesize) {
+                            @Cached CheckBasesizeForGetState checkBasesize,
+                            @Cached PythonObjectFactory.Lazy factory) {
                 Object state;
                 Object type = getClassNode.execute(inliningTarget, obj);
                 if (required && getItemsizeNode.execute(inliningTarget, type) != 0) {
@@ -763,7 +764,7 @@ public abstract class ObjectNodes {
                         }
                     }
                     if (haveSlots) {
-                        state = factory().createTuple(new Object[]{state, factory().createDict(slotsStorage)});
+                        state = factory.get(inliningTarget).createTuple(new Object[]{state, factory.get(inliningTarget).createDict(slotsStorage)});
                     }
                 }
 
@@ -800,7 +801,7 @@ public abstract class ObjectNodes {
         }
     }
 
-    abstract static class CommonReduceNode extends PNodeWithState {
+    abstract static class CommonReduceNode extends PNodeWithRaise {
         protected static final TruffleString T_MOD_COPYREG = tsLiteral("copyreg");
 
         public abstract Object execute(VirtualFrame frame, Object obj, int proto);
@@ -822,7 +823,8 @@ public abstract class ObjectNodes {
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PythonObjectFactory factory) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             if (lookupNew.execute(cls) == PNone.NO_VALUE) {
                 throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
@@ -849,10 +851,10 @@ public abstract class ObjectNodes {
                 } else {
                     newargsVals = new Object[]{cls};
                 }
-                newargs = factory().createTuple(newargsVals);
+                newargs = factory.createTuple(newargsVals);
             } else if (hasArgsProfile.profile(inliningTarget, hasargs)) {
                 newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ_EX__);
-                newargs = factory().createTuple(new Object[]{cls, args, kwargs});
+                newargs = factory.createTuple(new Object[]{cls, args, kwargs});
             } else {
                 throw raiseBadInternalCall();
             }
@@ -865,7 +867,7 @@ public abstract class ObjectNodes {
             Object listitems = objIsList ? getIter.execute(frame, inliningTarget, obj) : PNone.NONE;
             Object dictitems = objIsDict ? getIter.execute(frame, inliningTarget, callMethod.execute(frame, inliningTarget, obj, T_ITEMS)) : PNone.NONE;
 
-            return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
+            return factory.createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }
 
         @Specialization(guards = "proto < 2")

@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -153,10 +154,11 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonBuiltinNode {
 
         @Specialization
-        PSet doSet(PSet self,
+        static PSet doSet(PSet self,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageCopy copyNode) {
-            return factory().createSet(copyNode.execute(inliningTarget, self.getDictStorage()));
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createSet(copyNode.execute(inliningTarget, self.getDictStorage()));
         }
     }
 
@@ -192,16 +194,17 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "canDoSetBinOp(other)")
-        Object doSet(VirtualFrame frame, PSet self, Object other,
+        static Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @Cached HashingStorageCopy copyStorage,
-                        @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Cached PythonObjectFactory factory) {
             // Note: we cannot reuse 'otherStorage' because we need to add from other -> self, in
             // order to execute __eq__ of keys in 'self' and not other
             HashingStorage otherStorage = getHashingStorage.execute(frame, inliningTarget, other);
             HashingStorage resultStorage = copyStorage.execute(inliningTarget, self.getDictStorage());
-            PSet result = factory().createSet(resultStorage);
+            PSet result = factory.createSet(resultStorage);
             addAllToOther.execute(frame, inliningTarget, otherStorage, result);
             return result;
         }
@@ -237,30 +240,32 @@ public final class SetBuiltins extends PythonBuiltins {
     abstract static class UnionNode extends PythonBuiltinNode {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
+        static PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Shared @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, args[i]), result);
             }
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
 
         @Specialization(replaces = "doCached")
-        PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
+        static PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Shared @Cached HashingStorageAddAllToOther addAllToOther,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, args[i]), result);
             }
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
     }
 
@@ -407,13 +412,13 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class AndNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "canDoSetBinOp(right)")
-        @SuppressWarnings("truffle-static-method")
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageIntersect intersectNode) {
+                        @Cached HashingStorageIntersect intersectNode,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = intersectNode.execute(frame, inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, right), left.getDictStorage());
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @SuppressWarnings("unused")
@@ -453,38 +458,39 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(other)")
         Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached HashingStorageCopy copyNode) {
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
-            return createResult(self, result);
+            return createResult(self, result, factory);
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        @SuppressWarnings("truffle-static-method")
         Object doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageIntersect intersectNode) {
+                        @Shared @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return createResult(self, result);
+            return createResult(self, result, factory);
         }
 
         @Specialization(replaces = "doCached")
-        @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageIntersect intersectNode) {
+                        @Shared @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return createResult(self, result);
+            return createResult(self, result, factory);
         }
 
         static boolean isOther(Object arg) {
@@ -492,19 +498,19 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isOther(other)")
-        @SuppressWarnings("truffle-static-method")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageIntersect intersectNode) {
+                        @Shared @Cached HashingStorageIntersect intersectNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             result = intersectNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, other));
-            return createResult(self, result);
+            return createResult(self, result, factory);
         }
 
-        protected Object createResult(PSet self, HashingStorage result) {
-            return factory().createSet(result);
+        protected Object createResult(PSet self, HashingStorage result, PythonObjectFactory factory) {
+            return factory.createSet(result);
         }
     }
 
@@ -513,7 +519,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic({SpecialMethodNames.class})
     public abstract static class IntersectUpdateNode extends IntersectNode {
         @Override
-        protected Object createResult(PSet self, HashingStorage result) {
+        protected Object createResult(PSet self, HashingStorage result, PythonObjectFactory factory) {
             // In order to be compatible w.r.t. __eq__ calls we cannot reuse self storage
             self.setDictStorage(result);
             return PNone.NONE;
@@ -527,13 +533,13 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "canDoSetBinOp(other)")
-        @SuppressWarnings("truffle-static-method")
-        Object doSet(VirtualFrame frame, PSet self, Object other,
+        static Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageXor xorNode) {
+                        @Cached HashingStorageXor xorNode,
+                        @Cached PythonObjectFactory factory) {
             // TODO: calls __eq__ wrong number of times compared to CPython (GR-42240)
-            return factory().createSet(xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, other)));
+            return factory.createSet(xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, other)));
         }
 
         @SuppressWarnings("unused")
@@ -568,12 +574,13 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
 
         @Specialization
-        PSet doSet(VirtualFrame frame, PSet self, Object other,
+        static PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @Cached HashingStorageXor xorNode) {
+                        @Cached HashingStorageXor xorNode,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
     }
 
@@ -635,13 +642,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "canDoSetBinOp(right)")
-        @SuppressWarnings("truffle-static-method")
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageDiff diffNode) {
+                        @Cached HashingStorageDiff diffNode,
+                        @Cached PythonObjectFactory factory) {
             HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
-            return factory().createSet(storage);
+            return factory.createSet(storage);
         }
 
         @SuppressWarnings("unused")
@@ -676,35 +683,38 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class DifferenceNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(other)")
-        PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other) {
-            return factory().createSet(self.getDictStorage());
+        static PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createSet(self.getDictStorage());
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
+        static PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageDiff diffNode) {
+                        @Shared @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
 
         @Specialization(replaces = "doCached")
-        PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
+        static PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageDiff diffNode) {
+                        @Shared @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
 
         static boolean isOther(Object arg) {
@@ -712,12 +722,13 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isOther(other)")
-        PSet doSet(VirtualFrame frame, PSet self, Object other,
+        static PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Shared @Cached HashingStorageDiff diffNode) {
+                        @Shared @Cached HashingStorageDiff diffNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = diffNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, other));
-            return factory().createSet(result);
+            return factory.createSet(result);
         }
     }
 

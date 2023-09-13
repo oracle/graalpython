@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -116,9 +117,10 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object parameters(PUnionType self) {
+        static Object parameters(PUnionType self,
+                        @Cached PythonObjectFactory factory) {
             if (self.getParameters() == null) {
-                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(factory.createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
             return self.getParameters();
         }
@@ -168,11 +170,12 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(VirtualFrame frame, PUnionType self,
+        static long hash(VirtualFrame frame, PUnionType self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
-            PFrozenSet argSet = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
+                        @Cached PythonObjectFactory factory) {
+            PFrozenSet argSet = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
             return hashNode.execute(frame, inliningTarget, argSet);
         }
     }
@@ -258,13 +261,13 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
+        static boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            PFrozenSet argSet1 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
-            PFrozenSet argSet2 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PythonObjectFactory factory) {
+            PFrozenSet argSet1 = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+            PFrozenSet argSet2 = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
             return eqNode.compare(frame, inliningTarget, argSet1, argSet2);
         }
 
@@ -281,9 +284,11 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
 
         @Specialization
-        Object getitem(VirtualFrame frame, PUnionType self, Object item) {
+        Object getitem(VirtualFrame frame, PUnionType self, Object item,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (self.getParameters() == null) {
-                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(factory.get(inliningTarget).createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             Object result = newargs[0];

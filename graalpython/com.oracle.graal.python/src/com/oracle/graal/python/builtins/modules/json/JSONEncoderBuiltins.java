@@ -61,9 +61,11 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -103,8 +105,9 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent) {
-            return factory().createTuple(new Object[]{jsonEncode(self, obj)});
+        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{jsonEncode(self, obj)});
         }
 
         @TruffleBoundary

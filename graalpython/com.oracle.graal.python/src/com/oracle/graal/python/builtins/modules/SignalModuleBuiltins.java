@@ -389,14 +389,15 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            PTuple resultTuple = GetitimerNode.createResultTuple(factory(), moduleData);
+            PTuple resultTuple = GetitimerNode.createResultTuple(factory, moduleData);
             setitimer(moduleData, usDelay, usInterval);
             return resultTuple;
         }
@@ -454,15 +455,16 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doIt(VirtualFrame frame, PythonModule self, int which,
+        static Object doIt(VirtualFrame frame, PythonModule self, int which,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            return createResultTuple(factory(), moduleData);
+            return createResultTuple(factory, moduleData);
         }
 
         static PTuple createResultTuple(PythonObjectFactory factory, ModuleData moduleData) {

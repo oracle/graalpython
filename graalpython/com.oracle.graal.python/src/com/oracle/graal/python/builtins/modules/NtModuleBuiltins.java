@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -72,7 +73,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -120,14 +120,15 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     abstract static class PathSplitRootNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object splitroot(PosixPath path,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        Object splitroot(PosixPath path) {
             // TODO should call WINAPI PathCchSkipRoot
-            TruffleString pathString = posixLib.getPathAsString(getPosixSupport(), path.value);
+
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            TruffleString pathString = PosixSupportLibrary.getUncached().getPathAsString(getPosixSupport(), path.value);
             int len = pathString.codePointLengthUncached(TS_ENCODING);
             int index = pathString.indexOfCodePointUncached(':', 0, len, TS_ENCODING);
             if (index <= 0) {
-                return factory().createTuple(new Object[]{T_EMPTY_STRING, pathString});
+                return factory.createTuple(new Object[]{T_EMPTY_STRING, pathString});
             } else {
                 index++;
                 int first = pathString.codePointAtIndexUncached(index, TS_ENCODING);
@@ -136,7 +137,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
                 }
                 TruffleString root = pathString.substringUncached(0, index, TS_ENCODING, false);
                 TruffleString rest = pathString.substringUncached(index, len - index, TS_ENCODING, false);
-                return factory().createTuple(new Object[]{root, rest});
+                return factory.createTuple(new Object[]{root, rest});
             }
         }
 
@@ -152,7 +153,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     abstract static class DeviceEncodingNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object deviceEncoding(@SuppressWarnings("unused") int fd) {
+        static Object deviceEncoding(@SuppressWarnings("unused") int fd) {
             // TODO should actually figure this out
             return PNone.NONE;
         }

@@ -75,10 +75,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -167,39 +169,40 @@ public final class CycleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "hasIterable(self)")
-        Object reduce(PCycle self,
+        static Object reduce(PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Exclusive GetClassNode getClass) {
+                        @Exclusive @Cached GetClassNode getClass,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple iterableTuple = factory().createTuple(new Object[]{self.getIterable()});
-            PTuple tuple = factory().createTuple(new Object[]{getSavedList(self), self.isFirstpass()});
-            return factory().createTuple(new Object[]{type, iterableTuple, tuple});
+            PTuple iterableTuple = factory.createTuple(new Object[]{self.getIterable()});
+            PTuple tuple = factory.createTuple(new Object[]{getSavedList(self, factory), self.isFirstpass()});
+            return factory.createTuple(new Object[]{type, iterableTuple, tuple});
         }
 
         @Specialization(guards = "!hasIterable(self)")
-        @SuppressWarnings("truffle-static-method")
-        Object reduceNoIterable(VirtualFrame frame, PCycle self,
+        static Object reduceNoIterable(VirtualFrame frame, PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Exclusive GetClassNode getClass,
+                        @Exclusive @Cached GetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectGetIter getIterNode,
-                        @Cached InlinedBranchProfile indexProfile) {
+                        @Cached InlinedBranchProfile indexProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object type = getClass.execute(inliningTarget, self);
-            PList savedList = getSavedList(self);
+            PList savedList = getSavedList(self, factory);
             Object it = getIterNode.execute(frame, inliningTarget, savedList);
             if (self.getIndex() > 0) {
                 indexProfile.enter(inliningTarget);
                 Object setStateCallable = lookupAttrNode.execute(frame, inliningTarget, it, T___SETSTATE__);
                 callNode.executeObject(frame, setStateCallable, self.getIndex());
             }
-            PTuple iteratorTuple = factory().createTuple(new Object[]{it});
-            PTuple tuple = factory().createTuple(new Object[]{savedList, true});
-            return factory().createTuple(new Object[]{type, iteratorTuple, tuple});
+            PTuple iteratorTuple = factory.createTuple(new Object[]{it});
+            PTuple tuple = factory.createTuple(new Object[]{savedList, true});
+            return factory.createTuple(new Object[]{type, iteratorTuple, tuple});
         }
 
-        PList getSavedList(PCycle self) {
-            return factory().createList(toArray(self.getSaved()));
+        static PList getSavedList(PCycle self, PythonObjectFactory factory) {
+            return factory.createList(toArray(self.getSaved()));
         }
 
         @TruffleBoundary

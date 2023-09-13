@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -89,10 +90,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getCode(PAsyncGen self,
+        static Object getCode(PAsyncGen self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
+                        @Cached InlinedConditionProfile hasCodeProfile,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
         }
     }
 
@@ -100,7 +102,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetAwait extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getAwait(PAsyncGen self) {
+        static Object getAwait(PAsyncGen self) {
             Object yieldFrom = self.getYieldFrom();
             return yieldFrom != null ? yieldFrom : PNone.NONE;
         }
@@ -110,7 +112,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFrame extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getFrame(VirtualFrame frame, PAsyncGen self,
+        static Object getFrame(VirtualFrame frame, PAsyncGen self,
                         @Cached GeneratorBuiltins.GetFrameNode getFrame) {
             return getFrame.execute(frame, self);
         }
@@ -120,7 +122,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsRunning extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean isRunning(PAsyncGen self) {
+        static boolean isRunning(PAsyncGen self) {
             return self.isRunning();
         }
     }
@@ -129,10 +131,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ASend extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object aSend(VirtualFrame frame, PAsyncGen self, Object sent,
-                        @Cached CallUnaryMethodNode callFirstIter) {
+        Object aSend(VirtualFrame frame, PAsyncGen self, Object sent,
+                        @Cached CallUnaryMethodNode callFirstIter,
+                        @Cached PythonObjectFactory factory) {
             callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
-            return factory().createAsyncGeneratorASend(self, sent);
+            return factory.createAsyncGeneratorASend(self, sent);
         }
     }
 
@@ -142,10 +145,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3);
 
         @Specialization
-        public Object athrow(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3,
-                        @Cached CallUnaryMethodNode callFirstIter) {
+        Object athrow(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3,
+                        @Cached CallUnaryMethodNode callFirstIter,
+                        @Cached PythonObjectFactory factory) {
             callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
-            return factory().createAsyncGeneratorAThrow(self, arg1, arg2, arg3);
+            return factory.createAsyncGeneratorAThrow(self, arg1, arg2, arg3);
         }
     }
 
@@ -153,7 +157,7 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aIter(PAsyncGen self) {
+        static Object aIter(PAsyncGen self) {
             return self;
         }
     }
@@ -162,10 +166,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aNext(VirtualFrame frame, PAsyncGen self,
-                        @Cached CallUnaryMethodNode callFirstIter) {
+        Object aNext(VirtualFrame frame, PAsyncGen self,
+                        @Cached CallUnaryMethodNode callFirstIter,
+                        @Cached PythonObjectFactory factory) {
             callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
-            return factory().createAsyncGeneratorASend(self, PNone.NONE);
+            return factory.createAsyncGeneratorASend(self, PNone.NONE);
         }
     }
 
@@ -173,10 +178,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AClose extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aClose(VirtualFrame frame, PAsyncGen self,
-                        @Cached CallUnaryMethodNode callFirstIter) {
+        Object aClose(VirtualFrame frame, PAsyncGen self,
+                        @Cached CallUnaryMethodNode callFirstIter,
+                        @Cached PythonObjectFactory factory) {
             callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
-            return factory().createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
+            return factory.createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
         }
     }
 }

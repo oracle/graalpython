@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -126,12 +127,13 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode) {
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached PythonObjectFactory factory) {
             /*
              * stgdict items size, align, length contain info about pointers itself, stgdict.proto
              * has info about the pointed to type!
              */
-            StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
             stgdict.size = StgDictObject.VOID_PTR_SIZE;
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
@@ -165,7 +167,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory().createDictFixedStorage((PythonObject) result);
+                resDict = factory.createDictFixedStorage((PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, result, stgdict);
@@ -181,14 +183,15 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         // Corresponds to _byref
         /* _byref consumes a refcount to its argument */
         protected PyCArgObject byref(Object obj,
-                        @Cached PyTypeCheck pyTypeCheck) {
+                        PyTypeCheck pyTypeCheck,
+                        PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 throw raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
             }
 
             CDataObject cdata = (CDataObject) obj;
 
-            PyCArgObject parg = factory().createCArgObject();
+            PyCArgObject parg = factory.createCArgObject();
             parg.tag = 'P';
             parg.pffi_type = ffi_type_pointer;
             parg.obj = cdata;
@@ -211,14 +214,15 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached IsSubClassNode isSubClassNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached CDataTypeFromParamNode fromParamNode) {
+                        @Cached CDataTypeFromParamNode fromParamNode,
+                        @Cached PythonObjectFactory factory) {
             StgDictObject typedict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             /*
              * If we expect POINTER(<type>), but receive a <type> instance, accept it by calling
              * byref(<type>).
              */
             if (isInstanceNode.executeWith(frame, value, typedict.proto)) {
-                return byref(value, pyTypeCheck);
+                return byref(value, pyTypeCheck, factory);
             }
 
             if (pyTypeCheck.isPointerObject(value) || pyTypeCheck.isArrayObject(value)) {

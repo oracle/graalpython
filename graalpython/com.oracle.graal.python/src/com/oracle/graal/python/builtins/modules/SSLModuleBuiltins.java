@@ -308,12 +308,13 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object txt2obj(TruffleString txt, boolean name,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PythonObjectFactory factory) {
             // TODO implement properly
             if (equalNode.execute(T_OID_TLS_SERVER, txt, TS_ENCODING)) {
-                return factory().createTuple(new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
+                return factory.createTuple(new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
             } else if (equalNode.execute(T_OID_TLS_CLIENT, txt, TS_ENCODING)) {
-                return factory().createTuple(new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
+                return factory.createTuple(new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
             }
             throw raise(NotImplementedError);
         }
@@ -380,11 +381,12 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_SSL_CERT_DIR = tsLiteral("SSL_CERT_DIR");
 
         @Specialization
-        Object getDefaultPaths() {
+        Object getDefaultPaths(
+                        @Cached PythonObjectFactory factory) {
             // there is no default location given by graalpython
             // in case the env variables SSL_CERT_FILE or SSL_CERT_DIR
             // are provided, ssl.py#get_default_verify_paths will take care of it
-            return factory().createTuple(new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
+            return factory.createTuple(new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
         }
     }
 

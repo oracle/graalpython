@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZip)
 public final class PZipBuiltins extends PythonBuiltins {
@@ -74,14 +76,15 @@ public final class PZipBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
-        Object doNext(VirtualFrame frame, PZip self,
-                        @Shared @Cached GetNextNode next) {
+        static Object doNext(VirtualFrame frame, PZip self,
+                        @Shared @Cached GetNextNode next,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
                 tupleElements[i] = next.execute(frame, iterators[i]);
             }
-            return factory().createTuple(tupleElements);
+            return factory.createTuple(tupleElements);
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
@@ -89,7 +92,8 @@ public final class PZipBuiltins extends PythonBuiltins {
         Object doNext(VirtualFrame frame, PZip self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetNextNode next,
-                        @Cached IsBuiltinObjectProfile classProfile) {
+                        @Cached IsBuiltinObjectProfile classProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             int i = 0;
@@ -97,7 +101,7 @@ public final class PZipBuiltins extends PythonBuiltins {
                 for (; i < iterators.length; i++) {
                     tupleElements[i] = next.execute(frame, iterators[i]);
                 }
-                return factory().createTuple(tupleElements);
+                return factory.createTuple(tupleElements);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, classProfile);
                 if (i > 0) {
@@ -129,22 +133,17 @@ public final class PZipBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!self.isStrict()")
-        Object reduce(PZip self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClass) {
-            Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(self.getIterators());
-            return factory().createTuple(new Object[]{type, tuple});
-        }
 
-        @Specialization(guards = "self.isStrict()")
-        Object reduceStrict(PZip self,
+        @Specialization
+        static Object reduce(PZip self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached GetClassNode getClass) {
+                        @Cached InlinedConditionProfile strictProfile,
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(self.getIterators());
-            return factory().createTuple(new Object[]{type, tuple, true});
+            PTuple tuple = factory.createTuple(self.getIterators());
+            Object[] elements = strictProfile.profile(inliningTarget, self.isStrict()) ? new Object[]{type, tuple, true} : new Object[]{type, tuple};
+            return factory.createTuple(elements);
         }
     }
 

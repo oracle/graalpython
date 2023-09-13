@@ -162,6 +162,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -665,7 +666,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
                 throw raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
@@ -744,7 +746,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             self.clearSnapshot();
 
             /* Restore the decoder to its state from the safe start point. */
-            decoderSetStateNode.execute(frame, self, cookie, factory());
+            decoderSetStateNode.execute(frame, self, cookie, factory);
 
             if (cookie.charsToSkip != 0) {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
@@ -861,10 +863,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Exclusive @Cached PyLongAsLongNode asLongNode) {
+                        @Exclusive @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             /* We haven't moved from the snapshot point. */
-            return PTextIO.CookieType.build(cookie, factory());
+            return PTextIO.CookieType.build(cookie, factory);
         }
 
         @Specialization(guards = {
@@ -891,7 +894,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary(limit = "2") InteropLibrary isString) {
+                        @CachedLibrary(limit = "2") InteropLibrary isString,
+                        @Shared @Cached PythonObjectFactory factory) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
             int nextInputLength = self.getSnapshotNextInput().length;
@@ -905,8 +909,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             assert (skipBack <= nextInputLength);
             while (skipBytes > 0) {
                 /* Decode up to temptative start point */
-                decoderSetStateNode.execute(frame, self, cookie, factory());
-                PBytes in = factory().createBytes(snapshotNextInput, skipBytes);
+                decoderSetStateNode.execute(frame, self, cookie, factory);
+                PBytes in = factory.createBytes(snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, inliningTarget, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
@@ -929,7 +933,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             if (skipBytes <= 0) {
                 skipBytes = 0;
-                decoderSetStateNode.execute(frame, self, cookie, factory());
+                decoderSetStateNode.execute(frame, self, cookie, factory);
             }
 
             /* Note our initial start point. */
@@ -940,13 +944,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 /* The returned cookie corresponds to the last safe start point. */
                 cookie.charsToSkip = decodedCharsUsed;
-                return PTextIO.CookieType.build(cookie, factory());
+                return PTextIO.CookieType.build(cookie, factory);
             }
 
             int charsDecoded = 0;
             byte[] input = PythonUtils.arrayCopyOfRange(snapshotNextInput, skipBytes, nextInputLength);
             while (input.length > 0) {
-                PBytes start = factory().createBytes(input, 1);
+                PBytes start = factory.createBytes(input, 1);
                 int n = decoderDecode(frame, inliningTarget, self, start, callMethodDecode, toString, codePointLengthNode);
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
@@ -990,7 +994,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
             /* The returned cookie corresponds to the last safe start point. */
             cookie.charsToSkip = decodedCharsUsed;
-            return PTextIO.CookieType.build(cookie, factory());
+            return PTextIO.CookieType.build(cookie, factory);
         }
 
         static void fail(VirtualFrame frame, Node inliningTarget, PTextIO self, Object savedState,

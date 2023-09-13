@@ -310,7 +310,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         121645100408832000L, 2432902008176640000L};
 
         @TruffleBoundary
-        private BigInteger factorialPart(long start, long n) {
+        private static BigInteger factorialPart(long start, long n) {
             long i;
             if (n <= 16) {
                 BigInteger r = new BigInteger(String.valueOf(start));
@@ -324,38 +324,40 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
+        long factorialNegativeInt(@SuppressWarnings("unused") int value) {
             throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
-        public long factorialSmallInt(int value) {
+        static long factorialSmallInt(int value) {
             return SMALL_FACTORIALS[value];
         }
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
-        public PInt factorialInt(int value) {
-            return factory().createInt(factorialPart(1, value));
+        static PInt factorialInt(int value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(factorialPart(1, value));
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
+        long factorialNegativeLong(@SuppressWarnings("unused") long value) {
             throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
-        public long factorialSmallLong(long value) {
+        static long factorialSmallLong(long value) {
             return SMALL_FACTORIALS[(int) value];
         }
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
-        public PInt factorialLong(long value) {
-            return factory().createInt(factorialPart(1, value));
+        static PInt factorialLong(long value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(factorialPart(1, value));
         }
 
         @Fallback
         @SuppressWarnings("truffle-static-method")
-        public Object factorialObject(VirtualFrame frame, Object value,
+        Object factorialObject(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongAndOverflowNode convert,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -408,23 +410,27 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt comb(long n, long k) {
-            return factory().createInt(calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        PInt comb(long n, long k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
         }
 
         @Specialization
-        PInt comb(long n, PInt k) {
-            return factory().createInt(calculateComb(PInt.longToBigInteger(n), k.getValue()));
+        PInt comb(long n, PInt k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculateComb(PInt.longToBigInteger(n), k.getValue()));
         }
 
         @Specialization
-        PInt comb(PInt n, long k) {
-            return factory().createInt(calculateComb(n.getValue(), PInt.longToBigInteger(k)));
+        PInt comb(PInt n, long k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculateComb(n.getValue(), PInt.longToBigInteger(k)));
         }
 
         @Specialization
-        PInt comb(PInt n, PInt k) {
-            return factory().createInt(calculateComb(n.getValue(), k.getValue()));
+        PInt comb(PInt n, PInt k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculateComb(n.getValue(), k.getValue()));
         }
 
         @Specialization
@@ -475,23 +481,27 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt perm(long n, long k) {
-            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+        PInt perm(long n, long k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
         }
 
         @Specialization
-        PInt perm(long n, PInt k) {
-            return factory().createInt(calculatePerm(PInt.longToBigInteger(n), k.getValue()));
+        PInt perm(long n, PInt k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculatePerm(PInt.longToBigInteger(n), k.getValue()));
         }
 
         @Specialization
-        PInt perm(PInt n, long k) {
-            return factory().createInt(calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
+        PInt perm(PInt n, long k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
         }
 
         @Specialization
-        PInt perm(PInt n, PInt k) {
-            return factory().createInt(calculatePerm(n.getValue(), k.getValue()));
+        PInt perm(PInt n, PInt k,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(calculatePerm(n.getValue(), k.getValue()));
         }
 
         @Specialization
@@ -659,12 +669,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple frexpD(double value) {
+        static PTuple frexpD(double value,
+                        @Cached PythonObjectFactory factory) {
             Object[] content = new Object[2];
             double[] primContent = frexp(value);
             content[0] = primContent[0];
             content[1] = (int) primContent[1];
-            return factory().createTuple(content);
+            return factory.createTuple(content);
         }
 
         @Override
@@ -792,17 +803,18 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModfNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PTuple modfD(double value) {
+        static PTuple modfD(double value,
+                        @Cached PythonObjectFactory factory) {
             if (!Double.isFinite(value)) {
                 if (Double.isInfinite(value)) {
-                    return factory().createTuple(new Object[]{Math.copySign(0., value), value});
+                    return factory.createTuple(new Object[]{Math.copySign(0., value), value});
                 } else if (Double.isNaN(value)) {
-                    return factory().createTuple(new Object[]{value, value});
+                    return factory.createTuple(new Object[]{value, value});
                 }
             }
             double fraction = value % 1;
             double integral = value - fraction;
-            return factory().createTuple(new Object[]{fraction, integral});
+            return factory.createTuple(new Object[]{fraction, integral});
         }
 
         @Override

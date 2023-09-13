@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -85,13 +86,14 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
+        static PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
+                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Cached PythonObjectFactory factory) {
             writeNode.execute(object, key, value);
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
-                updateStgDict.execute(frame, object, value, false, factory());
+                updateStgDict.execute(frame, object, value, false, factory);
             }
             return PNone.NONE;
         }

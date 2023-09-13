@@ -296,10 +296,11 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeCopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PDeque doGeneric(PDeque self,
+        static PDeque doGeneric(PDeque self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
-            PDeque copy = factory().createDeque(getClassNode.execute(inliningTarget, self));
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            PDeque copy = factory.createDeque(getClassNode.execute(inliningTarget, self));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
             return copy;
@@ -919,8 +920,9 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeIterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PDequeIter doGeneric(PDeque self) {
-            return factory().createDequeIter(self);
+        static PDequeIter doGeneric(PDeque self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDequeIter(self);
         }
     }
 
@@ -930,8 +932,9 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeReversedNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PDequeIter doGeneric(PDeque self) {
-            return factory().createDequeRevIter(self);
+        static PDequeIter doGeneric(PDeque self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDequeRevIter(self);
         }
     }
 
@@ -980,19 +983,19 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached InlinedConditionProfile profile) {
+                        @Cached PythonObjectFactory factory) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
             if (PGuards.isNoValue(dict) || sizeNode.execute(frame, inliningTarget, dict) <= 0) {
                 dict = PNone.NONE;
             }
             Object it = getIter.execute(frame, inliningTarget, self);
-            PTuple emptyTuple = factory().createEmptyTuple();
+            PTuple emptyTuple = factory.createEmptyTuple();
             int maxLength = self.getMaxLength();
             if (maxLength != -1) {
-                return factory().createTuple(new Object[]{clazz, factory().createTuple(new Object[]{emptyTuple, maxLength}), dict, it});
+                return factory.createTuple(new Object[]{clazz, factory.createTuple(new Object[]{emptyTuple, maxLength}), dict, it});
             }
-            return factory().createTuple(new Object[]{clazz, emptyTuple, dict, it});
+            return factory.createTuple(new Object[]{clazz, emptyTuple, dict, it});
 
         }
     }
@@ -1177,8 +1180,9 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

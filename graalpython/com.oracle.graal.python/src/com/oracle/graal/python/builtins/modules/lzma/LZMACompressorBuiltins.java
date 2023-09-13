@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -169,19 +170,21 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         PBytes doBytes(LZMACompressor self, PBytesLike data,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("c") @Cached LZMANodes.CompressNode compress) {
+                        @Shared("c") @Cached LZMANodes.CompressNode compress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doObject(VirtualFrame frame, LZMACompressor self, Object data,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("c") @Cached LZMANodes.CompressNode compress) {
+                        @Shared("c") @Cached LZMANodes.CompressNode compress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -199,9 +202,10 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doit(LZMACompressor self,
-                        @Cached LZMANodes.CompressNode compress) {
+                        @Cached LZMANodes.CompressNode compress,
+                        @Cached PythonObjectFactory factory) {
             self.setFlushed();
-            return factory().createBytes(compress.flush(self, PythonContext.get(this)));
+            return factory.createBytes(compress.flush(self, PythonContext.get(this)));
         }
 
         @SuppressWarnings("unused")

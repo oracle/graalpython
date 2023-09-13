@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -135,19 +136,21 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -163,9 +166,10 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doit(BZ2Object.BZ2Compressor self,
-                        @Cached Bz2Nodes.Bz2NativeCompress compress) {
+                        @Cached Bz2Nodes.Bz2NativeCompress compress,
+                        @Cached PythonObjectFactory factory) {
             self.setFlushed();
-            return factory().createBytes(compress.flush(self, PythonContext.get(this)));
+            return factory.createBytes(compress.flush(self, PythonContext.get(this)));
         }
 
         @SuppressWarnings("unused")

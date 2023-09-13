@@ -154,7 +154,8 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("create(T__FIELDS_)") SetAttributeNode setFieldsAttributeNode) {
+                        @Cached("create(T__FIELDS_)") SetAttributeNode setFieldsAttributeNode,
+                        @Cached PythonObjectFactory factory) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
@@ -162,13 +163,13 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory().createDictFixedStorage((PythonObject) result);
+                resDict = factory.createDictFixedStorage((PythonObject) result);
             }
             if (getItemResDict.hasKey(inliningTarget, resDict.getDictStorage(), T__ABSTRACT_)) {
                 return result;
             }
 
-            StgDictObject dict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject dict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
             if (!isStruct()) {
                 dict.flags |= TYPEFLAG_HASUNION;
             }

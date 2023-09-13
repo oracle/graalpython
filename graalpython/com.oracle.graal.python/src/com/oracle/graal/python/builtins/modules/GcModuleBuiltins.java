@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -148,7 +149,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                     count += cc;
                 }
             }
-            return factory().createTuple(new Object[]{count, 0, 0});
+            return PythonObjectFactory.getUncached().createTuple(new Object[]{count, 0, 0});
         }
     }
 
@@ -170,10 +171,11 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcGetReferentsNode extends PythonBuiltinNode {
         @Specialization
-        PList getReferents(@SuppressWarnings("unused") Object objects) {
+        static PList getReferents(@SuppressWarnings("unused") Object objects,
+                        @Cached PythonObjectFactory factory) {
             // TODO: this is just a dummy implementation; for native objects, this should actually
             // use 'tp_traverse'
-            return factory().createList();
+            return factory.createList();
         }
     }
 }

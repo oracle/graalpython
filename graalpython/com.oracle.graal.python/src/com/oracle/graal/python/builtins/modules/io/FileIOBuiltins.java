@@ -156,6 +156,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -533,8 +534,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size == 0"})
-        Object none(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size) {
-            return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        static Object none(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size >= 0"})
@@ -545,9 +547,10 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile readErrorProfile2,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
-                return posixRead.read(self.getFD(), size, inliningTarget, posixLib, readErrorProfile, gil);
+                return posixRead.read(self.getFD(), size, inliningTarget, posixLib, readErrorProfile, gil, factory);
             } catch (PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     readErrorProfile2.enter(inliningTarget);
@@ -581,7 +584,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile multipleReadsProfile,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             int bufsize = SMALLCHUNK;
             boolean mayBeQuick = false;
             try {
@@ -605,7 +609,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             int bytesRead = 0;
             PBytes b;
             try {
-                b = posixRead.read(self.getFD(), bufsize, inliningTarget, posixLib, readErrorProfile, gil);
+                b = posixRead.read(self.getFD(), bufsize, inliningTarget, posixLib, readErrorProfile, gil, factory);
                 bytesRead = b.getSequenceStorage().length();
                 if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
                     return b;
@@ -633,7 +637,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
                 int n;
                 try {
-                    b = posixRead.read(self.getFD(), bufsize - bytesRead, inliningTarget, posixLib, readErrorProfile, gil);
+                    b = posixRead.read(self.getFD(), bufsize - bytesRead, inliningTarget, posixLib, readErrorProfile, gil, factory);
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
@@ -656,7 +660,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 bytesRead += n;
             }
 
-            return factory().createBytes(toByteArray(result));
+            return factory.createBytes(toByteArray(result));
         }
 
         @Specialization(guards = "self.isClosed()")
@@ -678,14 +682,15 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 int size = bufferLib.getBufferLength(buffer);
                 if (size == 0) {
                     return 0;
                 }
                 try {
-                    PBytes data = posixRead.read(self.getFD(), size, inliningTarget, posixLib, readErrorProfile, gil);
+                    PBytes data = posixRead.read(self.getFD(), size, inliningTarget, posixLib, readErrorProfile, gil, factory);
                     int n = bufferLib.getBufferLength(data);
                     bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
                     return n;

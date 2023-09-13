@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -100,7 +101,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PFrame self);
 
         @Specialization
-        Object get(VirtualFrame curFrame, PFrame self) {
+        Object get(VirtualFrame curFrame, PFrame self,
+                        @Cached PythonObjectFactory factory) {
             PythonObject globals = self.getGlobals();
             if (globals instanceof PythonModule) {
                 if (getDictNode == null) {
@@ -109,7 +111,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
                 return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
             } else {
-                return globals != null ? globals : factory().createDict();
+                return globals != null ? globals : factory.createDict();
             }
         }
 
@@ -222,10 +224,11 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract PCode executeObject(VirtualFrame frame, PFrame self);
 
         @Specialization
-        PCode get(PFrame self) {
+        static PCode get(PFrame self,
+                        @Cached PythonObjectFactory factory) {
             RootCallTarget ct = self.getTarget();
             assert ct != null;
-            return factory().createCode(ct);
+            return factory.createCode(ct);
         }
 
         @NeverDefault

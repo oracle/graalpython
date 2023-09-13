@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -82,11 +83,12 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PTupleGetter self,
+        static Object reduce(PTupleGetter self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
-            PTuple args = factory().createTuple(new Object[]{self.getIndex(), self.getDoc()});
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            PTuple args = factory.createTuple(new Object[]{self.getIndex(), self.getDoc()});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 

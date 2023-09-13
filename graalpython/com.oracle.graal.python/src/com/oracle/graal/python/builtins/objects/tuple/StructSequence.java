@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -109,6 +110,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -346,13 +348,14 @@ public class StructSequence {
                         @Exclusive @Cached ToArrayNode toArrayNode,
                         @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
-                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile) {
+                        @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
             }
-            return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization
@@ -364,7 +367,8 @@ public class StructSequence {
                         @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
                         @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
@@ -372,7 +376,7 @@ public class StructSequence {
                 Object o = getItem.execute(inliningTarget, hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
-            return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
@@ -432,28 +436,29 @@ public class StructSequence {
         }
 
         @Specialization
-        public PTuple reduce(PTuple self,
+        PTuple reduce(PTuple self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached PythonObjectFactory factory) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
             assert data.length == fieldNames.length;
             PTuple seq;
             PDict dict;
             if (fieldNames.length == inSequence) {
-                seq = factory().createTuple(data);
-                dict = factory().createDict();
+                seq = factory.createTuple(data);
+                dict = factory.createDict();
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
                     storage = setHashingStorageItem.execute(inliningTarget, storage, fieldNames[i], data[i]);
                 }
-                seq = factory().createTuple(Arrays.copyOf(data, inSequence));
-                dict = factory().createDict(storage);
+                seq = factory.createTuple(Arrays.copyOf(data, inSequence));
+                dict = factory.createDict(storage);
             }
-            PTuple seqDictPair = factory().createTuple(new Object[]{seq, dict});
-            return factory().createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
+            PTuple seqDictPair = factory.createTuple(new Object[]{seq, dict});
+            return factory.createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
         }
     }
 

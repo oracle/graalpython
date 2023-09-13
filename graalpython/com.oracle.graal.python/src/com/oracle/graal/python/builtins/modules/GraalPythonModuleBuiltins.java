@@ -404,12 +404,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
             try {
                 TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
-                return factory().createBytes(bytes);
+                return factory.createBytes(bytes);
             } catch (Exception ex) {
                 ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
@@ -493,7 +494,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetItem getItem) {
+                        @Cached PyObjectGetItem getItem,
+                        @Cached PythonObjectFactory factory) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
             PythonModule builtinModule;
@@ -504,7 +506,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinModule = getContext().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
-            return factory().createBuiltinMethod(builtinModule, builtinFunc);
+            return factory.createBuiltinMethod(builtinModule, builtinFunc);
         }
 
         @TruffleBoundary
@@ -582,7 +584,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected Object getToolPath() {
+        Object getToolPath() {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
@@ -606,12 +609,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     }
                 }
                 if (path != null) {
-                    storage.putUncached(toTruffleStringUncached(path), factory().createTuple(tool.targets));
+                    storage.putUncached(toTruffleStringUncached(path), factory.createTuple(tool.targets));
                 } else {
                     LOGGER.fine("Could not locate tool " + tool.name);
                 }
             }
-            return factory().createDict(storage);
+            return factory.createDict(storage);
         }
     }
 
@@ -701,8 +704,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         };
 
         @Specialization
-        PDict doGeneric(@SuppressWarnings("unused") Object unused) {
-            return factory().createDict(fromToolchain());
+        static PDict doGeneric(@SuppressWarnings("unused") Object unused,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDict(fromToolchain());
         }
 
         @TruffleBoundary

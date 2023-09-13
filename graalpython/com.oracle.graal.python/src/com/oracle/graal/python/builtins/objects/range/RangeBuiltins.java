@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -115,9 +116,10 @@ public final class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
-        public long hash(VirtualFrame frame, PIntRange self,
+        static long hash(VirtualFrame frame, PIntRange self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("hashNode") @Cached PyObjectHashNode hashNode) {
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] content = new Object[3];
             int intLength = self.getIntLength();
             content[0] = intLength;
@@ -131,13 +133,14 @@ public final class RangeBuiltins extends PythonBuiltins {
                 content[1] = self.getIntStart();
                 content[2] = self.getIntStep();
             }
-            return hashNode.execute(frame, inliningTarget, factory().createTuple(content));
+            return hashNode.execute(frame, inliningTarget, factory.createTuple(content));
         }
 
         @Specialization
-        public long hash(VirtualFrame frame, PBigRange self,
+        static long hash(VirtualFrame frame, PBigRange self,
                         @Bind("this") Node inliningTarget,
-                        @Shared("hashNode") @Cached PyObjectHashNode hashNode) {
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[] content = new Object[3];
             PInt length = self.getPIntLength();
             content[0] = length;
@@ -151,7 +154,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                 content[1] = self.getStart();
                 content[2] = self.getStep();
             }
-            return hashNode.execute(frame, inliningTarget, factory().createTuple(content));
+            return hashNode.execute(frame, inliningTarget, factory.createTuple(content));
         }
     }
 
@@ -214,13 +217,15 @@ public final class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doPIntRange(PIntRange self) {
-            return factory().createIntRangeIterator(self);
+        static Object doPIntRange(PIntRange self,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createIntRangeIterator(self);
         }
 
         @Specialization
-        Object doPIntRange(PBigRange self) {
-            return factory().createBigRangeIterator(self);
+        static Object doPIntRange(PBigRange self,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBigRangeIterator(self);
         }
     }
 
@@ -261,11 +266,12 @@ public final class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PRange self,
+        static Object reduce(PRange self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
-            PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            PTuple args = factory.createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -334,7 +340,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                 int rstep = asSizeNode.executeExact(frame, inliningTarget, right.getPIntStep());
                 return eqInt(left, rlen, rstart, rstep);
             } catch (PException e) {
-                return eqBigInt(intToBigRange.execute(inliningTarget, left, factory()), right);
+                return eqBigInt(intToBigRange.execute(inliningTarget, left), right);
             }
         }
 
@@ -350,7 +356,7 @@ public final class RangeBuiltins extends PythonBuiltins {
                 int lstep = asSizeNode.executeExact(frame, inliningTarget, left.getPIntStep());
                 return eqInt(right, llen, lstart, lstep);
             } catch (PException e) {
-                return eqBigInt(left, intToBigRange.execute(inliningTarget, right, factory()));
+                return eqBigInt(left, intToBigRange.execute(inliningTarget, right));
             }
         }
 
@@ -401,8 +407,9 @@ public final class RangeBuiltins extends PythonBuiltins {
         Object doPRange(PBigRange self, Object idx,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaBigIntegerNode toBigInt,
-                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode) {
-            return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(inliningTarget, self, idx, toBigInt)));
+                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(self.getBigIntItemNormalized(computeBigRangeItem(inliningTarget, self, idx, toBigInt)));
         }
 
         @Specialization(guards = "!canBeIndex(this, slice, indexCheckNode)")
@@ -416,19 +423,20 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached CoerceToObjectSlice toBigIntSlice,
                         @Shared @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode) {
+                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 final int rStart = self.getIntStart();
                 final int rStep = self.getIntStep();
                 SliceInfo info = compute.execute(frame, slice, self.getIntLength());
-                return createRange(inliningTarget, info, rStart, rStep, lenOfRangeNodeExact);
+                return createRange(inliningTarget, info, rStart, rStep, lenOfRangeNodeExact, factory);
             } catch (PException pe) {
                 pe.expect(inliningTarget, PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | OverflowException e) {
                 // pass
             }
-            PBigRange rangeBI = toBigIntRange.execute(inliningTarget, self, factory());
+            PBigRange rangeBI = toBigIntRange.execute(inliningTarget, self);
             BigInteger rangeStart = rangeBI.getBigIntegerStart();
             BigInteger rangeStep = rangeBI.getBigIntegerStep();
 
@@ -450,19 +458,20 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Shared @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 int rStart = asSizeNode.executeExact(frame, inliningTarget, self.getStart());
                 int rStep = asSizeNode.executeExact(frame, inliningTarget, self.getStep());
                 SliceInfo info = compute.execute(frame, slice, asSizeNode.executeExact(frame, inliningTarget, self.getLength()));
-                return createRange(inliningTarget, info, rStart, rStep, lenOfRangeNodeExact);
+                return createRange(inliningTarget, info, rStart, rStep, lenOfRangeNodeExact, factory);
             } catch (PException pe) {
                 pe.expect(inliningTarget, PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | OverflowException e) {
                 // pass
             }
-            PBigRange rangeBI = toBigIntRange.execute(inliningTarget, self, factory());
+            PBigRange rangeBI = toBigIntRange.execute(inliningTarget, self);
             BigInteger rangeStart = rangeBI.getBigIntegerStart();
             BigInteger rangeStep = rangeBI.getBigIntegerStep();
 
@@ -486,22 +495,22 @@ public final class RangeBuiltins extends PythonBuiltins {
                         @Shared @Cached CastToJavaBigIntegerNode toBigInt,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached("forRange()") NormalizeIndexNode normalize) {
+                        @Shared @Cached("forRange()") NormalizeIndexNode normalize,
+                        @Shared @Cached PythonObjectFactory factory) {
             if (isNumIndexProfile.profile(inliningTarget, canBeIndex(inliningTarget, idx, indexCheckNode))) {
                 if (self instanceof PIntRange) {
                     return doPRange(frame, (PIntRange) self, idx, inliningTarget, indexCheckNode, asSizeNode, normalize);
                 }
-                return doPRange((PBigRange) self, idx, inliningTarget, toBigInt, indexCheckNode);
+                return doPRange((PBigRange) self, idx, inliningTarget, toBigInt, indexCheckNode, factory);
             }
             if (isSliceIndexProfile.profile(inliningTarget, idx instanceof PSlice)) {
                 PSlice slice = (PSlice) idx;
                 if (self instanceof PIntRange) {
                     return doPRangeSliceSlowPath(frame, (PIntRange) self, slice, inliningTarget, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode,
-                                    indexCheckNode);
+                                    indexCheckNode, factory);
                 }
                 return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, inliningTarget, isNumIndexProfile, isSliceIndexProfile, compute, profileError, toBigIntRange, toBigIntSlice,
-                                lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode,
-                                asSizeNode);
+                                lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode, asSizeNode, factory);
             }
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
         }
@@ -523,16 +532,16 @@ public final class RangeBuiltins extends PythonBuiltins {
             return i;
         }
 
-        private PIntRange createRange(Node inliningTarget, SliceInfo info, int rStart, int rStep, LenOfIntRangeNodeExact lenOfRangeNode) throws OverflowException {
+        private static PIntRange createRange(Node inliningTarget, SliceInfo info, int rStart, int rStep, LenOfIntRangeNodeExact lenOfRangeNode, PythonObjectFactory factory) throws OverflowException {
             int newStep = rStep * info.step;
             int newStart = rStart + info.start * rStep;
             int newStop = rStart + info.stop * rStep;
             int len = lenOfRangeNode.executeInt(inliningTarget, newStart, newStop, newStep);
-            return factory().createIntRange(newStart, newStop, newStep, len);
+            return factory.createIntRange(newStart, newStop, newStep, len);
         }
 
         @TruffleBoundary
-        private PBigRange createRange(Node inliningTarget, SliceObjectInfo info, BigInteger rStart, BigInteger rStep, RangeNodes.LenOfRangeNode lenOfRangeNode) {
+        private static PBigRange createRange(Node inliningTarget, SliceObjectInfo info, BigInteger rStart, BigInteger rStep, RangeNodes.LenOfRangeNode lenOfRangeNode) {
             BigInteger sliceStart = (BigInteger) info.start;
             BigInteger sliceStop = (BigInteger) info.stop;
             BigInteger sliceStep = (BigInteger) info.step;
@@ -541,7 +550,8 @@ public final class RangeBuiltins extends PythonBuiltins {
             BigInteger start = rStart.add(sliceStart.multiply(rStep));
             BigInteger stop = rStart.add(sliceStop.multiply(rStep));
             BigInteger len = lenOfRangeNode.execute(inliningTarget, start, stop, step);
-            return factory().createBigRange(factory().createInt(start), factory().createInt(stop), factory().createInt(step), factory().createInt(len));
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createBigRange(factory.createInt(start), factory.createInt(stop), factory.createInt(step), factory.createInt(len));
         }
     }
 
@@ -782,14 +792,16 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "canBeInteger(elem)")
+        @SuppressWarnings("truffle-static-method")
         Object doLongRange(VirtualFrame frame, PBigRange self, Object elem,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ContainsNode containsNode,
-                        @Cached CastToJavaBigIntegerNode castToBigInt) {
+                        @Cached CastToJavaBigIntegerNode castToBigInt,
+                        @Cached PythonObjectFactory factory) {
             if (containsNode.execute(frame, self, elem)) {
                 BigInteger index = slowIntIndex(inliningTarget, self, elem, castToBigInt);
                 if (index != null) {
-                    return factory().createInt(index);
+                    return factory.createInt(index);
                 }
             }
             throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);

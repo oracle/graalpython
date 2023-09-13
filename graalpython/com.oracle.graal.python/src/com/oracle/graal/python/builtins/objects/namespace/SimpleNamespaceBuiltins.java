@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -165,13 +166,14 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PSimpleNamespace self,
+        static Object reduce(PSimpleNamespace self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetOrCreateDictNode getDict) {
-            PTuple args = factory().createEmptyTuple();
+                        @Cached GetOrCreateDictNode getDict,
+                        @Cached PythonObjectFactory factory) {
+            PTuple args = factory.createEmptyTuple();
             final PDict dict = getDict.execute(inliningTarget, self);
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
         }
     }
 

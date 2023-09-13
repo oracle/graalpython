@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -116,7 +117,8 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PythonObjectFactory factory) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
@@ -146,7 +148,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
-            StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
 
             StgDictObject itemdict = pyTypeStgDictNode.execute(type_attr);
             if (itemdict == null) {
@@ -188,7 +190,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory().createDictFixedStorage((PythonObject) result);
+                resDict = factory.createDictFixedStorage((PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, (PythonObject) result, stgdict);

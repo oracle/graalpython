@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -170,8 +171,9 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CmpToKeyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doConvert(Object myCmp) {
-            return factory().createKeyWrapper(myCmp);
+        static Object doConvert(Object myCmp,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createKeyWrapper(myCmp);
         }
     }
 

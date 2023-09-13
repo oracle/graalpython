@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -120,18 +121,19 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone doInit(VirtualFrame frame, PRWPair self, Object reader, Object writer, int bufferSize,
+        static PNone doInit(VirtualFrame frame, PRWPair self, Object reader, Object writer, int bufferSize,
                         @Bind("this") Node inliningTarget,
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initReaderNode,
-                        @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode) {
+                        @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode,
+                        @Cached PythonObjectFactory factory) {
             checkReadableNode.checkReadable(frame, inliningTarget, reader);
             checkWritableNode.checkWriteable(frame, inliningTarget, writer);
-            self.setReader(factory().createBufferedReader(PBufferedReader));
-            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize, factory());
-            self.setWriter(factory().createBufferedWriter(PBufferedWriter));
-            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize, factory());
+            self.setReader(factory.createBufferedReader(PBufferedReader));
+            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize, factory);
+            self.setWriter(factory.createBufferedWriter(PBufferedWriter));
+            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize, factory);
             return PNone.NONE;
         }
     }

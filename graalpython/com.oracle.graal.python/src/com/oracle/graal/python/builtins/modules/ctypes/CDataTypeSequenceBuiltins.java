@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -119,8 +120,9 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetNameNode getNameNode,
-                        @Cached SimpleTruffleStringFormatNode simpleFormatNode) {
-            Object key = factory().createTuple(new Object[]{itemtype, length});
+                        @Cached SimpleTruffleStringFormatNode simpleFormatNode,
+                        @Cached PythonObjectFactory factory) {
+            Object key = factory.createTuple(new Object[]{itemtype, length});
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
             Object result = getItem.execute(frame, inliningTarget, ctypes.cache, key);
             if (result != null) {
@@ -131,8 +133,8 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                 throw raise(TypeError, EXPECTED_A_TYPE_OBJECT);
             }
             TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(inliningTarget, itemtype), length);
-            PDict dict = factory().createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
-            PTuple tuple = factory().createTuple(new Object[]{PyCArray});
+            PDict dict = factory.createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
+            PTuple tuple = factory.createTuple(new Object[]{PyCArray});
             result = callNode.execute(frame, PyCArrayType, name, tuple, dict);
             HashingStorage newStorage = setItem.execute(frame, inliningTarget, ctypes.cache, key, result);
             assert newStorage == ctypes.cache;

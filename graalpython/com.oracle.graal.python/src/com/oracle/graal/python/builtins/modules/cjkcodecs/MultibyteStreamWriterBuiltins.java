@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -102,13 +103,14 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached TruffleString.EqualNode isEqual) { // "O|s:StreamWriter"
+                        @Cached TruffleString.EqualNode isEqual,
+                        @Cached PythonObjectFactory factory) { // "O|s:StreamWriter"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamWriterObject self = factory().createMultibyteStreamWriterObject(type);
+            MultibyteStreamWriterObject self = factory.createMultibyteStreamWriterObject(type);
 
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
@@ -141,12 +143,13 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteStreamWriter_write
         @Specialization
-        Object write(VirtualFrame frame, MultibyteStreamWriterObject self, Object strobj,
+        static Object write(VirtualFrame frame, MultibyteStreamWriterObject self, Object strobj,
                         @Bind("this") Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PythonObjectFactory factory) {
             // mbstreamwriter_iwrite
-            Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory());
+            Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory);
             callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             return PNone.NONE;
         }
@@ -158,20 +161,20 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteStreamWriter_writelines
         @Specialization
-        @SuppressWarnings("truffle-static-method")
-        Object writelines(VirtualFrame frame, MultibyteStreamWriterObject self, PSequence lines,
+        static Object writelines(VirtualFrame frame, MultibyteStreamWriterObject self, PSequence lines,
                         @Bind("this") Node inliningTarget,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PythonObjectFactory factory) {
 
             SequenceStorage sq = getStorage.execute(inliningTarget, lines);
             for (int i = 0; i < sq.length(); i++) {
                 /* length can be changed even within this loop */
                 Object strobj = getItem.execute(sq, i);
                 // mbstreamwriter_iwrite
-                Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory());
+                Object str = encodeStatefulNode.execute(frame, self, strobj, 0, factory);
                 callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             }
             return PNone.NONE;
@@ -190,21 +193,22 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteStreamWriter_reset_impl
         @Specialization
-        Object reset(VirtualFrame frame, MultibyteStreamWriterObject self,
+        static Object reset(VirtualFrame frame, MultibyteStreamWriterObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached MultibyteCodecUtil.EncodeNode encodeNode) {
+                        @Cached MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached PythonObjectFactory factory) {
             if (self.pending == null) {
                 return PNone.NONE;
             }
             int datalen = codePointLengthNode.execute(self.pending, TS_ENCODING);
-            PBytes pwrt = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory());
+            PBytes pwrt = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory);
             if (pwrt == null) {
                 MultibyteEncodeBuffer buf = new MultibyteEncodeBuffer(self.pending);
                 pwrt = encodeNode.execute(frame, self.codec, self.state, buf,
                                 self.errors, MBENC_FLUSH | MBENC_RESET,
-                                factory());
+                                factory);
             }
             /*
              * some pending buffer can be truncated when UnicodeEncodeError is raised on 'strict'
@@ -227,7 +231,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
     abstract static class StreamMemberNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object stream(MultibyteStreamWriterObject self) {
+        static Object stream(MultibyteStreamWriterObject self) {
             return self.stream;
         }
     }

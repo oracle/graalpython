@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -175,12 +176,13 @@ public final class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object defaults(PMethod self,
+        static Object defaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetDefaultsNode getDefaultsNode) {
+                        @Cached GetDefaultsNode getDefaultsNode,
+                        @Cached PythonObjectFactory.Lazy factory) {
             Object[] argDefaults = getDefaultsNode.execute(inliningTarget, self);
             assert argDefaults != null;
-            return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
+            return (argDefaults.length == 0) ? PNone.NONE : factory.get(inliningTarget).createTuple(argDefaults);
         }
     }
 
@@ -188,11 +190,12 @@ public final class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object kwDefaults(PMethod self,
+        static Object kwDefaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
+                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode,
+                        @Cached PythonObjectFactory.Lazy factory) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
-            return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
+            return (kwdefaults.length > 0) ? factory.get(inliningTarget).createDict(kwdefaults) : PNone.NONE;
         }
     }
 
@@ -200,11 +203,13 @@ public final class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        PMethod doGeneric(@SuppressWarnings("unused") PMethod self, Object obj, @SuppressWarnings("unused") Object cls) {
+        static PMethod doGeneric(@SuppressWarnings("unused") PMethod self, Object obj, @SuppressWarnings("unused") Object cls,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (self.getSelf() != null) {
                 return self;
             }
-            return factory().createMethod(obj, self.getFunction());
+            return factory.get(inliningTarget).createMethod(obj, self.getFunction());
         }
     }
 }

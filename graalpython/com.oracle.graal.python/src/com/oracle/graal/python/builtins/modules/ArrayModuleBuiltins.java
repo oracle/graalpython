@@ -350,12 +350,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Exclusive @Cached PythonObjectFactory factory) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format),
+                            factory);
         }
 
         @Specialization(replaces = "reconstructCached")
@@ -368,17 +370,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Exclusive @Cached PythonObjectFactory factory) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
-            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
+            return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format, factory);
         }
 
         private Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
-                        ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
+                        ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format,
+                        PythonObjectFactory factory) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
                 throw raise(TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
             }
@@ -386,11 +390,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (machineFormat != null) {
                 PArray array;
                 if (machineFormat == MachineFormat.forFormat(format)) {
-                    array = factory().createArray(arrayType, typeCode, machineFormat.format);
+                    array = factory.createArray(arrayType, typeCode, machineFormat.format);
                     fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 } else {
                     TruffleString newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
-                    array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
+                    array = factory.createArray(arrayType, newTypeCode, machineFormat.format);
                     if (machineFormat.unicodeEncoding != null) {
                         Object decoded = callDecode.execute(frame, inliningTarget, bytes, T_DECODE, machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);

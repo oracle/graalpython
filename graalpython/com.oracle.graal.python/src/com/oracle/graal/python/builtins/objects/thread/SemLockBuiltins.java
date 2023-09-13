@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -210,7 +211,8 @@ public final class SemLockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name) {
+        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name,
+                        @Cached PythonObjectFactory factory) {
             SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
             if (semaphore == null) {
@@ -218,7 +220,7 @@ public final class SemLockBuiltins extends PythonBuiltins {
                 // provided handle
                 semaphore = newSemaphore(0);
             }
-            return factory().createSemLock(PythonBuiltinClassType.PSemLock, name, kind, semaphore);
+            return factory.createSemLock(PythonBuiltinClassType.PSemLock, name, kind, semaphore);
         }
 
         @TruffleBoundary

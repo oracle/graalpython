@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,26 +118,26 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "size >= 0")
-        @SuppressWarnings("truffle-static-method")
-        Object read(VirtualFrame frame, Object self, int size,
+        static Object read(VirtualFrame frame, Object self, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            PByteArray b = factory().createByteArray(new byte[size]);
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PythonObjectFactory factory) {
+            PByteArray b = factory.createByteArray(new byte[size]);
             Object res = callMethodReadInto.execute(frame, inliningTarget, self, T_READINTO, b);
             if (res == PNone.NONE) {
                 return res;
             }
             int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n == 0) {
-                return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] bytes = toBytes.execute(b);
             if (n < size) {
-                return factory().createBytes(PythonUtils.arrayCopyOf(bytes, n));
+                return factory.createBytes(PythonUtils.arrayCopyOf(bytes, n));
             }
-            return factory().createBytes(bytes);
+            return factory.createBytes(bytes);
         }
     }
 
@@ -154,7 +155,8 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile dataNoneProfile,
                         @Cached InlinedConditionProfile chunksSize0Profile,
                         @Cached InlinedCountingConditionProfile bytesLen0Profile,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = callMethodRead.execute(frame, inliningTarget, self, T_READ, DEFAULT_BUFFER_SIZE);
@@ -176,7 +178,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                 append(chunks, bytes, bytesLen);
             }
 
-            return factory().createBytes(toByteArray(chunks));
+            return factory.createBytes(toByteArray(chunks));
         }
     }
 

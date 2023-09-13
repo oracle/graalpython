@@ -95,6 +95,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -126,39 +127,43 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class AccumulateNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
-        protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, @SuppressWarnings("unused") PNone initial,
+        protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, @SuppressWarnings("unused") PNone initial,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return create(frame, inliningTarget, cls, iterable, null, null, getIter);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return create(frame, inliningTarget, cls, iterable, null, null, getIter, factory);
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNone(initial)"})
-        protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, Object initial,
+        protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone func, Object initial,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return create(frame, inliningTarget, cls, iterable, null, initial, getIter);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return create(frame, inliningTarget, cls, iterable, null, initial, getIter, factory);
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNone(func)"})
-        protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, @SuppressWarnings("unused") PNone initial,
+        protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, @SuppressWarnings("unused") PNone initial,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return create(frame, inliningTarget, cls, iterable, func, null, getIter);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return create(frame, inliningTarget, cls, iterable, func, null, getIter, factory);
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNone(func)", "!isNone(initial)"})
-        protected PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
+        protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return create(frame, inliningTarget, cls, iterable, func, initial, getIter);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return create(frame, inliningTarget, cls, iterable, func, initial, getIter, factory);
         }
 
-        private PAccumulate create(VirtualFrame frame, Node inliningTarget, Object cls, Object iterable, Object func, Object initial, PyObjectGetIter getIter) {
-            PAccumulate self = factory().createAccumulate(cls);
+        private static PAccumulate create(VirtualFrame frame, Node inliningTarget, Object cls, Object iterable, Object func, Object initial, PyObjectGetIter getIter, PythonObjectFactory factory) {
+            PAccumulate self = factory.createAccumulate(cls);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setFunc(func instanceof PNone ? null : func);
             self.setTotal(null);
@@ -189,12 +194,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "r >= 0"})
-        Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
+        static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached LoopConditionProfile indicesLoopProfile) {
-            PCombinations self = factory().createCombinations(cls);
+                        @Cached LoopConditionProfile indicesLoopProfile,
+                        @Cached PythonObjectFactory factory) {
+            PCombinations self = factory.createCombinations(cls);
             self.setPool(toArrayNode.execute(frame, iterable));
 
             int[] indices = new int[r];
@@ -242,11 +248,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "r >= 0"})
-        Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
+        static Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
-                        @Cached ToArrayNode toArrayNode) {
-            PCombinationsWithReplacement self = factory().createCombinationsWithReplacement(cls);
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached PythonObjectFactory factory) {
+            PCombinationsWithReplacement self = factory.createCombinationsWithReplacement(cls);
             self.setPool(toArrayNode.execute(frame, iterable));
             self.setR(r);
 
@@ -287,11 +294,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class CompressNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PCompress construct(VirtualFrame frame, Object cls, Object data, Object selectors,
+        protected static PCompress construct(VirtualFrame frame, Object cls, Object data, Object selectors,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached IsTypeNode isTypeNode) {
-            PCompress self = factory().createCompress(cls);
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PCompress self = factory.createCompress(cls);
             self.setData(getIter.execute(frame, inliningTarget, data));
             self.setSelectors(getIter.execute(frame, inliningTarget, selectors));
             return self;
@@ -323,11 +331,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PCycle construct(VirtualFrame frame, Object cls, Object iterable,
+        protected static PCycle construct(VirtualFrame frame, Object cls, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached IsTypeNode isTypeNode) {
-            PCycle self = factory().createCycle(cls);
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PCycle self = factory.createCycle(cls);
             self.setSaved(new ArrayList<>());
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setIndex(0);
@@ -351,11 +360,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class DropwhileNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PDropwhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
+        protected static PDropwhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached IsTypeNode isTypeNode) {
-            PDropwhile self = factory().createDropwhile(cls);
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PDropwhile self = factory.createDropwhile(cls);
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setDoneDropping(false);
@@ -377,19 +387,21 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FilterFalseNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
-        protected PFilterfalse constructNoFunc(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone func, Object sequence,
+        protected static PFilterfalse constructNoFunc(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone func, Object sequence,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return construct(frame, cls, null, sequence, inliningTarget, getIter, isTypeNode);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return construct(frame, cls, null, sequence, inliningTarget, getIter, isTypeNode, factory);
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNone(func)", "!isNoValue(func)"})
-        protected PFilterfalse construct(VirtualFrame frame, Object cls, Object func, Object sequence,
+        protected static PFilterfalse construct(VirtualFrame frame, Object cls, Object func, Object sequence,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PFilterfalse self = factory().createFilterfalse(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PFilterfalse self = factory.createFilterfalse(cls);
             self.setFunc(func);
             self.setSequence(getIter.execute(frame, inliningTarget, sequence));
             return self;
@@ -430,19 +442,21 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "isNone(key)"})
-        protected PGroupBy constructNoType(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone key,
+        protected static PGroupBy constructNoType(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone key,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return construct(frame, cls, iterable, null, inliningTarget, getIter, isTypeNode);
+                        @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return construct(frame, cls, iterable, null, inliningTarget, getIter, isTypeNode, factory);
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNone(key)"})
-        protected PGroupBy construct(VirtualFrame frame, Object cls, Object iterable, Object key,
+        protected static PGroupBy construct(VirtualFrame frame, Object cls, Object iterable, Object key,
                         @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PGroupBy self = factory().createGroupBy(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PGroupBy self = factory.createGroupBy(cls);
             self.setKeyFunc(key);
             self.setIt(getIter.execute(frame, inliningTarget, iterable));
             return self;
@@ -462,10 +476,11 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class GrouperNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
-        protected PGrouper construct(Object cls, PGroupBy parent, Object tgtKey,
+        protected static PGrouper construct(Object cls, PGroupBy parent, Object tgtKey,
                         @Bind("this") Node inliningTarget,
-                        @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            return factory().createGrouper(parent, tgtKey);
+                        @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGrouper(parent, tgtKey);
         }
 
         @SuppressWarnings("unused")
@@ -496,11 +511,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class TakewhileNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PTakewhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
+        protected static PTakewhile construct(VirtualFrame frame, Object cls, Object predicate, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached IsTypeNode isTypeNode) {
-            PTakewhile self = factory().createTakewhile(cls);
+                        @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PTakewhile self = factory.createTakewhile(cls);
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;
@@ -532,26 +548,27 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
-        protected Object zeroN(Object iterable, int n) {
-            return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+        protected static Object zeroN(Object iterable, int n,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
         @Specialization(guards = "n > 0")
-        @SuppressWarnings("truffle-static-method")
-        protected Object tee(VirtualFrame frame, Object iterable, int n,
+        protected static Object tee(VirtualFrame frame, Object iterable, int n,
                         @Bind("this") Node inliningTarget,
                         @Cached IterNode iterNode,
                         @Cached PyObjectLookupAttr getAttrNode,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CallVarargsMethodNode callNode,
-                        @Cached InlinedBranchProfile notCallableProfile) {
+                        @Cached InlinedBranchProfile notCallableProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
             Object copyCallable = getAttrNode.execute(frame, inliningTarget, it, T___COPY__);
             if (!callableCheckNode.execute(inliningTarget, copyCallable)) {
                 notCallableProfile.enter(inliningTarget);
                 // as in Tee.__NEW__()
-                PTeeDataObject dataObj = factory().createTeeDataObject(it);
-                it = factory().createTee(dataObj, 0);
+                PTeeDataObject dataObj = factory.createTeeDataObject(it);
+                it = factory.createTee(dataObj, 0);
             }
 
             // return tuple([it] + [it.__copy__() for i in range(1, n)])
@@ -562,7 +579,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             for (int i = 1; i < n; i++) {
                 tupleObjs[i] = callNode.execute(frame, copyCallable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             }
-            return factory().createTuple(tupleObjs);
+            return factory.createTuple(tupleObjs);
         }
 
     }
@@ -572,15 +589,16 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class TeeDataObjectNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
+        PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached InlinedBranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PythonObjectFactory factory) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 errorProfile.enter(inliningTarget);
                 throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-            return factory().createTeeDataObject();
+            return factory.createTeeDataObject();
         }
     }
 
@@ -607,7 +625,8 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nrProfile,
                         @Cached InlinedLoopConditionProfile indicesLoopProfile,
                         @Cached InlinedLoopConditionProfile cyclesLoopProfile,
-                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
             int r;
             Object[] pool = toArrayNode.execute(frame, iterable);
             if (rIsNoneProfile.profile(inliningTarget, PGuards.isNone(rArg))) {
@@ -624,7 +643,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
                 }
             }
-            PPermutations self = factory().createPermutations(cls);
+            PPermutations self = factory.createPermutations(cls);
             self.setPool(pool);
             self.setR(r);
             int n = pool.length;
@@ -678,33 +697,34 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class ProductNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
-        Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
+        static Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached ToArrayNode toArrayNode,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PProduct self = factory().createProduct(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PProduct self = factory.createProduct(cls);
             constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 1"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
+        static Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached ToArrayNode toArrayNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            PProduct self = factory().createProduct(cls);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PProduct self = factory.createProduct(cls);
             constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat > 1"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
+        static Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ToArrayNode toArrayNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
             Object[][] gears = new Object[lists.length * repeat][];
             loopProfile.profileCounted(inliningTarget, repeat);
@@ -712,17 +732,17 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.inject(inliningTarget, i < repeat); i++) {
                 PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
             }
-            PProduct self = factory().createProduct(cls);
+            PProduct self = factory.createProduct(cls);
             construct(self, gears);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
+        static Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            PProduct self = factory().createProduct(cls);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PProduct self = factory.createProduct(cls);
             self.setGears(new Object[0][]);
             self.setIndices(new int[0]);
             self.setLst(null);
@@ -788,42 +808,45 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
-        Object constructNone(Object cls, Object object, @SuppressWarnings("unused") PNone times,
+        static Object constructNone(Object cls, Object object, @SuppressWarnings("unused") PNone times,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PRepeat self = factory().createRepeat(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PRepeat self = factory.createRepeat(cls);
             self.setElement(object);
             self.setCnt(-1);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "times < 0"})
-        Object constructNeg(Object cls, Object object, @SuppressWarnings("unused") int times,
+        static Object constructNeg(Object cls, Object object, @SuppressWarnings("unused") int times,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PRepeat self = factory().createRepeat(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PRepeat self = factory.createRepeat(cls);
             self.setElement(object);
             self.setCnt(0);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "times >= 0"})
-        Object construct(Object cls, Object object, int times,
+        static Object construct(Object cls, Object object, int times,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            PRepeat self = factory().createRepeat(cls);
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PRepeat self = factory.createRepeat(cls);
             self.setElement(object);
             self.setCnt(times);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "times >= 0"}, limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        Object construct(VirtualFrame frame, Object cls, Object object, long times,
+        static Object construct(VirtualFrame frame, Object cls, Object object, long times,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            PRepeat self = factory().createRepeat(cls);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PRepeat self = factory.createRepeat(cls);
             self.setElement(object);
             self.setCnt(asIntNode.execute(frame, inliningTarget, times));
             return self;
@@ -853,12 +876,13 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class ChainNode extends PythonBuiltinNode {
         @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
+        protected static PChain construct(VirtualFrame frame, Object cls, Object[] iterables,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            PChain self = factory().createChain(cls);
-            self.setSource(getIter.execute(frame, inliningTarget, factory().createList(iterables)));
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PChain self = factory.createChain(cls);
+            self.setSource(getIter.execute(frame, inliningTarget, factory.createList(iterables)));
             self.setActive(PNone.NONE);
             return self;
         }
@@ -891,11 +915,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached InlinedBranchProfile startNumberProfile,
                         @Cached InlinedBranchProfile stepNumberProfile,
-                        @Cached IsTypeNode isTypeNode) {
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-            PCount self = factory().createCount(cls);
+            PCount self = factory.createCount(cls);
             checkType(frame, inliningTarget, start, typeCheckNode, lookupAttrNode, startNumberProfile);
             checkType(frame, inliningTarget, step, typeCheckNode, lookupAttrNode, stepNumberProfile);
             self.setCnt(start);
@@ -920,13 +945,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     "with an argument tuple taken from the given sequence.")
     @GenerateNodeFactory
     public abstract static class StarmapNode extends PythonTernaryBuiltinNode {
-        @SuppressWarnings({"unused", "truffle-static-method"})
+        @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)", limit = "1")
-        protected PStarmap construct(VirtualFrame frame, Object cls, Object fun, Object iterable,
+        protected static PStarmap construct(VirtualFrame frame, Object cls, Object fun, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
-            PStarmap self = factory().createStarmap(cls);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
+            PStarmap self = factory.createStarmap(cls);
             self.setFun(fun);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;
@@ -964,7 +990,8 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile argsLen3,
                         @Cached InlinedBranchProfile wrongTypeBranch,
                         @Cached InlinedBranchProfile wrongArgsBranch,
-                        @Cached IsTypeNode isTypeNode) {
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PythonObjectFactory factory) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 wrongTypeBranch.enter(inliningTarget);
                 throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
@@ -1029,7 +1056,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
                 }
             }
-            PIslice self = factory().createIslice(cls);
+            PIslice self = factory.createIslice(cls);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setNext(start);
             self.setStop(stop);
@@ -1056,7 +1083,8 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile fillIsNone,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached InlinedBranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PythonObjectFactory factory) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 // Note: @Fallback or other @Specialization generate data-class
                 errorProfile.enter(inliningTarget);
@@ -1068,7 +1096,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                 fillValue = null;
             }
 
-            PZipLongest self = factory().createZipLongest(cls);
+            PZipLongest self = factory.createZipLongest(cls);
             self.setFillValue(fillValue);
             self.setNumActive(args.length);
 
@@ -1092,14 +1120,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached IsTypeNode isTypeNode,
-                        @Cached InlinedBranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PythonObjectFactory factory) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 // Note: @Fallback or other @Specialization generate data-class
                 errorProfile.enter(inliningTarget);
                 throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
 
-            PPairwise self = factory().createPairwise(cls);
+            PPairwise self = factory.createPairwise(cls);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;
         }

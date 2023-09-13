@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -198,6 +199,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PDict localeconv() {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             LinkedHashMap<String, Object> dict = new LinkedHashMap<>(20);
 
             // get default locale for the format category
@@ -220,9 +222,9 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
             // TODO: set the proper grouping
             if (groupSize != -1) {
-                dict.put("grouping", factory().createList(new Object[]{groupSize, 0}));
+                dict.put("grouping", factory.createList(new Object[]{groupSize, 0}));
             } else {
-                dict.put("grouping", factory().createList());
+                dict.put("grouping", factory.createList());
             }
 
             // LC_MONETARY
@@ -231,7 +233,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("mon_decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMonetaryDecimalSeparator(), TS_ENCODING));
             dict.put("mon_thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
             // TODO: set the proper grouping
-            dict.put("mon_grouping", factory().createList());
+            dict.put("mon_grouping", factory.createList());
             // TODO: reasonable default, but not the current locale setting
             dict.put("positive_sign", "");
             dict.put("negative_sign", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMinusSign(), TS_ENCODING));
@@ -244,7 +246,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("p_sign_posn", PNone.NONE);
             dict.put("n_sign_posn", PNone.NONE);
 
-            return factory().createDictFromMap(dict);
+            return factory.createDictFromMap(dict);
         }
     }
 

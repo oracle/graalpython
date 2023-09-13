@@ -81,10 +81,12 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -383,10 +385,11 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         @Child private CStructAccess.ReadI64Node getTpWeaklistoffsetNode;
 
         @Specialization(guards = "!isNativeObject(object)")
-        public PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
+        PReferenceType refType(Object cls, Object object, @SuppressWarnings("unused") PNone none,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached WriteAttributeToDynamicObjectNode setAttrNode) {
+                        @Cached WriteAttributeToDynamicObjectNode setAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object obj = object;
             if (object instanceof PythonBuiltinClassType tobj) {
                 obj = getContext().getCore().lookupType(tobj);
@@ -405,23 +408,25 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 return (PReferenceType) wr; // is must be a PReferenceType instance.
             }
 
-            PReferenceType ref = factory().createReferenceType(cls, obj, null, getWeakReferenceQueue());
+            PReferenceType ref = factory.createReferenceType(cls, obj, null, getWeakReferenceQueue());
             setAttrNode.execute(obj, __WEAKLIST__, ref);
             return ref;
         }
 
         @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
-        public PReferenceType refTypeWithCallback(Object cls, Object object, Object callback) {
-            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+        PReferenceType refTypeWithCallback(Object cls, Object object, Object callback,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createReferenceType(cls, object, callback, getWeakReferenceQueue());
         }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
+        PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached InlineIsBuiltinClassProfile profile,
-                        @Cached GetMroNode getMroNode) {
+                        @Cached GetMroNode getMroNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             Object clazz = getClassNode.execute(inliningTarget, pythonObject);
 
@@ -452,7 +457,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (allowed) {
-                return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
+                return factory.createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             } else {
                 return refType(cls, pythonObject, actualCallback);
             }

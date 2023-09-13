@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -195,26 +196,26 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        @SuppressWarnings("truffle-static-method")
-        PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
+        static PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+            return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
 
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        @SuppressWarnings("truffle-static-method")
-        PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
+        static PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress,
+                        @Shared @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+            return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
         }
 
         @SuppressWarnings("unused")
@@ -271,8 +272,9 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PBytes doUnusedData(LZMADecompressor self) {
-            return factory().createBytes(self.getUnusedData());
+        static PBytes doUnusedData(LZMADecompressor self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(self.getUnusedData());
         }
 
     }

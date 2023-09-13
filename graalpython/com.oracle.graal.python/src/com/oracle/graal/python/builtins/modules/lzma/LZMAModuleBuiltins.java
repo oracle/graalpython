@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -265,9 +266,10 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMACompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
-            return factory().createLZMACompressor(cls, getContext().getNFILZMASupport().isAvailable());
+            return factory.createLZMACompressor(cls, getContext().getNFILZMASupport().isAvailable());
         }
     }
 
@@ -277,9 +279,10 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMADecompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @Cached PythonObjectFactory factory) {
             // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
-            return factory().createLZMADecompressor(cls, getContext().getNFILZMASupport().isAvailable());
+            return factory.createLZMADecompressor(cls, getContext().getNFILZMASupport().isAvailable());
         }
     }
 
@@ -303,9 +306,10 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class EncodeFilterPropertiesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PBytes encode(VirtualFrame frame, Object filter,
-                        @Cached LZMANodes.EncodeFilterProperties encodeFilterProperties) {
-            return factory().createBytes(encodeFilterProperties.execute(frame, filter));
+        static PBytes encode(VirtualFrame frame, Object filter,
+                        @Cached LZMANodes.EncodeFilterProperties encodeFilterProperties,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createBytes(encodeFilterProperties.execute(frame, filter));
         }
     }
 
@@ -315,13 +319,14 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeFilterPropertiesNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PDict encode(VirtualFrame frame, Object id, Object encodedProps,
+        static PDict encode(VirtualFrame frame, Object id, Object encodedProps,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties) {
+                        @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = toBytes.execute(frame, encodedProps);
-            PDict dict = factory().createDict();
+            PDict dict = factory.createDict();
             decodeFilterProperties.execute(frame, toLong.execute(inliningTarget, id), bytes, dict);
             return dict;
         }

@@ -125,6 +125,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -237,8 +238,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
-        CThunkObject CThunkObjectNew(int nArgs) {
-            CThunkObject p = factory().createCThunkObject(PythonBuiltinClassType.CThunkObject, nArgs);
+        static CThunkObject CThunkObjectNew(int nArgs) {
+            CThunkObject p = PythonObjectFactory.getUncached().createCThunkObject(PythonBuiltinClassType.CThunkObject, nArgs);
 
             p.pcl_write = null;
             p.pcl_exec = null;
@@ -388,24 +389,26 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
     protected abstract static class PointerArgTypesNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes != null"})
-        Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value) {
-            return factory().createTuple(self.argtypes);
+        static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createTuple(self.argtypes);
         }
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
-        Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+        static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             if (dict.argtypes != null) {
-                return factory().createTuple(dict.argtypes);
+                return factory.createTuple(dict.argtypes);
             } else {
                 return PNone.NONE;
             }
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PNone value) {
+        static Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PNone value) {
             self.converters = null;
             self.argtypes = null;
             return value;

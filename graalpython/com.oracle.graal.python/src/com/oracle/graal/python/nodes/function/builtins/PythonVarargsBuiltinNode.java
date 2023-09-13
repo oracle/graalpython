@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
@@ -51,6 +53,21 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
  * for them, otherwise they will never be on the direct call path.
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
+
+    @Child private PythonObjectFactory objectFactory;
+
+    protected final PythonObjectFactory factory() {
+        if (objectFactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                objectFactory = insert(PythonObjectFactory.create());
+            } else {
+                objectFactory = getContext().factory();
+            }
+        }
+        return objectFactory;
+    }
+
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
         public static final VarargsBuiltinDirectInvocationNotSupported INSTANCE = new VarargsBuiltinDirectInvocationNotSupported();
         private static final long serialVersionUID = 1L;

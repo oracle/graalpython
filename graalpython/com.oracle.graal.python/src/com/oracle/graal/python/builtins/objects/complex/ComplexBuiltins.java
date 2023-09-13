@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -279,24 +280,27 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PComplex doComplexLong(PComplex left, long right) {
-            return factory().createComplex(left.getReal() + right, left.getImag());
+        static PComplex doComplexLong(PComplex left, long right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() + right, left.getImag());
         }
 
         @Specialization
-        PComplex doComplexPInt(PComplex left, PInt right) {
-            return factory().createComplex(left.getReal() + right.doubleValue(), left.getImag());
+        static PComplex doComplexPInt(PComplex left, PInt right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() + right.doubleValue(), left.getImag());
         }
 
         @Specialization
-        PComplex doComplexDouble(PComplex left, double right) {
-            PComplex result = factory().createComplex(left.getReal() + right, left.getImag());
-            return result;
+        static PComplex doComplexDouble(PComplex left, double right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() + right, left.getImag());
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right) {
-            return factory().createComplex(left.getReal() + right.getReal(), left.getImag() + right.getImag());
+        static PComplex doComplex(PComplex left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() + right.getReal(), left.getImag() + right.getImag());
         }
 
         @SuppressWarnings("unused")
@@ -320,31 +324,35 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplexDouble(PComplex left, double right) {
+        static PComplex doComplexDouble(PComplex left, double right,
+                        @Shared @Cached PythonObjectFactory factory) {
             double opNormSq = right * right;
             double realPart = left.getReal() * right;
             double imagPart = left.getImag() * right;
-            return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
+            return factory.createComplex(realPart / opNormSq, imagPart / opNormSq);
         }
 
         @Specialization
-        PComplex doComplexInt(PComplex left, long right) {
+        static PComplex doComplexInt(PComplex left, long right,
+                        @Shared @Cached PythonObjectFactory factory) {
             double opNormSq = right * right;
             double realPart = left.getReal() * right;
             double imagPart = left.getImag() * right;
-            return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
+            return factory.createComplex(realPart / opNormSq, imagPart / opNormSq);
         }
 
         @Specialization
-        PComplex doComplexPInt(PComplex left, PInt right) {
-            return doComplexDouble(left, right.doubleValue());
+        static PComplex doComplexPInt(PComplex left, PInt right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doComplexDouble(left, right.doubleValue(), factory);
         }
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile topConditionProfile,
-                        @Cached InlinedConditionProfile zeroDivisionProfile) {
+                        @Cached InlinedConditionProfile zeroDivisionProfile,
+                        @Shared @Cached PythonObjectFactory factory) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;
@@ -366,27 +374,30 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 real = (left.getReal() * ratio + left.getImag()) / denom;
                 imag = (left.getImag() * ratio - left.getReal()) / denom;
             }
-            return factory().createComplex(real, imag);
+            return factory.createComplex(real, imag);
         }
 
         @Specialization
-        PComplex doComplexDouble(double left, PComplex right) {
-            return doubleDivComplex(left, right, factory());
+        static PComplex doComplexDouble(double left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doubleDivComplex(left, right, factory);
         }
 
         @Specialization
-        PComplex doComplexInt(long left, PComplex right) {
+        static PComplex doComplexInt(long left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
             double oprealSq = right.getReal() * right.getReal();
             double opimagSq = right.getImag() * right.getImag();
             double realPart = right.getReal() * left;
             double imagPart = right.getImag() * left;
             double denom = oprealSq + opimagSq;
-            return factory().createComplex(realPart / denom, -imagPart / denom);
+            return factory.createComplex(realPart / denom, -imagPart / denom);
         }
 
         @Specialization
-        PComplex doComplexPInt(PInt left, PComplex right) {
-            return doComplexDouble(left.doubleValue(), right);
+        static PComplex doComplexPInt(PInt left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doComplexDouble(left.doubleValue(), right, factory);
         }
 
         @SuppressWarnings("unused")
@@ -421,23 +432,27 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PComplex doComplexDouble(PComplex left, double right) {
-            return factory().createComplex(left.getReal() * right, left.getImag() * right);
+        static PComplex doComplexDouble(PComplex left, double right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() * right, left.getImag() * right);
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right) {
-            return multiply(left, right, factory());
+        static PComplex doComplex(PComplex left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return multiply(left, right, factory);
         }
 
         @Specialization
-        PComplex doComplexLong(PComplex left, long right) {
-            return doComplexDouble(left, right);
+        static PComplex doComplexLong(PComplex left, long right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doComplexDouble(left, right, factory);
         }
 
         @Specialization
-        PComplex doComplexPInt(PComplex left, PInt right) {
-            return doComplexDouble(left, right.doubleValue());
+        static PComplex doComplexPInt(PComplex left, PInt right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return doComplexDouble(left, right.doubleValue(), factory);
         }
 
         @SuppressWarnings("unused")
@@ -459,28 +474,33 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PComplex doComplexDouble(PComplex left, double right) {
-            return factory().createComplex(left.getReal() - right, left.getImag());
+        static PComplex doComplexDouble(PComplex left, double right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() - right, left.getImag());
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right) {
-            return factory().createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
+        static PComplex doComplex(PComplex left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, long right) {
-            return factory().createComplex(left.getReal() - right, left.getImag());
+        static PComplex doComplex(PComplex left, long right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left.getReal() - right, left.getImag());
         }
 
         @Specialization
-        PComplex doComplexDouble(double left, PComplex right) {
-            return factory().createComplex(left - right.getReal(), -right.getImag());
+        static PComplex doComplexDouble(double left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left - right.getReal(), -right.getImag());
         }
 
         @Specialization
-        PComplex doComplex(long left, PComplex right) {
-            return factory().createComplex(left - right.getReal(), -right.getImag());
+        static PComplex doComplex(long left, PComplex right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createComplex(left - right.getReal(), -right.getImag());
         }
 
         @SuppressWarnings("unused")
@@ -505,18 +525,21 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isSmallPositive(right)")
-        PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
-            return checkOverflow(complexToSmallPositiveIntPower(left, right));
+        PComplex doComplexLongSmallPos(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return checkOverflow(complexToSmallPositiveIntPower(left, right, factory));
         }
 
         @Specialization(guards = "isSmallNegative(right)")
-        PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
-            return checkOverflow(DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right), factory()));
+        PComplex doComplexLongSmallNeg(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return checkOverflow(DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -right, factory), factory));
         }
 
         @Specialization(guards = "!isSmallPositive(right) || !isSmallNegative(right)")
-        PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod) {
-            return checkOverflow(complexToComplexPower(left, factory().createComplex(right, 0.0)));
+        PComplex doComplexLong(PComplex left, long right, @SuppressWarnings("unused") PNone mod,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return checkOverflow(complexToComplexPower(left, factory.createComplex(right, 0.0)));
         }
 
         @Specialization
@@ -537,30 +560,32 @@ public final class ComplexBuiltins extends PythonBuiltins {
             throw raise(ValueError, ErrorMessages.COMPLEX_MODULO);
         }
 
-        private PComplex complexToSmallPositiveIntPower(PComplex x, long n) {
+        private static PComplex complexToSmallPositiveIntPower(PComplex x, long n,
+                        @Shared @Cached PythonObjectFactory factory) {
             long mask = 1;
-            PComplex r = factory().createComplex(1.0, 0.0);
+            PComplex r = factory.createComplex(1.0, 0.0);
             PComplex p = x;
             while (mask > 0 && n >= mask) {
                 if ((n & mask) != 0) {
-                    r = MulNode.multiply(r, p, factory());
+                    r = MulNode.multiply(r, p, factory);
                 }
                 mask <<= 1;
-                p = MulNode.multiply(p, p, factory());
+                p = MulNode.multiply(p, p, factory);
             }
             return r;
         }
 
         @TruffleBoundary
         private PComplex complexToComplexPower(PComplex a, PComplex b) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             if (b.getReal() == 0.0 && b.getImag() == 0.0) {
-                return factory().createComplex(1.0, 0.0);
+                return factory.createComplex(1.0, 0.0);
             }
             if (a.getReal() == 0.0 && a.getImag() == 0.0) {
                 if (b.getImag() != 0.0 || b.getReal() < 0.0) {
                     throw raise(ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
                 }
-                return factory().createComplex(0.0, 0.0);
+                return factory.createComplex(0.0, 0.0);
             }
             double vabs = Math.hypot(a.getReal(), a.getImag());
             double len = Math.pow(vabs, b.getReal());
@@ -570,7 +595,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 len /= Math.exp(at * b.getImag());
                 phase += b.getImag() * Math.log(vabs);
             }
-            return factory().createComplex(len * Math.cos(phase), len * Math.sin(phase));
+            return factory.createComplex(len * Math.cos(phase), len * Math.sin(phase));
         }
 
         private PComplex checkOverflow(PComplex result) {
@@ -757,8 +782,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PComplex neg(PComplex self) {
-            return factory().createComplex(-self.getReal(), -self.getImag());
+        static PComplex neg(PComplex self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createComplex(-self.getReal(), -self.getImag());
         }
     }
 
@@ -766,8 +792,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PComplex pos(PComplex self) {
-            return factory().createComplex(self.getReal(), self.getImag());
+        static PComplex pos(PComplex self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createComplex(self.getReal(), self.getImag());
         }
     }
 
@@ -775,8 +802,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple get(PComplex self) {
-            return factory().createTuple(new Object[]{self.getReal(), self.getImag()});
+        static PTuple get(PComplex self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{self.getReal(), self.getImag()});
         }
     }
 
@@ -826,8 +854,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "conjugate", minNumOfPositionalArgs = 1)
     abstract static class ConjugateNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PComplex hash(PComplex self) {
-            return factory().createComplex(self.getReal(), -self.getImag());
+        static PComplex hash(PComplex self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createComplex(self.getReal(), -self.getImag());
         }
     }
 }

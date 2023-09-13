@@ -42,6 +42,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -64,13 +65,14 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doNext(VirtualFrame frame, PEnumerate self,
+        static Object doNext(VirtualFrame frame, PEnumerate self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached GetNextNode next) {
-            Object index = self.getAndIncrementIndex(inliningTarget, factory(), bigIntIndexProfile);
+                        @Cached GetNextNode next,
+                        @Cached PythonObjectFactory factory) {
+            Object index = self.getAndIncrementIndex(inliningTarget, factory, bigIntIndexProfile);
             Object nextValue = next.execute(frame, self.getDecoratedIterator());
-            return factory().createTuple((new Object[]{index, nextValue}));
+            return factory.createTuple((new Object[]{index, nextValue}));
         }
     }
 
@@ -88,14 +90,15 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object reduce(PEnumerate self,
+        static Object reduce(PEnumerate self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object iterator = self.getDecoratedIterator();
             Object index = self.getIndex(inliningTarget, bigIntIndexProfile);
-            PTuple contents = factory().createTuple(new Object[]{iterator, index});
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents});
+            PTuple contents = factory.createTuple(new Object[]{iterator, index});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents});
         }
     }
 
@@ -103,8 +106,9 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

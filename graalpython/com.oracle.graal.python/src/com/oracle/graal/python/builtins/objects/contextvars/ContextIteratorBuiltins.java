@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -75,8 +77,9 @@ public final class ContextIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Next extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(PContextIterator self) {
-            Object next = self.next(factory());
+        Object next(PContextIterator self,
+                        @Cached PythonObjectFactory factory) {
+            Object next = self.next(factory);
             if (next == null) {
                 throw raiseStopIteration();
             } else {

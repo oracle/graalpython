@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 
 import java.util.List;
 
@@ -48,7 +49,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -57,10 +57,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CONTEXTVARS)
@@ -75,23 +79,26 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
-        protected Object copyCtx() {
+        protected Object copyCtx(
+                        @Cached PythonObjectFactory factory) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            return factory().copyContextVarsContext(threadState.getContextVarsContext());
+            return factory.copyContextVarsContext(threadState.getContextVarsContext());
         }
     }
 
     @Builtin(name = "ContextVar", minNumOfPositionalArgs = 2, parameterNames = {"cls", "name", "default"}, constructsClass = PythonBuiltinClassType.ContextVar)
     @GenerateNodeFactory
     public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "isNoValue(def)")
-        protected Object construct(Object cls, TruffleString name, @SuppressWarnings("unused") PNone def) {
-            return constructDef(cls, name, PContextVar.NO_DEFAULT);
-        }
 
-        @Specialization(guards = "!isNoValue(def)")
-        protected Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def) {
-            return factory().createContextVar(name, def);
+        @Specialization
+        protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile noValueProfile,
+                        @Cached PythonObjectFactory factory) {
+            if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
+                def = PContextVar.NO_DEFAULT;
+            }
+            return factory.createContextVar(name, def);
         }
     }
 
@@ -99,8 +106,9 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object construct(@SuppressWarnings("unused") Object cls) {
-            return factory().createContextVarsContext();
+        static Object construct(@SuppressWarnings("unused") Object cls,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextVarsContext();
         }
     }
 

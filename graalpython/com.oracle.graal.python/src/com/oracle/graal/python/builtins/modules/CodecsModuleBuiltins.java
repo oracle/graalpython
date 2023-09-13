@@ -645,10 +645,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached CodecsEncodeToJavaBytesNode encode) {
+                        @Cached CodecsEncodeToJavaBytesNode encode,
+                        @Cached PythonObjectFactory factory) {
             TruffleString input = castStr.execute(inliningTarget, self);
-            PBytes bytes = factory().createBytes(encode.execute(self, encoding, errors));
-            return factory().createTuple(new Object[]{bytes, codePointLengthNode.execute(input, TS_ENCODING)});
+            PBytes bytes = factory.createBytes(encode.execute(self, encoding, errors));
+            return factory.createTuple(new Object[]{bytes, codePointLengthNode.execute(input, TS_ENCODING)});
         }
 
         @Fallback
@@ -723,24 +724,29 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, TruffleString errors) {
-            return decodeBytes(bytes, bytes.length, errors);
+        public abstract Object execute(VirtualFrame frame, byte[] bytes, TruffleString errors);
+
+        @Specialization
+        Object decodeByteArray(byte[] bytes, TruffleString errors,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return decodeBytes(bytes, bytes.length, errors, factory);
         }
 
         @Specialization(limit = "3")
         Object decode(VirtualFrame frame, Object buffer, TruffleString errors,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
+                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors, factory);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
-        private Object decodeBytes(byte[] bytes, int len, TruffleString errors) {
+        private Object decodeBytes(byte[] bytes, int len, TruffleString errors, PythonObjectFactory factory) {
             ByteArrayBuffer result = doDecode(bytes, len, errors);
-            return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+            return factory.createTuple(new Object[]{factory.createBytes(result.getInternalBytes(), result.getLength()), len});
         }
 
         @TruffleBoundary
@@ -873,7 +879,8 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(PBytes data, @SuppressWarnings("unused") TruffleString errors,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
+                        @Cached GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = getInternalByteArrayNode.execute(inliningTarget, data.getSequenceStorage());
             int size = data.getSequenceStorage().length();
             ByteArrayBuffer buffer = new ByteArrayBuffer();
@@ -904,8 +911,8 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory().createTuple(new Object[]{
-                            factory().createBytes(buffer.getByteArray()),
+            return factory.createTuple(new Object[]{
+                            factory.createBytes(buffer.getByteArray()),
                             size
             });
         }
@@ -1488,10 +1495,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, TruffleString str, TruffleString errors, Object mapping,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached PyUnicodeEncodeCharmapNode encodeCharmapNode) {
+                        @Cached PyUnicodeEncodeCharmapNode encodeCharmapNode,
+                        @Cached PythonObjectFactory factory) {
             int len = codePointLengthNode.execute(str, TS_ENCODING);
-            PBytes result = factory().createBytes(encodeCharmapNode.execute(frame, inliningTarget, str, errors, mapping));
-            return factory().createTuple(new Object[]{result, len});
+            PBytes result = factory.createBytes(encodeCharmapNode.execute(frame, inliningTarget, str, errors, mapping));
+            return factory.createTuple(new Object[]{result, len});
         }
     }
 
@@ -1509,7 +1517,8 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, Object data, TruffleString errors, Object mapping,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyUnicodeDecodeCharmapNode pyUnicodeDecodeCharmapNode) {
+                        @Cached PyUnicodeDecodeCharmapNode pyUnicodeDecodeCharmapNode,
+                        @Cached PythonObjectFactory factory) {
             Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), this);
             int len;
             try {
@@ -1518,7 +1527,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 bufferLib.release(dataBuffer, frame, this);
             }
             TruffleString result = len == 0 ? T_EMPTY_STRING : pyUnicodeDecodeCharmapNode.execute(frame, data, errors, mapping);
-            return factory().createTuple(new Object[]{result, len});
+            return factory.createTuple(new Object[]{result, len});
         }
     }
 

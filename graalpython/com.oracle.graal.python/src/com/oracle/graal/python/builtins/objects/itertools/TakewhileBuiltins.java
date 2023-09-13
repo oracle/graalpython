@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,11 +93,12 @@ public final class TakewhileBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached PyObjectIsTrueNode isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue,
+                        @Cached PythonObjectFactory factory) {
 
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
             if (!isTrue.execute(frame, inliningTarget, callNode.execute(self.getPredicate(), value))) {
-                self.setIterable(factory().createSequenceIterator(factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
+                self.setIterable(factory.createSequenceIterator(factory.createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
                 throw raiseStopIteration();
             }
             return value;
@@ -107,12 +109,13 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PTakewhile self,
+        static Object reduce(PTakewhile self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getPredicate(), self.getIterable()});
-            return factory().createTuple(new Object[]{type, tuple});
+            PTuple tuple = factory.createTuple(new Object[]{self.getPredicate(), self.getIterable()});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 }

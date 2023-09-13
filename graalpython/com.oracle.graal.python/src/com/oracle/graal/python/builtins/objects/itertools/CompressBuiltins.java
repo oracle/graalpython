@@ -57,6 +57,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,12 +107,13 @@ public final class CompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PCompress self,
+        static Object reduce(PCompress self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getData(), self.getSelectors()});
-            return factory().createTuple(new Object[]{type, tuple});
+            PTuple tuple = factory.createTuple(new Object[]{self.getData(), self.getSelectors()});
+            return factory.createTuple(new Object[]{type, tuple});
         }
     }
 

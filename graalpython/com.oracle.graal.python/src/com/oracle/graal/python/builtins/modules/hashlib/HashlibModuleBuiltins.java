@@ -285,13 +285,14 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
-                        @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
             // cast guaranteed in our initialize
             EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib);
+                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, factory);
             } else {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError);
             }
@@ -305,7 +306,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
-                        @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PythonObjectFactory factory) {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
             if (!acquireLib.hasBuffer(keyObj)) {
@@ -326,7 +328,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
                     int msgLen = msg == null ? 0 : bufferLib.getBufferLength(msg);
                     Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), bufferLib.getBufferLength(key), msgBytes, msgLen);
-                    return factory().createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
+                    return factory.createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                     throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {

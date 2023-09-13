@@ -100,6 +100,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -145,9 +146,11 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object parameters(PGenericAlias self) {
+        Object parameters(PGenericAlias self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory.Lazy factory) {
             if (self.getParameters() == null) {
-                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(factory.get(inliningTarget).createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
             return self.getParameters();
         }
@@ -286,8 +289,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object mro(PGenericAlias self, @SuppressWarnings("unused") Object bases) {
-            return factory().createTuple(new Object[]{self.getOrigin()});
+        static Object mro(PGenericAlias self, @SuppressWarnings("unused") Object bases,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(new Object[]{self.getOrigin()});
         }
     }
 
@@ -315,11 +319,12 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PGenericAlias self,
+        static Object reduce(PGenericAlias self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode) {
-            Object args = factory().createTuple(new Object[]{self.getOrigin(), self.getArgs()});
-            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Cached GetClassNode getClassNode,
+                        @Cached PythonObjectFactory factory) {
+            Object args = factory.createTuple(new Object[]{self.getOrigin(), self.getArgs()});
+            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -347,13 +352,14 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getitem(PGenericAlias self, Object item) {
+        Object getitem(PGenericAlias self, Object item,
+                        @Cached PythonObjectFactory factory) {
             if (self.getParameters() == null) {
-                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(factory.createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
             }
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
-            PTuple newargsTuple = factory().createTuple(newargs);
-            return factory().createGenericAlias(self.getOrigin(), newargsTuple);
+            PTuple newargsTuple = factory.createTuple(newargs);
+            return factory.createGenericAlias(self.getOrigin(), newargsTuple);
         }
     }
 }

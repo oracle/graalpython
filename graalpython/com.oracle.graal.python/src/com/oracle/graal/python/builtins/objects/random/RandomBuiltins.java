@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -186,8 +187,9 @@ public final class RandomBuiltins extends PythonBuiltins {
     public abstract static class GetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        PTuple getstate(PRandom random) {
-            return factory().createTuple(encodeState(random));
+        static PTuple getstate(PRandom random,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createTuple(encodeState(random));
         }
 
         @TruffleBoundary
@@ -261,7 +263,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "k >= 64")
         @TruffleBoundary
-        PInt genBigInteger(PRandom random, int k) {
+        static PInt genBigInteger(PRandom random, int k) {
             int ints = ((k + 31) / 32);
             ByteBuffer bb = ByteBuffer.wrap(new byte[4 * ints]).order(ByteOrder.BIG_ENDIAN);
             for (int i = ints - 1; i > 0; --i) {
@@ -269,7 +271,7 @@ public final class RandomBuiltins extends PythonBuiltins {
                 bb.putInt(4 * i, x);
             }
             bb.putInt(0, random.nextInt() >>> (32 - (k % 32)));
-            return factory().createInt(new BigInteger(1, bb.array()));
+            return PythonObjectFactory.getUncached().createInt(new BigInteger(1, bb.array()));
         }
     }
 }

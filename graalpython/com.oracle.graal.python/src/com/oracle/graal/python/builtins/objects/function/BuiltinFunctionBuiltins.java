@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -115,11 +116,12 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttr) {
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PythonObjectFactory factory) {
             PythonModule builtins = getContext().getBuiltins();
             Object getattr = getAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
-            return factory().createTuple(new Object[]{getattr, args});
+            PTuple args = factory.createTuple(new Object[]{func.getEnclosingType(), func.getName()});
+            return factory.createTuple(new Object[]{getattr, args});
         }
     }
 }

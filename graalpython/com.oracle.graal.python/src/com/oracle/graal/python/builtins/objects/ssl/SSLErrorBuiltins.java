@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,10 +122,11 @@ public final class SSLErrorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds);
 
         @Specialization
-        Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
-                        @Cached OsErrorBuiltins.OSErrorInitNode initNode) {
+        static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
+                        @Cached OsErrorBuiltins.OSErrorInitNode initNode,
+                        @Cached PythonObjectFactory factory) {
             initNode.execute(frame, self, args, kwds);
-            Object[] sslAttrs = SSL_ERROR_ATTR_FACTORY.create(args, factory());
+            Object[] sslAttrs = SSL_ERROR_ATTR_FACTORY.create(args, factory);
             PythonUtils.arraycopy(self.getExceptionAttributes(), 0, sslAttrs, 0, self.getExceptionAttributes().length);
             self.setExceptionAttributes(sslAttrs);
             return PNone.NONE;

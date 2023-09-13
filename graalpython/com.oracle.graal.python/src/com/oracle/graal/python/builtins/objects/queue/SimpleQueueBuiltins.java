@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -288,8 +289,9 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object classGetItem(Object cls, Object key) {
-            return factory().createGenericAlias(cls, key);
+        static Object classGetItem(Object cls, Object key,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createGenericAlias(cls, key);
         }
     }
 }

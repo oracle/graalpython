@@ -261,13 +261,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CSVReaderNode extends PythonBuiltinNode {
         @Specialization
-        Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
+        static Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached CallNode callNode) {
+                        @Cached CallNode callNode,
+                        @Cached PythonObjectFactory factory) {
             Object inputIter = getIter.execute(frame, inliningTarget, csvfile);
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory().createCSVReader(PythonBuiltinClassType.CSVReader, inputIter, dialect);
+            return factory.createCSVReader(PythonBuiltinClassType.CSVReader, inputIter, dialect);
         }
     }
 
@@ -279,13 +280,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PyCallableCheckNode checkCallable) {
+                        @Cached PyCallableCheckNode checkCallable,
+                        @Cached PythonObjectFactory factory) {
             Object write = lookupAttr.execute(frame, inliningTarget, outputFile, T_WRITE);
             if (write == PNone.NO_VALUE || !checkCallable.execute(inliningTarget, write)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory().createCSVWriter(PythonBuiltinClassType.CSVWriter, write, dialect);
+            return factory.createCSVWriter(PythonBuiltinClassType.CSVWriter, write, dialect);
         }
     }
 

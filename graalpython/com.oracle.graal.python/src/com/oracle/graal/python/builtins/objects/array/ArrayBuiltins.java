@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -156,11 +157,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "left.getFormat() == right.getFormat()")
         Object concat(PArray left, PArray right,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
                 int itemsize = left.getFormat().bytesize;
-                PArray newArray = factory().createArray(left.getFormatString(), left.getFormat(), newLength);
+                PArray newArray = factory.createArray(left.getFormatString(), left.getFormat(), newLength);
                 bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() * itemsize, bufferLib);
                 bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() * itemsize, right.getLength() * itemsize, bufferLib);
                 return newArray;
@@ -204,11 +206,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object concat(PArray self, int value,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 int itemsize = self.getFormat().bytesize;
-                PArray newArray = factory().createArray(self.getFormatString(), self.getFormat(), newLength);
+                PArray newArray = factory.createArray(self.getFormatString(), self.getFormat(), newLength);
                 int segmentLength = self.getLength() * itemsize;
                 for (int i = 0; i < value; i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength, bufferLib);
@@ -696,8 +699,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object getitem(PArray self) {
-            return factory().createArrayIterator(self);
+        static Object getitem(PArray self,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createArrayIterator(self);
         }
     }
 
@@ -721,30 +725,30 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "protocol < 3")
-        @SuppressWarnings("truffle-static-method")
-        Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+        static Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
                         @Cached @Exclusive GetClassNode getClassNode,
                         @Cached @Exclusive PyObjectLookupAttr lookupDict,
-                        @Cached ToListNode toListNode) {
+                        @Cached ToListNode toListNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             Object cls = getClassNode.execute(inliningTarget, self);
             Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
-            return factory().createTuple(new Object[]{cls, args, dict});
+            PTuple args = factory.createTuple(new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
+            return factory.createTuple(new Object[]{cls, args, dict});
         }
 
         @Specialization(guards = "protocol >= 3")
-        @SuppressWarnings("truffle-static-method")
-        Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+        static Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
                         @Cached @Exclusive GetClassNode getClassNode,
                         @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
-                        @Cached ToBytesNode toBytesNode) {
-            PythonModule arrayModule = getContext().lookupBuiltinModule(T_ARRAY);
+                        @Cached ToBytesNode toBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonModule arrayModule = PythonContext.get(inliningTarget).lookupBuiltinModule(T_ARRAY);
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(inliningTarget, self);
@@ -753,8 +757,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = getReconstructor.execute(frame, inliningTarget, arrayModule, T_ARRAY_RECONSTRUCTOR);
-            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
-            return factory().createTuple(new Object[]{reconstructor, args, dict});
+            PTuple args = factory.createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
+            return factory.createTuple(new Object[]{reconstructor, args, dict});
         }
     }
 
@@ -1175,10 +1179,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class ToBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object tobytes(PArray self,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = new byte[self.getLength() * self.getFormat().bytesize];
             bufferLib.readIntoByteArray(self.getBuffer(), 0, bytes, 0, bytes.length);
-            return factory().createBytes(bytes);
+            return factory.createBytes(bytes);
         }
     }
 
@@ -1217,10 +1222,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ToFileNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object tofile(VirtualFrame frame, PArray self, Object file,
+        static Object tofile(VirtualFrame frame, PArray self, Object file,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PythonObjectFactory factory) {
             if (self.getLength() > 0) {
                 int remaining = self.getLength() * self.getFormat().bytesize;
                 int blocksize = 64 * 1024;
@@ -1233,7 +1239,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         buffer = new byte[blocksize];
                     }
                     bufferLib.readIntoByteArray(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
-                    callMethod.execute(frame, inliningTarget, file, T_WRITE, factory().createBytes(buffer));
+                    callMethod.execute(frame, inliningTarget, file, T_WRITE, factory.createBytes(buffer));
                     remaining -= blocksize;
                 }
             }

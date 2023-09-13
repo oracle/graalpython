@@ -69,7 +69,7 @@ public abstract class RangeNodes {
     @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class CreateBigRangeNode extends Node {
-        public abstract PBigRange execute(Node inliningTarget, Object start, Object stop, Object step, PythonObjectFactory factory);
+        public abstract PBigRange execute(Node inliningTarget, Object start, Object stop, Object step);
 
         @TruffleBoundary
         private static void checkStepZero(Node inliningTarget, BigInteger stepBI, PRaiseNode.Lazy raise) {
@@ -79,12 +79,13 @@ public abstract class RangeNodes {
         }
 
         @Specialization
-        static PBigRange createBigRange(Node inliningTarget, Object start, Object stop, Object step, PythonObjectFactory factory,
+        static PBigRange createBigRange(Node inliningTarget, Object start, Object stop, Object step,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @Cached CastToJavaBigIntegerNode startToBI,
                         @Cached CastToJavaBigIntegerNode stopToBI,
                         @Cached CastToJavaBigIntegerNode stepToBI,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached(inline = false) PythonObjectFactory factory) {
             BigInteger stepBI = stepToBI.execute(inliningTarget, step);
             checkStepZero(inliningTarget, stepBI, raise);
             BigInteger startBI = startToBI.execute(inliningTarget, start);
@@ -213,16 +214,16 @@ public abstract class RangeNodes {
     @GenerateCached(false)
     public abstract static class CoerceToBigRange extends PNodeWithContext {
 
-        public abstract PBigRange execute(Node inliningTarget, PRange range, PythonObjectFactory factory);
+        public abstract PBigRange execute(Node inliningTarget, PRange range);
 
         @Specialization
-        static PBigRange doIntRange(Node inliningTarget, PIntRange range, PythonObjectFactory factory,
+        static PBigRange doIntRange(Node inliningTarget, PIntRange range,
                         @Cached CreateBigRangeNode cast) {
-            return cast.execute(inliningTarget, range.getIntStart(), range.getIntStop(), range.getIntStep(), factory);
+            return cast.execute(inliningTarget, range.getIntStart(), range.getIntStop(), range.getIntStep());
         }
 
         @Specialization
-        static PBigRange doBigRange(PBigRange range, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static PBigRange doBigRange(PBigRange range) {
             return range;
         }
 
