@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,43 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.integration.module;
+package com.oracle.graal.python.test.integration;
 
-import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
+import java.util.Locale;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
-
-import org.junit.Test;
-
-import com.oracle.graal.python.test.integration.PythonTests;
-
-public class ThreadPoolTests {
-
-    @Test
-    public void threadPool() {
-        assumeFalse(IS_WINDOWS);
-        String source = "import sysconfig\n" +
-                        "assert sysconfig.get_config_vars().get('WITH_THREAD'), 'context was not started for threading'\n" +
-                        "from multiprocessing.pool import ThreadPool\n" +
-                        "\n" +
-                        "def fun(item):\n" +
-                        "    return item != None\n" +
-                        "\n" +
-                        "items = list(range(0, 10))\n" +
-                        "\n" +
-                        "pool = ThreadPool(2)\n" +
-                        "res = list(pool.imap(fun, items))\n" +
-                        "pool.close()\n" +
-                        "\n" +
-                        "print(res)\n";
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        final PrintStream printStream = new PrintStream(byteArray);
-        PythonTests.runScript(new HashMap<>(), new String[0], source, printStream, System.err, () -> PythonTests.closeContext());
-        String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals("[True, True, True, True, True, True, True, True, True, True]\n", result);
-    }
+public class Utils {
+    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 }
