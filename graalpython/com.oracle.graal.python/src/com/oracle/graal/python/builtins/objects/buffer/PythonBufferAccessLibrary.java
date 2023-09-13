@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -428,15 +428,6 @@ public abstract class PythonBufferAccessLibrary extends Library {
         byte b7 = (byte) (value >> 8);
         byte b8 = (byte) value;
         if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-            writeByte(receiver, byteOffset, b1);
-            writeByte(receiver, byteOffset + 1, b2);
-            writeByte(receiver, byteOffset + 2, b3);
-            writeByte(receiver, byteOffset + 3, b4);
-            writeByte(receiver, byteOffset + 4, b5);
-            writeByte(receiver, byteOffset + 5, b6);
-            writeByte(receiver, byteOffset + 6, b7);
-            writeByte(receiver, byteOffset + 7, b8);
-        } else {
             writeByte(receiver, byteOffset, b8);
             writeByte(receiver, byteOffset + 1, b7);
             writeByte(receiver, byteOffset + 2, b6);
@@ -445,6 +436,15 @@ public abstract class PythonBufferAccessLibrary extends Library {
             writeByte(receiver, byteOffset + 5, b3);
             writeByte(receiver, byteOffset + 6, b2);
             writeByte(receiver, byteOffset + 7, b1);
+        } else {
+            writeByte(receiver, byteOffset, b1);
+            writeByte(receiver, byteOffset + 1, b2);
+            writeByte(receiver, byteOffset + 2, b3);
+            writeByte(receiver, byteOffset + 3, b4);
+            writeByte(receiver, byteOffset + 4, b5);
+            writeByte(receiver, byteOffset + 5, b6);
+            writeByte(receiver, byteOffset + 6, b7);
+            writeByte(receiver, byteOffset + 7, b8);
         }
     }
 

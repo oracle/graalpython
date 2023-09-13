@@ -532,7 +532,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             if (decoder.inputBuffer.capacity() < insize) {
                 return false;
             }
-            decoder.inputBuffer.put(input).limit(insize).position(newpos);
+            decoder.inputBuffer.put(input, 0, insize).limit(insize).position(newpos);
             return true;
         }
 
@@ -875,10 +875,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
             byte[] bytes = getInternalByteArrayNode.execute(inliningTarget, data.getSequenceStorage());
-            int size = bytes.length;
+            int size = data.getSequenceStorage().length();
             ByteArrayBuffer buffer = new ByteArrayBuffer();
             char c;
-            for (byte aByte : bytes) {
+            for (int i = 0; i < size; i++) {
+                byte aByte = bytes[i];
                 // There's at least enough room for a hex escape
                 c = (char) aByte;
                 if (c == '\'' || c == '\\') {

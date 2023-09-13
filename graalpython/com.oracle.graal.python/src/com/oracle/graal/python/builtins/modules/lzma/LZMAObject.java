@@ -132,8 +132,8 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             }
 
             @TruffleBoundary
-            public void write(byte[] bytes) throws IOException {
-                lzmaStream.write(bytes);
+            public void write(byte[] bytes, int offset, int len) throws IOException {
+                lzmaStream.write(bytes, offset, len);
             }
 
             @TruffleBoundary

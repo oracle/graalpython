@@ -761,6 +761,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RFindNode extends PythonQuaternaryClinicBuiltinNode {
 
+        public abstract int execute(Object self, Object sub, int start, int end);
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.RFindNodeClinicProviderGen.INSTANCE;
@@ -791,6 +793,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
+        public abstract int execute(Object self, Object sub, int start, int end);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -822,6 +825,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonQuaternaryClinicBuiltinNode {
+
+        public abstract int execute(Object self, Object sub, int start, int end);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

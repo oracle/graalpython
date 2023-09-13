@@ -200,11 +200,14 @@
 *ctypes.test.test_numbers.NumberTestCase.test_bool_from_address
 *ctypes.test.test_numbers.NumberTestCase.test_bool_values
 *ctypes.test.test_numbers.NumberTestCase.test_byref
+*ctypes.test.test_numbers.NumberTestCase.test_char_from_address
 *ctypes.test.test_numbers.NumberTestCase.test_default_init
+*ctypes.test.test_numbers.NumberTestCase.test_float_from_address
 *ctypes.test.test_numbers.NumberTestCase.test_float_overflow
 *ctypes.test.test_numbers.NumberTestCase.test_floats
 *ctypes.test.test_numbers.NumberTestCase.test_from_param
 *ctypes.test.test_numbers.NumberTestCase.test_init
+*ctypes.test.test_numbers.NumberTestCase.test_int_from_address
 *ctypes.test.test_numbers.NumberTestCase.test_integers
 *ctypes.test.test_numbers.NumberTestCase.test_perf
 *ctypes.test.test_numbers.NumberTestCase.test_signed_values
@@ -241,6 +244,7 @@
 *ctypes.test.test_pointers.PointersTestCase.test_callbacks_with_pointers
 *ctypes.test.test_pointers.PointersTestCase.test_change_pointers
 *ctypes.test.test_pointers.PointersTestCase.test_charpp
+*ctypes.test.test_pointers.PointersTestCase.test_from_address
 *ctypes.test.test_pointers.PointersTestCase.test_pass_pointers
 *ctypes.test.test_pointers.PointersTestCase.test_pointer_crash
 *ctypes.test.test_pointers.PointersTestCase.test_pointer_type_name

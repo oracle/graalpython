@@ -855,7 +855,7 @@ public class LZMANodes {
         @Specialization(guards = "action == LZMA_RUN")
         byte[] javaCompress(LZMACompressor.Java self, PythonContext context, byte[] bytes, int len, int action) {
             try {
-                self.write(bytes);
+                self.write(bytes, 0, len);
                 byte[] result = self.getByteArray();
                 self.resetBuffer();
                 return result;

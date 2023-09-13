@@ -28,20 +28,27 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -54,24 +61,23 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final TruffleString formatString;
-    private int length;
-    private byte[] buffer;
-    private volatile int exports;
+    private SequenceStorage storage;
+
+    // Count of exports via native buffer interface
+    private final AtomicLong exports = new AtomicLong();
 
     public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format) {
         super(clazz, instanceShape);
         this.formatString = formatString;
         this.format = format;
-        this.length = 0;
-        this.buffer = new byte[0];
+        this.storage = new ByteSequenceStorage(EMPTY_BYTE_ARRAY);
     }
 
     public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
         this.formatString = formatString;
         this.format = format;
-        this.length = length;
-        this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
+        this.storage = new ByteSequenceStorage(new byte[PythonUtils.multiplyExact(length, format.bytesize)]);
     }
 
     public BufferFormat getFormat() {
@@ -91,95 +97,35 @@ public final class PArray extends PythonBuiltinObject {
         return formatString;
     }
 
-    public byte[] getBuffer() {
-        return buffer;
+    public Object getBuffer() {
+        return storage;
+    }
+
+    /*
+     * The underlying storage is always bytes regardless of array item type. Don't use nodes for
+     * SequenceStorage nodes unless they are agnostic of item type.
+     */
+    public SequenceStorage getSequenceStorage() {
+        return storage;
+    }
+
+    public void setSequenceStorage(SequenceStorage storage) {
+        assert storage instanceof ByteSequenceStorage || storage instanceof NativeByteSequenceStorage;
+        this.storage = storage;
     }
 
     public int getLength() {
-        return length;
+        return storage.length() / getItemSize();
     }
 
-    public void setLength(int length) {
-        assert length >= 0;
-        this.length = length;
-    }
-
-    public int getExports() {
+    public AtomicLong getExports() {
         return exports;
     }
 
-    public void setExports(int exports) {
-        this.exports = exports;
-    }
-
     public void checkCanResize(PythonBuiltinBaseNode node) {
-        if (exports != 0) {
+        if (exports.get() != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
-    }
-
-    private int computeNewSize(int newLength, int itemsize) throws OverflowException {
-        int newSize = computeNewSizeNoOverflowCheck(newLength, itemsize);
-        if (newSize / itemsize < newLength) {
-            throw OverflowException.INSTANCE;
-        }
-        return newSize;
-    }
-
-    private int computeNewSizeNoOverflowCheck(int newLength, int itemsize) {
-        if (newLength == 0) {
-            return 0;
-        }
-        // Overallocation using the same formula as CPython
-        return ((newLength >> 4) + (length < 8 ? 3 : 7) + newLength) * itemsize;
-    }
-
-    public void resizeStorage(int newLength) throws OverflowException {
-        assert newLength >= 0;
-        int itemsize = format.bytesize;
-        if (buffer.length / itemsize < newLength || length + 16 >= newLength) {
-            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, Math.min(buffer.length, newBuffer.length));
-            buffer = newBuffer;
-        }
-    }
-
-    public void resize(int newLength) throws OverflowException {
-        resizeStorage(newLength);
-        length = newLength;
-    }
-
-    public void shift(int from, int by) throws OverflowException {
-        assert from >= 0 && from <= length;
-        assert by >= 0;
-        int newLength = PythonUtils.addExact(length, by);
-        int itemsize = format.bytesize;
-        if (buffer.length / itemsize < newLength) {
-            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
-            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (length - from) * itemsize);
-            buffer = newBuffer;
-        } else {
-            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (length - from) * itemsize);
-        }
-        length = newLength;
-    }
-
-    public void delSlice(int at, int count) {
-        assert count >= 0;
-        assert at + count <= length;
-        int newLength = length - count;
-        assert newLength >= 0;
-        int itemsize = format.bytesize;
-        if (length + 16 >= newLength) {
-            byte[] newBuffer = new byte[computeNewSizeNoOverflowCheck(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, at * itemsize);
-            PythonUtils.arraycopy(buffer, (at + count) * itemsize, newBuffer, at * itemsize, (length - at - count) * itemsize);
-            buffer = newBuffer;
-        } else {
-            PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
-        }
-        length = newLength;
     }
 
     public enum MachineFormat {
@@ -262,7 +208,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     int getBufferLength() {
-        return length * format.bytesize;
+        return storage.length();
     }
 
     @ExportMessage
@@ -283,72 +229,86 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasInternalByteArray() {
-        return true;
+    boolean hasInternalByteArray(
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.hasInternalByteArray(storage);
     }
 
     @ExportMessage
-    byte[] getInternalByteArray() {
-        return buffer;
+    byte[] getInternalByteArray(
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.getInternalByteArray(storage);
     }
 
     @ExportMessage
-    byte readByte(int byteOffset) {
-        return buffer[byteOffset];
+    byte readByte(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readByte(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeByte(int byteOffset, byte value) {
-        buffer[byteOffset] = value;
+    void writeByte(int byteOffset, byte value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeByte(storage, byteOffset, value);
     }
 
     @ExportMessage
-    short readShort(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getShort(buffer, byteOffset);
+    short readShort(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readShort(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeShort(int byteOffset, short value) {
-        PythonUtils.ARRAY_ACCESSOR.putShort(buffer, byteOffset, value);
+    void writeShort(int byteOffset, short value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeShort(storage, byteOffset, value);
     }
 
     @ExportMessage
-    int readInt(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getInt(buffer, byteOffset);
+    int readInt(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readInt(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeInt(int byteOffset, int value) {
-        PythonUtils.ARRAY_ACCESSOR.putInt(buffer, byteOffset, value);
+    void writeInt(int byteOffset, int value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeInt(storage, byteOffset, value);
     }
 
     @ExportMessage
-    long readLong(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getLong(buffer, byteOffset);
+    long readLong(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readLong(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeLong(int byteOffset, long value) {
-        PythonUtils.ARRAY_ACCESSOR.putLong(buffer, byteOffset, value);
+    void writeLong(int byteOffset, long value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeLong(storage, byteOffset, value);
     }
 
     @ExportMessage
-    float readFloat(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getFloat(buffer, byteOffset);
+    float readFloat(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readFloat(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeFloat(int byteOffset, float value) {
-        PythonUtils.ARRAY_ACCESSOR.putFloat(buffer, byteOffset, value);
+    void writeFloat(int byteOffset, float value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeFloat(storage, byteOffset, value);
     }
 
     @ExportMessage
-    double readDouble(int byteOffset) {
-        return PythonUtils.ARRAY_ACCESSOR.getDouble(buffer, byteOffset);
+    double readDouble(int byteOffset,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readDouble(storage, byteOffset);
     }
 
     @ExportMessage
-    void writeDouble(int byteOffset, double value) {
-        PythonUtils.ARRAY_ACCESSOR.putDouble(buffer, byteOffset, value);
+    void writeDouble(int byteOffset, double value,
+                    @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeDouble(storage, byteOffset, value);
     }
 }

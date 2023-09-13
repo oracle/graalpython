@@ -75,9 +75,8 @@ public final class PByteArray extends PBytesLike {
 
     @TruffleBoundary
     public String formatByteArray(String typeName) {
-        if (getSequenceStorage() instanceof ByteSequenceStorage) {
-            byte[] barr = ((ByteSequenceStorage) getSequenceStorage()).getInternalByteArray();
-            return String.format("%s(%s)", typeName, BytesUtils.bytesRepr(barr, barr.length));
+        if (getSequenceStorage() instanceof ByteSequenceStorage byteSequenceStorage) {
+            return String.format("%s(%s)", typeName, BytesUtils.bytesRepr(byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length()));
         } else {
             return String.format("%s(%s)", typeName, getSequenceStorage());
         }

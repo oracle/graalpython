@@ -293,6 +293,12 @@ static void initialize_bufferprocs() {
     };
     PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
+
+    static PyBufferProcs array_as_buffer;
+    array_as_buffer.bf_getbuffer = GraalPyTruffle_Array_getbuffer,
+    array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
+    Arraytype.tp_as_buffer = &array_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
 }
 
 PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
@@ -395,15 +401,15 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(intptr_t ptr, Py_ssize_t value) {
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
 		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
 	if ((obj->ob_refcnt + value) <= 0) {
 		char buf[1024];
-		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
-//	printf("refcnt value during managed adjustment for %p (%lli %p + %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+//	printf("refcnt value during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 #endif // ASSERTIONS
 
 	return (obj->ob_refcnt += value);
@@ -415,15 +421,15 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
 		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
 	if ((obj->ob_refcnt - value) < 0) {
 		char buf[1024];
-		sprintf(buf, "refcnt below zero during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		sprintf(buf, "refcnt below zero during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 		Py_FatalError(buf);
 	}
-//	printf("refcnt value during managed adjustment for %p (%lli %p - %lli)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+//	printf("refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
 #endif // ASSERTIONS
 
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
@@ -2933,7 +2939,7 @@ PyAPI_FUNC(Py_ssize_t) PyUnicode_CopyCharacters(PyObject* a, Py_ssize_t b, PyObj
 }
 #undef PyUnicode_Count
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Count(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d) {
-    FUNC_NOT_IMPLEMENTED
+    return GraalPyUnicode_Count(a, b, c, d);
 }
 #undef PyUnicode_DecodeCharmap
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeCharmap(const char* a, Py_ssize_t b, PyObject* c, const char* d) {
@@ -2953,18 +2959,6 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeLocaleAndSize(const char* a, Py_ssize_t b,
 }
 #undef PyUnicode_DecodeRawUnicodeEscape
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeRawUnicodeEscape(const char* a, Py_ssize_t b, const char* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_DecodeUTF16
-PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF16(const char* a, Py_ssize_t b, const char* c, int* d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_DecodeUTF16Stateful
-PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF16Stateful(const char* a, Py_ssize_t b, const char* c, int* d, Py_ssize_t* e) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_DecodeUTF32Stateful
-PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF32Stateful(const char* a, Py_ssize_t b, const char* c, int* d, Py_ssize_t* e) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_DecodeUTF7
@@ -3037,10 +3031,6 @@ PyAPI_FUNC(int) PyUnicode_FSDecoder(PyObject* a, void* b) {
 }
 #undef PyUnicode_Fill
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Fill(PyObject* a, Py_ssize_t b, Py_ssize_t c, Py_UCS4 d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_Find
-PyAPI_FUNC(Py_ssize_t) PyUnicode_Find(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d, int e) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_FindChar
@@ -3382,6 +3372,10 @@ PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(PyObject*const* a, Py_ssize_t b, Py
 #undef _PyArg_ParseStackAndKeywords_SizeT
 PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords_SizeT(PyObject*const* a, Py_ssize_t b, PyObject* c, struct _PyArg_Parser* d, ...) {
     FUNC_NOT_IMPLEMENTED
+}
+#undef _PyArray_Data
+PyAPI_FUNC(char*) _PyArray_Data(PyObject* a) {
+    return Graal_PyArray_Data(a);
 }
 #undef _PyArray_Resize
 PyAPI_FUNC(int) _PyArray_Resize(PyObject* a, Py_ssize_t b) {

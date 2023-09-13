@@ -137,6 +137,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -144,7 +145,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -737,7 +737,7 @@ public final class BytesBuiltins extends PythonBuiltins {
             int len = storage.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return dispatchNode.execute(frame, inliningTarget, this, bytes, substrs, begin, last);
+            return dispatchNode.execute(frame, inliningTarget, this, bytes, len, substrs, begin, last);
         }
 
         @Fallback
@@ -746,15 +746,15 @@ public final class BytesBuiltins extends PythonBuiltins {
             throw raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
-        protected abstract boolean doIt(byte[] bytes, byte[] prefix, int start, int end);
+        protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
 
-        private boolean doIt(VirtualFrame frame, byte[] self, PTuple substrs, int start, int stop,
+        private boolean doIt(VirtualFrame frame, byte[] self, int len, PTuple substrs, int start, int stop,
                         Node inliningTarget,
                         BytesNodes.ToBytesNode tobytes,
                         SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
             for (Object element : getObjectArrayNode.execute(inliningTarget, substrs)) {
                 byte[] bytes = tobytes.execute(frame, element);
-                if (doIt(self, bytes, start, stop)) {
+                if (doIt(self, len, bytes, start, stop)) {
                     return true;
                 }
             }
@@ -765,20 +765,20 @@ public final class BytesBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class PrefixSuffixDispatchNode extends Node {
-        abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last);
 
         @Specialization
-        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, PTuple substrs, int begin, int last,
+        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, PTuple substrs, int begin, int last,
                         @Cached(value = "createToBytesFromTuple()", inline = false) BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
-            return parent.doIt(frame, bytes, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
+            return parent.doIt(frame, bytes, len, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
         }
 
         @Fallback
-        static boolean doOthers(VirtualFrame frame, PrefixSuffixBaseNode parent, byte[] bytes, Object substrs, int begin, int last,
+        static boolean doOthers(VirtualFrame frame, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last,
                         @Cached(value = "createToBytes()", inline = false) BytesNodes.ToBytesNode tobytes) {
             byte[] substrBytes = tobytes.execute(frame, substrs);
-            return parent.doIt(bytes, substrBytes, begin, last);
+            return parent.doIt(bytes, len, substrBytes, begin, last);
         }
 
         @NeverDefault
@@ -806,10 +806,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
+        protected boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end) {
             // start and end must be normalized indices for 'bytes'
             assert start >= 0;
-            assert end >= 0 && end <= bytes.length;
+            assert end >= 0 && end <= len;
 
             if (end - start < prefix.length) {
                 return false;
@@ -837,10 +837,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Override
-        protected boolean doIt(byte[] bytes, byte[] suffix, int start, int end) {
+        protected boolean doIt(byte[] bytes, int len, byte[] suffix, int start, int end) {
             // start and end must be normalized indices for 'bytes'
             assert start >= 0;
-            assert end >= 0 && end <= bytes.length;
+            assert end >= 0 && end <= len;
 
             int suffixLen = suffix.length;
             if (end - start < suffixLen) {
@@ -1479,84 +1479,56 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "center", minNumOfPositionalArgs = 2, parameterNames = {"$self", "width", "fill"})
-    @ArgumentClinic(name = "width", conversionClass = IndexConversionNode.class)
+    @Builtin(name = "center", minNumOfPositionalArgs = 2, parameterNames = {"$self", "width", "fillchar"})
     @GenerateNodeFactory
-    abstract static class CenterNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class CenterNode extends PythonTernaryBuiltinNode {
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return BytesBuiltinsClinicProviders.CenterNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = "isNoValue(fill)")
+        @Specialization
         @SuppressWarnings("truffle-static-method")
-        PBytesLike none(Object self, int width, @SuppressWarnings("unused") PNone fill,
+        PBytesLike bytes(VirtualFrame frame, Object self, Object widthObj, Object fillObj,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetBytesStorage getBytesStorage,
-                        @Cached GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Exclusive @Cached SequenceStorageNodes.CopyNode copyNode,
-                        @Exclusive @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Cached SequenceStorageNodes.CopyNode copyNode,
+                        @Cached BytesNodes.CreateBytesNode create,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached InlinedBranchProfile hasFill,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int width = asSizeNode.executeExact(frame, inliningTarget, widthObj);
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
+            byte fillByte = ' ';
+            if (fillObj != PNone.NO_VALUE) {
+                hasFill.enter(inliningTarget);
+                if (fillObj instanceof PBytesLike && bufferLib.getBufferLength(fillObj) == 1) {
+                    fillByte = bufferLib.readByte(fillObj, 0);
+                } else {
+                    throw raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
+                }
+            }
             if (checkSkip(len, width)) {
                 return create.execute(inliningTarget, factory(), self, copyNode.execute(inliningTarget, storage));
             }
-            return create.execute(inliningTarget, factory(), self, make(getInternalByteArrayNode.execute(inliningTarget, storage), len, width, (byte) ' '));
-        }
-
-        @Specialization(guards = "!isPNone(fill)", limit = "3")
-        @SuppressWarnings("truffle-static-method")
-        PBytesLike bytes(VirtualFrame frame, Object self, Object w, Object fill,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetBytesStorage getBytesStorage,
-                        @Exclusive @Cached SequenceStorageNodes.CopyNode copyNode,
-                        @Exclusive @Cached BytesNodes.CreateBytesNode create,
-                        @CachedLibrary("fill") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached InlinedConditionProfile errorProfile) {
-            SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
-            int len = storage.length();
-            Object fillBuffer = acquireLib.acquireReadonly(fill, frame, this);
-            try {
-                if (errorProfile.profile(inliningTarget, bufferLib.getBufferLength(fillBuffer) != 1)) {
-                    throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
-                }
-                int width = asSizeNode.executeExact(frame, inliningTarget, w);
-                if (checkSkip(len, width)) {
-                    return create.execute(inliningTarget, factory(), self, copyNode.execute(inliningTarget, storage));
-                }
-                return create.execute(inliningTarget, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, bufferLib.readByte(fillBuffer, 0)));
-            } finally {
-                bufferLib.release(fillBuffer);
-            }
+            return create.execute(inliningTarget, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, fillByte));
         }
 
         protected String methodName() {
             return "center()";
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        boolean err(VirtualFrame frame, Object self, Object w, Object fill) {
-            throw raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fill);
-        }
-
-        protected byte[] pad(byte[] self, int l, int r, byte fill) {
+        private byte[] pad(byte[] self, int len, int l, int r, byte fill) {
             int left = (l < 0) ? 0 : l;
             int right = (r < 0) ? 0 : r;
             if (left == 0 && right == 0) {
                 return self;
             }
 
-            byte[] u = new byte[left + self.length + right];
+            byte[] u = new byte[left + len + right];
             if (left > 0) {
                 Arrays.fill(u, 0, left, fill);
             }
-            System.arraycopy(self, 0, u, left, self.length);
+            PythonUtils.arraycopy(self, 0, u, left, len);
             if (right > 0) {
-                Arrays.fill(u, left + self.length, u.length, fill);
+                Arrays.fill(u, left + len, u.length, fill);
             }
             return u;
         }
@@ -1564,7 +1536,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         protected byte[] make(byte[] self, int len, int width, byte fillchar) {
             int marg = width - len;
             int left = marg / 2 + (marg & width & 1);
-            return pad(self, left, marg - left, fillchar);
+            return pad(self, len, left, marg - left, fillchar);
         }
 
         protected boolean checkSkip(int len, int width) {
@@ -1572,7 +1544,7 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ljust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "ljust", minNumOfPositionalArgs = 2, parameterNames = {"$self", "width", "fillchar"})
     @GenerateNodeFactory
     abstract static class LJustNode extends CenterNode {
 
@@ -1598,7 +1570,7 @@ public final class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "rjust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "rjust", minNumOfPositionalArgs = 2, parameterNames = {"$self", "width", "fillchar"})
     @GenerateNodeFactory
     abstract static class RJustNode extends CenterNode {
 
@@ -2590,7 +2562,8 @@ public final class BytesBuiltins extends PythonBuiltins {
             int max = SysModuleBuiltins.MAXSIZE;
             byte[] b = getInternalByteArrayNode.execute(inliningTarget, storage);
             int i = 0, j = 0;
-            for (byte p : b) {
+            for (int k = 0; k < len; k++) {
+                byte p = b[k];
                 if (p == T) {
                     if (tabsize > 0) {
                         int incr = tabsize - (j % tabsize);

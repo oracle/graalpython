@@ -49,6 +49,10 @@ PyAPI_FUNC(PyObject *) PyList_AsTuple(PyObject *);
  * GraalPy-specific, used to implement cython's array.resize_smart
  */
 PyAPI_FUNC(int) _PyArray_Resize(PyObject* array, Py_ssize_t new_size);
+/*
+ * GraalPy-specific, used to implement cython's array.data
+ */
+PyAPI_FUNC(char*) _PyArray_Data(PyObject* array);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_LISTOBJECT_H

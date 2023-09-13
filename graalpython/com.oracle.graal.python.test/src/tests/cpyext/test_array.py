@@ -51,6 +51,14 @@ def reference_array_resize(args):
     return a
 
 
+def reference_getbuffer(args):
+    [a] = args
+    return a, bytes(a), len(a) * a.itemsize, a.itemsize, 0, 1, a.typecode, len(a), a.itemsize
+
+
+TEST_ARRAY = array('i', [1, 2, 3])
+
+
 class TestPyArray(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -78,3 +86,49 @@ class TestPyArray(CPyExtTestCase):
             arguments=["PyObject* array", "Py_ssize_t new_size"],
             cmpfunc=unhandled_error_compare,
         )
+
+        test__PyArray_Data = CPyExtFunction(
+            lambda args: bytes(args[0]),
+            lambda: (
+                (TEST_ARRAY, len(TEST_ARRAY) * TEST_ARRAY.itemsize),
+            ),
+            code="""
+            PyObject* wrap__PyArray_Data(PyObject* array, Py_ssize_t size) {
+                char* data = _PyArray_Data(array);
+                if (data == NULL)
+                    return NULL;
+                return PyBytes_FromStringAndSize(data, size);
+            }
+            """,
+            callfunction="wrap__PyArray_Data",
+            resultspec="O",
+            argspec='On',
+            arguments=["PyObject* array", "Py_ssize_t size"],
+            cmpfunc=unhandled_error_compare,
+        )
+
+    test_array_getbuffer = CPyExtFunction(
+        reference_getbuffer,
+        lambda: (
+            (array('h', [1, 2, 3]),),
+        ),
+        code="""
+        PyObject* wrap_array_getbuffer(PyObject* array) {
+            Py_buffer buf;
+            if (PyObject_GetBuffer(array, &buf, PyBUF_FULL) != 0)
+                return NULL;
+            PyObject* bytes = PyBytes_FromStringAndSize(buf.buf, buf.len);
+            if (!bytes)
+                return NULL;
+            PyObject* result = Py_BuildValue("OOnniisnn", buf.obj, bytes, buf.len, buf.itemsize, buf.readonly, buf.ndim,
+                                             buf.format, buf.shape[0], buf.strides[0]);
+            PyBuffer_Release(&buf);
+            return result;
+        }
+        """,
+        callfunction="wrap_array_getbuffer",
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* array"],
+        cmpfunc=unhandled_error_compare,
+    )

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
+
+from array import array
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -47,39 +50,30 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
-def test_import():
-    imported = True
-    try:
-        import array
-    except ImportError:
-        imported = False
-    assert imported
-
 def test_argument_validation():
-    import array
-    a = array.array('d', [1.1, 3.5])
+    a = array('d', [1.1, 3.5])
     assert_raises(TypeError, a.__reduce_ex__, None)
     assert_raises(TypeError, a.fromfile, 'bogus', None)
     assert_raises(TypeError, a.insert, None, 42.42)
     assert_raises(TypeError, a.__imul__, None)
     assert_raises(TypeError, a.__mul__, None)
 
+
 def test_create():
-    from array import array
     a = array('b', b'x' * 10)
     assert str(a) == "array('b', [120, 120, 120, 120, 120, 120, 120, 120, 120, 120])"
 
+
 def test_wrong_create():
-    from array import array
     raised = False
-    try :
-        a = array([1,2,3])
+    try:
+        a = array([1, 2, 3])
     except TypeError:
         raised = True
     assert raised
 
+
 def test_add():
-    from array import array
     a0 = array("b", b"hello")
     a1 = array("b", b"world")
     assert a0 + a1 == array("b", b"helloworld")
@@ -96,11 +90,25 @@ def test_add():
 
 def test_add_int_to_long_storage():
     x = [2147483648, 1]
-    x[0] = 42 # should not raise
+    x[0] = 42  # should not raise
     assert x[0] == 42
 
+
 def test_add_int_to_long_array():
-    from array import array
     y = array('l', [1, 2])
-    y[0] = 42 # should not raise
+    y[0] = 42  # should not raise
     assert y[0] == 42
+
+
+def test_array_native_storage():
+    a = array('l', [1, 2, 3])
+    if sys.implementation.name == 'graalpy':
+        assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
+        __graalpython__.storage_to_native(a)
+    assert a[1] == 2
+    a[1] = 3
+    assert a == array('l', [1, 3, 3])
+    assert a[1:] == array('l', [3, 3])
+    del a[2:]
+    a.insert(1, -1)
+    assert a == array('l', [1, -1, 3])
