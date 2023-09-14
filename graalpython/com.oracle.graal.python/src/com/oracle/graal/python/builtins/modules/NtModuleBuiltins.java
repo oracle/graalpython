@@ -160,7 +160,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return NtModuleBuiltinsClinicProviders.PathSplitRootNodeClinicProviderGen.INSTANCE;
+            return NtModuleBuiltinsClinicProviders.DeviceEncodingNodeClinicProviderGen.INSTANCE;
         }
     }
 }
