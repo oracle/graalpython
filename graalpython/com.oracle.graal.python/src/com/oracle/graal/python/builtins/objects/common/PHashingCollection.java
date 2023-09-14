@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public PHashingCollection(Object cls, Shape instanceShape, HashingStorage storage) {
         super(cls, instanceShape);
         this.storage = storage;
+        assert storage != null;
     }
 
     public final HashingStorage getDictStorage() {
@@ -59,6 +60,7 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
 
     public final void setDictStorage(HashingStorage storage) {
         assert storage == this.storage || !(this instanceof PFrozenSet) : "frozenSet is unmodifiable";
+        assert storage != null;
         this.storage = storage;
     }
 }

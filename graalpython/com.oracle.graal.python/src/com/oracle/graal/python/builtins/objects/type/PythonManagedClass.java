@@ -35,8 +35,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -287,12 +285,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     public final void setBases(Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
-        HashingStorage[] newBasesSubclasses = new HashingStorage[newBaseClasses.length];
-        for (int i = 0; i < newBaseClasses.length; i++) {
-            HashingStorage storage = GetSubclassesNode.executeUncached(newBaseClasses[i]).getDictStorage();
-            newBasesSubclasses[i++] = HashingStorageCopy.executeUncached(storage);
-        }
-
         Object oldBase = getBase();
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         PythonAbstractClass[] oldMRO = (PythonAbstractClass[]) this.methodResolutionOrder.getInternalArray();
@@ -314,47 +306,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.setMRO(ComputeMroNode.doSlowPath(this));
 
             for (PythonAbstractClass scls : subclassesArray) {
-                if (scls instanceof PythonManagedClass) {
-                    PythonManagedClass pmc = (PythonManagedClass) scls;
+                if (scls instanceof PythonManagedClass pmc) {
                     pmc.methodResolutionOrder.lookupChanged();
                     pmc.setMRO(ComputeMroNode.doSlowPath(scls));
                 }
             }
-
-            boolean isCtxInitialized = PythonContext.get(null).isInitialized();
-            if (this.baseClasses == newBaseClasses) {
-                // take no action if bases were replaced through reentrance
-                for (PythonAbstractClass base : oldBaseClasses) {
-                    if (base instanceof PythonManagedClass) {
-                        if (isCtxInitialized) {
-                            GetSubclassesNode.executeUncached(base).delItem(this);
-                        } else {
-                            // slots aren't populated yet during context initialization
-                            GetSubclassesNode.unsafeRemoveSubclass(base, this);
-                        }
-                    }
-                }
-                for (PythonAbstractClass base : newBaseClasses) {
-                    if (base instanceof PythonManagedClass) {
-                        if (isCtxInitialized) {
-                            GetSubclassesNode.executeUncached(base).setItem(this, this);
-                        } else {
-                            // slots aren't populated yet during context initialization
-                            GetSubclassesNode.unsafeAddSubclass(base, this);
-                        }
-                    }
-                }
-            }
-
         } catch (PException pe) {
             // undo
-            for (int i = 0; i < newBaseClasses.length; i++) {
-                PythonAbstractClass base = newBaseClasses[i];
-                if (base != null) {
-                    PDict dict = GetSubclassesNode.executeUncached(base);
-                    dict.setDictStorage(newBasesSubclasses[i]);
-                }
-            }
             if (this.baseClasses == newBaseClasses) {
                 // take no action if bases were replaced through reentrance
                 // revert only if set in this call
@@ -374,6 +332,31 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 }
             }
             throw pe;
+        }
+
+        if (this.baseClasses == newBaseClasses) {
+            // take no action if bases were replaced through reentrance
+            boolean isCtxInitialized = PythonContext.get(null).isInitialized();
+            for (PythonAbstractClass base : oldBaseClasses) {
+                if (base instanceof PythonManagedClass) {
+                    if (isCtxInitialized) {
+                        GetSubclassesNode.executeUncached(base).delItem(this);
+                    } else {
+                        // slots aren't populated yet during context initialization
+                        GetSubclassesNode.unsafeRemoveSubclass(base, this);
+                    }
+                }
+            }
+            for (PythonAbstractClass base : newBaseClasses) {
+                if (base instanceof PythonManagedClass) {
+                    if (isCtxInitialized) {
+                        GetSubclassesNode.executeUncached(base).setItem(this, this);
+                    } else {
+                        // slots aren't populated yet during context initialization
+                        GetSubclassesNode.unsafeAddSubclass(base, this);
+                    }
+                }
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -48,11 +47,6 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PDefaultDict extends PDict {
     private Object defaultFactory;
-
-    public PDefaultDict(PythonLanguage lang, Object defaultFactory) {
-        super(lang);
-        this.defaultFactory = defaultFactory;
-    }
 
     public PDefaultDict(Object cls, Shape instanceShape, HashingStorage dictStorage, Object defaultFactory) {
         super(cls, instanceShape, dictStorage);
