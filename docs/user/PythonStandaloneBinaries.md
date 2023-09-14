@@ -15,8 +15,7 @@ The polyglot skeletons are set up with Maven to to generate a standalone binary 
 
 ### Prerequisite
 
-A GraalPy distribution.
-TODO - add link
+Any GraalPy distribution starting from than 23.1 from [the GraalPy releases page](https://github.com/oracle/graalpython/releases).
 
 ## Creating GraalPy Native Binaries
 
