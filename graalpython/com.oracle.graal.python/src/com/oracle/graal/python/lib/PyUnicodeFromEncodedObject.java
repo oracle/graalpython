@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODING_STR_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.nodes.IndirectCallData;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -67,7 +67,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_FromEncodedObject}.
@@ -110,21 +109,18 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,
-                    @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
-                    @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                    @Cached(inline = false) PythonObjectFactory factory) {
         Object buffer = bufferAcquireLib.acquireReadonly(object, frame, PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget), indirectCallNode);
         try {
             int len = bufferLib.getBufferLength(buffer);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }
-            // TODO GR-37601: this is probably never executed
-            TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getInternalOrCopiedByteArray(object), 0, len, Encoding.UTF_8, true);
-            final TruffleString unicode = switchEncodingNode.execute(utf8, TS_ENCODING);
-            return decode.execute(frame, inliningTarget, unicode, encoding, errors);
+            PBytes bytes = factory.createBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len);
+            return decode.execute(frame, inliningTarget, bytes, encoding, errors);
         } finally {
-            bufferLib.release(object, frame, indirectCallNode);
+            bufferLib.release(buffer, frame, indirectCallNode);
         }
     }
 }
