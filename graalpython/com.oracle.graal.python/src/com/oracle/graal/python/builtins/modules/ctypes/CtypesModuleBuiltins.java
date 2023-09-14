@@ -703,7 +703,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        protected static Object loadLLVMLibrary(PythonContext context, TruffleString path) throws ImportException, ApiInitException, IOException {
+        protected static Object loadLLVMLibrary(PythonContext context, Node nodeForRaise, TruffleString path) throws ImportException, ApiInitException, IOException {
+            context.ensureLLVMLanguage(nodeForRaise);
             if (path.isEmpty()) {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
                 return cApiContext.getLLVMLibrary();
@@ -744,7 +745,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                                             endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
-                    Object handler = loadLLVMLibrary(context, name);
+                    Object handler = loadLLVMLibrary(context, inliningTarget, name);
                     long adr = hashNode.execute(frame, inliningTarget, handler);
                     handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
                     registerAddress(context, handle.adr, handle);

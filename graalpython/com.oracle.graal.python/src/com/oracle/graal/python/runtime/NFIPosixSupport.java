@@ -76,10 +76,7 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -354,9 +351,7 @@ public final class NFIPosixSupport extends PosixSupport {
             String backend = posix.nfiBackend.toJavaStringUncached();
             Env env = posix.context.getEnv();
 
-            if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, "PosixModuleBackend", "native");
-            }
+            posix.context.ensureNFILanguage(null, "PosixModuleBackend", "native");
 
             String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
