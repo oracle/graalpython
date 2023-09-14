@@ -350,6 +350,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             environ.setItem(key, val);
         }
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            // XXX: Until we fix pip
+            environ.setItem(toTruffleStringUncached("PIP_NO_CACHE_DIR"), toTruffleStringUncached("0"));
+        }
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             posix = core.lookupBuiltinModule(T_NT);
