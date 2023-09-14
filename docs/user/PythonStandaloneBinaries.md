@@ -9,14 +9,11 @@ permalink: /reference-manual/python/standalone-binaries/
 With GraalPy, you can distribute Python applications or libraries as standalone binaries or JAR files without any external dependencies.
 The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) on which GraalPy is built, and the [Sulong LLVM runtime](https://github.com/oracle/graal/tree/master/sulong) that GraalPy leverages for managed execution of Python's native extensions enables users to completely virtualize all filesystem accesses of Python programs, including those to the standard library and installed packages.
 
-GraalPy comes with a module that can create standalone binaries or Java-Python polyglot project skeletons.
-The binaries bundle everything into one native executable.
-The polyglot skeletons are set up with Maven to to generate a standalone binary for a simple java - python hello world example and can be used as a starting point or inspiration for further java-python polyglot development.
+GraalPy comes with a module that can create Python binaries for Linux, Windows, and macOS. 
+The binaries bundle everything into a single-file native executable.
 
-### Prerequisite
-
-A GraalPy distribution.
-TODO - add link
+The tool can also generate a skeleton Maven project that sets up a polyglot embedding of Python packages into Java.
+The polyglot skeletons are set up with Maven to to generate a standalone binary for a simple Java-Python HelloWorld example and can be used as a starting point or inspiration for further Java-Python polyglot development.
 
 ## Creating GraalPy Native Binaries
 
