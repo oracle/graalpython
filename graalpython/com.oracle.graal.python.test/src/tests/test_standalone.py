@@ -101,6 +101,7 @@ def test_polyglot_app():
 
     graalpy = get_gp()
     env = os.environ.copy()
+    env["PYLAUNCHER_DEBUG"] = "1"
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
