@@ -528,6 +528,24 @@ suite = {
             "testProject": True,
         },
 
+        "python-venvlauncher": {
+            "subDir": "graalpython",
+            "native":  "executable",
+            "deliverable": "venvlauncher",
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": True,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+            },
+        },
+
         "python-libbz2": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -1212,6 +1230,8 @@ suite = {
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
                         },
                     },
                 },

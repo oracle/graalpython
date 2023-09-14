@@ -255,6 +255,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
+        mod.setAttribute(tsLiteral("venvlauncher_command"), context.getOption(PythonOptions.VenvlauncherCommand));
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
         mod.setAttribute(tsLiteral("use_system_toolchain"), context.getOption(PythonOptions.UseSystemToolchain));
         mod.setAttribute(tsLiteral("ext_mode"), context.getOption(PythonOptions.NativeModules) ? T_NATIVE : T_LLVM_LANGUAGE);

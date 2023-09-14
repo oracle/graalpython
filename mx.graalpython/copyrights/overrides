@@ -670,6 +670,7 @@ graalpython/lib-graalpython/modules/hpy/devel/src/runtime/structseq.c,hpy.copyri
 graalpython/lib-graalpython/modules/hpy/devel/version.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/trace/__init__.py,hpy.copyright
 graalpython/python-libposix/src/fork_exec.c,python.copyright
+graalpython/python-venvlauncher/src/venvlauncher.c,python.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright
