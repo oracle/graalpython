@@ -555,7 +555,7 @@ def _abspath_fallback(path):
 # Return an absolute path.
 try:
     from nt import _getfullpathname
-
+    raise ImportError # Truffle change
 except ImportError: # not running on Windows - mock up something sensible
     abspath = _abspath_fallback
 
@@ -571,7 +571,8 @@ try:
     from nt import _getfinalpathname, readlink as _nt_readlink
 except ImportError:
     # realpath is a no-op on systems without _getfinalpathname support.
-    realpath = abspath
+    def realpath(path, *, strict=False):  # Truffle change
+        return abspath(path)
 else:
     def _readlink_deep(path):
         # These error codes indicate that we should stop reading links and
