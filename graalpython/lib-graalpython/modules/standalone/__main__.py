@@ -149,28 +149,32 @@ mvn -f "${location}/pom.xml" exec:exec -Dexec.executable="${JAVA}" -Dexec.workin
 """
 
 WIN32_LAUNCHER_SCRIPT = r"""@echo off
-REM Invoke the GraalPy launcher through Maven, passing any arguments passed to
-REM this script via GRAAL_PYTHON_ARGS. To avoid having to deal with multiple
-REM layers of escaping, we store the arguments into GRAAL_PYTHON_ARGS delimited
-REM with vertical tabs.
 
-REM Since BAT files cannot easily generate vertical tabs, we create a helper
-REM script to do it for us. We're calling Maven soon anyway, so Java must be
-REM available.
-set JAVA="%JAVA_HOME%/bin/java"
-if not defined JAVA_HOME set JAVA=java
-echo class VTabCreator { public static void main(String[] args) { System.out.print('\013'); } } > VTabCreator.java
-for /f "delims=" %%i in ('%JAVA% VTabCreator.java') do set VTAB=%%i
-del VTabCreator.java
+if exist "%~dp0graalpy.exe" goto :eof
 
-REM Store each argument separated by vtab
-set GRAAL_PYTHON_ARGS=
-:loop
-set GRAAL_PYTHON_ARGS=%GRAAL_PYTHON_ARGS%%VTAB%%~1
-shift /1
-if not "%~1"=="" goto loop
+REM This is a temporary script that calls the GraalPy launcher through Maven.
+REM This script installs the venvlauncher that comes with the GraalPy resources
+REM into the same folder it is in. This way, a binary launcher is used during
+REM actual venv creation later down the line.
 
-mvn -f "%~dp0pom.xml" exec:exec -Dexec.executable=java -Dexec.args="--module-path %%classpath -Dorg.graalvm.launcher.executablename=%~0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain"
+echo import os                                                                            > __create_launcher.py
+echo import shutil                                                                       >> __create_launcher.py
+echo import struct                                                                       >> __create_launcher.py
+echo import venv                                                                         >> __create_launcher.py
+echo vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')                 >> __create_launcher.py
+echo tl = os.path.join(r'%~dp0.', 'graalpy.exe')                                         >> __create_launcher.py
+echo shutil.copy(vl, tl)                                                                 >> __create_launcher.py
+echo cmd = r'mvn.cmd -f "%~dp0pom.xml" exec:exec -Dexec.executable=java'                 >> __create_launcher.py
+echo cmd ^+= r' ^"-Dexec.workingdir=%CD%^"'                                              >> __create_launcher.py
+echo cmd ^+= ' ^"-Dexec.args=--module-path %%classpath --module'                         >> __create_launcher.py
+echo cmd ^+= ' org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain^"'  >> __create_launcher.py
+echo with open(tl, 'ab') as f:                                                           >> __create_launcher.py
+echo     sz = f.write(cmd.encode('utf-16le'))                                            >> __create_launcher.py
+echo     f.write(struct.pack("@I", sz)) == 4                                             >> __create_launcher.py
+
+mvn -f "%~dp0pom.xml" exec:exec -Dexec.executable=java "-Dexec.workingdir=%CD%" "-Dexec.args=--module-path %%classpath -Dorg.graalvm.launcher.executablename=%~0 --module org.graalvm.py.launcher/com.oracle.graal.python.shell.GraalPythonMain %~dp0__create_launcher.py"
+
+del __create_launcher.py
 """
 
 def get_file(*paths):
@@ -332,8 +336,21 @@ class Standalone(AbstractStandalone):
             target_dir,
             lib_source,
             f"{VFS_HOME_PREFIX}/lib-python/3",
-            path_filter=lambda file=None, dir=None: dir
-            and dir in ["idlelib", "ensurepip", "tkinter", "turtledemo"],
+            path_filter=lambda file=None, dir=None: (
+                (
+                    dir
+                    and dir
+                    in [
+                        "idlelib",
+                        "ensurepip",
+                        "tkinter",
+                        "turtledemo",
+                        "sulong",
+                        "llvm-toolchain",
+                    ]
+                )
+                or (file and file.split(".")[-1] in ["so", "dll", "dylib"])
+            ),
         )
 
         if venv:
