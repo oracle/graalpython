@@ -57,6 +57,7 @@ import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_
 import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
+import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
 import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -2035,11 +2036,34 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @ExportMessage
         int getFamily() {
-            long offset = getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
-            if (getLen() >= offset + Short.BYTES) {
-                return ARRAY_ACCESSOR.getShort(data, offset);
+            int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
+            int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
+            if (getLen() >= offset + size) {
+                if (size == 1) {
+                    return Byte.toUnsignedInt(data[offset]);
+                } else if (size == 2) {
+                    return Short.toUnsignedInt(ARRAY_ACCESSOR.getShort(data, offset));
+                } else if (size == 4) {
+                    return ARRAY_ACCESSOR.getInt(data, offset);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("Unexpected sizeof(sa_family_t)");
+                }
             } else {
                 return AF_UNSPEC.value;
+            }
+        }
+
+        void setFamily(int family) {
+            int offset = (int) getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY);
+            int size = (int) getConstant(SIZEOF_STRUCT_SOCKADDR_SA_FAMILY);
+            if (size == 1) {
+                data[offset] = (byte) family;
+            } else if (size == 2) {
+                ARRAY_ACCESSOR.putShort(data, offset, (short) family);
+            } else if (size == 4) {
+                ARRAY_ACCESSOR.putInt(data, offset, family);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Unexpected sizeof(sa_family_t)");
             }
         }
 
@@ -2108,10 +2132,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
         void setLen(int len) {
             this.len[0] = len;
-        }
-
-        void setFamily(int family) {
-            ARRAY_ACCESSOR.putShort(data, getConstant(OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY), (short) family);
         }
 
     }
