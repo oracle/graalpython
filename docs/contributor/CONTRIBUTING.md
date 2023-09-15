@@ -11,8 +11,7 @@ Please also take some time to review our [code of conduct](http://www.graalvm.or
 
 The first thing you want to do is to set up [`mx`](https://github.com/graalvm/mx.git).
 This is the build tool we use to develop GraalVM languages.
-You also need LLVM 6, including the `opt` tool -- the latter is not included on macOS by default, here you can install the `homebrew` version of LLVM, which includes this tool.
-Note that you can use any JDK, and do not necessarily need GraalVM for development.
+Note that you can use any JDK, and do not need GraalVM for development.
 In that case you'll only be able to run without the just-in-time compiler, but that can be fine for making and testing changes that are not performance sensitive.
 
 Once you have `mx` on your `PATH`, you can run `mx build` in this repository.
@@ -39,9 +38,10 @@ Besides the source code of the Python interpreter, we have some useful `mx` func
 As you make changes, you can always test them with `mx build && mx python`.
 Additionally, there are various "gates" that we use on our CI systems to check any code that is committed. 
 You can run all the gates with the command `mx python-gate` or just some by using `mx python-gate --tags [TAG]`.
-Two interesting gates to run that cover most things are:
+Interesting gates to run that cover a good chunk of the code things are:
 
 - `python-unittest` - Run the unit tests written in Python, including those for the C extension API
+- `python-junit` - Run the unit tests written in Java.
 - `python-license` - Check that all files have the correct copyright headers applied to them
 
 ### Built-In Modules and Classes
@@ -63,9 +63,8 @@ The layout and naming of modules and types is kept similar to the CPython source
 For some special _dunder_ methods (`__add__`, `__getitem__`, `__getattribute__`, ...) you may have to figure out the C API slot names for them to find the right piece of code (`nb_add`, `sq_item`, `tp_getattr`, ...).
 
 You will find that often there are specific C API methods that are called to convert or coerce arguments, to look up methods either starting on the object or only on the class, to call a callable object or invoke a method, and more.
-In general, most of these methods should have equivalents in our `PythonObjectLibrary`.
-See the [_IMPLEMENTATION_DETAILS.md_](./IMPLEMENTATION_DETAILS.md) file for details on that library.
-If something is missing that is commonly used, we probably have some Node for it, but it may be a good idea to add it to the `PythonObjectLibrary` for easier discovery.
+In general, most of these methods should have equivalents in our libs nodes in the `com.oracle.graal.python.lib` package.
+If something is missing that is commonly used, we probably have some Node for it somewhere, but it may be a good idea to create a lib node and migrate usages.
 
 GraalPy has its own variant of the Argument Clinic preprocessor.
 It is activated by: 
@@ -85,26 +84,25 @@ This directory also includes a _modules_ directory for built-in modules that we 
 
 ## Debug options
 
-GraalPy provides proper debug options.
+GraalPy provides multiple debug options.
 It is possible to either debug the Python code using a Chrome debugger, or the Java code using your preferred IDE.
-The following commands should be run in a `venv` virtual environment, which provides a `graalpy` executable.
 
-For debug Python side code run this:
-
+To debug Python code using Chrome, run this:
 ```bash
-graalpy --inspect your_script.py
+mx python --inspect --inspect.Internal your_script.py
 ```
 
 This will open a debug server, which can be accessed in a Chrome Browser via the URL `chrome://inspect`.
 
 For debugging Java-implemented code run:
-
 ```bash
-graalpy --experimental-options -debug-java your_script.py
+mx python --experimental-options -debug-java your_script.py
 ```
 
 The command will also start a debug server, which can be used in an IDE.
 If the IDE was initialized properly by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
+
+Both of these commands also work when you have a `graalpy` executable, e.g. inside a `venv`.
 
 ## Advanced Commands to Develop and Debug
 

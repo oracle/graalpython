@@ -12,6 +12,13 @@ Since GraalVM supports several other programming languages including JavaScript,
 Ruby, and those that compile to LLVM bitcode, it also provides a Python API to interact with them.
 In fact, GraalVM uses this API internally when executing Python native extensions using the GraalVM LLVM runtime.
 
+Other languages are only available for the GraalPy Java distributions.
+To install other languages into a GraalPy, use `libexec/graalpy-polyglot-get` from the distribution's root directory.
+To install Ruby, for example:
+```shell
+libexec/graalpy-polyglot-get ruby
+```
+
 You can import the `polyglot` module to interact with other languages:
 ```python
 >>> import polyglot
