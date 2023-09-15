@@ -4725,6 +4725,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         TruffleString varname = localNames[oparg];
         DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, useCachedNodes);
