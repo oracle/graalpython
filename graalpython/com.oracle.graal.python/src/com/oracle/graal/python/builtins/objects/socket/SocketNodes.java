@@ -55,7 +55,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_BROADCAST;
-import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
@@ -90,10 +89,12 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -141,7 +142,7 @@ public abstract class SocketNodes {
             int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
             Object posixSupport = context.getPosixSupport();
-            return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
+            return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
         }
 
         @Specialization(guards = "isInet6(socket)")
@@ -177,7 +178,7 @@ public abstract class SocketNodes {
             }
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
             Object posixSupport = context.getPosixSupport();
-            return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
+            return posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
         }
 
         @Specialization(guards = "isUnix(socket)")
@@ -208,15 +209,14 @@ public abstract class SocketNodes {
                 // not a linux "abstract" address -> needs a terminating zero
                 path = arrayCopyOf(path, path.length + 1);
             }
-            if (path.length > SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value) {
-                throw raise(OSError, ErrorMessages.AF_UNIX_PATH_TOO_LONG, caller);
-            }
             PythonContext context = PythonContext.get(this);
             Object posixSupport = context.getPosixSupport();
             try {
-                return posixLib.createUniversalSockAddr(posixSupport, new UnixSockAddr(path));
-            } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+                return posixLib.createUniversalSockAddrUnix(posixSupport, new UnixSockAddr(path));
+            } catch (UnsupportedPosixFeatureException e) {
                 throw raise(OSError, ErrorMessages.AF_UNIX_NOT_SUPPORTED, caller);
+            } catch (InvalidUnixSocketPathException e) {
+                throw raise(OSError, ErrorMessages.AF_UNIX_PATH_TOO_LONG, caller);
             }
         }
 
@@ -297,14 +297,14 @@ public abstract class SocketNodes {
                     if (family != AF_INET.value && family != AF_UNSPEC.value) {
                         throw raise(OSError, ErrorMessages.ADDRESS_FAMILY_MISMATCHED);
                     }
-                    return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(0, INADDR_BROADCAST.value));
+                    return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(0, INADDR_BROADCAST.value));
                 }
                 /* avoid a name resolution in case of numeric address */
                 /* check for an IPv4 address */
                 if (family == AF_INET.value || family == AF_UNSPEC.value) {
                     byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixLib, posixSupport, AF_INET.value, name);
                     if (bytes != null) {
-                        return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(0, bytes));
+                        return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(0, bytes));
                     }
                 }
                 /*
@@ -315,7 +315,7 @@ public abstract class SocketNodes {
                 if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name)) {
                     byte[] bytes = inetPtoNCachedPNode.execute(inliningTarget, posixLib, posixSupport, AF_INET6.value, name);
                     if (bytes != null) {
-                        return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(0, bytes, 0, 0));
+                        return posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(0, bytes, 0, 0));
                     }
                 }
                 /* perform a name resolution */

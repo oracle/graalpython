@@ -214,20 +214,5 @@ class PosixConstantsWin32 {
         constants.put("IPV6_RECVTCLASS", 40);
         constants.put("IPV6_RTHDR", 32);
         constants.put("IPV6_TCLASS", 39);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_STORAGE", 128);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN", 16);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6", 28);
-        constants.put("SIZEOF_STRUCT_IN_ADDR", 4);
-        constants.put("OFFSETOF_STRUCT_IN_ADDR_S_ADDR", 0);
-        constants.put("SIZEOF_STRUCT_IN_ADDR_S_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN", 0);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH", 0);
     }
 }

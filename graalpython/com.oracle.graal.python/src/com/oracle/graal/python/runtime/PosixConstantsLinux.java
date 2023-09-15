@@ -286,38 +286,5 @@ class PosixConstantsLinux {
         constants.put("IPV6_RTHDR_TYPE_0", 0);
         constants.put("IPV6_RECVPATHMTU", 60);
         constants.put("IPV6_TCLASS", 67);
-        constants.put("SIZEOF_STRUCT_SOCKADDR", 16);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_SA_FAMILY", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_STORAGE", 128);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN", 16);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6", 28);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_PORT", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO", 4);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO", 4);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR", 8);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR", 16);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID", 24);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID", 4);
-        constants.put("SIZEOF_STRUCT_IN_ADDR", 4);
-        constants.put("OFFSETOF_STRUCT_IN_ADDR_S_ADDR", 0);
-        constants.put("SIZEOF_STRUCT_IN_ADDR_S_ADDR", 4);
-        constants.put("SIZEOF_STRUCT_IN6_ADDR", 16);
-        constants.put("OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR", 0);
-        constants.put("SIZEOF_STRUCT_IN6_ADDR_S6_ADDR", 16);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN", 110);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_FAMILY", 0);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN_SUN_FAMILY", 2);
-        constants.put("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH", 2);
-        constants.put("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH", 108);
     }
 }

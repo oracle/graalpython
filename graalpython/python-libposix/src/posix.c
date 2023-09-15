@@ -963,3 +963,50 @@ int32_t get_errno() {
 void set_errno(int e) {
     errno = e;
 }
+
+#ifdef _WIN32
+#define unix_or_0(x) 0
+#else
+#define unix_or_0(x) x
+#endif
+
+// start generated
+int32_t init_constants(int64_t* out, int32_t len) {
+    if (len != 33)
+        return -1;
+    out[0] = sizeof(struct sockaddr);
+    out[1] = sizeof(((struct sockaddr*)0)->sa_family);
+    out[2] = offsetof(struct sockaddr, sa_family);
+    out[3] = sizeof(struct sockaddr_storage);
+    out[4] = sizeof(struct sockaddr_in);
+    out[5] = sizeof(((struct sockaddr_in*)0)->sin_family);
+    out[6] = offsetof(struct sockaddr_in, sin_family);
+    out[7] = sizeof(((struct sockaddr_in*)0)->sin_port);
+    out[8] = offsetof(struct sockaddr_in, sin_port);
+    out[9] = sizeof(((struct sockaddr_in*)0)->sin_addr);
+    out[10] = offsetof(struct sockaddr_in, sin_addr);
+    out[11] = sizeof(struct sockaddr_in6);
+    out[12] = sizeof(((struct sockaddr_in6*)0)->sin6_family);
+    out[13] = offsetof(struct sockaddr_in6, sin6_family);
+    out[14] = sizeof(((struct sockaddr_in6*)0)->sin6_port);
+    out[15] = offsetof(struct sockaddr_in6, sin6_port);
+    out[16] = sizeof(((struct sockaddr_in6*)0)->sin6_flowinfo);
+    out[17] = offsetof(struct sockaddr_in6, sin6_flowinfo);
+    out[18] = sizeof(((struct sockaddr_in6*)0)->sin6_addr);
+    out[19] = offsetof(struct sockaddr_in6, sin6_addr);
+    out[20] = sizeof(((struct sockaddr_in6*)0)->sin6_scope_id);
+    out[21] = offsetof(struct sockaddr_in6, sin6_scope_id);
+    out[22] = sizeof(struct in_addr);
+    out[23] = sizeof(((struct in_addr*)0)->s_addr);
+    out[24] = offsetof(struct in_addr, s_addr);
+    out[25] = sizeof(struct in6_addr);
+    out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
+    out[27] = offsetof(struct in6_addr, s6_addr);
+    out[28] = unix_or_0(sizeof(struct sockaddr_un));
+    out[29] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_family));
+    out[30] = unix_or_0(offsetof(struct sockaddr_un, sun_family));
+    out[31] = unix_or_0(sizeof(((struct sockaddr_un*)0)->sun_path));
+    out[32] = unix_or_0(offsetof(struct sockaddr_un, sun_path));
+    return 0;
+}
+// end generated

@@ -85,6 +85,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -110,7 +111,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -122,6 +122,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -469,7 +470,13 @@ public class SocketTests {
         srv.bind(unixSockAddr);
         srv.listen(5);
         Socket cli = new Socket(AF_UNIX.value, SOCK_STREAM.value);
-        cli.connect(createUsa(unixSockAddr));
+        UniversalSockAddr addr = null;
+        try {
+            addr = lib.createUniversalSockAddrUnix(posixSupport, unixSockAddr);
+        } catch (InvalidUnixSocketPathException e) {
+            assumeNoException(e);
+        }
+        cli.connect(addr);
 
         Socket c = new Socket(srv.acceptFd(UNIX_SOCK_ADDR_UNNAMED), AF_UNIX.value, SOCK_STREAM.value);
 
@@ -1021,7 +1028,6 @@ public class SocketTests {
         f.delete();
         f.deleteOnExit();
         byte[] fileNameBytes = f.getAbsolutePath().getBytes();
-        assumeTrue(fileNameBytes.length + 1 <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value);
         return Arrays.copyOf(fileNameBytes, fileNameBytes.length + 1);
     }
 
@@ -1079,7 +1085,19 @@ public class SocketTests {
     }
 
     private UniversalSockAddr createUsa(FamilySpecificSockAddr src) {
-        return lib.createUniversalSockAddr(posixSupport, src);
+        if (src instanceof Inet4SockAddr inet4SockAddr) {
+            return lib.createUniversalSockAddrInet4(posixSupport, inet4SockAddr);
+        } else if (src instanceof Inet6SockAddr inet6SockAddr) {
+            return lib.createUniversalSockAddrInet6(posixSupport, inet6SockAddr);
+        } else if (src instanceof UnixSockAddr unixSockAddr) {
+            try {
+                return lib.createUniversalSockAddrUnix(posixSupport, unixSockAddr);
+            } catch (InvalidUnixSocketPathException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new AssertionError("Unexpected subclass of FamilySpecificSockAddr: " + src.getClass().getName());
+        }
     }
 
     private int getIntSockOpt(int socket, int level, int option) throws PosixException {

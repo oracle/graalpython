@@ -108,7 +108,6 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
@@ -464,7 +463,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    UniversalSockAddr addr = posixLib.createUniversalSockAddr(getPosixSupport(), new Inet4SockAddr(port, INADDR_ANY.value));
+                    UniversalSockAddr addr = posixLib.createUniversalSockAddrInet4(getPosixSupport(), new Inet4SockAddr(port, INADDR_ANY.value));
                     int flags = 0;
                     if (protocolName != null && equalNode.execute(protocolName, T_UDP, TS_ENCODING)) {
                         flags |= NI_DGRAM.value;
@@ -561,19 +560,19 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
 
-                FamilySpecificSockAddr queryAddr;
+                UniversalSockAddr queryAddr;
                 if (family == AF_INET.value) {
                     if (addrLen != 2) {
                         throw raise(OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
                     }
-                    queryAddr = new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress());
+                    queryAddr = posixLib.createUniversalSockAddrInet4(getPosixSupport(), new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress()));
                 } else if (family == AF_INET6.value) {
-                    queryAddr = new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid);
+                    queryAddr = posixLib.createUniversalSockAddrInet6(getPosixSupport(), new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid));
                 } else {
                     throw raise(OSError, ErrorMessages.UNKNOWN_FAMILY);
                 }
 
-                Object[] getnameinfo = posixLib.getnameinfo(getPosixSupport(), posixLib.createUniversalSockAddr(getPosixSupport(), queryAddr), flags);
+                Object[] getnameinfo = posixLib.getnameinfo(getPosixSupport(), queryAddr, flags);
                 TruffleString host = posixLib.getPathAsString(getPosixSupport(), getnameinfo[0]);
                 TruffleString service = posixLib.getPathAsString(getPosixSupport(), getnameinfo[1]);
                 return factory.createTuple(new Object[]{host, service});
