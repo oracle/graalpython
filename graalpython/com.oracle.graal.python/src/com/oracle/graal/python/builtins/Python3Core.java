@@ -437,7 +437,7 @@ public abstract class Python3Core {
         builtins.removeAll(toRemove);
     }
 
-    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
+    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed, boolean socketIOAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
                         new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
@@ -600,9 +600,9 @@ public abstract class Python3Core {
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SelectModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SelectModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketBuiltins(),
                         PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
@@ -778,9 +778,9 @@ public abstract class Python3Core {
     private final PythonLanguage language;
     @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed, boolean socketIOAllowed) {
         this.language = language;
-        this.builtins = initializeBuiltins(isNativeSupportAllowed);
+        this.builtins = initializeBuiltins(isNativeSupportAllowed, socketIOAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
