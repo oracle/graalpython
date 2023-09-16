@@ -131,21 +131,18 @@ public abstract class IteratorNodes {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doList(Node inliningTarget, PList object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+        static int doList(PList object) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doTuple(Node inliningTarget, PTuple object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+        static int doTuple(PTuple object) {
             return object.getSequenceStorage().length();
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
         static int doDict(Node inliningTarget, PDict object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }

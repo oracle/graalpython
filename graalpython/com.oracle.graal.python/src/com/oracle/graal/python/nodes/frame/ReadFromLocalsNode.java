@@ -48,6 +48,7 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -87,6 +88,7 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
     }
 
     @Fallback
+    @InliningCutoff
     static Object readFromLocals(VirtualFrame frame, Node inliningTarget, Object locals, TruffleString name,
                     @Cached PyObjectGetItem getItem,
                     @Cached IsBuiltinObjectProfile errorProfile) {

@@ -3013,6 +3013,44 @@ def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_d
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, cwd=SUITE.dir, **kwargs)
 
 
+def host_inlining_log_extract_method(args_in):
+    parser = ArgumentParser(description="Extracts single method from host inlining log file. "
+                                 "Result, when saved to file, can be visualized with: java scripts/HostInliningVisualizer.java filename")
+    parser.add_argument("filename", help="file with host inlining log")
+    parser.add_argument("method", help="name of a method to extract")
+    parser.add_argument("-f", "--fields",
+                        help="fields to select from the list with details, use Python subscript syntax, "
+                             "default: '-1:' (i.e., the last field: reason for the [non-]inlining decision)", default="-1:")
+    args = parser.parse_args(args_in)
+
+    start = 'Context: HostedMethod<' + args.method + ' '
+    result = []
+    inside = False
+    remove = [
+        'com.oracle.truffle.api.impl.',
+        'com.oracle.graal.python.nodes.bytecode.',
+        'com.oracle.graal.python.nodes.',
+        'com.oracle.graal.python.']
+    with open(args.filename) as file:
+        while line := file.readline():
+            if inside:
+                if line.strip() == '':
+                    print('\n'.join(result))
+                    return 0
+                match = re.search(r'\[inlined.*\]', line)
+                if match:
+                    details = match.group().split(',')
+                    details = ', '.join(eval(f"details[{args.fields}]"))  #pylint: disable=eval-used
+                    line = line[:match.start()].rstrip() + f' [{details}]'
+                for x in remove:
+                    line = line.replace(x, '')
+                result.append(line)
+            elif start in line:
+                inside = True
+    print("Method not found in the log")
+    return 1
+
+
 class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     # We use global state, which influences what this unit-test config is going to do
     # The global state can be adjusted before a test run to achieve a different tests configuration
@@ -3068,4 +3106,5 @@ mx.update_commands(SUITE, {
     'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'python-capi-forwards': [generate_capi_forwards, ''],
+    'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
 })

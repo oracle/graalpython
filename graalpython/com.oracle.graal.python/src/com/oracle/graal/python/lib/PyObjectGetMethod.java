@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -172,6 +173,7 @@ public abstract class PyObjectGetMethod extends Node {
 
     // No explicit branch profiling when we're looking up multiple things
     @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
+    @InliningCutoff
     static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
@@ -214,7 +216,8 @@ public abstract class PyObjectGetMethod extends Node {
         throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
-    @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, receiver)", limit = "1")
+    @Specialization(guards = "isForeignObject(inliningTarget, isForeignObjectNode, receiver)", limit = "1")
+    @InliningCutoff
     static Object getForeignMethod(VirtualFrame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached(inline = false) TruffleString.ToJavaStringNode toJavaString,
@@ -228,7 +231,13 @@ public abstract class PyObjectGetMethod extends Node {
         }
     }
 
+    @InliningCutoff
+    static boolean isForeignObject(Node inliningTarget, IsForeignObjectNode isForeignObjectNode, Object receiver) {
+        return isForeignObjectNode.execute(inliningTarget, receiver);
+    }
+
     @Fallback
+    @InliningCutoff
     static Object getGenericAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @Exclusive @Cached PyObjectGetAttr getAttr) {
         return new BoundDescriptor(getAttr.execute(frame, inliningTarget, receiver, name));

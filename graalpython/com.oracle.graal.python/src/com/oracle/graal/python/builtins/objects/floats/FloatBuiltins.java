@@ -112,6 +112,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -376,6 +377,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
+        @InliningCutoff
         double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
             if (doSpecialCases(left, right) == 1) {
@@ -391,6 +393,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doDD")
+        @InliningCutoff
         Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
@@ -407,6 +410,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Bind("this") Node inliningTarget,

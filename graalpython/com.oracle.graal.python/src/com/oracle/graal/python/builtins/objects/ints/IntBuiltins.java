@@ -151,6 +151,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -185,9 +186,14 @@ public final class IntBuiltins extends PythonBuiltins {
     private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
         protected void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile) {
             if (cond) {
-                divisionByZeroProfile.enter(inliningTarget);
-                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+                raiseDivByZero(inliningTarget, divisionByZeroProfile);
             }
+        }
+
+        @InliningCutoff
+        private void raiseDivByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile) {
+            divisionByZeroProfile.enter(inliningTarget);
+            throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
         }
     }
 
@@ -1107,6 +1113,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
+        @InliningCutoff
         static long doLLFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
             long exponent = right;
@@ -1124,12 +1131,14 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", replaces = "doLLFast")
+        @InliningCutoff
         PInt doLLPos(long left, long right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(op(PInt.longToBigInteger(left), right));
         }
 
         @Specialization(guards = "right < 0")
+        @InliningCutoff
         double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
@@ -1140,6 +1149,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = {OverflowException.class, ArithmeticException.class})
+        @InliningCutoff
         Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) throws OverflowException {
@@ -1151,6 +1161,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doLPNarrow")
+        @InliningCutoff
         Object doLP(long left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             Object result = op(PInt.longToBigInteger(left), right.getValue());
@@ -1162,17 +1173,20 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
+        @InliningCutoff
         long doPLNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right));
         }
 
         @Specialization(guards = "right >= 0", replaces = "doPLNarrow")
+        @InliningCutoff
         PInt doPLPos(PInt left, long right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createInt(op(left.getValue(), right));
         }
 
         @Specialization(guards = "right < 0")
+        @InliningCutoff
         double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
@@ -1183,6 +1197,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         Object doPP(PInt left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared @Cached PythonObjectFactory factory) {
             Object result = op(left.getValue(), right.getValue());
@@ -1194,6 +1209,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"right >= 0", "mod > 0"})
+        @InliningCutoff
         static long doLLPosLPos(long left, long right, long mod) {
             try {
                 return PInt.longValueExact(op(left, right, mod));
@@ -1205,6 +1221,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
+        @InliningCutoff
         long doLLPosLGeneric(long left, long right, long mod,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile errorProfile,
@@ -1226,6 +1243,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
         // see cpython://Objects/longobject.c#long_pow
         @Specialization(replaces = "doPP")
+        @InliningCutoff
         Object powModulo(Object x, Object y, Object z,
                         @Shared @Cached PythonObjectFactory factory) {
             if (!(MathGuards.isInteger(x) && MathGuards.isInteger(y))) {

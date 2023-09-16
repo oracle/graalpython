@@ -375,15 +375,18 @@ public abstract class PythonObjectFactory extends Node {
      * Primitive types
      */
     public final PInt createInt(int value) {
-        return createInt(PInt.longToBigInteger(value));
+        Shape shape = getLanguage().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PInt);
+        return trace(new PInt(PythonBuiltinClassType.PInt, shape, PInt.longToBigInteger(value)));
     }
 
     public final PInt createInt(long value) {
-        return createInt(PInt.longToBigInteger(value));
+        Shape shape = getLanguage().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PInt);
+        return trace(new PInt(PythonBuiltinClassType.PInt, shape, PInt.longToBigInteger(value)));
     }
 
     public final PInt createInt(BigInteger value) {
-        return createInt(PythonBuiltinClassType.PInt, value);
+        Shape shape = getLanguage().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PInt);
+        return trace(new PInt(PythonBuiltinClassType.PInt, shape, value));
     }
 
     public final Object createInt(Object cls, int value) {
@@ -399,7 +402,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PFloat createFloat(double value) {
-        return createFloat(PythonBuiltinClassType.PFloat, value);
+        Shape shape = getLanguage().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PFloat);
+        return trace(new PFloat(PythonBuiltinClassType.PFloat, shape, value));
     }
 
     public final PFloat createFloat(Object cls, double value) {
@@ -407,7 +411,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PString createString(TruffleString string) {
-        return createString(PythonBuiltinClassType.PString, string);
+        Shape shape = getLanguage().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PString);
+        return trace(new PString(PythonBuiltinClassType.PString, shape, string));
     }
 
     public final PString createString(Object cls, TruffleString string) {
@@ -464,7 +469,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createTuple(Object[] objects) {
-        return createTuple(PythonBuiltinClassType.PTuple, objects);
+        Shape shape = PythonBuiltinClassType.PTuple.getInstanceShape(getLanguage());
+        return trace(new PTuple(PythonBuiltinClassType.PTuple, shape, objects));
     }
 
     public final PTuple createTuple(int[] ints) {
@@ -472,7 +478,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createTuple(SequenceStorage store) {
-        return createTuple(PythonBuiltinClassType.PTuple, store);
+        Shape shape = PythonBuiltinClassType.PTuple.getInstanceShape(getLanguage());
+        return trace(new PTuple(PythonBuiltinClassType.PTuple, shape, store));
     }
 
     public final PTuple createTuple(Object cls, Shape instanceShape, Object[] objects) {
@@ -750,7 +757,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PSet createSet() {
-        return createSet(PythonBuiltinClassType.PSet);
+        Shape shape = PythonBuiltinClassType.PSet.getInstanceShape(getLanguage());
+        return trace(new PSet(PythonBuiltinClassType.PSet, shape));
     }
 
     public final PSet createSet(Object cls) {
@@ -762,7 +770,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PSet createSet(HashingStorage storage) {
-        return trace(new PSet(PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet.getInstanceShape(getLanguage()), storage));
+        Shape shape = PythonBuiltinClassType.PSet.getInstanceShape(getLanguage());
+        return trace(new PSet(PythonBuiltinClassType.PSet, shape, storage));
     }
 
     public final PFrozenSet createFrozenSet(Object cls) {
@@ -774,15 +783,18 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PFrozenSet createFrozenSet(HashingStorage storage) {
-        return createFrozenSet(PythonBuiltinClassType.PFrozenSet, storage);
+        Shape shape = PythonBuiltinClassType.PFrozenSet.getInstanceShape(getLanguage());
+        return trace(new PFrozenSet(PythonBuiltinClassType.PFrozenSet, shape, storage));
     }
 
     public final PDict createDict() {
-        return createDict(PythonBuiltinClassType.PDict);
+        Shape shape = PythonBuiltinClassType.PDict.getInstanceShape(getLanguage());
+        return trace(new PDict(PythonBuiltinClassType.PDict, shape));
     }
 
     public final PDict createDict(PKeyword[] keywords) {
-        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(getLanguage()), keywords));
+        Shape shape = PythonBuiltinClassType.PDict.getInstanceShape(getLanguage());
+        return trace(new PDict(PythonBuiltinClassType.PDict, shape, keywords));
     }
 
     public final PDict createDict(Object cls) {

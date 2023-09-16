@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -145,11 +144,10 @@ public abstract class ListNodes {
             return factory.createList(cls);
         }
 
-        @Specialization(guards = "cannotBeOverridden(list, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverriddenForImmutableType(list)")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -89,6 +90,7 @@ public abstract class ForIterONode extends PNodeWithContext {
     // TODO list, tuple, enumerate, dict keys, dict values, dict items, string, bytes
 
     @Specialization
+    @InliningCutoff
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
