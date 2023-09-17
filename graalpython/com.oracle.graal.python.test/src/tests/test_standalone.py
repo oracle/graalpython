@@ -136,13 +136,19 @@ def test_polyglot_app():
                 </project>
                 """))
 
-        cmd = MVN_CMD + ["package", "-Pnative"]
-        out, return_code = run_cmd(cmd, env, cwd=target_dir)
-        assert "BUILD SUCCESS" in out
+        cmd = MVN_CMD + ["dependency:purge-local-repository"]
+        run_cmd(cmd, env, cwd=target_dir)
+        try:
+            cmd = MVN_CMD + ["package", "-Pnative"]
+            out, return_code = run_cmd(cmd, env, cwd=target_dir)
+            assert "BUILD SUCCESS" in out
 
-        cmd = [os.path.join(target_dir, "target", "polyglot_app")]
-        out, return_code = run_cmd(cmd, env, cwd=target_dir)
-        assert out.endswith("hello java\n")
+            cmd = [os.path.join(target_dir, "target", "polyglot_app")]
+            out, return_code = run_cmd(cmd, env, cwd=target_dir)
+            assert out.endswith("hello java\n")
+        finally:
+            cmd = MVN_CMD + ["dependency:purge-local-repository"]
+            run_cmd(cmd, env, cwd=target_dir)
 
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
