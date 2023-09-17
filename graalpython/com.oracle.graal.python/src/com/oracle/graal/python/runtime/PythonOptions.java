@@ -347,6 +347,9 @@ public final class PythonOptions {
                     "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
     public static final OptionKey<TruffleString> ExecutableList = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "", help = "Option used by the venvlauncher to pass on the launcher target command", stability = OptionStability.STABLE) //
+    public static final OptionKey<TruffleString> VenvlauncherCommand = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
+
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
     public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
 

@@ -59,7 +59,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         VirtualFileSystem vfs = new VirtualFileSystem(p -> {
             String s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd");
+            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
         });
         Builder builder = Context.newBuilder()
             // set true to allow experimental options

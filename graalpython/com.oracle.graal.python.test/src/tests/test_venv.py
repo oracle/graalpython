@@ -45,7 +45,7 @@ import tempfile
 
 
 BINDIR = 'bin' if sys.platform != 'win32' else 'Scripts'
-EXESUF = '' if sys.platform != 'win32' else '.cmd'
+EXESUF = '' if sys.platform != 'win32' else '.exe'
 
 
 class VenvTest():
@@ -56,6 +56,30 @@ class VenvTest():
     def tearDownClass(self):
         shutil.rmtree(self.env_dir)
         shutil.rmtree(self.env_dir2)
+
+    def test_venv_launcher(self):
+        if sys.platform != "win32":
+            return
+        import venv
+        import struct
+        with tempfile.TemporaryDirectory() as d:
+            tmpfile = os.path.join(d, "venvlauncher.exe")
+            shutil.copy(os.path.join(venv.__path__[0], "scripts", "nt", "graalpy.exe"), tmpfile)
+            with open(tmpfile, "ab") as f:
+                sz = f.write(sys.executable.encode("utf-16le"))
+                assert f.write(struct.pack("@I", sz)) == 4
+            try:
+                out = subprocess.check_output([tmpfile, "-c", """if True:
+                import sys, os
+                x = os
+                print("Hello", sys.executable)
+                print("Original", __graalpython__.venvlauncher_command)
+                """], env={"PYLAUNCHER_DEBUG": "1"}, text=True)
+            except subprocess.CalledProcessError as err:
+                out = err.output.decode(errors="replace") if err.output else ""
+            print("out=", out, sep="\n")
+            assert f"Hello {tmpfile}" in out, out
+            assert f'Original "{sys.executable}"' in out, out
 
     def test_create_and_use_basic_venv(self):
         run = None

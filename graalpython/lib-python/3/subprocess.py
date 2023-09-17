@@ -1723,15 +1723,16 @@ class Popen:
                     else:
                         args = [comspec, "/u", "/c", list2cmdline(args)]
                 for idx, arg in enumerate(args):
+                    # Adapted per the quoting rules from
+                    # https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments
+                    if idx == 0:
+                        continue
                     modified = False
-                    if '\n' in args[idx]:
-                        # newlines are not passed correctly. the common case
-                        # where we have arguments like this is python code, so
-                        # assume that and hope for the best
-                        args[idx] = args[idx].strip().replace('\n', ';')
-                        modified = True
                     if '"' in args[idx]:
-                        args[idx] = list2cmdline(args[idx:idx + 1])
+                        args[idx] = args[idx].replace('"', '""')
+                        modified = True
+                    if '\\' in args[idx]:
+                        args[idx] = args[idx].replace('\\', '\\\\')
                         modified = True
                     if modified:
                         warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
@@ -1794,7 +1795,7 @@ class Popen:
                         env_list = []
                         for k, v in env.items():
                             k = os.fsencode(k)
-                            if b'=' in k:
+                            if b'=' in k and sys.platform != 'win32': # Truffle change
                                 raise ValueError("illegal environment variable name")
                             env_list.append(k + b'=' + os.fsencode(v))
                     else:

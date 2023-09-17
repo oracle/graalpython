@@ -688,9 +688,9 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return PInt.intValueExact(obj);
-            } catch (OverflowException e) {
+            if (Integer.toUnsignedLong((int) obj) == obj) {
+                return (int) obj;
+            } else {
                 throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
             }
         }
@@ -702,11 +702,7 @@ public abstract class CExtCommonNodes {
             if (obj < 0) {
                 throw raiseNegativeValue(raiseNode);
             }
-            try {
-                return PInt.intValueExact(obj);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-            }
+            return doLongToUInt32PosExact(obj, signed, targetTypeSize, exact, raiseNode);
         }
 
         @Specialization(guards = {"!exact", "targetTypeSize == 4"})

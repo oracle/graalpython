@@ -189,11 +189,33 @@
             </build>
         </profile>
         <profile>
+            <id>select-windows</id>
             <properties>
                 <!-- Overrides the graalpy and python executables in case we are running on windows --> 
-                <graalpy.executable>${project.basedir}/graalpy.cmd</graalpy.executable>
-                <graalpy.venv.executable>/Scripts/python.cmd</graalpy.venv.executable>
+                <graalpy.executable>${project.basedir}/graalpy.exe</graalpy.executable>
+                <graalpy.venv.executable>/Scripts/python.exe</graalpy.venv.executable>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- 0.) generate the graalpy.exe launcher if required -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ensure-graalpy-launcher</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.basedir}/graalpy.cmd</executable>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
             <activation>
                 <os>
                     <family>windows</family>

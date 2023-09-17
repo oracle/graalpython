@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -73,6 +74,7 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
     private static final int HKEY_CURRENT_USER = 1;
     private static final int HKEY_LOCAL_MACHINE = 2;
     private static final int HKEY_CLASSES_ROOT = 3;
+    private static final int HKEY_USERS = 4;
 
     @Override
     public void initialize(Python3Core core) {
@@ -80,6 +82,11 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("HKEY_CURRENT_USER", HKEY_CURRENT_USER);
         addBuiltinConstant("HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE);
         addBuiltinConstant("HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT);
+        addBuiltinConstant("HKEY_USERS", HKEY_USERS);
+        // stubs to just have msvc9compiler import
+        addBuiltinConstant("error", PNone.NONE);
+        addBuiltinConstant("EnumValue", PNone.NONE);
+        addBuiltinConstant("OpenKeyEx", PNone.NONE);
     }
 
     @Builtin(name = "OpenKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "sub_key", "reserved", "access"})

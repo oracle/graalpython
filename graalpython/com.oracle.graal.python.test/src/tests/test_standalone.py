@@ -97,11 +97,11 @@ def get_gp():
     return graalpy
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-@unittest.skipUnless(sys.platform != 'win32', 'not supported on Windows')
 def test_polyglot_app():
 
     graalpy = get_gp()
     env = os.environ.copy()
+    env["PYLAUNCHER_DEBUG"] = "1"
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
@@ -145,7 +145,7 @@ def test_polyglot_app():
 
             cmd = [os.path.join(target_dir, "target", "polyglot_app")]
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
-            assert out.endswith("hello java\n")
+            assert "hello java" in out
         finally:
             cmd = MVN_CMD + ["dependency:purge-local-repository"]
             run_cmd(cmd, env, cwd=target_dir)
@@ -173,14 +173,9 @@ def test_native_executable_one_file():
 
         cmd = [target_file, "arg1", "arg2"]
         out, return_code = run_cmd(cmd, env)
-        if sys.platform == 'win32':
-            # sigh. it seems the output capture doesn't work on our CI machines (but works for the first command...)
-            # just check the return code
-            assert return_code == 0
         assert "hello world, argv[1:]: " + str(cmd[1:]) in out
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
-@unittest.skipUnless(sys.platform != 'win32', 'not supported on Windows')
 def test_native_executable_venv_and_one_file():
     graalpy = get_gp()
     if graalpy is None:
@@ -201,8 +196,8 @@ def test_native_executable_venv_and_one_file():
         cmd = [graalpy, "-m", "venv", venv_dir]
         out, return_code = run_cmd(cmd, env)
 
-        venv_python = os.path.join(venv_dir, "Scripts", "python.cmd") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
-        cmd = [venv_python, "-m", "pip", "--no-cache-dir", "install", "termcolor", "ujson"]
+        venv_python = os.path.join(venv_dir, "Scripts", "python.exe") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
+        cmd = [venv_python, "-m", "pip", "install", "termcolor", "ujson"]
         out, return_code = run_cmd(cmd, env)
 
         target_file = os.path.join(target_dir, "hello")
@@ -246,8 +241,4 @@ def test_native_executable_module():
 
         cmd = [target_file]
         out, return_code = run_cmd(cmd, env)
-        if sys.platform == 'win32':
-            # sigh. it seems the output capture doesn't work on our CI machines (but works for the first command...)
-            # just check the return code
-            assert return_code == 0
         assert "hello standalone world" in out
