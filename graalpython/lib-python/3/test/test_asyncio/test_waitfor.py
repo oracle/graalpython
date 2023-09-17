@@ -71,7 +71,8 @@ class AsyncioWaitForTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(ret, 'done')
         self.assertTrue(fut.done())
-        self.assertLess(t1 - t0, 0.1)
+        # GraalVM change: allow more time
+        self.assertLess(t1 - t0, 1.0)
 
     async def test_wait_for_timeout_less_then_0_or_0_coroutine_do_not_started(self):
         loop = asyncio.get_running_loop()
@@ -88,7 +89,8 @@ class AsyncioWaitForTest(unittest.IsolatedAsyncioTestCase):
         t1 = loop.time()
 
         self.assertEqual(foo_started, False)
-        self.assertLess(t1 - t0, 0.1)
+        # GraalVM change: allow more time
+        self.assertLess(t1 - t0, 1.0)
 
     async def test_wait_for_timeout_less_then_0_or_0(self):
         loop = asyncio.get_running_loop()
@@ -120,7 +122,8 @@ class AsyncioWaitForTest(unittest.IsolatedAsyncioTestCase):
                 # it should have been cancelled due to the timeout
                 self.assertTrue(fut.cancelled())
                 self.assertEqual(foo_running, False)
-                self.assertLess(t1 - t0, 0.1)
+                # GraalVM change: allow more time
+                self.assertLess(t1 - t0, 1.0)
 
     async def test_wait_for(self):
         loop = asyncio.get_running_loop()

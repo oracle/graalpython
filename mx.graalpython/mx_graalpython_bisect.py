@@ -217,7 +217,7 @@ class HigherIsBetterResult(BenchmarkResult):
 
 class WorksResult(BenchmarkResult):
     def is_good(self, good_result, bad_result):
-        return self.value != 0
+        return self.value == 0
 
     def bound_is_significant(self, bad_result, epsilon):
         return True
