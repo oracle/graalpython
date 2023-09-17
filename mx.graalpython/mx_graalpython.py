@@ -2162,6 +2162,14 @@ def _python_checkpatchfiles():
             # pandas puts the whole license text in the field. Its BSD-3-Clause
             'pandas-1.4.3.patch',
             'pandas-1.5.2.patch',
+            # numpy started putting the whole license text in the field. Its BSD-3-Clause
+            'numpy-1.16.4.patch',
+            'numpy-1.19.5.patch',
+            'numpy-1.21.6.patch',
+            'numpy-1.22.4.patch',
+            'numpy-1.23.1.patch',
+            'numpy-1.23.4.patch',
+            'numpy-1.23.5.patch',
             # Empty license field, skip it. It's MIT
             'setuptools-60.patch',
             'setuptools-60.9.patch',
