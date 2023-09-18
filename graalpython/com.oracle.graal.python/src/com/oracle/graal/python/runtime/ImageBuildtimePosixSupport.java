@@ -45,13 +45,15 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -974,10 +977,24 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src,
+    final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
-        return nativeLib.createUniversalSockAddr(nativePosixSupport, src);
+        return nativeLib.createUniversalSockAddrInet4(nativePosixSupport, src);
+    }
+
+    @ExportMessage
+    final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.createUniversalSockAddrInet6(nativePosixSupport, src);
+    }
+
+    @ExportMessage
+    final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidUnixSocketPathException {
+        checkNotInImageBuildtime();
+        return nativeLib.createUniversalSockAddrUnix(nativePosixSupport, src);
     }
 
     @ExportMessage

@@ -551,13 +551,8 @@ public abstract class PosixSupportLibrary extends Library {
         private final byte[] path;
 
         public UnixSockAddr(byte[] path) {
-            this(path, 0, path.length);
-        }
-
-        public UnixSockAddr(byte[] path, int offset, int length) {
             super(AF_UNIX.value);
-            assert path != null && offset >= 0 && length >= 0 && length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value && offset + length <= path.length;
-            this.path = Arrays.copyOfRange(path, offset, offset + length);
+            this.path = path;
         }
 
         /**
@@ -882,7 +877,11 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Allocates a new {@link UniversalSockAddr} and initializes it with the provided address.
      */
-    public abstract UniversalSockAddr createUniversalSockAddr(Object receiver, FamilySpecificSockAddr src);
+    public abstract UniversalSockAddr createUniversalSockAddrInet4(Object receiver, Inet4SockAddr src);
+
+    public abstract UniversalSockAddr createUniversalSockAddrInet6(Object receiver, Inet6SockAddr src);
+
+    public abstract UniversalSockAddr createUniversalSockAddrUnix(Object receiver, UnixSockAddr src) throws InvalidUnixSocketPathException;
 
     /**
      * Provides messages for manipulating {@link UniversalSockAddr}.
@@ -984,6 +983,25 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = -2999913421191382026L;
 
         public InvalidAddressException() {
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    /**
+     * Exception that indicates that path for a unix socket was too long.
+     */
+    public static class InvalidUnixSocketPathException extends Exception {
+
+        private static final long serialVersionUID = 3603545222627858084L;
+
+        public static InvalidUnixSocketPathException INSTANCE = new InvalidUnixSocketPathException();
+
+        private InvalidUnixSocketPathException() {
         }
 
         @SuppressWarnings("sync-override")

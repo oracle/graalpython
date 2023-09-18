@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -256,9 +259,13 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         // connected as a caller which is incorrect. However, the thread-local
                         // 'topframeref' is initialized with EMPTY which will be picked up.
                         callNode.execute(null, callable, arguments, keywords);
+                    } catch (PythonThreadKillException e) {
+                        return;
+                    } catch (PException e) {
+                        if (!IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.SystemExit)) {
+                            WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
+                        }
                     } finally {
-                        // the catch blocks run ofter the gil is released, so we decrement the
-                        // threadcount here while still protected by the gil
                         try {
                             curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 1);
                         } catch (UnexpectedResultException ure) {
@@ -266,10 +273,6 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         }
                         lib.putInt(threadModule, THREAD_COUNT, curCount - 1);
                     }
-                } catch (PythonThreadKillException e) {
-                    return;
-                } catch (PException e) {
-                    WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                 }
             }, env.getContext(), context.getThreadGroup());
 
@@ -310,6 +313,17 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ThreadModuleBuiltinsClinicProviders.InterruptMainThreadNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = J_EXIT)
+    @Builtin(name = "exit_thread")
+    @GenerateNodeFactory
+    abstract static class ExitNode extends PythonBuiltinNode {
+        @Specialization
+        Object exit(
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raiseSystemExit(PNone.NONE);
         }
     }
 }
