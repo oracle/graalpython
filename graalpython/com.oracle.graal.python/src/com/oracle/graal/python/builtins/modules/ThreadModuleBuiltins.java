@@ -303,7 +303,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class ExitThreadNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(
-                @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             throw raiseNode.raiseSystemExit(PNone.NONE);
         }
     }
