@@ -55,11 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyT
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyType_BUILTIN_SHAPE_UNICODE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
@@ -98,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyBinaryArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyInplaceArithmeticNode;
@@ -384,10 +378,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -1909,12 +1900,11 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeDecodeASCII extends HPyQuaternaryContextFunction {
 
         @Specialization
-        Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long size, Object errorsPtr,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+        static Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long size, Object errorsPtr,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode,
-                        @Cached PCallHPyFunction callHPyFunction,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached TruffleString.EqualNode equalNode) {
             CodingErrorAction errorAction;
@@ -1924,16 +1914,7 @@ public abstract class GraalHPyContextFunctions {
                 TruffleString errors = fromCharPointerNode.execute(hpyContext, errorsPtr, false);
                 errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors, equalNode);
             }
-            if (!interopLib.hasArrayElements(charPtr)) {
-                charPtr = callHPyFunction.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, size);
-            }
-            byte[] bytes;
-            try {
-                bytes = getByteArrayNode.execute(charPtr, size);
-            } catch (OverflowException | InteropException ex) {
-                throw CompilerDirectives.shouldNotReachHere(ex);
-            }
-
+            byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, size);
             String decoded = decode(StandardCharsets.US_ASCII, errorAction, bytes);
             if (decoded != null) {
                 return fromJavaStringNode.execute(decoded, TS_ENCODING);
@@ -2034,8 +2015,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PCallHPyFunction callHelperNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             int size;
@@ -2044,18 +2024,8 @@ public abstract class GraalHPyContextFunctions {
             } catch (PException e) {
                 throw raiseNode.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
             }
-
-            if (!interopLib.hasArrayElements(charPtr)) {
-                charPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, (long) size);
-            }
-
-            try {
-                return factory.createBytes(getByteArrayNode.execute(charPtr, size));
-            } catch (InteropException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.M, e);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
-            }
+            byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, size);
+            return factory.createBytes(bytes);
         }
     }
 
@@ -2065,9 +2035,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PBytes doGeneric(GraalHPyContext hpyContext, Object charPtr, long lsize,
-                        @Cached PCallHPyFunction callHelperNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             if (interopLib.isNull(charPtr)) {
@@ -2079,18 +2048,8 @@ public abstract class GraalHPyContextFunctions {
             if (lsize == 0) {
                 return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
-
-            if (!interopLib.hasArrayElements(charPtr)) {
-                charPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, lsize);
-            }
-
-            try {
-                return factory.createBytes(getByteArrayNode.execute(charPtr, lsize));
-            } catch (InteropException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.M, e);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
-            }
+            byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, lsize);
+            return factory.createBytes(bytes);
         }
     }
 
@@ -2137,11 +2096,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object typeSpecPtr, Object typeSpecParamArrayPtr,
-                        @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached HPyCreateTypeFromSpecNode createTypeFromSpecNode) {
-            Object typeSpec = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_FROM_HPY_TYPE_SPEC, typeSpecPtr);
-            Object typeSpecParamArray = callHelperFunctionNode.call(hpyContext, GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY, typeSpecParamArrayPtr);
-            Object newType = createTypeFromSpecNode.execute(hpyContext, typeSpec, typeSpecParamArray);
+            Object newType = createTypeFromSpecNode.execute(hpyContext, typeSpecPtr, typeSpecParamArrayPtr);
             assert PGuards.isClassUncached(newType) : "Object created from type spec is not a type";
             return newType;
         }
@@ -2325,8 +2281,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsTypeNode isTypeNode,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached PCallHPyFunction callMallocNode,
-                        @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WritePointerNode writePointerNode,
                         @Cached InlinedExactClassProfile classProfile) {
 
             Object profiledTypeObject = classProfile.profile(inliningTarget, type);
@@ -2344,11 +2300,11 @@ public abstract class GraalHPyContextFunctions {
                 // allocate native space
                 long basicSize = clazz.getBasicSize();
                 if (basicSize != -1) {
-                    dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    dataPtr = allocateNode.calloc(hpyContext, 1, basicSize);
                     destroyFunc = clazz.getHPyDestroyFunc();
 
                     // write data pointer to out var
-                    callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
+                    writePointerNode.write(hpyContext, dataOutVar, dataPtr);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
                         LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
@@ -2419,7 +2375,7 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object type, Object args, long nargs, Object kw,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached PCallHPyFunction callMallocNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached InlinedExactClassProfile classProfile) {
 
             Object profiledTypeObject = classProfile.profile(inliningTarget, type);
@@ -2430,7 +2386,7 @@ public abstract class GraalHPyContextFunctions {
                 long basicSize = clazz.getBasicSize();
                 if (basicSize != -1) {
                     // we fully control this attribute; if it is there, it's always a long
-                    dataPtr = callMallocNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    dataPtr = allocateNode.calloc(hpyContext, 1, basicSize);
                     destroyFunc = clazz.getHPyDestroyFunc();
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
@@ -2638,9 +2594,7 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object arrayPtr, long nelements,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallHPyFunction callHelperNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode,
                         @Cached PythonObjectFactory factory) {
             int n;
             try {
@@ -2650,31 +2604,7 @@ public abstract class GraalHPyContextFunctions {
                 throw PRaiseNode.raiseUncached(castToJavaIntExactNode, PythonBuiltinClassType.MemoryError);
             }
 
-            Object typedArrayPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, arrayPtr, n);
-            if (!lib.hasArrayElements(typedArrayPtr)) {
-                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
-            }
-
-            Object[] elements = new Object[n];
-            try {
-                for (int i = 0; i < elements.length; i++) {
-                    /*
-                     * This will read an element of a 'HPy arr[]' and the returned value will be an
-                     * HPy "structure". So, we also need to read element "_i" to get the internal
-                     * handle value.
-                     */
-                    Object hpyStructPtr = lib.readArrayElement(typedArrayPtr, i);
-                    elements[i] = asPythonObjectNode.execute(lib.readMember(hpyStructPtr, GraalHPyHandle.J_I));
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } catch (InvalidArrayIndexException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(castToJavaIntExactNode, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
-            } catch (UnknownIdentifierException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(castToJavaIntExactNode, SystemError, ErrorMessages.CANNOT_READ_HANDLE_VAL);
-            }
+            Object[] elements = readHPyArrayNode.execute(hpyContext, arrayPtr, 0, n);
             return factory.createTuple(elements);
         }
     }
@@ -2948,10 +2878,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object callable, Object args, long lnargs, Object kwnamesObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PCallHPyFunction callHelperNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode,
                         @Cached PyTupleSizeNode tupleSizeNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyPackKeywordArgsNode packKeywordArgsNode,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
@@ -2970,42 +2898,19 @@ public abstract class GraalHPyContextFunctions {
                 kwnames = null;
             }
 
-            Object typedArgsPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, args, nargs + nkw);
-            if (!lib.hasArrayElements(typedArgsPtr)) {
-                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
-            }
-
             // positional args are from 'args[0]' ... 'args[nargs - 1]'
-            Object[] positionalArgs = readHPyArray(typedArgsPtr, 0, nargs, lib, asPythonObjectNode);
+            Object[] positionalArgs = readHPyArrayNode.execute(hpyContext, args, 0, nargs);
 
             PKeyword[] keywords;
             if (nkw > 0) {
                 // keyword arg values are from 'args[nargs]' ... 'args[nargs + nkw - 1]'
-                Object[] kwObjs = readHPyArray(typedArgsPtr, nargs, nkw, lib, asPythonObjectNode);
+                Object[] kwObjs = readHPyArrayNode.execute(hpyContext, args, nargs, nargs);
                 keywords = packKeywordArgsNode.execute(inliningTarget, kwObjs, kwnames);
             } else {
                 keywords = PKeyword.EMPTY_KEYWORDS;
             }
 
             return callNode.execute(callable, positionalArgs, keywords);
-        }
-
-        static Object[] readHPyArray(Object typedArrPtr, int start, int n, InteropLibrary lib, HPyAsPythonObjectNode asPythonObjectNode) {
-            Object[] result = new Object[n];
-            for (int i = 0; i < n; i++) {
-                /*
-                 * This will read an element of a 'HPy arr[]' and the returned value will be an HPy
-                 * "structure". So, we also need to read element "_i" to get the internal handle
-                 * value.
-                 */
-                try {
-                    Object hpyStructPtr = lib.readArrayElement(typedArrPtr, start + i);
-                    result[i] = asPythonObjectNode.execute(lib.readMember(hpyStructPtr, GraalHPyHandle.J_I));
-                } catch (InvalidArrayIndexException | UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return result;
         }
     }
 
@@ -3017,10 +2922,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, TruffleString name, Object args, long lnargs, Object kwnames,
                         @Bind("this") Node inliningTarget,
-                        @Cached PCallHPyFunction callHelperNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode,
                         @Cached PyTupleSizeNode tupleSizeNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyPackKeywordArgsNode packKeywordArgsNode,
                         @Cached PyObjectGetMethod getMethodNode,
                         @Cached CallNode callNode,
@@ -3032,13 +2935,8 @@ public abstract class GraalHPyContextFunctions {
             int nargs = (int) lnargs;
             int nkw = kwnames != PNone.NO_VALUE ? tupleSizeNode.execute(inliningTarget, kwnames) : 0;
 
-            Object typedArgsPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, args, nargs + nkw);
-            if (!lib.hasArrayElements(typedArgsPtr)) {
-                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
-            }
-
             // positional args are from 'args[0]' ... 'args[nargs - 1]' (including 'self')
-            Object[] positionalArgs = GraalHPyCall.readHPyArray(typedArgsPtr, 0, nargs, lib, asPythonObjectNode);
+            Object[] positionalArgs = readHPyArrayNode.execute(hpyContext, args, 0, nargs);
             Object receiver = positionalArgs[0];
 
             Object callable = getMethodNode.execute(null, inliningTarget, receiver, name);
@@ -3046,7 +2944,7 @@ public abstract class GraalHPyContextFunctions {
             PKeyword[] keywords;
             if (nkw > 0) {
                 // check and expand kwargs
-                Object[] kwObjs = GraalHPyCall.readHPyArray(typedArgsPtr, nargs, nkw, lib, asPythonObjectNode);
+                Object[] kwObjs = readHPyArrayNode.execute(hpyContext, args, nargs, nargs);
                 keywords = packKeywordArgsNode.execute(inliningTarget, kwObjs, (PTuple) kwnames);
             } else {
                 keywords = PKeyword.EMPTY_KEYWORDS;
@@ -3407,9 +3305,10 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyTypeGetName extends HPyBinaryContextFunction {
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object type,
+        static Object doGeneric(GraalHPyContext hpyContext, Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyTypeGetNameNode getName) {
-            return getName.execute(type);
+            return getName.execute(inliningTarget, hpyContext, type);
         }
     }
 
@@ -3458,26 +3357,18 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PyCapsule doGeneric(GraalHPyContext hpyContext, Object pointer, Object namePtr, Object dtorPtr,
-                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadPointerNode readPointerNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached PRaiseNode raiseNode) {
-            if (interopLib.isNull(pointer)) {
+            if (isNullNode.execute(hpyContext, pointer)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.HPYCAPSULE_NEW_NULL_PTR_ERROR);
             }
             Object hpyDestructor = null;
-            if (!interopLib.isNull(dtorPtr)) {
-                Object typedDtorPtr = callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_CAPSULE_DESTRUCTOR, dtorPtr);
-                Object cpyTrampoline;
-                boolean invalid;
-                try {
-                    cpyTrampoline = interopLib.readMember(typedDtorPtr, "cpy_trampoline");
-                    hpyDestructor = interopLib.readMember(typedDtorPtr, "impl");
-                    invalid = interopLib.isNull(cpyTrampoline) || interopLib.isNull(hpyDestructor);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    invalid = true;
-                }
-                if (invalid) {
+            if (!isNullNode.execute(hpyContext, dtorPtr)) {
+                Object cpyTrampoline = readPointerNode.read(hpyContext, dtorPtr, GraalHPyCField.HPyCapsule_Destructor__cpy_trampoline);
+                hpyDestructor = readPointerNode.read(hpyContext, dtorPtr, GraalHPyCField.HPyCapsule_Destructor__impl);
+                if (isNullNode.execute(hpyContext, cpyTrampoline) || isNullNode.execute(hpyContext, hpyDestructor)) {
                     throw raiseNode.raise(ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
                 }
             }
@@ -3592,15 +3483,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyContextVarGet extends HPyQuaternaryContextFunction {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object var, Object def, Object outPtr,
-                        @Cached HPyAsHandleNode asHandleNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PCallHPyFunction callWriteHPyNode) {
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteHPyNode writeHPyNode) {
             if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonThreadState threadState = hpyContext.getContext().getThreadState(PythonLanguage.get(raiseNode));
             Object result = getObject(threadState, contextVar, def);
-            callWriteHPyNode.call(hpyContext, GRAAL_HPY_WRITE_HPY, outPtr, 0L, asHandleNode.execute(result));
+            writeHPyNode.write(hpyContext, outPtr, result);
             return 0;
         }
 
@@ -3696,13 +3586,13 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object obj, Object startPtr, Object endPtr, Object stepPtr,
                         @Bind("this") Node inliningTarget,
-                        @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteI64Node writeHPyNode,
                         @Cached SliceNodes.SliceUnpackLong sliceUnpack) {
             if (obj instanceof PSlice slice) {
                 SliceInfoLong info = sliceUnpack.execute(inliningTarget, slice);
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, startPtr, 0L, info.start());
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, endPtr, 0L, info.stop());
-                callWriteDataNode.call(hpyContext, GRAAL_HPY_WRITE_UL, stepPtr, 0L, info.step());
+                writeHPyNode.write(hpyContext, startPtr, info.start());
+                writeHPyNode.write(hpyContext, endPtr, info.stop());
+                writeHPyNode.write(hpyContext, stepPtr, info.step());
                 return 0;
             }
             return -1;

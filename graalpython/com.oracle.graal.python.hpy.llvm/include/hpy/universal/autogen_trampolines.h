@@ -66,6 +66,7 @@
 #define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})
 #define UNWRAP_GLOBAL(_h) ((_h)._i)
 #define WRAP_GLOBAL(_ptr) ((HPyGlobal){(_ptr)})
+#define UNWRAP_SOURCE_KIND(_h) ((int)(_h))
 #else
 #define UNWRAP(_h) _h
 #define WRAP(_ptr) _ptr
@@ -81,6 +82,7 @@
 #define WRAP_FIELD(_ptr) _ptr
 #define UNWRAP_GLOBAL(_h) _h
 #define WRAP_GLOBAL(_ptr) _ptr
+#define UNWRAP_SOURCE_KIND(_h) _h
 #endif
 HPyAPI_FUNC
 HPy HPy_Dup(HPyContext *ctx, HPy h)
@@ -1121,7 +1123,7 @@ void _HPy_Dump(HPyContext *ctx, HPy h)
 HPyAPI_FUNC
 HPy HPy_Compile_s(HPyContext *ctx, const char *utf8_source, const char *utf8_filename, HPy_SourceKind kind)
 {
-    return WRAP(ctx->ctx_Compile_s((ctx), (utf8_source), (utf8_filename), (kind)));
+    return WRAP(ctx->ctx_Compile_s((ctx), (utf8_source), (utf8_filename), UNWRAP_SOURCE_KIND(kind)));
 }
 
 HPyAPI_FUNC

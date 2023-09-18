@@ -1100,26 +1100,6 @@ public abstract class CExtCommonNodes {
     }
 
     /**
-     * Converts a Python Boolean into a C Boolean {@code char} (see also:
-     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
-     */
-    @GenerateUncached
-    public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
-
-        @Specialization
-        static byte doGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return (byte) PInt.intValue(castToJavaBooleanNode.execute(inliningTarget, value));
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
-            }
-        }
-    }
-
-    /**
      * Converts a Python object to a C primitive value with a fixed size and sign.
      *
      * @see AsNativePrimitiveNode

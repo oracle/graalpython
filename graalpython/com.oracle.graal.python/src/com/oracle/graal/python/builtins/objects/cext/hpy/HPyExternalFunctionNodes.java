@@ -66,9 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseA
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseAndGetHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetBufferProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
@@ -79,13 +77,10 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -105,7 +100,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -124,7 +118,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -1488,7 +1481,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private HPyGetNativeSpacePointerNode getNativeSpacePointerNode;
 
-        protected HPyLegacyGetSetDescriptorSetterRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+        private HPyLegacyGetSetDescriptorSetterRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
@@ -1538,14 +1531,13 @@ public abstract class HPyExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self", "flags"), KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
-        @Child private PCallHPyFunction callAllocateBufferNode;
-        @Child private PCallHPyFunction callFreeNode;
-        @Child private InteropLibrary ptrLib;
-        @Child private InteropLibrary valueLib;
-        @Child private HPyCloseAndGetHandleNode closeAndGetHandleNode;
         @Child private FromCharPointerNode fromCharPointerNode;
-        @Child private CStructAccess.ReadI64Node readLongNode;
-        @Child private PRaiseNode raiseNode;
+        @Child private GraalHPyCAccess.AllocateNode allocateNode;
+        @Child private GraalHPyCAccess.FreeNode freeNode;
+        @Child private GraalHPyCAccess.ReadPointerNode readPointerNode;
+        @Child private GraalHPyCAccess.ReadGenericNode readGenericNode;
+        @Child private GraalHPyCAccess.ReadHPyNode readHPyNode;
+        @Child private GraalHPyCAccess.IsNullNode isNullNode;
 
         @TruffleBoundary
         public HPyGetBufferRootNode(PythonLanguage language, TruffleString name) {
@@ -1560,13 +1552,13 @@ public abstract class HPyExternalFunctionNodes {
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
                 hpyContext = readContext(frame);
-                bufferPtr = ensureCallAllocateBufferNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ALLOCATE_BUFFER);
+                bufferPtr = ensureAllocateNode(hpyContext).malloc(hpyContext, HPyContextSignatureType.HPy_buffer);
                 Object[] cArguments = new Object[]{getSelf(frame), bufferPtr, getArg1(frame)};
                 getInvokeNode().execute(frame, getTSName(), callable, hpyContext, cArguments);
-                return createPyBuffer(bufferPtr);
+                return createPyBuffer(hpyContext, bufferPtr);
             } finally {
                 if (hpyContext != null && bufferPtr != null) {
-                    ensureCallFreeNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FREE, bufferPtr);
+                    ensureFreeNode(hpyContext).free(hpyContext, bufferPtr);
                 }
                 getCalleeContext().exit(frame, this);
             }
@@ -1593,110 +1585,92 @@ public abstract class HPyExternalFunctionNodes {
          * </pre>
          *
          */
-        private CExtPyBuffer createPyBuffer(Object bufferPtr) {
-            if (ptrLib == null) {
+        private CExtPyBuffer createPyBuffer(GraalHPyContext ctx, Object bufferPtr) {
+            if (readGenericNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                ptrLib = insert(InteropLibrary.getFactory().createDispatched(2));
+                readGenericNode = insert(GraalHPyCAccess.ReadGenericNode.create(ctx));
             }
-            if (closeAndGetHandleNode == null) {
+            if (readPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                closeAndGetHandleNode = insert(HPyCloseAndGetHandleNodeGen.create());
+                readPointerNode = insert(GraalHPyCAccess.ReadPointerNode.create(ctx));
+            }
+            if (readHPyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readHPyNode = insert(GraalHPyCAccess.ReadHPyNode.create(ctx));
+            }
+            if (isNullNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNullNode = insert(GraalHPyCAccess.IsNullNode.create(ctx));
             }
             if (fromCharPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fromCharPointerNode = insert(FromCharPointerNodeGen.create());
             }
-            if (valueLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueLib = insert(InteropLibrary.getFactory().createDispatched(3));
-            }
-            try {
-                int len = castToInt(ptrLib.readMember(bufferPtr, "len"));
-                Object buf = ptrLib.readMember(bufferPtr, "buf");
-                Object ownerObj = ptrLib.readMember(bufferPtr, "obj");
-                /*
-                 * Note: Reading 'obj' from 'HPy_buffer *' will just return 'bufferPtr +
-                 * offsetof(obj)' because member 'obj' is a struct. So we need to further read the
-                 * content of the HPy handle to get the real handle value.
-                 */
-                ownerObj = ptrLib.readMember(ownerObj, GraalHPyHandle.J_I);
-                Object owner = null;
-                if (!valueLib.isNull(ownerObj)) {
-                    // Since we are now the owner of the handle and no one else will ever use it, we
-                    // need to close it.
-                    owner = closeAndGetHandleNode.execute(ownerObj);
-                }
+            int len = readGenericNode.readInt(ctx, bufferPtr, GraalHPyCField.HPy_buffer__len);
+            Object buf = readGenericNode.readLong(ctx, bufferPtr, GraalHPyCField.HPy_buffer__buf);
+            /*
+             * Since we are now the owner of the handle and no one else will ever use it, we need to
+             * close it.
+             */
+            Object owner = readHPyNode.readAndClose(ctx, bufferPtr, GraalHPyCField.HPy_buffer__obj);
 
-                int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));
-                int itemSize = castToInt(ptrLib.readMember(bufferPtr, "itemsize"));
-                boolean readonly = castToInt(ptrLib.readMember(bufferPtr, "readonly")) != 0;
-                TruffleString format = fromCharPointerNode.execute(ptrLib.readMember(bufferPtr, "format"));
-                Object shapePtr = ptrLib.readMember(bufferPtr, "shape");
-                Object stridesPtr = ptrLib.readMember(bufferPtr, "strides");
-                Object suboffsetsPtr = ptrLib.readMember(bufferPtr, "suboffsets");
-                Object internal = ptrLib.readMember(bufferPtr, "internal");
-                int[] shape = null;
-                int[] strides = null;
-                int[] subOffsets = null;
-                if (ndim > 0) {
-                    if (!ptrLib.isNull(shapePtr)) {
-                        shape = ensureReadLongNode().readLongAsIntArray(shapePtr, ndim);
-                    }
-                    if (!ptrLib.isNull(stridesPtr)) {
-                        strides = ensureReadLongNode().readLongAsIntArray(stridesPtr, ndim);
-                    }
-                    if (!ptrLib.isNull(suboffsetsPtr)) {
-                        subOffsets = ensureReadLongNode().readLongAsIntArray(suboffsetsPtr, ndim);
-                    }
+            int ndim = readGenericNode.readInt(ctx, bufferPtr, GraalHPyCField.HPy_buffer__ndim);
+            int itemSize = readGenericNode.readInt(ctx, bufferPtr, GraalHPyCField.HPy_buffer__itemsize);
+            boolean readonly = readGenericNode.readInt(ctx, bufferPtr, GraalHPyCField.HPy_buffer__readonly) != 0;
+            TruffleString format = fromCharPointerNode.execute(readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__format));
+            Object shapePtr = readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__shape);
+            Object stridesPtr = readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__strides);
+            Object suboffsetsPtr = readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__suboffsets);
+            Object internal = readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__internal);
+            int[] shape = null;
+            int[] strides = null;
+            int[] subOffsets = null;
+            if (ndim > 0) {
+                if (!isNullNode.execute(ctx, shapePtr)) {
+                    shape = readLongAsIntArray(ctx, shapePtr, ndim);
                 }
-                return new CExtPyBuffer(buf, owner, len, itemSize, readonly, ndim, format, shape, strides, subOffsets, internal);
-            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                // that's clearly an internal error
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        private int castToInt(Object value) {
-            if (valueLib.fitsInInt(value)) {
-                try {
-                    return valueLib.asInt(value);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                if (!isNullNode.execute(ctx, stridesPtr)) {
+                    strides = readLongAsIntArray(ctx, stridesPtr, ndim);
+                }
+                if (!isNullNode.execute(ctx, suboffsetsPtr)) {
+                    subOffsets = readLongAsIntArray(ctx, suboffsetsPtr, ndim);
                 }
             }
-            throw ensureRaiseNode().raise(PythonErrorType.SystemError, ErrorMessages.CANNOT_READ);
+            return new CExtPyBuffer(buf, owner, len, itemSize, readonly, ndim, format, shape, strides, subOffsets, internal);
         }
 
-        private PCallHPyFunction ensureCallAllocateBufferNode() {
-            if (callAllocateBufferNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callAllocateBufferNode = insert(PCallHPyFunctionNodeGen.create());
+        private int[] readLongAsIntArray(GraalHPyContext ctx, Object pointer, int elements) {
+            GraalHPyCAccess.ReadGenericNode readI64Node = ensureReadGenericNode(ctx);
+            int elemSize = ctx.getCTypeSize(HPyContextSignatureType.HPy_ssize_t);
+            int[] result = new int[elements];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = readI64Node.executeInt(ctx, pointer, (long) i * elemSize, HPyContextSignatureType.HPy_ssize_t);
             }
-            return callAllocateBufferNode;
+            return result;
         }
 
-        private PCallHPyFunction ensureCallFreeNode() {
-            if (callFreeNode == null) {
+        private GraalHPyCAccess.AllocateNode ensureAllocateNode(GraalHPyContext ctx) {
+            if (allocateNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFreeNode = insert(PCallHPyFunctionNodeGen.create());
+                allocateNode = insert(GraalHPyCAccess.AllocateNode.create(ctx));
             }
-            return callFreeNode;
+            return allocateNode;
         }
 
-        private CStructAccess.ReadI64Node ensureReadLongNode() {
-            if (readLongNode == null) {
+        private GraalHPyCAccess.FreeNode ensureFreeNode(GraalHPyContext ctx) {
+            if (freeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readLongNode = insert(CStructAccessFactory.ReadI64NodeGen.create());
+                freeNode = insert(GraalHPyCAccess.FreeNode.create(ctx));
             }
-            return readLongNode;
+            return freeNode;
         }
 
-        private PRaiseNode ensureRaiseNode() {
-            if (raiseNode == null) {
+        private GraalHPyCAccess.ReadGenericNode ensureReadGenericNode(GraalHPyContext ctx) {
+            if (readGenericNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
+                readGenericNode = insert(GraalHPyCAccess.ReadGenericNode.create(ctx));
             }
-            return raiseNode;
+            return readGenericNode;
         }
 
         @Override
@@ -1726,7 +1700,9 @@ public abstract class HPyExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self", "buffer"), KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
-        @Child private PCallHPyFunction callBufferFreeNode;
+        @Child private GraalHPyCAccess.FreeNode freeNode;
+        @Child private GraalHPyCAccess.ReadPointerNode readPointerNode;
+        @Child private GraalHPyCAccess.ReadHPyNode readHPyNode;
 
         @TruffleBoundary
         public HPyReleaseBufferRootNode(PythonLanguage language, TruffleString name) {
@@ -1740,16 +1716,15 @@ public abstract class HPyExternalFunctionNodes {
                 Object callable = ensureReadCallableNode().execute(frame);
                 GraalHPyContext hpyContext = readContext(frame);
                 Object arg1 = getArg1(frame);
-                if (!(arg1 instanceof CExtPyBuffer)) {
+                if (!(arg1 instanceof CExtPyBuffer buffer)) {
                     throw CompilerDirectives.shouldNotReachHere("invalid argument");
                 }
-                CExtPyBuffer buffer = (CExtPyBuffer) arg1;
                 GraalHPyBuffer hpyBuffer = new GraalHPyBuffer(hpyContext, buffer);
                 try {
                     getInvokeNode().execute(frame, getTSName(), callable, hpyContext, new Object[]{getSelf(frame), hpyBuffer});
                 } finally {
                     if (hpyBuffer.isPointer()) {
-                        hpyBuffer.free(ensureCallBufferFreeNode());
+                        hpyBuffer.free(hpyContext, ensureFreeNode(hpyContext), ensureReadPointerNode(hpyContext), ensureReadHPyNode(hpyContext));
                     }
                 }
                 return PNone.NONE;
@@ -1776,12 +1751,28 @@ public abstract class HPyExternalFunctionNodes {
             return readArg1Node.execute(frame);
         }
 
-        private PCallHPyFunction ensureCallBufferFreeNode() {
-            if (callBufferFreeNode == null) {
+        private GraalHPyCAccess.FreeNode ensureFreeNode(GraalHPyContext ctx) {
+            if (freeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callBufferFreeNode = insert(PCallHPyFunctionNodeGen.create());
+                freeNode = insert(GraalHPyCAccess.FreeNode.create(ctx));
             }
-            return callBufferFreeNode;
+            return freeNode;
+        }
+
+        private GraalHPyCAccess.ReadPointerNode ensureReadPointerNode(GraalHPyContext ctx) {
+            if (readPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readPointerNode = insert(GraalHPyCAccess.ReadPointerNode.create(ctx));
+            }
+            return readPointerNode;
+        }
+
+        private GraalHPyCAccess.ReadHPyNode ensureReadHPyNode(GraalHPyContext ctx) {
+            if (readHPyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readHPyNode = insert(GraalHPyCAccess.ReadHPyNode.create(ctx));
+            }
+            return readHPyNode;
         }
 
         @Override

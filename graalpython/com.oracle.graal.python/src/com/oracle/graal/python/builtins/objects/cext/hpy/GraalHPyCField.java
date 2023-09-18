@@ -40,10 +40,80 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.CharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.ConstCharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.Cpy_PyObjectPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.HPy;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.HPyFunc_Signature;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.HPySlot_Slot;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.HPyType_BuiltinShape;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.HPy_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.Int;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.Int32_t;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.PyType_SlotPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.Uint32_t;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.VoidPtr;
+
 public enum GraalHPyCField {
-    // {{start autogen cfields}}
-    // {{end autogen cfields}}
-    ;
+    HPyType_SpecParam__kind(Int32_t),
+    HPyType_SpecParam__object(HPy),
+    HPyType_Spec__name(ConstCharPtr),
+    HPyType_Spec__basicsize(Int32_t),
+    HPyType_Spec__itemsize(Int32_t),
+    HPyType_Spec__flags(Uint32_t),
+    HPyType_Spec__builtin_shape(HPyType_BuiltinShape),
+    HPyType_Spec__legacy_slots(PyType_SlotPtr),
+    HPyType_Spec__defines(VoidPtr),
+    HPyType_Spec__doc(ConstCharPtr),
+    HPyDef__kind(Int32_t),
+    HPyDef__meth__name(ConstCharPtr),
+    HPyDef__meth__impl(VoidPtr),
+    HPyDef__meth__signature(HPyFunc_Signature),
+    HPyDef__meth__doc(ConstCharPtr),
+    HPyDef__member__name(ConstCharPtr),
+    HPyDef__member__type(Int),
+    HPyDef__member__offset(HPy_ssize_t),
+    HPyDef__member__readonly(Int),
+    HPyDef__member__doc(ConstCharPtr),
+    HPyDef__getset__name(ConstCharPtr),
+    HPyDef__getset__getter_impl(VoidPtr),
+    HPyDef__getset__setter_impl(HPy_ssize_t),
+    HPyDef__getset__doc(ConstCharPtr),
+    HPyDef__getset__closure(VoidPtr),
+    HPyDef__slot__slot(HPySlot_Slot),
+    HPyDef__slot__impl(VoidPtr),
+    PyType_Slot__slot(Int),
+    PyType_Slot__pfunc(VoidPtr),
+    HPyCapsule_Destructor__cpy_trampoline(VoidPtr),
+    HPyCapsule_Destructor__impl(VoidPtr),
+    HPyCallFunction__impl(VoidPtr),
+    HPyModuleDef__doc(ConstCharPtr),
+    HPyModuleDef__size(HPy_ssize_t),
+    HPyModuleDef__legacy_methods(Cpy_PyObjectPtr),
+    HPyModuleDef__defines(VoidPtr),
+    HPyModuleDef__globals(VoidPtr),
+    PyGetSetDef__name(ConstCharPtr),
+    PyGetSetDef__get(VoidPtr),
+    PyGetSetDef__set(VoidPtr),
+    PyGetSetDef__closure(VoidPtr),
+    PyMemberDef__name(ConstCharPtr),
+    PyMemberDef__type(Int),
+    PyMemberDef__offset(HPy_ssize_t),
+    PyMemberDef__flags(Int),
+    PyMemberDef__doc(ConstCharPtr),
+    HPy_buffer__buf(VoidPtr),
+    HPy_buffer__obj(HPy),
+    HPy_buffer__len(HPy_ssize_t),
+    HPy_buffer__itemsize(HPy_ssize_t),
+    HPy_buffer__readonly(Int),
+    HPy_buffer__ndim(Int),
+    HPy_buffer__format(CharPtr),
+    HPy_buffer__shape(HPy_ssize_t),
+    HPy_buffer__strides(HPy_ssize_t),
+    HPy_buffer__suboffsets(HPy_ssize_t),
+    HPy_buffer__internal(VoidPtr);
 
     private final HPyContextSignatureType type;
 
