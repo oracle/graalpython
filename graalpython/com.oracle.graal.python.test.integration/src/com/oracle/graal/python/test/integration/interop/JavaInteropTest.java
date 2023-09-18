@@ -194,6 +194,18 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void javaNullIsNone() {
+            String source = """
+                            def is_none(x):
+                                return x is None
+                            is_none
+                            """;
+            Source script = Source.create("python", source);
+            Value isNone = context.eval(script);
+            assertTrue(isNone.execute((Object) null).asBoolean());
+        }
+
+        @Test
         public void testPassingFloats() throws UnsupportedEncodingException {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +

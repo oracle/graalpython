@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.object;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -63,9 +62,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -133,7 +132,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     static boolean doIP(int left, PInt right,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+                    @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
                 return right.intValueExact() == left;
@@ -158,7 +157,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     static boolean doLP(long left, PInt right,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+                    @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
                 return left == right.longValueExact();
@@ -185,14 +184,14 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     static boolean doPI(PInt left, int right,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+                    @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doIP(right, left, inliningTarget, isBuiltin);
     }
 
     @Specialization
     static boolean doPL(PInt left, long right,
                     @Bind("this") Node inliningTarget,
-                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+                    @Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
         return doLP(right, left, inliningTarget, isBuiltin);
     }
 
@@ -246,18 +245,25 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // none
     @Specialization
-    boolean doObjectPNone(Object left, PNone right) {
-        TruffleLanguage.Env env = PythonContext.get(this).getEnv();
-        if (PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython) && env.isHostObject(left) && env.asHostObject(left) == null &&
-                        right == PNone.NONE) {
+    static boolean doObjectPNone(Object left, PNone right,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+        if (left == right) {
             return true;
         }
-        return left == right;
+        if (isForeignObjectNode.execute(inliningTarget, left)) {
+            return lib.isNull(left);
+        }
+        return false;
     }
 
     @Specialization
-    boolean doPNoneObject(PNone left, Object right) {
-        return doObjectPNone(right, left);
+    static boolean doPNoneObject(PNone left, Object right,
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+        return doObjectPNone(right, left, inliningTarget, isForeignObjectNode, lib);
     }
 
     // pstring (may be interned)
@@ -277,8 +283,8 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Fallback
     static boolean doOther(Object left, Object right,
                     @Bind("this") Node inliningTarget,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+                    @Shared @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
         if (left == right) {
             return true;
         }
