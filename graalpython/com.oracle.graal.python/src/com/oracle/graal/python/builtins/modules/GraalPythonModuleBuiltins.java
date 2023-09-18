@@ -82,6 +82,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -181,7 +182,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
-import org.graalvm.home.Version;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public final class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -244,8 +244,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
-        Env env = context.getEnv();
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
         mod.setAttribute(tsLiteral("jython_emulation_enabled"), language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute(tsLiteral("host_import_enabled"), context.getEnv().isHostLookupAllowed());
         mod.setAttribute(tsLiteral("core_home"), coreHome);

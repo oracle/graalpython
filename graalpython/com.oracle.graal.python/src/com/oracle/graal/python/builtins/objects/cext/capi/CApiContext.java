@@ -556,14 +556,10 @@ public final class CApiContext extends CExtContext {
                     useNative = false;
                 }
                 if (useNative) {
-                    if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-                        throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, "NativeModules", "true");
-                    }
+                    context.ensureNFILanguage(node, "NativeModules", "true");
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
                 } else {
-                    if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
-                        throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
-                    }
+                    context.ensureLLVMLanguage(node);
                     capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 }
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
