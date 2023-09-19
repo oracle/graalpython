@@ -1093,7 +1093,8 @@ public class SocketTests {
             try {
                 return lib.createUniversalSockAddrUnix(posixSupport, unixSockAddr);
             } catch (InvalidUnixSocketPathException e) {
-                throw new RuntimeException(e);
+                assumeNoException(e);
+                return null; // unreachable
             }
         } else {
             throw new AssertionError("Unexpected subclass of FamilySpecificSockAddr: " + src.getClass().getName());
