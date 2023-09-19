@@ -42,6 +42,7 @@
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,6 +54,7 @@ import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.FileSystemException;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
@@ -461,10 +463,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
             final Entry e = file(path);
             if (e == null) {
-                throw new IOException("no such file");
+                throw new FileNotFoundException("No such file or directory");
             }
             if (!e.isFile) {
-                throw new IOException("is a directory");
+                // this constructor is used since we rely on the error message to convert to the appropriate python error
+                throw new FileSystemException(path.toString(), null, "Is a directory");
             }
             return new SeekableByteChannel() {
                 int position = 0;
