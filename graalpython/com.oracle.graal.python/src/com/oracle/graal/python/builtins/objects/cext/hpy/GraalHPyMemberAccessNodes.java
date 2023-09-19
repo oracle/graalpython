@@ -146,6 +146,7 @@ public class GraalHPyMemberAccessNodes {
                 return HPyContextSignatureType.HPyField;
             case HPY_MEMBER_CHAR:
             case HPY_MEMBER_BYTE:
+                return HPyContextSignatureType.Int8_t;
             case HPY_MEMBER_BOOL:
                 return HPyContextSignatureType.Bool;
             case HPY_MEMBER_UBYTE:

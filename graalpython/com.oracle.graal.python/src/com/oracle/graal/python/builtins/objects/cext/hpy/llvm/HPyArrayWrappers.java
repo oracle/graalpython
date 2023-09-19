@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseH
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseHandleNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -59,6 +60,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -261,6 +264,80 @@ abstract class HPyArrayWrappers {
                 profiles[i] = ConditionProfile.create();
             }
             return profiles;
+        }
+    }
+
+    /**
+     * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
+     * {@code HPy *}).
+     */
+    @ExportLibrary(InteropLibrary.class)
+    static final class IntArrayWrapper implements TruffleObject {
+
+        final int[] delegate;
+
+        public IntArrayWrapper(int[] delegate) {
+            this.delegate = delegate;
+        }
+
+        public int[] getDelegate() {
+            return delegate;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        long getArraySize() {
+            return delegate.length;
+        }
+
+        @ExportMessage(name = "isArrayElementReadable")
+        @ExportMessage(name = "isArrayElementModifiable")
+        boolean isValidIndex(long index) {
+            return 0 <= index && index < delegate.length;
+        }
+
+        @ExportMessage
+        boolean isArrayElementInsertable(@SuppressWarnings("unused") long index) {
+            return false;
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            return delegate[checkIndex(index)];
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        void writeArrayElement(long index, Object value,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedTypeException, InvalidArrayIndexException {
+            delegate[checkIndex(index)] = coerceToInt(value, lib);
+        }
+
+        private int coerceToInt(Object value, InteropLibrary lib) throws UnsupportedTypeException {
+            if (value instanceof Integer i) {
+                return i;
+            }
+            if (lib.fitsInInt(value)) {
+                try {
+                    return lib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw UnsupportedTypeException.create(new Object[]{value});
+        }
+
+        private int checkIndex(long index) throws InvalidArrayIndexException {
+            if (index < 0 || index > delegate.length) {
+                throw InvalidArrayIndexException.create(index);
+            }
+            return (int) index;
         }
     }
 }

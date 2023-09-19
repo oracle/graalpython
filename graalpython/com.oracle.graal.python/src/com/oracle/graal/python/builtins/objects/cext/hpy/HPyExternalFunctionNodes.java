@@ -1607,7 +1607,7 @@ public abstract class HPyExternalFunctionNodes {
                 fromCharPointerNode = insert(FromCharPointerNodeGen.create());
             }
             int len = readGenericNode.readInt(ctx, bufferPtr, GraalHPyCField.HPy_buffer__len);
-            Object buf = readGenericNode.readLong(ctx, bufferPtr, GraalHPyCField.HPy_buffer__buf);
+            Object buf = readPointerNode.read(ctx, bufferPtr, GraalHPyCField.HPy_buffer__buf);
             /*
              * Since we are now the owner of the handle and no one else will ever use it, we need to
              * close it.

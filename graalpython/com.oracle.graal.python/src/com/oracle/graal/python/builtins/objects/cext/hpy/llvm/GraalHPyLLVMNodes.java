@@ -41,6 +41,12 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_GET_ELEMENT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_D;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY_SSIZE_T;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I32;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I64;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -50,22 +56,48 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadFloatNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI64Node;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadI8ArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteGenericNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyFieldNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteHPyNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI32Node;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI64Node;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldLoadNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -76,6 +108,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -87,16 +120,50 @@ abstract class GraalHPyLLVMNodes {
     }
 
     @GenerateUncached
-    abstract static class LLVMAllocateNode extends AllocateNode {
-
-        @Specialization
-        static Object doGeneric(GraalHPyContext ctx, long size, @SuppressWarnings("unused") boolean zero,
-                        @Cached PCallHPyFunction callMallocNode) {
-            return callMallocNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
+    @GenerateInline(false)
+    abstract static class HPyLLVMIsNullNode extends IsNullNode {
+        @Specialization(limit = "2")
+        static boolean doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointer,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            return lib.isNull(pointer);
         }
     }
 
     @GenerateUncached
+    @GenerateInline(false)
+    abstract static class LLVMAllocateNode extends AllocateNode {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, long size, @SuppressWarnings("unused") boolean zero,
+                        @Cached PCallHPyFunction callHelperNode) {
+            return callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMFreeNode extends FreeNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object pointer,
+                        @Cached PCallHPyFunction callHelperNode) {
+            callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FREE, pointer);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMGetElementPtrNode extends GetElementPtrNode {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperNode) {
+            return callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_ELEMENT_PTR, pointer, offset);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
     abstract static class LLVMReadI8ArrayNode extends ReadI8ArrayNode {
 
         @Specialization(limit = "1")
@@ -122,7 +189,55 @@ abstract class GraalHPyLLVMNodes {
     }
 
     @GenerateUncached
-    abstract static class LLVMReadHPyArrayNode extends ReadHPyArrayNode {
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadHPyNode extends ReadHPyNode {
+
+        @Specialization(guards = "!close")
+        static Object doGet(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
+                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode) {
+            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            return asPythonObjectNode.execute(nativeValue);
+        }
+
+        @Specialization(guards = "close")
+        static Object doClose(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
+                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
+            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            return closeAndGetHandleNode.execute(nativeValue);
+        }
+
+        @Specialization(replaces = {"doGet", "doClose"})
+        static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
+                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
+            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            if (close) {
+                return closeAndGetHandleNode.execute(nativeValue);
+            }
+            return asPythonObjectNode.execute(pointer);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadHPyFieldNode extends ReadHPyFieldNode {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, PythonObject owner, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached HPyFieldLoadNode hpyFieldLoadNode) {
+            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPYFIELD, pointer, offset);
+            return hpyFieldLoadNode.execute(inliningTarget, owner, nativeValue);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadHPyArrayNode extends ReadHPyArrayNode {
 
         @Specialization(limit = "1")
         static Object[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
@@ -162,7 +277,334 @@ abstract class GraalHPyLLVMNodes {
     }
 
     @GenerateUncached
-    abstract static class LLVMWritePointerNode extends WritePointerNode {
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadI32Node extends ReadI32Node {
+
+        @Specialization
+        static int doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+
+            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I32, pointer, offset);
+            if (nativeValue instanceof Integer) {
+                return (int) nativeValue;
+            }
+            if (lib.fitsInInt(nativeValue)) {
+                try {
+                    return lib.asInt(nativeValue);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadI64Node extends ReadI64Node {
+
+        @Specialization
+        static long doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+
+            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I64, pointer, offset);
+            if (nativeValue instanceof Long) {
+                return (long) nativeValue;
+            }
+            if (lib.fitsInLong(nativeValue)) {
+                try {
+                    return lib.asLong(nativeValue);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadFloatNode extends ReadFloatNode {
+
+        @Specialization
+        static double doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+
+            // note: C function 'graal_hpy_read_f' already returns a C double
+            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_F, pointer, offset);
+            if (nativeValue instanceof Double d) {
+                return d;
+            }
+            if (lib.fitsInDouble(nativeValue)) {
+                try {
+                    return lib.asDouble(nativeValue);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadDoubleNode extends ReadDoubleNode {
+
+        @Specialization
+        static double doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+
+            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_D, pointer, offset);
+            if (nativeValue instanceof Double d) {
+                return d;
+            }
+            if (lib.fitsInDouble(nativeValue)) {
+                try {
+                    return lib.asDouble(nativeValue);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadPointerNode extends ReadPointerNode {
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            return callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_PTR, pointer, offset);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMReadGenericNode extends ReadGenericNode {
+
+        @Override
+        protected final int executeInt(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType size) {
+            return ((Number) execute(ctx, pointer, offset, size)).intValue();
+        }
+
+        @Override
+        protected final long executeLong(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType size) {
+            return ((Number) execute(ctx, pointer, offset, size)).longValue();
+        }
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType ctype,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            return callHelperFunction.call(ctx, getReadAccessorName(ctx, ctype), pointer, offset);
+        }
+
+        static GraalHPyNativeSymbol getReadAccessorName(GraalHPyContext ctx, HPyContextSignatureType type) {
+            switch (type) {
+                case Int8_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I8;
+                case Uint8_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI8;
+                case Int16_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I16;
+                case Uint16_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI16;
+                case Int32_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I32;
+                case Uint32_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI32;
+                case Int64_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I64;
+                case Uint64_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI64;
+                case Int:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I;
+                case Long:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_L;
+                case CFloat:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_F;
+                case CDouble:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_D;
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
+                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_PTR;
+                case Bool:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_BOOL;
+                case UnsignedInt:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI;
+                case UnsignedLong:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_UL;
+                case HPy_ssize_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY_SSIZE_T;
+            }
+            int size = ctx.getCTypeSize(type);
+            switch (size) {
+                case 1:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I8;
+                case 2:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I16;
+                case 4:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I32;
+                case 8:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_READ_I64;
+            }
+            throw CompilerDirectives.shouldNotReachHere("invalid member type");
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteI32Node extends WriteI32Node {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, int value,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_I32, basePointer, offset, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteI64Node extends WriteI64Node {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, long value,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_I64, basePointer, offset, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteSizeTNode extends WriteSizeTNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, long value,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_HPY_SSIZE_T, basePointer, offset, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteDoubleNode extends WriteDoubleNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, double value,
+                        @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_D, basePointer, offset, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteGenericNode extends WriteGenericNode {
+
+        @Specialization(guards = {"type == cachedType"}, limit = "1")
+        static void doCached(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") HPyContextSignatureType type, Object value,
+                        @Cached("type") HPyContextSignatureType cachedType,
+                        @Exclusive @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, getWriteAccessor(ctx, cachedType), pointer, offset, value);
+        }
+
+        @Specialization(replaces = "doCached")
+        static void doGeneric(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType type, Object value,
+                        @Exclusive @Cached PCallHPyFunction callHelperFunction) {
+            callHelperFunction.call(ctx, getWriteAccessor(ctx, type), pointer, offset, value);
+        }
+
+        static GraalHPyNativeSymbol getWriteAccessor(GraalHPyContext ctx, HPyContextSignatureType type) {
+            switch (type) {
+                case Int8_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I8;
+                case Uint8_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI8;
+                case Int16_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I16;
+                case Uint16_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI16;
+                case Int32_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I32;
+                case Uint32_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI32;
+                case Int64_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I64;
+                case Uint64_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI64;
+                case Int:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I;
+                case Long:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_L;
+                case CFloat:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_F;
+                case CDouble:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_D;
+                case HPyContextPtr, VoidPtr, VoidPtrPtr, HPyPtr, ConstHPyPtr, Wchar_tPtr, ConstWchar_tPtr, CharPtr, ConstCharPtr, DataPtr, DataPtrPtr, Cpy_PyObjectPtr, HPyModuleDefPtr,
+                                HPyType_SpecPtr, HPyType_SpecParamPtr, HPyDefPtr, HPyFieldPtr, HPyGlobalPtr, HPyCapsule_DestructorPtr, PyType_SlotPtr:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
+                case Bool:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_BOOL;
+                case UnsignedInt:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI;
+                case UnsignedLong:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
+                case HPy_ssize_t:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY_SSIZE_T;
+            }
+            int size = ctx.getCTypeSize(type);
+            switch (size) {
+                case 1:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I8;
+                case 2:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I16;
+                case 4:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I32;
+                case 8:
+                    return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I64;
+            }
+            throw CompilerDirectives.shouldNotReachHere("invalid member type");
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteHPyNode extends WriteHPyNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, Object object,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PCallHPyFunction callWriteDataNode) {
+            callWriteDataNode.call(ctx, GRAAL_HPY_WRITE_HPY, basePointer, offset, asHandleNode.execute(object));
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWriteHPyFieldNode extends WriteHPyFieldNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, PythonObject owner, Object pointer, long offset, Object referent,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyFieldStoreNode fieldStoreNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PCallHPyFunction callGetElementPtr,
+                        @Cached PCallHPyFunction callHelperFunctionNode) {
+            Object hpyFieldPtr = callGetElementPtr.call(ctx, GRAAL_HPY_GET_ELEMENT_PTR, pointer, offset);
+            Object hpyFieldObject = callHelperFunctionNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
+            int idx = fieldStoreNode.execute(inliningTarget, owner, hpyFieldObject, referent);
+            GraalHPyHandle newHandle = asHandleNode.executeField(referent, idx);
+            callHelperFunctionNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMWritePointerNode extends WritePointerNode {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, Object valuePointer,
@@ -195,7 +637,8 @@ abstract class GraalHPyLLVMNodes {
         @Specialization(guards = {"!isCArrayWrapper(charPtr)", "isPointer(lib, charPtr)"})
         static TruffleString doPointer(GraalHPyContext hpyContext, Object charPtr, int n, Encoding encoding, boolean copy,
                         @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached TruffleString.FromNativePointerNode fromNative) {
+                        @Cached TruffleString.FromNativePointerNode fromNative,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             CompilerAsserts.partialEvaluationConstant(encoding);
             CompilerAsserts.partialEvaluationConstant(copy);
             long pointer;
@@ -220,7 +663,7 @@ abstract class GraalHPyLLVMNodes {
             } else {
                 length = n;
             }
-            return fromNative.execute(charPtr, 0, length, encoding, copy);
+            return switchEncodingNode.execute(fromNative.execute(charPtr, 0, length, encoding, copy), TS_ENCODING);
         }
 
         @Specialization(guards = {"!isCArrayWrapper(charPtr)", "!isPointer(lib, charPtr)"})
@@ -279,4 +722,5 @@ abstract class GraalHPyLLVMNodes {
             return lib.isPointer(object);
         }
     }
+
 }

@@ -2688,6 +2688,8 @@ public abstract class GraalHPyNodes {
                     return "(POINTER, POINTER, POINTER, SINT32): SINT32";
                 case HPyFunc_releasebufferproc:
                     return "(POINTER, POINTER, POINTER): VOID";
+                case HPyFunc_traverseproc:
+                    return "(POINTER, POINTER, POINTER): SINT32";
                 case HPyFunc_destroyfunc:
                     return "(POINTER): VOID";
             }

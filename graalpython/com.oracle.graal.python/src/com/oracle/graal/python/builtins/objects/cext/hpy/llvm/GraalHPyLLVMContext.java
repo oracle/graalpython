@@ -106,8 +106,31 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMGetElementPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMIsNullNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadFloatNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadGenericNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadHPyArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadHPyFieldNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadHPyNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadI32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadI64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMReadPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteGenericNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteHPyFieldNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteHPyNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteI32NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteI64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWritePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMWriteSizeTNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.LLVMAllocateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.LLVMReadI8ArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.IntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -132,6 +155,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -173,12 +197,11 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     /** the native type ID of C struct 'HPy' */
     @CompilationFinal Object hpyNativeTypeID;
-    @CompilationFinal Object hpyFieldNativeTypeID;
     @CompilationFinal Object hpyArrayNativeTypeID;
     @CompilationFinal Object setNativeSpaceFunction;
 
-    @CompilationFinal(dimensions = 1) int[] ctypeSizes;
-    @CompilationFinal(dimensions = 1) int[] cfieldOffsets;
+    @CompilationFinal(dimensions = 1) private final int[] ctypeSizes;
+    @CompilationFinal(dimensions = 1) private final int[] cfieldOffsets;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
 
@@ -187,6 +210,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     public GraalHPyLLVMContext(GraalHPyContext context, boolean traceUpcalls) {
         super(context, traceUpcalls);
         Object[] ctxMembers = createMembers(tsLiteral(J_NAME));
+        this.ctypeSizes = new int[HPyContextSignatureType.values().length];
+        this.cfieldOffsets = new int[GraalHPyCField.values().length];
         if (traceUpcalls) {
             this.counts = new int[HPyContextMember.VALUES.length];
             /*
@@ -218,28 +243,9 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         this.hpyContextNativeTypeID = nativeType;
     }
 
-    void setHPyNativeType(Object hpyNativeTypeID) {
-        assert this.hpyNativeTypeID == null : "setting HPy native type ID a second time";
-        this.hpyNativeTypeID = hpyNativeTypeID;
-    }
-
     public Object getHPyNativeType() {
         assert this.hpyNativeTypeID != null : "HPy native type ID not available";
         return hpyNativeTypeID;
-    }
-
-    public Object getHPyFieldNativeType() {
-        assert this.hpyNativeTypeID != null : "HPyField native type ID not available";
-        return hpyFieldNativeTypeID;
-    }
-
-    public void setHPyFieldNativeType(Object hpyFieldNativeTypeID) {
-        this.hpyFieldNativeTypeID = hpyFieldNativeTypeID;
-    }
-
-    void setHPyArrayNativeType(Object hpyArrayNativeTypeID) {
-        assert this.hpyArrayNativeTypeID == null : "setting HPy* native type ID a second time";
-        this.hpyArrayNativeTypeID = hpyArrayNativeTypeID;
     }
 
     public Object getHPyArrayNativeType() {
@@ -347,7 +353,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         Object hpyLibrary = context.getLLVMLibrary();
         InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
         try {
-            interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this));
+            interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this), new IntArrayWrapper(ctypeSizes), new IntArrayWrapper(cfieldOffsets));
         } catch (InteropException e) {
             throw new ApiInitException(e);
         }
@@ -429,222 +435,222 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     @Override
     public AllocateNode createAllocateNode() {
-        return null;
+        return LLVMAllocateNodeGen.create();
     }
 
     @Override
     public AllocateNode getUncachedAllocateNode() {
-        return null;
+        return LLVMAllocateNodeGen.getUncached();
     }
 
     @Override
     public FreeNode createFreeNode() {
-        return null;
+        return HPyLLVMFreeNodeGen.create();
     }
 
     @Override
     public FreeNode getUncachedFreeNode() {
-        return null;
+        return HPyLLVMFreeNodeGen.getUncached();
     }
 
     @Override
     public GetElementPtrNode createGetElementPtrNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMGetElementPtrNodeGen.create();
     }
 
     @Override
     public GetElementPtrNode getUncachedGetElementPtrNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMGetElementPtrNodeGen.getUncached();
     }
 
     @Override
     public IsNullNode createIsNullNode() {
-        return null;
+        return HPyLLVMIsNullNodeGen.create();
     }
 
     @Override
     public IsNullNode getUncachedIsNullNode() {
-        return null;
+        return HPyLLVMIsNullNodeGen.getUncached();
     }
 
     @Override
     public ReadI32Node createReadI32Node() {
-        return null;
+        return HPyLLVMReadI32NodeGen.create();
     }
 
     @Override
     public ReadI32Node getUncachedReadI32Node() {
-        return null;
+        return HPyLLVMReadI32NodeGen.getUncached();
     }
 
     @Override
     public ReadI64Node createReadI64Node() {
-        return null;
+        return HPyLLVMReadI64NodeGen.create();
     }
 
     @Override
     public ReadI64Node getUncachedReadI64Node() {
-        return null;
+        return HPyLLVMReadI64NodeGen.getUncached();
     }
 
     @Override
     public ReadFloatNode createReadFloatNode() {
-        return null;
+        return HPyLLVMReadFloatNodeGen.create();
     }
 
     @Override
     public ReadFloatNode getUncachedReadFloatNode() {
-        return null;
+        return HPyLLVMReadFloatNodeGen.getUncached();
     }
 
     @Override
     public ReadDoubleNode createReadDoubleNode() {
-        return null;
+        return HPyLLVMReadDoubleNodeGen.create();
     }
 
     @Override
     public ReadDoubleNode getUncachedReadDoubleNode() {
-        return null;
+        return HPyLLVMReadDoubleNodeGen.getUncached();
     }
 
     @Override
     public ReadPointerNode createReadPointerNode() {
-        return null;
+        return HPyLLVMReadPointerNodeGen.create();
     }
 
     @Override
     public ReadPointerNode getUncachedReadPointerNode() {
-        return null;
+        return HPyLLVMReadPointerNodeGen.getUncached();
     }
 
     @Override
     public WriteDoubleNode createWriteDoubleNode() {
-        return null;
+        return HPyLLVMWriteDoubleNodeGen.create();
     }
 
     @Override
     public WriteDoubleNode getUncachedWriteDoubleNode() {
-        return null;
+        return HPyLLVMWriteDoubleNodeGen.getUncached();
     }
 
     @Override
     public WriteI32Node createWriteI32Node() {
-        return null;
+        return HPyLLVMWriteI32NodeGen.create();
     }
 
     @Override
     public WriteI32Node getUncachedWriteI32Node() {
-        return null;
+        return HPyLLVMWriteI32NodeGen.getUncached();
     }
 
     @Override
     public WriteI64Node createWriteI64Node() {
-        return null;
+        return HPyLLVMWriteI64NodeGen.create();
     }
 
     @Override
     public WriteI64Node getUncachedWriteI64Node() {
-        return null;
+        return HPyLLVMWriteI64NodeGen.getUncached();
     }
 
     @Override
     public WriteHPyNode createWriteHPyNode() {
-        return null;
+        return HPyLLVMWriteHPyNodeGen.create();
     }
 
     @Override
     public WriteHPyNode getUncachedWriteHPyNode() {
-        return null;
+        return HPyLLVMWriteHPyNodeGen.getUncached();
     }
 
     @Override
     public ReadI8ArrayNode createReadI8ArrayNode() {
-        return null;
+        return LLVMReadI8ArrayNodeGen.create();
     }
 
     @Override
     public ReadI8ArrayNode getUncachedReadI8ArrayNode() {
-        return null;
+        return LLVMReadI8ArrayNodeGen.getUncached();
     }
 
     @Override
     public ReadHPyNode createReadHPyNode() {
-        return null;
+        return HPyLLVMReadHPyNodeGen.create();
     }
 
     @Override
     public ReadHPyNode getUncachedReadHPyNode() {
-        return null;
+        return HPyLLVMReadHPyNodeGen.getUncached();
     }
 
     @Override
     public ReadHPyFieldNode createReadHPyFieldNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMReadHPyFieldNodeGen.create();
     }
 
     @Override
     public ReadHPyFieldNode getUncachedReadFieldHPyNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMReadHPyFieldNodeGen.getUncached();
     }
 
     @Override
     public ReadGenericNode createReadGenericNode() {
-        return null;
+        return HPyLLVMReadGenericNodeGen.create();
     }
 
     @Override
     public ReadGenericNode getUncachedReadGenericNode() {
-        return null;
+        return HPyLLVMReadGenericNodeGen.getUncached();
     }
 
     @Override
     public ReadHPyArrayNode createReadHPyArrayNode() {
-        return null;
+        return HPyLLVMReadHPyArrayNodeGen.create();
     }
 
     @Override
     public ReadHPyArrayNode getUncachedReadHPyArrayNode() {
-        return null;
+        return HPyLLVMReadHPyArrayNodeGen.getUncached();
     }
 
     @Override
     public WritePointerNode createWritePointerNode() {
-        return null;
+        return HPyLLVMWritePointerNodeGen.create();
     }
 
     @Override
     public WritePointerNode getUncachedWritePointerNode() {
-        return null;
+        return HPyLLVMWritePointerNodeGen.getUncached();
     }
 
     @Override
     public WriteSizeTNode createWriteSizeTNode() {
-        return null;
+        return HPyLLVMWriteSizeTNodeGen.create();
     }
 
     @Override
     public WriteSizeTNode getUncachedWriteSizeTNode() {
-        return null;
+        return HPyLLVMWriteSizeTNodeGen.getUncached();
     }
 
     @Override
     public WriteGenericNode createWriteGenericNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMWriteGenericNodeGen.create();
     }
 
     @Override
     public WriteGenericNode getUncachedWriteGenericNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMWriteGenericNodeGen.getUncached();
     }
 
     @Override
     public WriteHPyFieldNode createWriteHPyFieldNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMWriteHPyFieldNodeGen.create();
     }
 
     @Override
     public WriteHPyFieldNode getUncachedWriteHPyFieldNode() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return HPyLLVMWriteHPyFieldNodeGen.getUncached();
     }
 
     @ExportMessage
@@ -1162,6 +1168,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         }
 
         @Specialization(replaces = "doCached")
+        @Megamorphic
         @TruffleBoundary
         static Object doUncached(Node inliningTarget, HPyContextMember member, Object[] arguments) throws ArityException {
             return doCached(inliningTarget, member, arguments, member, GraalHPyContextFunction.getUncached(member), getUncachedRetNode(member), getUncachedArgNodes(member),

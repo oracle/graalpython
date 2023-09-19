@@ -63,8 +63,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -113,8 +112,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CExtCommonNodes {
@@ -925,6 +924,11 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
+        static Boolean doBoolean(Boolean b) {
+            return b;
+        }
+
+        @Specialization
         static Object doByte(byte b) {
             return b != 0;
         }
@@ -937,11 +941,11 @@ public abstract class CExtCommonNodes {
         @Specialization
         static Object doLong(long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // sematics as we should just read a single byte.
+            // semantics as we should just read a single byte.
             return l != 0;
         }
 
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        @Specialization(replaces = {"doBoolean", "doByte", "doShort", "doLong"}, limit = "1")
         static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
