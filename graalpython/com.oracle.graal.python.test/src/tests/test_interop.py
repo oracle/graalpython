@@ -473,39 +473,20 @@ if sys.implementation.name == "graalpy":
         y = Integer.getInteger("something_what_does_not_exists2")
         z = None
 
-        if __graalpython__.jython_emulation_enabled:
+        assert x == None
+        assert (x != None) == False
+        assert x is None
+        assert (x is not None) == False
 
-            assert x == None
-            assert (x != None) == False
-            assert x is None
-            assert (x is not None) == False
+        assert x == y
+        assert (x != y) == False
+        assert x is y
+        assert (x is not y) == False
 
-            assert x == y
-            assert (x != y) == False
-            assert x is y
-            assert (x is not y) == False
-
-            assert x == z
-            assert (x != z) == False
-            assert x is z
-            assert (x is not z) == False
-
-        else:
-
-            assert x == None
-            assert (x != None) == False
-            assert (x is None) == False
-            assert x is not None
-
-            assert x == y
-            assert (x != y) == False
-            assert x is y
-            assert (x is not y) == False
-
-            assert x == z
-            assert (x != z) == False
-            assert (x is z) == False
-            assert x is not z
+        assert x == z
+        assert (x != z) == False
+        assert x is z
+        assert (x is not z) == False
 
     def test_isinstance01():
         if __graalpython__.jython_emulation_enabled:
