@@ -664,6 +664,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchownat", "%d, %s, %d, %d, %b", dirFd, path, owner, group, followSymlinks);
+        try {
+            lib.fchownat(delegate, dirFd, path, owner, group, followSymlinks);
+        } catch (PosixException e) {
+            throw logException("fchownat", e);
+        }
+    }
+
+    @ExportMessage
+    final void fchown(int fd, long owner, long group,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchown", "%d, %d, %d", fd, owner, group);
+        try {
+            lib.fchown(delegate, fd, owner, group);
+        } catch (PosixException e) {
+            throw logException("fchown", e);
+        }
+    }
+
+    @ExportMessage
     final Object readlinkat(int dirFd, Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("readlinkat", "%d, %s", dirFd, path);

@@ -198,6 +198,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = tsLiteral("%s: cannot use fd and follow_symlinks together");
+    public static final TruffleString CANT_SPECIFY_BOTH_DIR_FD_AND_FD = tsLiteral("%s: can't specify both dir_fd and fd");
     public static final TruffleString CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER = tsLiteral("cannot convert float infinity to integer");
     public static final TruffleString CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER = tsLiteral("cannot convert float NaN to integer");
     public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
@@ -859,8 +860,9 @@ public abstract class ErrorMessages {
     public static final TruffleString LINE_BUFFERING_ISNT_SUPPORTED = tsLiteral("line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used");
     public static final TruffleString UNCLOSED_FILE = tsLiteral("unclosed file %r");
     public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED = tsLiteral("maximum recursion depth exceeded");
-    public static final TruffleString UID_IS_LESS_THAN_MINIMUM = tsLiteral("uid is less than minimum");
-    public static final TruffleString UID_SHOULD_BE_INTEGER_NOT_P = tsLiteral("uid should be integer, not %p");
+    public static final TruffleString S_IS_LESS_THAN_MINIMUM = tsLiteral("%s is less than minimum");
+    public static final TruffleString S_IS_GREATER_THAN_MAXIUMUM = tsLiteral("%s is greater than maxiumum");
+    public static final TruffleString S_SHOULD_BE_INTEGER_NOT_P = tsLiteral("%s should be integer, not %p");
     public static final TruffleString RANGE_OBJ_IDX_OUT_OF_RANGE = tsLiteral("range object index out of range");
     public static final TruffleString NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE = tsLiteral("number of bits must be non-negative");
     public static final TruffleString TIMEOUT_MUST_BE_NON_NEG_NUM = tsLiteral("'timeout' must be a non-negative number");

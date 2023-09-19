@@ -244,6 +244,10 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void fchmod(Object receiver, int fd, int mode) throws PosixException;
 
+    public abstract void fchownat(Object receiver, int dirFd, Object pathname, long owner, long group, boolean followSymlinks) throws PosixException;
+
+    public abstract void fchown(Object receiver, int fd, long owner, long group) throws PosixException;
+
     public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
 
     public abstract void kill(Object receiver, long pid, int signal) throws PosixException;

@@ -58,7 +58,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
- * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
+ * {@code __index__} method. Raises {@code OverflowError} on
  * overflow.
  */
 @GenerateUncached

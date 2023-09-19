@@ -45,7 +45,6 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -55,6 +54,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
@@ -535,6 +535,20 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         nativeLib.fchmod(nativePosixSupport, fd, mode);
+    }
+
+    @ExportMessage
+    final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.fchownat(nativePosixSupport, dirFd, path, owner, group, followSymlinks);
+    }
+
+    @ExportMessage
+    final void fchown(int fd, long owner, long group,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.fchown(nativePosixSupport, fd, owner, group);
     }
 
     @ExportMessage

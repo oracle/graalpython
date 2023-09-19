@@ -377,6 +377,14 @@ int32_t call_fchdir(int32_t fd) {
     return fchdir(fd);
 }
 
+int32_t call_fchown(int32_t fd, int64_t owner, int64_t group) {
+    return fchown(fd, owner, group);
+}
+
+int32_t call_fchownat(int32_t dirfd, const char *pathname, int64_t owner, int64_t group, int32_t followSymlinks) {
+    return fchownat(dirfd, pathname, owner, group, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+}
+
 int32_t call_isatty(int32_t fd) {
     return isatty(fd);
 }
