@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -4762,10 +4763,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeDeleteName(VirtualFrame virtualFrame, Object globals, Object locals, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
+        // ceval.c: TARGET(DELETE_NAME)
         TruffleString varname = localNames[oparg];
         if (locals != null) {
             PyObjectDelItem delItemNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_DEL_ITEM, PyObjectDelItemNodeGen.class, NODE_OBJECT_DEL_ITEM, useCachedNodes);
-            delItemNode.executeCached(virtualFrame, locals, varname);
+            try {
+                delItemNode.executeCached(virtualFrame, locals, varname);
+            } catch (PException e) {
+                PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+                throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, varname);
+            }
         } else {
             DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci + 1, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, useCachedNodes);
             deleteGlobalNode.executeWithGlobals(virtualFrame, globals, varname);
