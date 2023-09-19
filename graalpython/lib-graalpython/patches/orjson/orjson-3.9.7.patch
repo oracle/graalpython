@@ -1,0 +1,225 @@
+From 1e4e88533f860a0a06668b973264db17cb52387e Mon Sep 17 00:00:00 2001
+From: Tim Felgentreff <tim.felgentreff@oracle.com>
+Date: Tue, 19 Sep 2023 07:05:59 +0200
+Subject: [PATCH] get it to build on graalpy
+
+---
+ Cargo.lock                |  6 ++----
+ Cargo.toml                |  4 ++--
+ src/ffi/fragment.rs       |  3 +++
+ src/ffi/list.rs           |  3 +++
+ src/lib.rs                | 18 +++++++++++++++---
+ src/serialize/datetime.rs |  4 ++++
+ src/serialize/default.rs  |  4 ++--
+ src/serialize/numpy.rs    |  6 ++++++
+ src/serialize/tuple.rs    |  3 +++
+ src/util.rs               |  4 ++--
+ 10 files changed, 42 insertions(+), 13 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index f8ec582..e835fd4 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -227,8 +227,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-build-config"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "076c73d0bc438f7a4ef6fdd0c3bb4732149136abd952b110ac93e4edb13a6ba5"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "once_cell",
+  "target-lexicon",
+@@ -237,8 +236,7 @@ dependencies = [
+ [[package]]
+ name = "pyo3-ffi"
+ version = "0.19.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e53cee42e77ebe256066ba8aa77eff722b3bb91f3419177cf4cd0f304d3284d9"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+diff --git a/Cargo.toml b/Cargo.toml
+index 8ca77f7..9b15f81 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -59,7 +59,7 @@ encoding_rs = { version = "0.8", default_features = false }
+ itoa = { version = "1", default_features = false }
+ itoap = { version = "1", features = ["std", "simd"] }
+ once_cell = { version = "1", default_features = false, features = ["race"] }
+-pyo3-ffi = { version = "^0.19.2", default_features = false, features = ["extension-module"]}
++pyo3-ffi = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy", default_features = false, features = ["extension-module"] }
+ ryu = { version = "1", default_features = false }
+ serde = { version = "1", default_features = false }
+ serde_json = { version = "1", default_features = false, features = ["std", "float_roundtrip"] }
+@@ -68,7 +68,7 @@ smallvec = { version = "^1.11", default_features = false, features = ["union", "
+ 
+ [build-dependencies]
+ cc = { version = "1" }
+-pyo3-build-config = { version = "^0.19.2" }
++pyo3-build-config = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy" }
+ version_check = { version = "0.9" }
+ 
+ [profile.dev]
+diff --git a/src/ffi/fragment.rs b/src/ffi/fragment.rs
+index 44d4517..006111a 100644
+--- a/src/ffi/fragment.rs
++++ b/src/ffi/fragment.rs
+@@ -39,7 +39,10 @@ pub unsafe extern "C" fn orjson_fragment_tp_new(
+         raise_args_exception();
+         null_mut()
+     } else {
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let contents = PyTuple_GET_ITEM(args, 0);
++        #[cfg(any(GraalPy, PyPy))]
++        let contents = PyTuple_GetItem(args, 0);
+         Py_INCREF(contents);
+         let obj = Box::new(Fragment {
+             ob_refcnt: 1,
+diff --git a/src/ffi/list.rs b/src/ffi/list.rs
+index 44b386c..5800ac3 100644
+--- a/src/ffi/list.rs
++++ b/src/ffi/list.rs
+@@ -29,7 +29,10 @@ impl Iterator for PyListIter {
+         if self.pos == self.len {
+             None
+         } else {
++            #[cfg(not(any(GraalPy, PyPy)))]
+             let elem = unsafe { *((*self.obj).ob_item).add(self.pos) };
++            #[cfg(any(GraalPy, PyPy))]
++            let elem = unsafe { pyo3_ffi::PyList_GetItem(self.obj as *mut pyo3_ffi::PyObject, self.pos as isize) };
+             self.pos += 1;
+             Some(nonnull!(elem))
+         }
+diff --git a/src/lib.rs b/src/lib.rs
+index 7728d45..5f9547a 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -214,9 +214,18 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
+             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+         let args = PyTuple_New(3);
+         let pos = PyLong_FromLongLong(pos);
+-        PyTuple_SET_ITEM(args, 0, err_msg);
+-        PyTuple_SET_ITEM(args, 1, doc);
+-        PyTuple_SET_ITEM(args, 2, pos);
++        #[cfg(not(any(GraalPy, PyPy)))]
++        {
++            PyTuple_SET_ITEM(args, 0, err_msg);
++            PyTuple_SET_ITEM(args, 1, doc);
++            PyTuple_SET_ITEM(args, 2, pos);
++        }
++        #[cfg(any(GraalPy, PyPy))]
++        {
++            PyTuple_SetItem(args, 0, err_msg);
++            PyTuple_SetItem(args, 1, doc);
++            PyTuple_SetItem(args, 2, pos);
++        }
+         PyErr_SetObject(typeref::JsonDecodeError, args);
+         debug_assert!(ffi!(Py_REFCNT(args)) == 2);
+         Py_DECREF(args);
+@@ -330,7 +339,10 @@ pub unsafe extern "C" fn dumps(
+     }
+     if !kwnames.is_null() {
+         for i in 0..=Py_SIZE(kwnames).saturating_sub(1) {
++            #[cfg(not(any(GraalPy, PyPy)))]
+             let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
++            #[cfg(any(GraalPy, PyPy))]
++            let arg = PyTuple_GetItem(kwnames, i as Py_ssize_t);
+             if arg == typeref::DEFAULT {
+                 if unlikely!(num_args & 2 == 2) {
+                     return raise_dumps_exception_fixed(
+diff --git a/src/serialize/datetime.rs b/src/serialize/datetime.rs
+index adf35fb..13d5747 100644
+--- a/src/serialize/datetime.rs
++++ b/src/serialize/datetime.rs
+@@ -164,7 +164,11 @@ impl DateTimeLike for DateTime {
+     }
+ 
+     fn has_tz(&self) -> bool {
++        #[cfg(not(GraalPy))]
+         unsafe { (*(self.ptr as *mut pyo3_ffi::PyDateTime_DateTime)).hastzinfo == 1 }
++
++        #[cfg(GraalPy)]
++        unsafe { pyo3_ffi::Py_IsNone(pyo3_ffi::PyDateTime_DATE_GET_TZINFO(self.ptr as *mut pyo3_ffi::PyObject)) == 0 }
+     }
+ 
+     fn slow_offset(&self) -> Result<Offset, DateTimeError> {
+diff --git a/src/serialize/default.rs b/src/serialize/default.rs
+index 6f2d098..eefca82 100644
+--- a/src/serialize/default.rs
++++ b/src/serialize/default.rs
+@@ -46,13 +46,13 @@ impl Serialize for DefaultSerializer {
+                 if unlikely!(self.default_calls == RECURSION_LIMIT) {
+                     err!(SerializeError::DefaultRecursionLimit)
+                 }
+-                #[cfg(not(Py_3_10))]
++                #[cfg(any(not(Py_3_10), GraalPy, PyPy))]
+                 let default_obj = ffi!(PyObject_CallFunctionObjArgs(
+                     callable.as_ptr(),
+                     self.ptr,
+                     std::ptr::null_mut() as *mut pyo3_ffi::PyObject
+                 ));
+-                #[cfg(Py_3_10)]
++                #[cfg(all(Py_3_10, not(GraalPy), not(PyPy)))]
+                 let default_obj = unsafe {
+                     pyo3_ffi::PyObject_Vectorcall(
+                         callable.as_ptr(),
+diff --git a/src/serialize/numpy.rs b/src/serialize/numpy.rs
+index 2ae9204..9dc97b4 100644
+--- a/src/serialize/numpy.rs
++++ b/src/serialize/numpy.rs
+@@ -1137,8 +1137,14 @@ impl NumpyDatetimeUnit {
+     fn from_pyobject(ptr: *mut PyObject) -> Self {
+         let dtype = ffi!(PyObject_GetAttr(ptr, DTYPE_STR));
+         let descr = ffi!(PyObject_GetAttr(dtype, DESCR_STR));
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let el0 = ffi!(PyList_GET_ITEM(descr, 0));
++        #[cfg(any(GraalPy, PyPy))]
++        let el0 = ffi!(PyList_GetItem(descr, 0));
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let descr_str = ffi!(PyTuple_GET_ITEM(el0, 1));
++        #[cfg(any(GraalPy, PyPy))]
++        let descr_str = ffi!(PyTuple_GetItem(el0, 1));
+         let uni = crate::str::unicode_to_str(descr_str).unwrap();
+         if uni.len() < 5 {
+             return Self::NaT;
+diff --git a/src/serialize/tuple.rs b/src/serialize/tuple.rs
+index 7ad76e4..46881cf 100644
+--- a/src/serialize/tuple.rs
++++ b/src/serialize/tuple.rs
+@@ -43,7 +43,10 @@ impl Serialize for TupleSerializer {
+         } else {
+             let mut seq = serializer.serialize_seq(None).unwrap();
+             for i in 0..=ffi!(Py_SIZE(self.ptr)) as usize - 1 {
++                #[cfg(not(any(GraalPy, PyPy)))]
+                 let elem = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
++                #[cfg(any(GraalPy, PyPy))]
++                let elem = ffi!(PyTuple_GetItem(self.ptr, i as isize));
+                 let value = PyObjectSerializer::new(
+                     elem,
+                     self.opts,
+diff --git a/src/util.rs b/src/util.rs
+index fa3b7e1..2b2df61 100644
+--- a/src/util.rs
++++ b/src/util.rs
+@@ -100,7 +100,7 @@ macro_rules! ffi {
+     };
+ }
+ 
+-#[cfg(Py_3_9)]
++#[cfg(all(Py_3_9, not(any(PyPy, GraalPy))))]
+ macro_rules! call_method {
+     ($obj1:expr, $obj2:expr) => {
+         unsafe { pyo3_ffi::PyObject_CallMethodNoArgs($obj1, $obj2) }
+@@ -110,7 +110,7 @@ macro_rules! call_method {
+     };
+ }
+ 
+-#[cfg(not(Py_3_9))]
++#[cfg(any(not(Py_3_9), PyPy, GraalPy))]
+ macro_rules! call_method {
+     ($obj1:expr, $obj2:expr) => {
+         unsafe {
+-- 
+2.34.1
