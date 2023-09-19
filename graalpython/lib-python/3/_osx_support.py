@@ -95,7 +95,6 @@ def _get_system_version():
 
     if _SYSTEM_VERSION is None:
         _SYSTEM_VERSION = ''
-        return _SYSTEM_VERSION # TODO: Truffle remove-me
         try:
             f = open('/System/Library/CoreServices/SystemVersion.plist', encoding="utf-8")
         except OSError:
