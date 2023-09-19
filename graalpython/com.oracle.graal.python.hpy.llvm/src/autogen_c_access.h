@@ -51,13 +51,14 @@
 
 */
 
+#ifndef _AUTOGEN_C_ACCESS_H
+#define _AUTOGEN_C_ACCESS_H
 #include <stddef.h>
 
 #include "Python.h"
 #include "structmember.h"
-#include "autogen_c_access.h"
 
-_HPy_HIDDEN int fill_c_type_sizes(int32_t *ctype_sizes)
+static int fill_c_type_sizes(int32_t *ctype_sizes)
 {
     ctype_sizes[0] = (int32_t) sizeof(HPyContext*);
     ctype_sizes[1] = (int32_t) sizeof(void);
@@ -122,7 +123,7 @@ _HPy_HIDDEN int fill_c_type_sizes(int32_t *ctype_sizes)
     return 0;
 };
 
-_HPy_HIDDEN int fill_c_field_offsets(int32_t *cfield_offsets)
+static int fill_c_field_offsets(int32_t *cfield_offsets)
 {
     cfield_offsets[0] = (int32_t) offsetof(HPyType_SpecParam, kind);
     cfield_offsets[1] = (int32_t) offsetof(HPyType_SpecParam, object);
@@ -183,4 +184,6 @@ _HPy_HIDDEN int fill_c_field_offsets(int32_t *cfield_offsets)
     cfield_offsets[56] = (int32_t) offsetof(HPy_buffer, internal);
     return 0;
 };
+
+#endif
 

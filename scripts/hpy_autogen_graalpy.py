@@ -1185,7 +1185,7 @@ class autogen_c_access(GraalPyAutoGenFile):
     Generates the enum of context members.
     """
     INDENT = '    '
-    PATH = 'graalpython/com.oracle.graal.python.jni/src/autogen_c_access.c'
+    PATH = 'graalpython/com.oracle.graal.python.hpy.llvm/src/autogen_c_access.h'
     INPUT_FILE = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + 'HPyContextSignatureType')
     CFIELD_FILE = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(HPY_CONTEXT_PKG + 'GraalHPyCField')
 
@@ -1235,42 +1235,29 @@ class autogen_c_access(GraalPyAutoGenFile):
                     if line:
                         i += 1
 
+        w('#ifndef _AUTOGEN_C_ACCESS_H')
+        w('#define _AUTOGEN_C_ACCESS_H')
         w('#include <stddef.h>')
         w('')
         w('#include "Python.h"')
         w('#include "structmember.h"')
-        w('#include "autogen_c_access.h"')
         w('')
-        w('_HPy_HIDDEN int fill_c_type_sizes(int32_t *ctype_sizes)')
+        w('static int fill_c_type_sizes(int32_t *ctype_sizes)')
         w('{')
         for i, c_name in c_types:
             w(f'{self.INDENT}ctype_sizes[{i}] = (int32_t) sizeof({c_name});' )
         w(f'{self.INDENT}return 0;')
         w('};')
         w('')
-        w('_HPy_HIDDEN int fill_c_field_offsets(int32_t *cfield_offsets)')
+        w('static int fill_c_field_offsets(int32_t *cfield_offsets)')
         w('{')
         for i, struct_name, field_name in c_fields:
             w(f'{self.INDENT}cfield_offsets[{i}] = (int32_t) offsetof({struct_name}, {field_name});' )
         w(f'{self.INDENT}return 0;')
         w('};')
         w('')
-        return '\n'.join(lines)
-
-
-class autogen_c_access_h(GraalPyAutoGenFile):
-    """
-    Generates the header for autogen_c_access.
-    """
-    PATH = 'graalpython/com.oracle.graal.python.jni/src/autogen_c_access.h'
-    def generate(self, root):
-        lines = []
-        w = lines.append
-        w('#include <stdint.h>')
-        w('#include "hpy.h"')
+        w('#endif')
         w('')
-        w('_HPy_HIDDEN int fill_c_type_sizes(int32_t *ctype_sizes);')
-        w('_HPy_HIDDEN int fill_c_field_offsets(int32_t *cfield_offsets);')
         return '\n'.join(lines)
 
 
@@ -1287,5 +1274,4 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_function_factory,
               autogen_llvm_trampolines_h,
               # autogen_llvm_upcall_wrappers,
-              autogen_c_access,
-              autogen_c_access_h)
+              autogen_c_access)
