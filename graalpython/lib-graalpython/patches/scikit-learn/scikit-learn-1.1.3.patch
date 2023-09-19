@@ -16,3 +16,16 @@ index d8206a3..e7b7bf4 100644
  
      # Additional checks for Cython
      cython_enable_debug_directives = (
+diff --git a/sklearn/datasets/_svmlight_format_fast.pyx b/sklearn/datasets/_svmlight_format_fast.pyx
+index 12d222f..89c249a 100644
+--- a/sklearn/datasets/_svmlight_format_fast.pyx
++++ b/sklearn/datasets/_svmlight_format_fast.pyx
+@@ -84,7 +84,7 @@ def _load_svmlight_file(f, dtype, bint multilabel, bint zero_based,
+         if n_features and features[0].startswith(qid_prefix):
+             _, value = features[0].split(COLON, 1)
+             if query_id:
+-                query.resize(len(query) + 1)
++                query.resize(len(query) + 1, refcheck=False)
+                 query[len(query) - 1] = np.int64(value)
+             features.pop(0)
+             n_features -= 1

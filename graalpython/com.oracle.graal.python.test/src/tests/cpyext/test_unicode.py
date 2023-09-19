@@ -422,7 +422,7 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     test_PyUnicode_FromEncodedObject = CPyExtFunction(
-        lambda args: args[0].decode(args[1], args[2]),
+        lambda args: bytes(args[0]).decode(args[1], args[2]),
         lambda: (
             (b"hello", "ascii", "strict"),
             ("hellö".encode(), "ascii", "strict"),
@@ -430,6 +430,9 @@ class TestPyUnicode(CPyExtTestCase):
             ("hellö".encode(), "ascii", "replace"),
             ("hellö".encode(), "utf-8", "strict"),
             ("hellö".encode(), "utf-8", "blah"),
+            (memoryview(b"hello"), "ascii", "strict"),
+            (memoryview(b'hell\xc3\xb6'), "utf-8", "strict"),
+            (memoryview(b'hell\xc3\xb6'), "ascii", "strict"),
         ),
         resultspec="O",
         argspec='Oss',

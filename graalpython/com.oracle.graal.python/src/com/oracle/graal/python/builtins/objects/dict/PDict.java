@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -66,10 +65,6 @@ import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 public class PDict extends PHashingCollection {
-
-    public PDict(PythonLanguage lang) {
-        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(lang));
-    }
 
     public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
         super(ensurePBCT(cls), instanceShape, dictStorage);
