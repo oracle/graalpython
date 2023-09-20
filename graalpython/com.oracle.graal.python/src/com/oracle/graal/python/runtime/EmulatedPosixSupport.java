@@ -2056,6 +2056,19 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    public long[] getgroups() {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            switch (PythonOS.getPythonOS()) {
+                case PLATFORM_LINUX, PLATFORM_DARWIN -> {
+                    return new UnixSystem().getGroups();
+                }
+                default -> throw new UnsupportedPosixFeatureException("emulated getgroups is not available on this platform");
+            }
+        }
+        throw new UnsupportedPosixFeatureException("getgroups was excluded");
+    }
+
+    @ExportMessage
     @SuppressWarnings("static-method")
     public OpenPtyResult openpty() {
         throw new UnsupportedPosixFeatureException("Emulated openpty not supported");

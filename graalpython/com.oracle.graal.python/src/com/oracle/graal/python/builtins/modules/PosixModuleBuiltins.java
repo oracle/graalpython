@@ -125,6 +125,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -716,6 +717,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "getgroups")
+    @GenerateNodeFactory
+    abstract static class GetGroupsNode extends PythonBuiltinNode {
+        @Specialization
+        Object getgroups(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            try {
+                long[] groups = posixLib.getgroups(getPosixSupport());
+                return factory.createList(new LongSequenceStorage(groups));
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

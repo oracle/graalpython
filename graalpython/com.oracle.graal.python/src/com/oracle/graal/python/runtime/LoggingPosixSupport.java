@@ -904,6 +904,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long[] getgroups(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getgroups", "");
+        try {
+            return logExit("getgroups", "%s", lib.getgroups(delegate));
+        } catch (PosixException e) {
+            throw logException("getgroups", e);
+        }
+    }
+
+    @ExportMessage
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("mmapReadBytes", "%s, %d, %d", mmap, index, length);

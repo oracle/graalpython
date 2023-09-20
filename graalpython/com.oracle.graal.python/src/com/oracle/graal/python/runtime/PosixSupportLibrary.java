@@ -292,6 +292,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long setsid(Object receiver) throws PosixException;
 
+    public abstract long[] getgroups(Object receiver) throws PosixException;
+
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 

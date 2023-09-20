@@ -700,6 +700,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long[] getgroups(
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getgroups(nativePosixSupport);
+    }
+
+    @ExportMessage
     final OpenPtyResult openpty(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.openpty(nativePosixSupport);
