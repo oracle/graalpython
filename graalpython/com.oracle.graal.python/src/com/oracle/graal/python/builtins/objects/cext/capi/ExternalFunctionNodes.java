@@ -613,8 +613,7 @@ public abstract class ExternalFunctionNodes {
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
                         PythonObjectFactory factory, boolean doArgAndResultConversion) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
-            InteropLibrary lib = InteropLibrary.getUncached(callable);
-            assert !isClosurePointer(PythonContext.get(null), callable, lib);
+            assert !isClosurePointer(PythonContext.get(null), callable, InteropLibrary.getUncached(callable));
             if (flags < 0) {
                 flags = 0;
             }
