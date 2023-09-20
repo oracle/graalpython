@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.test.builtin.modules;
 
-import static com.oracle.graal.python.test.GraalPythonEnvVars.IS_WINDOWS;
 import static com.oracle.graal.python.test.PythonTests.ts;
+import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
