@@ -217,7 +217,7 @@ abstract class GraalHPyLLVMNodes {
             if (close) {
                 return closeAndGetHandleNode.execute(nativeValue);
             }
-            return asPythonObjectNode.execute(pointer);
+            return asPythonObjectNode.execute(nativeValue);
         }
     }
 
