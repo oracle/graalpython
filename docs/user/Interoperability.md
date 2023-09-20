@@ -6,6 +6,8 @@ permalink: /reference-manual/python/Interoperability/
 ---
 # Interoperability
 
+The best way to embed GraalPy is to use the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html).
+
 ## The Polyglot API
 
 Since GraalVM supports several other programming languages including JavaScript, R,
