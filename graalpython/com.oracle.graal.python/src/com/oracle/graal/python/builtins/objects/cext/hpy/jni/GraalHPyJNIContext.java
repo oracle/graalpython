@@ -63,7 +63,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodesFactory.HPyJNIFromCharPointerNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -158,6 +157,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.Un
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteI64Node;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteSizeTNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodesFactory.HPyJNIFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -364,6 +364,11 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     protected NativePointer nativeToInteropPointer(Object object) {
         assert object instanceof Long;
         return new NativePointer((Long) object);
+    }
+
+    @Override
+    protected Object getNativeNull() {
+        return 0L;
     }
 
     @ExportMessage

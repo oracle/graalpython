@@ -159,6 +159,8 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
      */
     protected abstract Object nativeToInteropPointer(Object object);
 
+    protected abstract Object getNativeNull();
+
     protected abstract Object createArgumentsArray(Object[] args);
 
     protected abstract void freeArgumentsArray(Object argsArray);

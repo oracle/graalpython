@@ -1206,6 +1206,10 @@ public final class GraalHPyContext extends CExtContext {
         return backend.nativeToInteropPointer(object);
     }
 
+    public Object getNativeNull() {
+        return backend.getNativeNull();
+    }
+
     /**
      * Join the reference cleaner thread.
      */

@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
@@ -268,6 +269,11 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     protected Object nativeToInteropPointer(Object object) {
         return object;
+    }
+
+    @Override
+    protected Object getNativeNull() {
+        return new NativePointer(0);
     }
 
     @Override

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStri
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,7 +85,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  *         void *internal;
  * } HPy_buffer;
  * </pre>
- *
  */
 @ExportLibrary(InteropLibrary.class)
 @SuppressWarnings("static-method")
@@ -183,10 +183,10 @@ public final class GraalHPyBuffer implements TruffleObject {
         return nativePointer != null;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     long asPointer(
-                    @CachedLibrary("this.nativePointer") InteropLibrary lib) throws UnsupportedMessageException {
-        return lib.asPointer(nativePointer);
+                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        return PythonUtils.coerceToLong(nativePointer, lib);
     }
 
     @ExportMessage
@@ -229,7 +229,7 @@ public final class GraalHPyBuffer implements TruffleObject {
             }
             return ptr;
         }
-        return 0;
+        return ctx.getNativeNull();
     }
 
     void free(GraalHPyContext ctx, GraalHPyCAccess.FreeNode freeNode, GraalHPyCAccess.ReadPointerNode readPointerNode, GraalHPyCAccess.ReadHPyNode readHPyNode) {
