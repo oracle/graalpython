@@ -47,7 +47,7 @@ A JVM standalone that comes with a JVM has the `-jvm` suffix in a name: `graalpy
 
 ## Installing GraalPy
 
-You can install GraalPy either using a Python manager or downloading a compressed GraalPy tarball appropriate for your platform.
+You can install GraalPy by downloading a compressed GraalPy tarball appropriate for your platform. For GraalPy Community, you can also use `pyenv` or `conda`.
 
 ### Downloading
 
@@ -68,19 +68,17 @@ You can install GraalPy either using a Python manager or downloading a compresse
     ./path/to/bin/graalpy --version
     ```
 
-### Using `pyenv`
+### Using `pyenv` (GraalPy Community only)
 #### Linux and macOS
 
-The other way to install GraalPy on Linux and macOS platforms is to use [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
-For example, to install version 23.1.1, run the following command:
+The other way to install GraalPy Community Edition on Linux and macOS platforms is to use [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
+For example, to install version 23.1.0, run the following command:
 
 ```bash
-# To install Oracle GraalPy  
-pyenv install graalpy-23.1.1
-# To install GraalPy Community
-pyenv install graalpy-community-23.1.1
+pyenv install graalpy-community-23.1.0
 ```
 
+### Using Conda Forge (GraalPy Community only)
 Another option is to use [Conda-Forge](https://conda-forge.org/).
 To get an environment with the latest version of GraalPy, use the following command:
 
