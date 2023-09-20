@@ -147,7 +147,7 @@ def test_polyglot_app():
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
             assert "hello java" in out
         finally:
-            cmd = MVN_CMD + ["dependency:purge-local-repository"]
+            cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false"]
             run_cmd(cmd, env, cwd=target_dir)
 
 
