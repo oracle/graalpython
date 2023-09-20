@@ -27,16 +27,16 @@ To distinguish between them, GraalPy Community has the suffix `-community` in th
 
 ```bash
 # Oracle GraalPy
-graalpy-VERSION-PLATFORM.tar.gz
+graalpy-<version>-<os>-<arch>.tar.gz
 # GraalPy Community
-graalpy-community-VERSION-PLATFORM.tar.gz
+graalpy-community-<version>-<os>-<arch>.tar.gz
 ```
 
 Two language runtime options are available for both Oracle and Community GraalPy: Native and JVM.
 In the Native configuration, GraalPy is ahead-of-time compiled to a standalone native executable. 
 This means that you do not need a JVM installed on your system to use it and it is size-compact.
 In the JVM configuration, you can use Java interoperability easily, and peak performance may be higher than the native configuration.
-A JVM standalone that comes with a JVM has the `-jvm` suffix in a name: `graalpy-jvm-<version>-<os>-<arch>.tar.gz`.
+A JVM standalone that comes with a JVM has the `-jvm` suffix in the name: `graalpy-jvm-<version>-<os>-<arch>.tar.gz`.
 
 | Configuration:     | Native (default) | JVM           |
 | ------------------ | ---------------: | ------------: |
@@ -58,6 +58,7 @@ You can install GraalPy by downloading a compressed GraalPy tarball appropriate 
     ```shell
     sudo xattr -r -d com.apple.quarantine <archive>.tar.gz
     ```
+
     Now extract:
     ```shell
     tar -xzf <archive>.tar.gz
@@ -71,7 +72,7 @@ You can install GraalPy by downloading a compressed GraalPy tarball appropriate 
 ### Using `pyenv` (GraalPy Community only)
 #### Linux and macOS
 
-The other way to install GraalPy Community Edition on Linux and macOS platforms is to use [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
+The other way to install GraalPy Community on Linux and macOS platforms is to use [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
 For example, to install version 23.1.0, run the following command:
 
 ```bash
