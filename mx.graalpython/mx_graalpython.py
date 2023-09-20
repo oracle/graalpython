@@ -1376,12 +1376,18 @@ def graalpython_gate_runner(args, tasks):
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
             mvn_cmd_base = ['-f', pom_path, f'-Dpolyglot_repo={mvn_repo_path}', f'-Dcentral_repo={central_override}', '--batch-mode']
 
+            mx.logv("Purging the local repository before the test")
+            mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
+
             mx.log("Running integration JUnit tests on GraalVM SDK")
             env = extend_os_env(JAVA_HOME=graalvm_jdk())
-            mx.run_maven(mvn_cmd_base + ['clean', 'test'], env=env)
+            mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
 
             mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
-            mx.run_maven(mvn_cmd_base + ['-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'])
+            mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'])
+
+            mx.logv("Purging the local repository after the test")
+            mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
