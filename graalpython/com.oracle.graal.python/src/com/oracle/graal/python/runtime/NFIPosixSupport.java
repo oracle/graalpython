@@ -75,6 +75,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
@@ -206,6 +207,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
         call_fchmod("(sint32, sint32):sint32"),
+        call_fchownat("(sint32, [sint8], sint64, sint64, sint32):sint32"),
+        call_fchown("(sint32, sint64, sint64):sint32"),
         call_readlinkat("(sint32, [sint8], [sint8], uint64):sint64"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
@@ -233,6 +236,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getpgrp("():sint64"),
         call_getsid("(sint64):sint64"),
         call_setsid("():sint64"),
+        call_getgroups("(sint64, [sint64]):sint32"),
         call_openpty("([sint32]):sint32"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
@@ -1034,6 +1038,24 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_fchownat, dirFd, pathToCString(path), owner, group, followSymlinks ? 1 : 0);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void fchown(int fd, long owner, long group,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_fchown, fd, owner, group);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(PATH_MAX.value);
@@ -1197,6 +1219,25 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public long[] getgroups(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        // The first call gets us the number of groups, so we can allocate the output array
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, 0, 0);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        if (res == 0) {
+            return EMPTY_LONG_ARRAY;
+        }
+        long[] groups = new long[res];
+        res = invokeNode.callInt(this, PosixNativeFunction.call_getgroups, groups.length, wrap(groups));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return groups;
     }
 
     @ExportMessage

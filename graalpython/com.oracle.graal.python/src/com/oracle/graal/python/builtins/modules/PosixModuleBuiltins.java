@@ -109,7 +109,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -126,6 +125,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -717,6 +717,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "getgroups")
+    @GenerateNodeFactory
+    abstract static class GetGroupsNode extends PythonBuiltinNode {
+        @Specialization
+        Object getgroups(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory) {
+            try {
+                long[] groups = posixLib.getgroups(getPosixSupport());
+                return factory.createList(new LongSequenceStorage(groups));
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
@@ -2212,6 +2230,134 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "fchown", parameterNames = {"fd", "uid", "gid"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class FChownNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, int fd, long uid, long gid,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", fd, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchown(getPosixSupport(), fd, uid, gid);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "lchown", parameterNames = {"path", "uid", "gid"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class LChownNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, PosixPath path, long uid, long gid,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchownat(getPosixSupport(), AT_FDCWD.value, path.value, uid, gid, false);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.LChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "chown", minNumOfPositionalArgs = 3, parameterNames = {"path", "uid", "gid"}, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "uid", conversionClass = UidConversionNode.class)
+    @ArgumentClinic(name = "gid", conversionClass = GidConversionNode.class)
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class ChownNode extends PythonClinicBuiltinNode {
+        @Specialization
+        Object chown(VirtualFrame frame, PosixPath path, long uid, long gid, int dirFd, boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, dirFd != AT_FDCWD.value ? dirFd : -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchownat(getPosixSupport(), dirFd, path.value, uid, gid, followSymlinks);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object chown(VirtualFrame frame, PosixFd fd, long uid, long gid, int dirFd, boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            if (dirFd != AT_FDCWD.value) {
+                throw raise(ValueError, ErrorMessages.CANT_SPECIFY_BOTH_DIR_FD_AND_FD);
+            }
+            if (followSymlinks) {
+                throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chown");
+            }
+            auditNode.audit(inliningTarget, "os.chown", fd.originalObject, uid, gid, -1);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.fchown(getPosixSupport(), fd.fd, uid, gid);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ChownNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
@@ -3240,10 +3386,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    /**
-     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns an {@code long}.
-     */
-    public abstract static class UidConversionNode extends ArgumentCastNodeWithRaise {
+    @GenerateCached(false)
+    public abstract static class AbstractIdConversionNode extends ArgumentCastNodeWithRaise {
+
+        private static final long MAX_UINT32 = (1L << 32) - 1;
+
         public abstract long executeLong(VirtualFrame frame, Object value);
 
         @Specialization
@@ -3261,36 +3408,66 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         long doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode pyNumberIndexNode,
-                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
-                        @Cached CastToJavaUnsignedLongNode asUnsignedLong) {
+                        @Cached PyLongAsLongNode asLongNode) {
             Object index;
             try {
                 index = pyNumberIndexNode.execute(frame, inliningTarget, value);
             } catch (PException ex) {
-                throw raise(TypeError, ErrorMessages.UID_SHOULD_BE_INTEGER_NOT_P, value);
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_INTEGER_NOT_P, getIdName(), value);
             }
-            try {
-                return checkValue(asLongAndOverflowNode.execute(frame, inliningTarget, index));
-            } catch (OverflowException e) {
-                // fall through
-            }
-            return asUnsignedLong.execute(inliningTarget, index);
-            // We have no means to distinguish overflow/underflow so we just let any OverflowError
-            // from asUnsignedLong fall through. It will not have the same message as CPython, but
-            // still correct type.
+            /*
+             * We have no means to distinguish overflow/underflow, so we just let any OverflowError
+             * from asLongNode fall through. It will not have the same message as CPython, but still
+             * correct type.
+             */
+            return checkValue(asLongNode.execute(frame, inliningTarget, index));
         }
 
         private long checkValue(long value) {
+            // Note that -1 is intentionally allowed
             if (value < -1) {
-                throw raise(OverflowError, ErrorMessages.UID_IS_LESS_THAN_MINIMUM);
+                throw raise(OverflowError, ErrorMessages.S_IS_LESS_THAN_MINIMUM, getIdName());
+            } else if (value > MAX_UINT32) {
+                /* uid_t is uint32_t on Linux */
+                throw raise(OverflowError, ErrorMessages.S_IS_GREATER_THAN_MAXIUMUM, getIdName());
             }
             return value;
+        }
+
+        protected abstract String getIdName();
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns a {@code long}.
+     */
+    public abstract static class UidConversionNode extends AbstractIdConversionNode {
+
+        @Override
+        protected String getIdName() {
+            return "uid";
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
         @NeverDefault
         public static UidConversionNode create() {
             return PosixModuleBuiltinsFactory.UidConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Gid_Converter()}. Always returns a {@code long}.
+     */
+    public abstract static class GidConversionNode extends AbstractIdConversionNode {
+
+        @Override
+        protected String getIdName() {
+            return "gid";
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        @NeverDefault
+        public static GidConversionNode create() {
+            return PosixModuleBuiltinsFactory.GidConversionNodeGen.create();
         }
     }
 

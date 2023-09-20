@@ -377,6 +377,14 @@ int32_t call_fchdir(int32_t fd) {
     return fchdir(fd);
 }
 
+int32_t call_fchown(int32_t fd, int64_t owner, int64_t group) {
+    return fchown(fd, owner, group);
+}
+
+int32_t call_fchownat(int32_t dirfd, const char *pathname, int64_t owner, int64_t group, int32_t followSymlinks) {
+    return fchownat(dirfd, pathname, owner, group, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+}
+
 int32_t call_isatty(int32_t fd) {
     return isatty(fd);
 }
@@ -586,6 +594,25 @@ int64_t call_getsid(int64_t pid) {
 int64_t call_setsid() {
     return setsid();
 }
+
+int32_t call_getgroups(int64_t size, int64_t* out) {
+    if (size > 0) {
+        // gid_t can be different types, we need to copy the results
+        gid_t* tmp = calloc(size, sizeof(gid_t));
+        if (!tmp) {
+            return -1;
+        }
+        int32_t res = getgroups(size, tmp);
+        for (int64_t i = 0; i < size; i++) {
+            out[i] = tmp[i];
+        }
+        free(tmp);
+        return res;
+    } else {
+        return getgroups(size, NULL);
+    }
+}
+
 
 int32_t call_openpty(int32_t *outvars) {
     return openpty(outvars, outvars + 1, NULL, NULL, NULL);
