@@ -2056,6 +2056,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
     public long[] getgroups() {
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonOS.getPythonOS()) {
