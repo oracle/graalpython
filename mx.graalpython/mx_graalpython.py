@@ -662,6 +662,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_decimal.*',
         # GR-48555 race condition when exitting right after join
         'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
+        # GC-related transients
+        'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
     ]
 
     result_tags = linux_tags & darwin_tags
