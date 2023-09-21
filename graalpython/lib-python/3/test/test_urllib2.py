@@ -24,6 +24,8 @@ from urllib.parse import urlparse
 import urllib.error
 import http.client
 
+support.requires_working_socket(module=True)
+
 # XXX
 # Request
 # CacheFTPHandler (hard to write)
@@ -1179,7 +1181,7 @@ class HandlerTests(unittest.TestCase):
         o = h.parent = MockOpener()
 
         # ordinary redirect behaviour
-        for code in 301, 302, 303, 307:
+        for code in 301, 302, 303, 307, 308:
             for data in None, "blah\nblah\n":
                 method = getattr(h, "http_error_%s" % code)
                 req = Request(from_url, data)
@@ -1192,8 +1194,8 @@ class HandlerTests(unittest.TestCase):
                     method(req, MockFile(), code, "Blah",
                            MockHeaders({"location": to_url}))
                 except urllib.error.HTTPError:
-                    # 307 in response to POST requires user OK
-                    self.assertEqual(code, 307)
+                    # 307 and 308 in response to POST require user OK
+                    self.assertIn(code, (307, 308))
                     self.assertIsNotNone(data)
                 self.assertEqual(o.req.get_full_url(), to_url)
                 try:
@@ -1822,6 +1824,11 @@ class MiscTests(unittest.TestCase):
         self.assertEqual(str(err), expected_errmsg)
         expected_errmsg = '<HTTPError %s: %r>' % (err.code, err.msg)
         self.assertEqual(repr(err), expected_errmsg)
+
+    def test_gh_98778(self):
+        x = urllib.error.HTTPError("url", 405, "METHOD NOT ALLOWED", None, None)
+        self.assertEqual(getattr(x, "__notes__", ()), ())
+        self.assertIsInstance(x.fp.read(), bytes)
 
     def test_parse_proxy(self):
         parse_proxy_test_cases = [

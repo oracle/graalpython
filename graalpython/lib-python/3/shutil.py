@@ -40,6 +40,8 @@ elif _WINDOWS:
     import nt
 
 COPY_BUFSIZE = 1024 * 1024 if _WINDOWS else 64 * 1024
+# This should never be removed, see rationale in:
+# https://bugs.python.org/issue43743#msg393429
 _USE_CP_SENDFILE = hasattr(os, "sendfile") and sys.platform.startswith("linux")
 _HAS_FCOPYFILE = posix and hasattr(posix, "_fcopyfile")  # macOS
 
@@ -186,9 +188,9 @@ def _copyfileobj_readinto(fsrc, fdst, length=COPY_BUFSIZE):
 
 def copyfileobj(fsrc, fdst, length=0):
     """copy data from file-like object fsrc to file-like object fdst"""
-    # Localize variable access to minimize overhead.
     if not length:
         length = COPY_BUFSIZE
+    # Localize variable access to minimize overhead.
     fsrc_read = fsrc.read
     fdst_write = fdst.write
     while True:
@@ -487,12 +489,13 @@ def _copytree(entries, src, dst, symlinks, ignore, copy_function,
                     # otherwise let the copy occur. copy2 will raise an error
                     if srcentry.is_dir():
                         copytree(srcobj, dstname, symlinks, ignore,
-                                 copy_function, dirs_exist_ok=dirs_exist_ok)
+                                 copy_function, ignore_dangling_symlinks,
+                                 dirs_exist_ok)
                     else:
                         copy_function(srcobj, dstname)
             elif srcentry.is_dir():
                 copytree(srcobj, dstname, symlinks, ignore, copy_function,
-                         dirs_exist_ok=dirs_exist_ok)
+                         ignore_dangling_symlinks, dirs_exist_ok)
             else:
                 # Will raise a SpecialFileError for unsupported file types
                 copy_function(srcobj, dstname)
@@ -684,8 +687,13 @@ _use_fd_functions = ({os.open, os.stat, os.unlink, os.rmdir} <=
                      os.scandir in os.supports_fd and
                      os.stat in os.supports_follow_symlinks)
 
-def rmtree(path, ignore_errors=False, onerror=None):
+def rmtree(path, ignore_errors=False, onerror=None, *, dir_fd=None):
     """Recursively delete a directory tree.
+
+    If dir_fd is not None, it should be a file descriptor open to a directory;
+    path will then be relative to that directory.
+    dir_fd may not be implemented on your platform.
+    If it is unavailable, using it will raise a NotImplementedError.
 
     If ignore_errors is set, errors are ignored; otherwise, if onerror
     is set, it is called to handle the error with arguments (func,
@@ -695,7 +703,7 @@ def rmtree(path, ignore_errors=False, onerror=None):
     is false and onerror is None, an exception is raised.
 
     """
-    sys.audit("shutil.rmtree", path)
+    sys.audit("shutil.rmtree", path, dir_fd)
     if ignore_errors:
         def onerror(*args):
             pass
@@ -709,12 +717,12 @@ def rmtree(path, ignore_errors=False, onerror=None):
         # Note: To guard against symlink races, we use the standard
         # lstat()/open()/fstat() trick.
         try:
-            orig_st = os.lstat(path)
+            orig_st = os.lstat(path, dir_fd=dir_fd)
         except Exception:
             onerror(os.lstat, path, sys.exc_info())
             return
         try:
-            fd = os.open(path, os.O_RDONLY)
+            fd = os.open(path, os.O_RDONLY, dir_fd=dir_fd)
             fd_closed = False
         except Exception:
             onerror(os.open, path, sys.exc_info())
@@ -725,7 +733,7 @@ def rmtree(path, ignore_errors=False, onerror=None):
                 try:
                     os.close(fd)
                     fd_closed = True
-                    os.rmdir(path)
+                    os.rmdir(path, dir_fd=dir_fd)
                 except OSError:
                     onerror(os.rmdir, path, sys.exc_info())
             else:
@@ -738,6 +746,8 @@ def rmtree(path, ignore_errors=False, onerror=None):
             if not fd_closed:
                 os.close(fd)
     else:
+        if dir_fd is not None:
+            raise NotImplementedError("dir_fd unavailable on this platform")
         try:
             if _rmtree_islink(path):
                 # symlinks to directories are forbidden, see bug #1669
@@ -1104,10 +1114,14 @@ def make_archive(base_name, format, root_dir=None, base_dir=None, verbose=0,
     if base_dir is None:
         base_dir = os.curdir
 
-    support_root_dir = format_info[3]
+    supports_root_dir = format_info[3]
     save_cwd = None
     if root_dir is not None:
-        if support_root_dir:
+        stmd = os.stat(root_dir).st_mode
+        if not stat.S_ISDIR(stmd):
+            raise NotADirectoryError(errno.ENOTDIR, 'Not a directory', root_dir)
+
+        if supports_root_dir:
             # Support path-like base_name here for backwards-compatibility.
             base_name = os.fspath(base_name)
             kwargs['root_dir'] = root_dir
@@ -1221,7 +1235,7 @@ def _unpack_zipfile(filename, extract_dir):
     finally:
         zip.close()
 
-def _unpack_tarfile(filename, extract_dir):
+def _unpack_tarfile(filename, extract_dir, *, filter=None):
     """Unpack tar/tar.gz/tar.bz2/tar.xz `filename` to `extract_dir`
     """
     import tarfile  # late import for breaking circular dependency
@@ -1231,7 +1245,7 @@ def _unpack_tarfile(filename, extract_dir):
         raise ReadError(
             "%s is not a compressed or uncompressed tar file" % filename)
     try:
-        tarobj.extractall(extract_dir)
+        tarobj.extractall(extract_dir, filter=filter)
     finally:
         tarobj.close()
 
@@ -1264,7 +1278,7 @@ def _find_unpack_format(filename):
                 return name
     return None
 
-def unpack_archive(filename, extract_dir=None, format=None):
+def unpack_archive(filename, extract_dir=None, format=None, *, filter=None):
     """Unpack an archive.
 
     `filename` is the name of the archive.
@@ -1278,6 +1292,9 @@ def unpack_archive(filename, extract_dir=None, format=None):
     was registered for that extension.
 
     In case none is found, a ValueError is raised.
+
+    If `filter` is given, it is passed to the underlying
+    extraction function.
     """
     sys.audit("shutil.unpack_archive", filename, extract_dir, format)
 
@@ -1287,6 +1304,10 @@ def unpack_archive(filename, extract_dir=None, format=None):
     extract_dir = os.fspath(extract_dir)
     filename = os.fspath(filename)
 
+    if filter is None:
+        filter_kwargs = {}
+    else:
+        filter_kwargs = {'filter': filter}
     if format is not None:
         try:
             format_info = _UNPACK_FORMATS[format]
@@ -1294,7 +1315,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
             raise ValueError("Unknown unpack format '{0}'".format(format)) from None
 
         func = format_info[1]
-        func(filename, extract_dir, **dict(format_info[2]))
+        func(filename, extract_dir, **dict(format_info[2]), **filter_kwargs)
     else:
         # we need to look at the registered unpackers supported extensions
         format = _find_unpack_format(filename)
@@ -1302,7 +1323,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
             raise ReadError("Unknown archive format '{0}'".format(filename))
 
         func = _UNPACK_FORMATS[format][1]
-        kwargs = dict(_UNPACK_FORMATS[format][2])
+        kwargs = dict(_UNPACK_FORMATS[format][2]) | filter_kwargs
         func(filename, extract_dir, **kwargs)
 
 
@@ -1413,9 +1434,9 @@ def get_terminal_size(fallback=(80, 24)):
             # os.get_terminal_size() is unsupported
             size = os.terminal_size(fallback)
         if columns <= 0:
-            columns = size.columns
+            columns = size.columns or fallback[0]
         if lines <= 0:
-            lines = size.lines
+            lines = size.lines or fallback[1]
 
     return os.terminal_size((columns, lines))
 

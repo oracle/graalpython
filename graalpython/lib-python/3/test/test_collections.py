@@ -677,14 +677,16 @@ class TestNamedTuple(unittest.TestCase):
         self.assertRaises(AttributeError, Point.x.__set__, p, 33)
         self.assertRaises(AttributeError, Point.x.__delete__, p)
 
-        class NewPoint(tuple):
-            x = pickle.loads(pickle.dumps(Point.x))
-            y = pickle.loads(pickle.dumps(Point.y))
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                class NewPoint(tuple):
+                    x = pickle.loads(pickle.dumps(Point.x, proto))
+                    y = pickle.loads(pickle.dumps(Point.y, proto))
 
-        np = NewPoint([1, 2])
+                np = NewPoint([1, 2])
 
-        self.assertEqual(np.x, 1)
-        self.assertEqual(np.y, 2)
+                self.assertEqual(np.x, 1)
+                self.assertEqual(np.y, 2)
 
     def test_new_builtins_issue_43102(self):
         obj = namedtuple('C', ())
@@ -695,6 +697,18 @@ class TestNamedTuple(unittest.TestCase):
     def test_match_args(self):
         Point = namedtuple('Point', 'x y')
         self.assertEqual(Point.__match_args__, ('x', 'y'))
+
+    def test_non_generic_subscript(self):
+        # For backward compatibility, subscription works
+        # on arbitrary named tuple types.
+        Group = collections.namedtuple('Group', 'key group')
+        A = Group[int, list[int]]
+        self.assertEqual(A.__origin__, Group)
+        self.assertEqual(A.__parameters__, ())
+        self.assertEqual(A.__args__, (int, list[int]))
+        a = A(1, [2])
+        self.assertIs(type(a), Group)
+        self.assertEqual(a, (1, [2]))
 
 
 ################################################################################
@@ -788,6 +802,8 @@ class TestOneTrickPonyABCs(ABCTestCase):
             def __await__(self):
                 yield
 
+        self.validate_abstract_methods(Awaitable, '__await__')
+
         non_samples = [None, int(), gen(), object()]
         for x in non_samples:
             self.assertNotIsInstance(x, Awaitable)
@@ -837,6 +853,8 @@ class TestOneTrickPonyABCs(ABCTestCase):
                 super().throw(typ, val, tb)
             def __await__(self):
                 yield
+
+        self.validate_abstract_methods(Coroutine, '__await__', 'send', 'throw')
 
         non_samples = [None, int(), gen(), object(), Bar()]
         for x in non_samples:
@@ -1580,6 +1598,7 @@ class TestCollectionABCs(ABCTestCase):
         containers = [
             seq,
             ItemsView({1: nan, 2: obj}),
+            KeysView({1: nan, 2: obj}),
             ValuesView({1: nan, 2: obj})
         ]
         for container in containers:
@@ -1843,6 +1862,8 @@ class TestCollectionABCs(ABCTestCase):
         mymap['red'] = 5
         self.assertIsInstance(mymap.keys(), Set)
         self.assertIsInstance(mymap.keys(), KeysView)
+        self.assertIsInstance(mymap.values(), Collection)
+        self.assertIsInstance(mymap.values(), ValuesView)
         self.assertIsInstance(mymap.items(), Set)
         self.assertIsInstance(mymap.items(), ItemsView)
 
@@ -1918,6 +1939,7 @@ class TestCollectionABCs(ABCTestCase):
             self.assertFalse(issubclass(sample, ByteString))
         self.assertNotIsInstance(memoryview(b""), ByteString)
         self.assertFalse(issubclass(memoryview, ByteString))
+        self.validate_abstract_methods(ByteString, '__getitem__', '__len__')
 
     def test_MutableSequence(self):
         for sample in [tuple, str, bytes]:
@@ -2352,19 +2374,10 @@ class TestCounter(unittest.TestCase):
         self.assertFalse(Counter(a=2, b=1, c=0) > Counter('aab'))
 
 
-################################################################################
-### Run tests
-################################################################################
-
-def test_main(verbose=None):
-    NamedTupleDocs = doctest.DocTestSuite(module=collections)
-    test_classes = [TestNamedTuple, NamedTupleDocs, TestOneTrickPonyABCs,
-                    TestCollectionABCs, TestCounter, TestChainMap,
-                    TestUserObjects,
-                    ]
-    support.run_unittest(*test_classes)
-    support.run_doctest(collections, verbose)
+def load_tests(loader, tests, pattern):
+    tests.addTest(doctest.DocTestSuite(collections))
+    return tests
 
 
 if __name__ == "__main__":
-    test_main(verbose=True)
+    unittest.main()

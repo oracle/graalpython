@@ -226,8 +226,8 @@ class TypesTests(unittest.TestCase):
     def test_int__format__(self):
         def test(i, format_spec, result):
             # just make sure we have the unified type for integers
-            assert type(i) == int
-            assert type(format_spec) == str
+            self.assertIs(type(i), int)
+            self.assertIs(type(format_spec), str)
             self.assertEqual(i.__format__(format_spec), result)
 
         test(123456789, 'd', '123456789')
@@ -524,18 +524,16 @@ class TypesTests(unittest.TestCase):
         self.assertRaises(TypeError, 3.0.__format__, None)
         self.assertRaises(TypeError, 3.0.__format__, 0)
 
-        # other format specifiers shouldn't work on floats,
-        #  in particular int specifiers
-        for format_spec in ([chr(x) for x in range(ord('a'), ord('z')+1)] +
-                            [chr(x) for x in range(ord('A'), ord('Z')+1)]):
-            if not format_spec in 'eEfFgGn%':
-                self.assertRaises(ValueError, format, 0.0, format_spec)
-                self.assertRaises(ValueError, format, 1.0, format_spec)
-                self.assertRaises(ValueError, format, -1.0, format_spec)
-                self.assertRaises(ValueError, format, 1e100, format_spec)
-                self.assertRaises(ValueError, format, -1e100, format_spec)
-                self.assertRaises(ValueError, format, 1e-100, format_spec)
-                self.assertRaises(ValueError, format, -1e-100, format_spec)
+        # confirm format options expected to fail on floats, such as integer
+        # presentation types
+        for format_spec in 'sbcdoxX':
+            self.assertRaises(ValueError, format, 0.0, format_spec)
+            self.assertRaises(ValueError, format, 1.0, format_spec)
+            self.assertRaises(ValueError, format, -1.0, format_spec)
+            self.assertRaises(ValueError, format, 1e100, format_spec)
+            self.assertRaises(ValueError, format, -1e100, format_spec)
+            self.assertRaises(ValueError, format, 1e-100, format_spec)
+            self.assertRaises(ValueError, format, -1e-100, format_spec)
 
         # Alternate float formatting
         test(1.0, '.0e', '1e+00')
@@ -629,6 +627,14 @@ class TypesTests(unittest.TestCase):
 
     def test_none_type(self):
         self.assertIsInstance(None, types.NoneType)
+
+    def test_traceback_and_frame_types(self):
+        try:
+            raise OSError
+        except OSError as e:
+            exc = e
+        self.assertIsInstance(exc.__traceback__, types.TracebackType)
+        self.assertIsInstance(exc.__traceback__.tb_frame, types.FrameType)
 
 
 class UnionTests(unittest.TestCase):
@@ -776,8 +782,8 @@ class UnionTests(unittest.TestCase):
 
     def test_or_type_operator_with_TypeVar(self):
         TV = typing.TypeVar('T')
-        assert TV | str == typing.Union[TV, str]
-        assert str | TV == typing.Union[str, TV]
+        self.assertEqual(TV | str, typing.Union[TV, str])
+        self.assertEqual(str | TV, typing.Union[str, TV])
         self.assertIs((int | TV)[int], int)
         self.assertIs((TV | int)[int], int)
 
@@ -873,7 +879,7 @@ class UnionTests(unittest.TestCase):
         T = typing.TypeVar("T")
         x = int | T
         with self.assertRaises(TypeError):
-            x[42]
+            x[int, str]
 
     def test_or_type_operator_with_forward(self):
         T = typing.TypeVar('T')
@@ -881,51 +887,82 @@ class UnionTests(unittest.TestCase):
         ForwardBefore = 'Forward' | T
         def forward_after(x: ForwardAfter[int]) -> None: ...
         def forward_before(x: ForwardBefore[int]) -> None: ...
-        assert typing.get_args(typing.get_type_hints(forward_after)['x']) == (int, Forward)
-        assert typing.get_args(typing.get_type_hints(forward_before)['x']) == (int, Forward)
+        self.assertEqual(typing.get_args(typing.get_type_hints(forward_after)['x']),
+                         (int, Forward))
+        self.assertEqual(typing.get_args(typing.get_type_hints(forward_before)['x']),
+                         (int, Forward))
 
     def test_or_type_operator_with_Protocol(self):
         class Proto(typing.Protocol):
             def meth(self) -> int:
                 ...
-        assert Proto | str == typing.Union[Proto, str]
+        self.assertEqual(Proto | str, typing.Union[Proto, str])
 
     def test_or_type_operator_with_Alias(self):
-        assert list | str == typing.Union[list, str]
-        assert typing.List | str == typing.Union[typing.List, str]
+        self.assertEqual(list | str, typing.Union[list, str])
+        self.assertEqual(typing.List | str, typing.Union[typing.List, str])
 
     def test_or_type_operator_with_NamedTuple(self):
-        NT=namedtuple('A', ['B', 'C', 'D'])
-        assert NT | str == typing.Union[NT,str]
+        NT = namedtuple('A', ['B', 'C', 'D'])
+        self.assertEqual(NT | str, typing.Union[NT, str])
 
     def test_or_type_operator_with_TypedDict(self):
         class Point2D(typing.TypedDict):
             x: int
             y: int
             label: str
-        assert Point2D | str == typing.Union[Point2D, str]
+        self.assertEqual(Point2D | str, typing.Union[Point2D, str])
 
     def test_or_type_operator_with_NewType(self):
         UserId = typing.NewType('UserId', int)
-        assert UserId | str == typing.Union[UserId, str]
+        self.assertEqual(UserId | str, typing.Union[UserId, str])
 
     def test_or_type_operator_with_IO(self):
-        assert typing.IO | str == typing.Union[typing.IO, str]
+        self.assertEqual(typing.IO | str, typing.Union[typing.IO, str])
 
     def test_or_type_operator_with_SpecialForm(self):
-        assert typing.Any | str == typing.Union[typing.Any, str]
-        assert typing.NoReturn | str == typing.Union[typing.NoReturn, str]
-        assert typing.Optional[int] | str == typing.Union[typing.Optional[int], str]
-        assert typing.Optional[int] | str == typing.Union[int, str, None]
-        assert typing.Union[int, bool] | str == typing.Union[int, bool, str]
+        self.assertEqual(typing.Any | str, typing.Union[typing.Any, str])
+        self.assertEqual(typing.NoReturn | str, typing.Union[typing.NoReturn, str])
+        self.assertEqual(typing.Optional[int] | str, typing.Union[typing.Optional[int], str])
+        self.assertEqual(typing.Optional[int] | str, typing.Union[int, str, None])
+        self.assertEqual(typing.Union[int, bool] | str, typing.Union[int, bool, str])
+
+    def test_or_type_operator_with_Literal(self):
+        Literal = typing.Literal
+        self.assertEqual((Literal[1] | Literal[2]).__args__,
+                         (Literal[1], Literal[2]))
+
+        self.assertEqual((Literal[0] | Literal[False]).__args__,
+                         (Literal[0], Literal[False]))
+        self.assertEqual((Literal[1] | Literal[True]).__args__,
+                         (Literal[1], Literal[True]))
+
+        self.assertEqual(Literal[1] | Literal[1], Literal[1])
+        self.assertEqual(Literal['a'] | Literal['a'], Literal['a'])
+
+        import enum
+        class Ints(enum.IntEnum):
+            A = 0
+            B = 1
+
+        self.assertEqual(Literal[Ints.A] | Literal[Ints.A], Literal[Ints.A])
+        self.assertEqual(Literal[Ints.B] | Literal[Ints.B], Literal[Ints.B])
+
+        self.assertEqual((Literal[Ints.B] | Literal[Ints.A]).__args__,
+                         (Literal[Ints.B], Literal[Ints.A]))
+
+        self.assertEqual((Literal[0] | Literal[Ints.A]).__args__,
+                         (Literal[0], Literal[Ints.A]))
+        self.assertEqual((Literal[1] | Literal[Ints.B]).__args__,
+                         (Literal[1], Literal[Ints.B]))
 
     def test_or_type_repr(self):
-        assert repr(int | str) == "int | str"
-        assert repr((int | str) | list) == "int | str | list"
-        assert repr(int | (str | list)) == "int | str | list"
-        assert repr(int | None) == "int | None"
-        assert repr(int | type(None)) == "int | None"
-        assert repr(int | typing.GenericAlias(list, int)) == "int | list[int]"
+        self.assertEqual(repr(int | str), "int | str")
+        self.assertEqual(repr((int | str) | list), "int | str | list")
+        self.assertEqual(repr(int | (str | list)), "int | str | list")
+        self.assertEqual(repr(int | None), "int | None")
+        self.assertEqual(repr(int | type(None)), "int | None")
+        self.assertEqual(repr(int | typing.GenericAlias(list, int)), "int | list[int]")
 
     def test_or_type_operator_with_genericalias(self):
         a = list[int]
@@ -951,9 +988,9 @@ class UnionTests(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError):
             list[int] | list[bt]
 
-        union_ga = (int | list[str], int | collections.abc.Callable[..., str],
-                    int | d)
-        # Raise error when isinstance(type, type | genericalias)
+        union_ga = (list[str] | int, collections.abc.Callable[..., str] | int,
+                    d | int)
+        # Raise error when isinstance(type, genericalias | type)
         for type_ in union_ga:
             with self.subTest(f"check isinstance/issubclass is invalid for {type_}"):
                 with self.assertRaises(TypeError):

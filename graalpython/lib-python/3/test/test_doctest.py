@@ -18,6 +18,11 @@ import shutil
 import types
 import contextlib
 
+
+if not support.has_subprocess_support:
+    raise unittest.SkipTest("test_CLI requires subprocess support.")
+
+
 # NOTE: There are some additional tests relating to interaction with
 #       zipimport in the test_zipimport_support test module.
 # There are also related tests in `test_doctest2` module.
@@ -456,7 +461,7 @@ We'll simulate a __file__ attr that ends in pyc:
     >>> tests = finder.find(sample_func)
 
     >>> print(tests)  # doctest: +ELLIPSIS
-    [<DocTest sample_func from test_doctest.py:29 (1 example)>]
+    [<DocTest sample_func from test_doctest.py:34 (1 example)>]
 
 The exact name depends on how test_doctest was invoked, so allow for
 leading path components.
@@ -704,7 +709,7 @@ plain ol' Python and is guaranteed to be available.
 
     >>> import builtins
     >>> tests = doctest.DocTestFinder().find(builtins)
-    >>> 816 < len(tests) < 836 # approximate number of objects with docstrings
+    >>> 825 < len(tests) < 845 # approximate number of objects with docstrings
     True
     >>> real_tests = [t for t in tests if len(t.examples) > 0]
     >>> len(real_tests) # objects that actually have doctests
@@ -2844,10 +2849,12 @@ out of the binary module.
 
 try:
     os.fsencode("foo-bär@baz.py")
+    supports_unicode = True
 except UnicodeEncodeError:
     # Skip the test: the filesystem encoding is unable to encode the filename
-    pass
-else:
+    supports_unicode = False
+
+if supports_unicode:
     def test_unicode(): """
 Check doctest with a non-ascii filename:
 

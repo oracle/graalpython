@@ -448,6 +448,7 @@ class HTTPResponse(io.BufferedIOBase):
         return self.fp is None
 
     def read(self, amt=None):
+        """Read and return the response body, or up to the next amt bytes."""
         if self.fp is None:
             return b""
 
@@ -593,8 +594,8 @@ class HTTPResponse(io.BufferedIOBase):
                     amt -= chunk_left
                 self.chunk_left = 0
             return b''.join(value)
-        except IncompleteRead:
-            raise IncompleteRead(b''.join(value))
+        except IncompleteRead as exc:
+            raise IncompleteRead(b''.join(value)) from exc
 
     def _readinto_chunked(self, b):
         assert self.chunked != _UNKNOWN
@@ -917,23 +918,26 @@ class HTTPConnection:
         del headers
 
         response = self.response_class(self.sock, method=self._method)
-        (version, code, message) = response._read_status()
+        try:
+            (version, code, message) = response._read_status()
 
-        if code != http.HTTPStatus.OK:
-            self.close()
-            raise OSError(f"Tunnel connection failed: {code} {message.strip()}")
-        while True:
-            line = response.fp.readline(_MAXLINE + 1)
-            if len(line) > _MAXLINE:
-                raise LineTooLong("header line")
-            if not line:
-                # for sites which EOF without sending a trailer
-                break
-            if line in (b'\r\n', b'\n', b''):
-                break
+            if code != http.HTTPStatus.OK:
+                self.close()
+                raise OSError(f"Tunnel connection failed: {code} {message.strip()}")
+            while True:
+                line = response.fp.readline(_MAXLINE + 1)
+                if len(line) > _MAXLINE:
+                    raise LineTooLong("header line")
+                if not line:
+                    # for sites which EOF without sending a trailer
+                    break
+                if line in (b'\r\n', b'\n', b''):
+                    break
 
-            if self.debuglevel > 0:
-                print('header:', line.decode())
+                if self.debuglevel > 0:
+                    print('header:', line.decode())
+        finally:
+            response.close()
 
     def connect(self):
         """Connect to the host and port specified in __init__."""
@@ -980,7 +984,7 @@ class HTTPConnection:
             print("send:", repr(data))
         if hasattr(data, "read") :
             if self.debuglevel > 0:
-                print("sendIng a read()able")
+                print("sending a readable")
             encode = self._is_textIO(data)
             if encode and self.debuglevel > 0:
                 print("encoding file using iso-8859-1")
@@ -1013,7 +1017,7 @@ class HTTPConnection:
 
     def _read_readable(self, readable):
         if self.debuglevel > 0:
-            print("sendIng a read()able")
+            print("reading a readable")
         encode = self._is_textIO(readable)
         if encode and self.debuglevel > 0:
             print("encoding file using iso-8859-1")

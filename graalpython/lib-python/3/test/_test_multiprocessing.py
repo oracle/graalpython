@@ -13,6 +13,7 @@ import sys
 import os
 import gc
 import errno
+import functools
 import signal
 import array
 import socket
@@ -21,6 +22,7 @@ import logging
 import subprocess
 import struct
 import operator
+import pathlib
 import pickle
 import weakref
 import warnings
@@ -30,6 +32,7 @@ from test import support
 from test.support import hashlib_helper
 from test.support import import_helper
 from test.support import os_helper
+from test.support import script_helper
 from test.support import socket_helper
 from test.support import threading_helper
 from test.support import warnings_helper
@@ -120,6 +123,9 @@ if CHECK_TIMINGS:
 else:
     TIMEOUT1, TIMEOUT2, TIMEOUT3 = 0.1, 0.1, 0.1
 
+# BaseManager.shutdown_timeout
+SHUTDOWN_TIMEOUT = support.SHORT_TIMEOUT
+
 HAVE_GETVALUE = not getattr(_multiprocessing,
                             'HAVE_BROKEN_SEM_GETVALUE', False)
 
@@ -164,6 +170,59 @@ def check_enough_semaphores():
         return
     raise unittest.SkipTest("The OS doesn't support enough semaphores "
                             "to run the test (required: %d)." % nsems_min)
+
+
+def only_run_in_spawn_testsuite(reason):
+    """Returns a decorator: raises SkipTest when SM != spawn at test time.
+
+    This can be useful to save overall Python test suite execution time.
+    "spawn" is the universal mode available on all platforms so this limits the
+    decorated test to only execute within test_multiprocessing_spawn.
+
+    This would not be necessary if we refactored our test suite to split things
+    into other test files when they are not start method specific to be rerun
+    under all start methods.
+    """
+
+    def decorator(test_item):
+
+        @functools.wraps(test_item)
+        def spawn_check_wrapper(*args, **kwargs):
+            if (start_method := multiprocessing.get_start_method()) != "spawn":
+                raise unittest.SkipTest(f"{start_method=}, not 'spawn'; {reason}")
+            return test_item(*args, **kwargs)
+
+        return spawn_check_wrapper
+
+    return decorator
+
+
+class TestInternalDecorators(unittest.TestCase):
+    """Logic within a test suite that could errantly skip tests? Test it!"""
+
+    @unittest.skipIf(sys.platform == "win32", "test requires that fork exists.")
+    def test_only_run_in_spawn_testsuite(self):
+        if multiprocessing.get_start_method() != "spawn":
+            raise unittest.SkipTest("only run in test_multiprocessing_spawn.")
+
+        try:
+            @only_run_in_spawn_testsuite("testing this decorator")
+            def return_four_if_spawn():
+                return 4
+        except Exception as err:
+            self.fail(f"expected decorated `def` not to raise; caught {err}")
+
+        orig_start_method = multiprocessing.get_start_method(allow_none=True)
+        try:
+            multiprocessing.set_start_method("spawn", force=True)
+            self.assertEqual(return_four_if_spawn(), 4)
+            multiprocessing.set_start_method("fork", force=True)
+            with self.assertRaises(unittest.SkipTest) as ctx:
+                return_four_if_spawn()
+            self.assertIn("testing this decorator", str(ctx.exception))
+            self.assertIn("start_method=", str(ctx.exception))
+        finally:
+            multiprocessing.set_start_method(orig_start_method, force=True)
 
 
 #
@@ -253,6 +312,45 @@ class _TestProcess(BaseTestCase):
         self.assertTrue(len(authkey) > 0)
         self.assertEqual(current.ident, os.getpid())
         self.assertEqual(current.exitcode, None)
+
+    def test_set_executable(self):
+        if self.TYPE == 'threads':
+            self.skipTest(f'test not appropriate for {self.TYPE}')
+        paths = [
+            sys.executable,               # str
+            sys.executable.encode(),      # bytes
+            pathlib.Path(sys.executable)  # os.PathLike
+        ]
+        for path in paths:
+            self.set_executable(path)
+            p = self.Process()
+            p.start()
+            p.join()
+            self.assertEqual(p.exitcode, 0)
+
+    def test_args_argument(self):
+        # bpo-45735: Using list or tuple as *args* in constructor could
+        # achieve the same effect.
+        args_cases = (1, "str", [1], (1,))
+        args_types = (list, tuple)
+
+        test_cases = itertools.product(args_cases, args_types)
+
+        for args, args_type in test_cases:
+            with self.subTest(args=args, args_type=args_type):
+                q = self.Queue(1)
+                # pass a tuple or list as args
+                p = self.Process(target=self._test_args, args=args_type((q, args)))
+                p.daemon = True
+                p.start()
+                child_args = q.get()
+                self.assertEqual(child_args, args)
+                p.join()
+                close_queue(q)
+
+    @classmethod
+    def _test_args(cls, q, arg):
+        q.put(arg)
 
     def test_daemon_argument(self):
         if self.TYPE == "threads":
@@ -1652,7 +1750,20 @@ class _TestEvent(BaseTestCase):
         self.assertEqual(wait(), True)
         p.join()
 
-#
+    def test_repr(self) -> None:
+        event = self.Event()
+        if self.TYPE == 'processes':
+            self.assertRegex(repr(event), r"<Event at .* unset>")
+            event.set()
+            self.assertRegex(repr(event), r"<Event at .* set>")
+            event.clear()
+            self.assertRegex(repr(event), r"<Event at .* unset>")
+        elif self.TYPE == 'manager':
+            self.assertRegex(repr(event), r"<EventProxy object, typeid 'Event' at .*")
+            event.set()
+            self.assertRegex(repr(event), r"<EventProxy object, typeid 'Event' at .*")
+
+
 # Tests for Barrier - adapted from tests in test/lock_tests.py
 #
 
@@ -2866,7 +2977,7 @@ class _TestMyManager(BaseTestCase):
     ALLOWED_TYPES = ('manager',)
 
     def test_mymanager(self):
-        manager = MyManager()
+        manager = MyManager(shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager.start()
         self.common(manager)
         manager.shutdown()
@@ -2877,7 +2988,8 @@ class _TestMyManager(BaseTestCase):
         self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM))
 
     def test_mymanager_context(self):
-        with MyManager() as manager:
+        manager = MyManager(shutdown_timeout=SHUTDOWN_TIMEOUT)
+        with manager:
             self.common(manager)
         # bpo-30356: BaseManager._finalize_manager() sends SIGTERM
         # to the manager process if it takes longer than 1 second to stop,
@@ -2885,7 +2997,7 @@ class _TestMyManager(BaseTestCase):
         self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM))
 
     def test_mymanager_context_prestarted(self):
-        manager = MyManager()
+        manager = MyManager(shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager.start()
         with manager:
             self.common(manager)
@@ -2947,8 +3059,8 @@ class _TestRemoteManager(BaseTestCase):
     @classmethod
     def _putter(cls, address, authkey):
         manager = QueueManager2(
-            address=address, authkey=authkey, serializer=SERIALIZER
-            )
+            address=address, authkey=authkey, serializer=SERIALIZER,
+            shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager.connect()
         queue = manager.get_queue()
         # Note that xmlrpclib will deserialize object as a list not a tuple
@@ -2958,8 +3070,8 @@ class _TestRemoteManager(BaseTestCase):
         authkey = os.urandom(32)
 
         manager = QueueManager(
-            address=(socket_helper.HOST, 0), authkey=authkey, serializer=SERIALIZER
-            )
+            address=(socket_helper.HOST, 0), authkey=authkey, serializer=SERIALIZER,
+            shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager.start()
         self.addCleanup(manager.shutdown)
 
@@ -2968,8 +3080,8 @@ class _TestRemoteManager(BaseTestCase):
         p.start()
 
         manager2 = QueueManager2(
-            address=manager.address, authkey=authkey, serializer=SERIALIZER
-            )
+            address=manager.address, authkey=authkey, serializer=SERIALIZER,
+            shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager2.connect()
         queue = manager2.get_queue()
 
@@ -2989,7 +3101,8 @@ class _TestManagerRestart(BaseTestCase):
     @classmethod
     def _putter(cls, address, authkey):
         manager = QueueManager(
-            address=address, authkey=authkey, serializer=SERIALIZER)
+            address=address, authkey=authkey, serializer=SERIALIZER,
+            shutdown_timeout=SHUTDOWN_TIMEOUT)
         manager.connect()
         queue = manager.get_queue()
         queue.put('hello world')
@@ -2997,7 +3110,8 @@ class _TestManagerRestart(BaseTestCase):
     def test_rapid_restart(self):
         authkey = os.urandom(32)
         manager = QueueManager(
-            address=(socket_helper.HOST, 0), authkey=authkey, serializer=SERIALIZER)
+            address=(socket_helper.HOST, 0), authkey=authkey,
+            serializer=SERIALIZER, shutdown_timeout=SHUTDOWN_TIMEOUT)
         try:
             srvr = manager.get_server()
             addr = srvr.address
@@ -3017,7 +3131,8 @@ class _TestManagerRestart(BaseTestCase):
                 manager.shutdown()
 
         manager = QueueManager(
-            address=addr, authkey=authkey, serializer=SERIALIZER)
+            address=addr, authkey=authkey, serializer=SERIALIZER,
+            shutdown_timeout=SHUTDOWN_TIMEOUT)
         try:
             manager.start()
             self.addCleanup(manager.shutdown)
@@ -3028,7 +3143,8 @@ class _TestManagerRestart(BaseTestCase):
             # (sporadic failure on buildbots)
             time.sleep(1.0)
             manager = QueueManager(
-                address=addr, authkey=authkey, serializer=SERIALIZER)
+                address=addr, authkey=authkey, serializer=SERIALIZER,
+                shutdown_timeout=SHUTDOWN_TIMEOUT)
             if hasattr(manager, "shutdown"):
                 self.addCleanup(manager.shutdown)
 
@@ -5177,6 +5293,14 @@ class TestStartMethod(unittest.TestCase):
             self.assertRaises(ValueError, ctx.set_start_method, None)
             self.check_context(ctx)
 
+    def test_context_check_module_types(self):
+        try:
+            ctx = multiprocessing.get_context('forkserver')
+        except ValueError:
+            raise unittest.SkipTest('forkserver should be available')
+        with self.assertRaisesRegex(TypeError, 'module_names must be a list of strings'):
+            ctx.set_forkserver_preload([1, 2, 3])
+
     def test_set_get(self):
         multiprocessing.set_forkserver_preload(PRELOAD)
         count = 0
@@ -5220,6 +5344,28 @@ class TestStartMethod(unittest.TestCase):
             print(out)
             print(err)
             self.fail("failed spawning forkserver or grandchild")
+
+    @unittest.skipIf(sys.platform == "win32",
+                     "Only Spawn on windows so no risk of mixing")
+    @only_run_in_spawn_testsuite("avoids redundant testing.")
+    def test_mixed_startmethod(self):
+        # Fork-based locks cannot be used with spawned process
+        for process_method in ["spawn", "forkserver"]:
+            queue = multiprocessing.get_context("fork").Queue()
+            process_ctx = multiprocessing.get_context(process_method)
+            p = process_ctx.Process(target=close_queue, args=(queue,))
+            err_msg = "A SemLock created in a fork"
+            with self.assertRaisesRegex(RuntimeError, err_msg):
+                p.start()
+
+        # non-fork-based locks can be used with all other start methods
+        for queue_method in ["spawn", "forkserver"]:
+            for process_method in multiprocessing.get_all_start_methods():
+                queue = multiprocessing.get_context(queue_method).Queue()
+                process_ctx = multiprocessing.get_context(process_method)
+                p = process_ctx.Process(target=close_queue, args=(queue,))
+                p.start()
+                p.join()
 
 
 @unittest.skipIf(sys.platform == "win32",
@@ -5714,6 +5860,7 @@ class TestSyncManagerTypes(unittest.TestCase):
 
 
 class TestNamedResource(unittest.TestCase):
+    @only_run_in_spawn_testsuite("spawn specific test.")
     def test_global_named_resource_spawn(self):
         #
         # gh-90549: Check that global named resources in main module
@@ -5724,22 +5871,18 @@ class TestNamedResource(unittest.TestCase):
         with open(testfn, 'w', encoding='utf-8') as f:
             f.write(textwrap.dedent('''\
                 import multiprocessing as mp
-
                 ctx = mp.get_context('spawn')
-
                 global_resource = ctx.Semaphore()
-
                 def submain(): pass
-
                 if __name__ == '__main__':
                     p = ctx.Process(target=submain)
                     p.start()
                     p.join()
             '''))
-        rc, out, err = test.support.script_helper.assert_python_ok(testfn)
+        rc, out, err = script_helper.assert_python_ok(testfn)
         # on error, err = 'UserWarning: resource_tracker: There appear to
         # be 1 leaked semaphore objects to clean up at shutdown'
-        self.assertEqual(err, b'')
+        self.assertFalse(err, msg=err.decode('utf-8'))
 
 
 class MiscTestCase(unittest.TestCase):
@@ -5747,6 +5890,24 @@ class MiscTestCase(unittest.TestCase):
         # Just make sure names in not_exported are excluded
         support.check__all__(self, multiprocessing, extra=multiprocessing.__all__,
                              not_exported=['SUBDEBUG', 'SUBWARNING'])
+
+    @only_run_in_spawn_testsuite("avoids redundant testing.")
+    def test_spawn_sys_executable_none_allows_import(self):
+        # Regression test for a bug introduced in
+        # https://github.com/python/cpython/issues/90876 that caused an
+        # ImportError in multiprocessing when sys.executable was None.
+        # This can be true in embedded environments.
+        rc, out, err = script_helper.assert_python_ok(
+            "-c",
+            """if 1:
+            import sys
+            sys.executable = None
+            assert "multiprocessing" not in sys.modules, "already imported!"
+            import multiprocessing
+            import multiprocessing.spawn  # This should not fail\n""",
+        )
+        self.assertEqual(rc, 0)
+        self.assertFalse(err, msg=err.decode('utf-8'))
 
 
 #
@@ -5785,6 +5946,7 @@ class ProcessesMixin(BaseMixin):
     current_process = staticmethod(multiprocessing.current_process)
     parent_process = staticmethod(multiprocessing.parent_process)
     active_children = staticmethod(multiprocessing.active_children)
+    set_executable = staticmethod(multiprocessing.set_executable)
     Pool = staticmethod(multiprocessing.Pool)
     Pipe = staticmethod(multiprocessing.Pipe)
     Queue = staticmethod(multiprocessing.Queue)
@@ -5982,5 +6144,5 @@ class SemLockTests(unittest.TestCase):
         class SemLock(_multiprocessing.SemLock):
             pass
         name = f'test_semlock_subclass-{os.getpid()}'
-        s = SemLock(1, 0, 10, name, 0)
+        s = SemLock(1, 0, 10, name, False)
         _multiprocessing.sem_unlink(name)

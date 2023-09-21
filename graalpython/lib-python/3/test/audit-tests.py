@@ -408,6 +408,17 @@ def test_sqlite3():
             raise RuntimeError("Expected sqlite3.load_extension to fail")
 
 
+def test_sys_getframe():
+    import sys
+
+    def hook(event, args):
+        if event.startswith("sys."):
+            print(event, args[0].f_code.co_name)
+
+    sys.addaudithook(hook)
+    sys._getframe()
+
+
 def test_syslog():
     import syslog
 
@@ -427,6 +438,17 @@ def test_syslog():
     sys.argv = None
     syslog.openlog()
     syslog.closelog()
+
+
+def test_not_in_gc():
+    import gc
+
+    hook = lambda *a: None
+    sys.addaudithook(hook)
+
+    for o in gc.get_objects():
+        if isinstance(o, list):
+            assert hook not in o
 
 
 if __name__ == "__main__":

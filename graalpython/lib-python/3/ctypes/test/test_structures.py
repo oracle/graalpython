@@ -332,13 +332,13 @@ class StructureTestCase(unittest.TestCase):
         cls, msg = self.get_except(Person, b"Someone", (1, 2))
         self.assertEqual(cls, RuntimeError)
         self.assertEqual(msg,
-                             "(Phone) <class 'TypeError'>: "
+                             "(Phone) TypeError: "
                              "expected bytes, int found")
 
         cls, msg = self.get_except(Person, b"Someone", (b"a", b"b", b"c"))
         self.assertEqual(cls, RuntimeError)
         self.assertEqual(msg,
-                             "(Phone) <class 'TypeError'>: too many initializers")
+                             "(Phone) TypeError: too many initializers")
 
     def test_huge_field_name(self):
         # issue12881: segfault with large structure field names
@@ -358,15 +358,6 @@ class StructureTestCase(unittest.TestCase):
             func(*args)
         except Exception as detail:
             return detail.__class__, str(detail)
-
-    @unittest.skip('test disabled')
-    def test_subclass_creation(self):
-        meta = type(Structure)
-        # same as 'class X(Structure): pass'
-        # fails, since we need either a _fields_ or a _abstract_ attribute
-        cls, msg = self.get_except(meta, "X", (Structure,), {})
-        self.assertEqual((cls, msg),
-                (AttributeError, "class must define a '_fields_' attribute"))
 
     def test_abstract_class(self):
         class X(Structure):

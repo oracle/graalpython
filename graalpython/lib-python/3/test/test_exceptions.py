@@ -214,7 +214,7 @@ class ExceptionTests(unittest.TestCase):
                     src = src.decode(encoding, 'replace')
                 line = src.split('\n')[lineno-1]
                 self.assertIn(line, cm.exception.text)
-    
+
     def test_error_offset_continuation_characters(self):
         check = self.check
         check('"\\\n"(1 for c in I,\\\n\\', 2, 2)
@@ -250,6 +250,8 @@ class ExceptionTests(unittest.TestCase):
         check('def f():\n  continue', 2, 3)
         check('def f():\n  break', 2, 3)
         check('try:\n  pass\nexcept:\n  pass\nexcept ValueError:\n  pass', 3, 1)
+        check('try:\n  pass\nexcept*:\n  pass', 3, 8)
+        check('try:\n  pass\nexcept*:\n  pass\nexcept* ValueError:\n  pass', 3, 8)
 
         # Errors thrown by tokenizer.c
         check('(0x+1)', 1, 3)
@@ -544,6 +546,33 @@ class ExceptionTests(unittest.TestCase):
                             self.assertEqual(got, want,
                                              'pickled "%r", attribute "%s' %
                                              (e, checkArgName))
+
+    def test_notes(self):
+        for e in [BaseException(1), Exception(2), ValueError(3)]:
+            with self.subTest(e=e):
+                self.assertFalse(hasattr(e, '__notes__'))
+                e.add_note("My Note")
+                self.assertEqual(e.__notes__, ["My Note"])
+
+                with self.assertRaises(TypeError):
+                    e.add_note(42)
+                self.assertEqual(e.__notes__, ["My Note"])
+
+                e.add_note("Your Note")
+                self.assertEqual(e.__notes__, ["My Note", "Your Note"])
+
+                del e.__notes__
+                self.assertFalse(hasattr(e, '__notes__'))
+
+                e.add_note("Our Note")
+                self.assertEqual(e.__notes__, ["Our Note"])
+
+                e.__notes__ = 42
+                self.assertEqual(e.__notes__, 42)
+
+                with self.assertRaises(TypeError):
+                    e.add_note("will not work")
+                self.assertEqual(e.__notes__, 42)
 
     def testWithTraceback(self):
         try:
@@ -1149,6 +1178,56 @@ class ExceptionTests(unittest.TestCase):
         self.assertIs(b.__context__, a)
         self.assertIs(a.__context__, c)
 
+    def test_context_of_exception_in_try_and_finally(self):
+        try:
+            try:
+                te = TypeError(1)
+                raise te
+            finally:
+                ve = ValueError(2)
+                raise ve
+        except Exception as e:
+            exc = e
+
+        self.assertIs(exc, ve)
+        self.assertIs(exc.__context__, te)
+
+    def test_context_of_exception_in_except_and_finally(self):
+        try:
+            try:
+                te = TypeError(1)
+                raise te
+            except:
+                ve = ValueError(2)
+                raise ve
+            finally:
+                oe = OSError(3)
+                raise oe
+        except Exception as e:
+            exc = e
+
+        self.assertIs(exc, oe)
+        self.assertIs(exc.__context__, ve)
+        self.assertIs(exc.__context__.__context__, te)
+
+    def test_context_of_exception_in_else_and_finally(self):
+        try:
+            try:
+                pass
+            except:
+                pass
+            else:
+                ve = ValueError(1)
+                raise ve
+            finally:
+                oe = OSError(2)
+                raise oe
+        except Exception as e:
+            exc = e
+
+        self.assertIs(exc, oe)
+        self.assertIs(exc.__context__, ve)
+
     def test_unicode_change_attributes(self):
         # See issue 7309. This was a crasher.
 
@@ -1383,9 +1462,7 @@ class ExceptionTests(unittest.TestCase):
         """
         with SuppressCrashReport():
             rc, out, err = script_helper.assert_python_failure("-c", code)
-            self.assertIn(b'Fatal Python error: _PyErr_NormalizeException: '
-                          b'Cannot recover from MemoryErrors while '
-                          b'normalizing exceptions.', err)
+            self.assertIn(b'MemoryError', err)
 
     @cpython_only
     def test_MemoryError(self):
@@ -2477,6 +2554,21 @@ class SyntaxErrorTests(unittest.TestCase):
         self.assertRaises(TypeError, SyntaxError, "bad bad", args)
 
 
+class TestInvalidExceptionMatcher(unittest.TestCase):
+    def test_except_star_invalid_exception_type(self):
+        with self.assertRaises(TypeError):
+            try:
+                raise ValueError
+            except 42:
+                pass
+
+        with self.assertRaises(TypeError):
+            try:
+                raise ValueError
+            except (ValueError, 42):
+                pass
+
+
 class PEP626Tests(unittest.TestCase):
 
     def lineno_after_raise(self, f, *expected):
@@ -2571,7 +2663,7 @@ class PEP626Tests(unittest.TestCase):
         def f():
             1/0
         self.lineno_after_raise(f, 1)
-        f.__code__ = f.__code__.replace(co_linetable=b'\x04\x80\xff\x80')
+        f.__code__ = f.__code__.replace(co_linetable=b'\xf8\xf8\xf8\xf9\xf8\xf8\xf8')
         self.lineno_after_raise(f, None)
 
     def test_lineno_after_raise_in_with_exit(self):

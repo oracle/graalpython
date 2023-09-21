@@ -95,6 +95,7 @@ import sys
 import os
 from collections import namedtuple
 from enum import Enum as _Enum, IntEnum as _IntEnum, IntFlag as _IntFlag
+from enum import _simple_enum
 
 import _ssl             # if we can't import it, let the error propagate
 
@@ -118,7 +119,6 @@ from _ssl import (
     HAS_TLSv1_1, HAS_TLSv1_2, HAS_TLSv1_3
 )
 from _ssl import _DEFAULT_CIPHERS, _OPENSSL_API_VERSION
-
 
 _IntEnum._convert_(
     '_SSLMethod', __name__,
@@ -156,7 +156,8 @@ _PROTOCOL_NAMES = {value: name for name, value in _SSLMethod.__members__.items()
 _SSLv2_IF_EXISTS = getattr(_SSLMethod, 'PROTOCOL_SSLv2', None)
 
 
-class TLSVersion(_IntEnum):
+@_simple_enum(_IntEnum)
+class TLSVersion:
     MINIMUM_SUPPORTED = _ssl.PROTO_MINIMUM_SUPPORTED
     SSLv3 = _ssl.PROTO_SSLv3
     TLSv1 = _ssl.PROTO_TLSv1
@@ -166,7 +167,8 @@ class TLSVersion(_IntEnum):
     MAXIMUM_SUPPORTED = _ssl.PROTO_MAXIMUM_SUPPORTED
 
 
-class _TLSContentType(_IntEnum):
+@_simple_enum(_IntEnum)
+class _TLSContentType:
     """Content types (record layer)
 
     See RFC 8446, section B.1
@@ -180,7 +182,8 @@ class _TLSContentType(_IntEnum):
     INNER_CONTENT_TYPE = 0x101
 
 
-class _TLSAlertType(_IntEnum):
+@_simple_enum(_IntEnum)
+class _TLSAlertType:
     """Alert types for TLSContentType.ALERT messages
 
     See RFC 8466, section B.2
@@ -221,7 +224,8 @@ class _TLSAlertType(_IntEnum):
     NO_APPLICATION_PROTOCOL = 120
 
 
-class _TLSMessageType(_IntEnum):
+@_simple_enum(_IntEnum)
+class _TLSMessageType:
     """Message types (handshake protocol)
 
     See RFC 8446, section B.3
@@ -276,7 +280,7 @@ CertificateError = SSLCertVerificationError
 def _dnsname_match(dn, hostname):
     """Matching according to RFC 6125, section 6.4.3
 
-    - Hostnames are compared lower case.
+    - Hostnames are compared lower-case.
     - For IDNA, both dn and hostname must be encoded as IDN A-label (ACE).
     - Partial wildcards like 'www*.example.org', multiple wildcards, sole
       wildcard or wildcards in labels other then the left-most label are not
@@ -364,7 +368,7 @@ def _ipaddress_match(cert_ipaddress, host_ip):
     (section 1.7.2 - "Out of Scope").
     """
     # OpenSSL may add a trailing newline to a subjectAltName's IP address,
-    # commonly woth IPv6 addresses. Strip off trailing \n.
+    # commonly with IPv6 addresses. Strip off trailing \n.
     ip = _inet_paton(cert_ipaddress.rstrip())
     return ip == host_ip
 
@@ -1033,7 +1037,7 @@ class SSLSocket(socket):
         )
         self = cls.__new__(cls, **kwargs)
         super(SSLSocket, self).__init__(**kwargs)
-        self.settimeout(sock.gettimeout())
+        sock_timeout = sock.gettimeout()
         sock.detach()
 
         self._context = context
@@ -1052,9 +1056,42 @@ class SSLSocket(socket):
             if e.errno != errno.ENOTCONN:
                 raise
             connected = False
+            blocking = self.getblocking()
+            self.setblocking(False)
+            try:
+                # We are not connected so this is not supposed to block, but
+                # testing revealed otherwise on macOS and Windows so we do
+                # the non-blocking dance regardless. Our raise when any data
+                # is found means consuming the data is harmless.
+                notconn_pre_handshake_data = self.recv(1)
+            except OSError as e:
+                # EINVAL occurs for recv(1) on non-connected on unix sockets.
+                if e.errno not in (errno.ENOTCONN, errno.EINVAL):
+                    raise
+                notconn_pre_handshake_data = b''
+            self.setblocking(blocking)
+            if notconn_pre_handshake_data:
+                # This prevents pending data sent to the socket before it was
+                # closed from escaping to the caller who could otherwise
+                # presume it came through a successful TLS connection.
+                reason = "Closed before TLS handshake with data in recv buffer."
+                notconn_pre_handshake_data_error = SSLError(e.errno, reason)
+                # Add the SSLError attributes that _ssl.c always adds.
+                notconn_pre_handshake_data_error.reason = reason
+                notconn_pre_handshake_data_error.library = None
+                try:
+                    self.close()
+                except OSError:
+                    pass
+                try:
+                    raise notconn_pre_handshake_data_error
+                finally:
+                    # Explicitly break the reference cycle.
+                    notconn_pre_handshake_data_error = None
         else:
             connected = True
 
+        self.settimeout(sock_timeout)  # Must come after setblocking() calls.
         self._connected = connected
         if connected:
             # create the SSL object

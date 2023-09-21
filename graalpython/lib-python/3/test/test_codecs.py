@@ -15,6 +15,10 @@ try:
     import _testcapi
 except ImportError:
     _testcapi = None
+try:
+    import _testinternalcapi
+except ImportError:
+    _testinternalcapi = None
 
 try:
     import ctypes
@@ -705,7 +709,8 @@ class UTF16Test(ReadTest, unittest.TestCase):
                                          "spamspam", self.spambe)
 
     def test_bug691291(self):
-        # Files are always opened in binary mode, even if no binary mode was
+        # If encoding is not None, then
+        # files are always opened in binary mode, even if no binary mode was
         # specified.  This means that no automatic conversion of '\n' is done
         # on reading and writing.
         s1 = 'Hello\r\nworld\r\n'
@@ -714,10 +719,22 @@ class UTF16Test(ReadTest, unittest.TestCase):
         self.addCleanup(os_helper.unlink, os_helper.TESTFN)
         with open(os_helper.TESTFN, 'wb') as fp:
             fp.write(s)
-        with warnings_helper.check_warnings(('', DeprecationWarning)):
-            reader = codecs.open(os_helper.TESTFN, 'U', encoding=self.encoding)
-        with reader:
+        with codecs.open(os_helper.TESTFN, 'r',
+                         encoding=self.encoding) as reader:
             self.assertEqual(reader.read(), s1)
+
+    def test_invalid_modes(self):
+        for mode in ('U', 'rU', 'r+U'):
+            with self.assertRaises(ValueError) as cm:
+                codecs.open(os_helper.TESTFN, mode, encoding=self.encoding)
+            self.assertIn('invalid mode', str(cm.exception))
+
+        for mode in ('rt', 'wt', 'at', 'r+t'):
+            with self.assertRaises(ValueError) as cm:
+                codecs.open(os_helper.TESTFN, mode, encoding=self.encoding)
+            self.assertIn("can't have text and binary mode at once",
+                          str(cm.exception))
+
 
 class UTF16LETest(ReadTest, unittest.TestCase):
     encoding = "utf-16-le"
@@ -1177,7 +1194,6 @@ class EscapeDecodeTest(unittest.TestCase):
         check(br"[\418]", b"[!8]")
         check(br"[\101]", b"[A]")
         check(br"[\1010]", b"[A0]")
-        check(br"[\501]", b"[A]")
         check(br"[\x41]", b"[A]")
         check(br"[\x410]", b"[A0]")
         for i in range(97, 123):
@@ -1193,6 +1209,9 @@ class EscapeDecodeTest(unittest.TestCase):
             check(br"\9", b"\\9")
         with self.assertWarns(DeprecationWarning):
             check(b"\\\xfa", b"\\\xfa")
+        for i in range(0o400, 0o1000):
+            with self.assertWarns(DeprecationWarning):
+                check(rb'\%o' % i, bytes([i & 0o377]))
 
     def test_errors(self):
         decode = codecs.escape_decode
@@ -1533,6 +1552,12 @@ class IDNACodecTest(unittest.TestCase):
         self.assertEqual("python.org.".encode("idna"), b"python.org.")
         self.assertEqual("pyth\xf6n.org".encode("idna"), b"xn--pythn-mua.org")
         self.assertEqual("pyth\xf6n.org.".encode("idna"), b"xn--pythn-mua.org.")
+
+    def test_builtin_decode_length_limit(self):
+        with self.assertRaisesRegex(UnicodeError, "too long"):
+            (b"xn--016c"+b"a"*1100).decode("idna")
+        with self.assertRaisesRegex(UnicodeError, "too long"):
+            (b"xn--016c"+b"a"*70).decode("idna")
 
     def test_stream(self):
         r = codecs.getreader("idna")(io.BytesIO(b"abc"))
@@ -1888,7 +1913,10 @@ class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
                 name += "_codec"
             elif encoding == "latin_1":
                 name = "latin_1"
-            self.assertEqual(encoding.replace("_", "-"), name.replace("_", "-"))
+            # Skip the mbcs alias on Windows
+            if name != "mbcs":
+                self.assertEqual(encoding.replace("_", "-"),
+                                 name.replace("_", "-"))
 
             (b, size) = codecs.getencoder(encoding)(s)
             self.assertEqual(size, len(s), "encoding=%r" % encoding)
@@ -1958,6 +1986,7 @@ class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
                                          "encoding=%r" % encoding)
 
     @support.cpython_only
+    @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_basics_capi(self):
         s = "abc123"  # all codecs should be able to encode these
         for encoding in all_unicode_encodings:
@@ -2415,6 +2444,9 @@ class UnicodeEscapeTest(ReadTest, unittest.TestCase):
             check(br"\9", "\\9")
         with self.assertWarns(DeprecationWarning):
             check(b"\\\xfa", "\\\xfa")
+        for i in range(0o400, 0o1000):
+            with self.assertWarns(DeprecationWarning):
+                check(rb'\%o' % i, chr(i))
 
     def test_decode_errors(self):
         decode = codecs.unicode_escape_decode
@@ -2791,15 +2823,16 @@ class TransformCodecTest(unittest.TestCase):
     def test_custom_zlib_error_is_wrapped(self):
         # Check zlib codec gives a good error for malformed input
         msg = "^decoding with 'zlib_codec' codec failed"
-        with self.assertRaisesRegex(Exception, msg) as failure:
+        with self.assertRaises(zlib.error) as failure:
             codecs.decode(b"hello", "zlib_codec")
         self.assertIsInstance(failure.exception.__cause__,
                                                 type(failure.exception))
 
     def test_custom_hex_error_is_wrapped(self):
         # Check hex codec gives a good error for malformed input
+        import binascii
         msg = "^decoding with 'hex_codec' codec failed"
-        with self.assertRaisesRegex(Exception, msg) as failure:
+        with self.assertRaises(binascii.Error) as failure:
             codecs.decode(b"hello", "hex_codec")
         self.assertIsInstance(failure.exception.__cause__,
                                                 type(failure.exception))
@@ -3173,9 +3206,14 @@ class CodePageTest(unittest.TestCase):
     def test_mbcs_alias(self):
         # Check that looking up our 'default' codepage will return
         # mbcs when we don't have a more specific one available
-        with mock.patch('_winapi.GetACP', return_value=123):
-            codec = codecs.lookup('cp123')
-            self.assertEqual(codec.name, 'mbcs')
+        code_page = 99_999
+        name = f'cp{code_page}'
+        with mock.patch('_winapi.GetACP', return_value=code_page):
+            try:
+                codec = codecs.lookup(name)
+                self.assertEqual(codec.name, 'mbcs')
+            finally:
+                codecs.unregister(name)
 
     @support.bigmemtest(size=2**31, memuse=7, dry_run=False)
     def test_large_input(self, size):
@@ -3332,7 +3370,7 @@ class StreamRecoderTest(unittest.TestCase):
         self.assertEqual(sr.readline(), b'789\n')
 
 
-@unittest.skipIf(_testcapi is None, 'need _testcapi module')
+@unittest.skipIf(_testinternalcapi is None, 'need _testinternalcapi module')
 class LocaleCodecTest(unittest.TestCase):
     """
     Test indirectly _Py_DecodeUTF8Ex() and _Py_EncodeUTF8Ex().
@@ -3346,7 +3384,7 @@ class LocaleCodecTest(unittest.TestCase):
     SURROGATES = "\uDC80\uDCFF"
 
     def encode(self, text, errors="strict"):
-        return _testcapi.EncodeLocaleEx(text, 0, errors)
+        return _testinternalcapi.EncodeLocaleEx(text, 0, errors)
 
     def check_encode_strings(self, errors):
         for text in self.STRINGS:
@@ -3386,7 +3424,7 @@ class LocaleCodecTest(unittest.TestCase):
         self.assertEqual(str(cm.exception), 'unsupported error handler')
 
     def decode(self, encoded, errors="strict"):
-        return _testcapi.DecodeLocaleEx(encoded, 0, errors)
+        return _testinternalcapi.DecodeLocaleEx(encoded, 0, errors)
 
     def check_decode_strings(self, errors):
         is_utf8 = (self.ENCODING == "utf-8")

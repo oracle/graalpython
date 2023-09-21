@@ -10,10 +10,15 @@ import io
 import tempfile
 from test import support
 from test.support import os_helper
+from test.support import socket_helper
 import unittest
 import textwrap
 import mailbox
 import glob
+
+
+if not socket_helper.has_gethostname:
+    raise unittest.SkipTest("test requires gethostname()")
 
 
 class TestBase:
@@ -111,10 +116,13 @@ class TestMailbox(TestBase):
         self.assertMailboxEmpty()
 
     def test_add_that_raises_leaves_mailbox_empty(self):
+        class CustomError(Exception): ...
+        exc_msg = "a fake error"
+
         def raiser(*args, **kw):
-            raise Exception("a fake error")
+            raise CustomError(exc_msg)
         support.patch(self, email.generator.BytesGenerator, 'flatten', raiser)
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(CustomError, exc_msg):
             self._box.add(email.message_from_string("From: Alphöso"))
         self.assertEqual(len(self._box), 0)
         self._box.close()
@@ -1061,7 +1069,7 @@ class _TestMboxMMDF(_TestSingleFile):
             self.assertEqual(contents, f.read())
         self._box = self._factory(self._path)
 
-    @unittest.skipUnless(hasattr(os, 'fork'), "Test needs fork().")
+    @support.requires_fork()
     @unittest.skipUnless(hasattr(socket, 'socketpair'), "Test needs socketpair().")
     def test_lock_conflict(self):
         # Fork off a child process that will lock the mailbox temporarily,

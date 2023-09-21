@@ -1,6 +1,5 @@
 from warnings import catch_warnings
-from .. import abc
-from .. import util
+from test.test_importlib import abc, util
 
 machinery = util.import_importlib('importlib.machinery')
 
@@ -13,11 +12,18 @@ import importlib.util
 import importlib
 from test.support.script_helper import assert_python_failure
 
+
 class LoaderTests(abc.LoaderTests):
 
     """Test load_module() for extension modules."""
 
     def setUp(self):
+        if not self.machinery.EXTENSION_SUFFIXES:
+            raise unittest.SkipTest("Requires dynamic loading support.")
+        if util.EXTENSIONS.name in sys.builtin_module_names:
+            raise unittest.SkipTest(
+                f"{util.EXTENSIONS.name} is a builtin module"
+            )
         self.loader = self.machinery.ExtensionFileLoader(util.EXTENSIONS.name,
                                                          util.EXTENSIONS.file_path)
 
@@ -92,7 +98,13 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
     # Test loading extension modules with multi-phase initialization (PEP 489).
 
     def setUp(self):
+        if not self.machinery.EXTENSION_SUFFIXES:
+            raise unittest.SkipTest("Requires dynamic loading support.")
         self.name = '_testmultiphase'
+        if self.name in sys.builtin_module_names:
+            raise unittest.SkipTest(
+                f"{self.name} is a builtin module"
+            )
         finder = self.machinery.FileFinder(None)
         self.spec = importlib.util.find_spec(self.name)
         assert self.spec
@@ -167,15 +179,16 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
 
     def test_try_registration(self):
         # Assert that the PyState_{Find,Add,Remove}Module C API doesn't work.
-        module = self.load_module()
-        with self.subTest('PyState_FindModule'):
-            self.assertEqual(module.call_state_registration_func(0), None)
-        with self.subTest('PyState_AddModule'):
-            with self.assertRaises(SystemError):
-                module.call_state_registration_func(1)
-        with self.subTest('PyState_RemoveModule'):
-            with self.assertRaises(SystemError):
-                module.call_state_registration_func(2)
+        with util.uncache(self.name):
+            module = self.load_module()
+            with self.subTest('PyState_FindModule'):
+                self.assertEqual(module.call_state_registration_func(0), None)
+            with self.subTest('PyState_AddModule'):
+                with self.assertRaises(SystemError):
+                    module.call_state_registration_func(1)
+            with self.subTest('PyState_RemoveModule'):
+                with self.assertRaises(SystemError):
+                    module.call_state_registration_func(2)
 
     def test_load_submodule(self):
         # Test loading a simulated submodule.

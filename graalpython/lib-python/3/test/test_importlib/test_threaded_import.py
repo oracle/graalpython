@@ -19,6 +19,8 @@ from test.support.import_helper import forget
 from test.support.os_helper import (TESTFN, unlink, rmtree)
 from test.support import script_helper, threading_helper
 
+threading_helper.requires_working_threading(module=True)
+
 def task(N, done, done_tasks, errors):
     try:
         # We don't use modulefinder but still import it in order to stress
@@ -242,7 +244,8 @@ class ThreadedImportTests(unittest.TestCase):
         self.addCleanup(forget, TESTFN)
         self.addCleanup(rmtree, '__pycache__')
         importlib.invalidate_caches()
-        __import__(TESTFN)
+        with threading_helper.wait_threads_exit():
+            __import__(TESTFN)
         del sys.modules[TESTFN]
 
     def test_concurrent_futures_circular_import(self):

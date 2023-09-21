@@ -6,6 +6,7 @@ import errno
 import re
 import sys
 import traceback
+import unittest
 import warnings
 
 
@@ -81,6 +82,7 @@ def call_func(info_add, name, mod, func_name, *, formatter=None):
 
 def collect_sys(info_add):
     attributes = (
+        '_emscripten_info',
         '_framework',
         'abiflags',
         'api_version',
@@ -165,7 +167,7 @@ def collect_platform(info_add):
 def collect_locale(info_add):
     import locale
 
-    info_add('locale.encoding', locale.getpreferredencoding(False))
+    info_add('locale.getencoding', locale.getencoding())
 
 
 def collect_builtins(info_add):
@@ -445,6 +447,15 @@ def collect_time(info_add):
                 info_add('time.get_clock_info(%s)' % clock, clock_info)
 
 
+def collect_curses(info_add):
+    try:
+        import curses
+    except ImportError:
+        return
+
+    copy_attr(info_add, 'curses.ncurses_version', curses, 'ncurses_version')
+
+
 def collect_datetime(info_add):
     try:
         import datetime
@@ -575,8 +586,14 @@ def collect_socket(info_add):
     except ImportError:
         return
 
-    hostname = socket.gethostname()
-    info_add('socket.hostname', hostname)
+    try:
+        hostname = socket.gethostname()
+    except (OSError, AttributeError):
+        # WASI SDK 16.0 does not have gethostname(2).
+        if sys.platform != "wasi":
+            raise
+    else:
+        info_add('socket.hostname', hostname)
 
 
 def collect_sqlite(info_add):
@@ -646,7 +663,7 @@ def collect_resource(info_add):
 def collect_test_socket(info_add):
     try:
         from test import test_socket
-    except ImportError:
+    except (ImportError, unittest.SkipTest):
         return
 
     # all check attributes like HAVE_SOCKET_CAN
@@ -841,6 +858,7 @@ def collect_info(info):
 
         collect_builtins,
         collect_cc,
+        collect_curses,
         collect_datetime,
         collect_decimal,
         collect_expat,

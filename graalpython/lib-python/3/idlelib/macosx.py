@@ -4,7 +4,6 @@ A number of functions that enhance IDLE on macOS.
 from os.path import expanduser
 import plistlib
 from sys import platform  # Used in _init_tk_type, changed by test.
-from test.support import requires, ResourceDenied
 
 import tkinter
 
@@ -16,27 +15,38 @@ _tk_type = None
 
 def _init_tk_type():
     """ Initialize _tk_type for isXyzTk functions.
+
+    This function is only called once, when _tk_type is still None.
     """
     global _tk_type
     if platform == 'darwin':
-        try:
-            requires('gui')
-        except ResourceDenied:  # Possible when testing.
-            _tk_type = "cocoa"  # Newest and most common.
-        else:
-            root = tkinter.Tk()
-            ws = root.tk.call('tk', 'windowingsystem')
-            if 'x11' in ws:
-                _tk_type = "xquartz"
-            elif 'aqua' not in ws:
-                _tk_type = "other"
-            elif 'AppKit' in root.tk.call('winfo', 'server', '.'):
+
+        # When running IDLE, GUI is present, test/* may not be.
+        # When running tests, test/* is present, GUI may not be.
+        # If not, guess most common.  Does not matter for testing.
+        from idlelib.__init__ import testing
+        if testing:
+            from test.support import requires, ResourceDenied
+            try:
+                requires('gui')
+            except ResourceDenied:
                 _tk_type = "cocoa"
-            else:
-                _tk_type = "carbon"
-            root.destroy()
+                return
+
+        root = tkinter.Tk()
+        ws = root.tk.call('tk', 'windowingsystem')
+        if 'x11' in ws:
+            _tk_type = "xquartz"
+        elif 'aqua' not in ws:
+            _tk_type = "other"
+        elif 'AppKit' in root.tk.call('winfo', 'server', '.'):
+            _tk_type = "cocoa"
+        else:
+            _tk_type = "carbon"
+        root.destroy()
     else:
         _tk_type = "other"
+    return
 
 def isAquaTk():
     """
@@ -70,27 +80,6 @@ def isXQuartz():
     if not _tk_type:
         _init_tk_type()
     return _tk_type == "xquartz"
-
-
-def tkVersionWarning(root):
-    """
-    Returns a string warning message if the Tk version in use appears to
-    be one known to cause problems with IDLE.
-    1. Apple Cocoa-based Tk 8.5.7 shipped with Mac OS X 10.6 is unusable.
-    2. Apple Cocoa-based Tk 8.5.9 in OS X 10.7 and 10.8 is better but
-        can still crash unexpectedly.
-    """
-
-    if isCocoaTk():
-        patchlevel = root.tk.call('info', 'patchlevel')
-        if patchlevel not in ('8.5.7', '8.5.9'):
-            return False
-        return ("WARNING: The version of Tcl/Tk ({0}) in use may"
-                " be unstable.\n"
-                "Visit https://www.python.org/download/mac/tcltk/"
-                " for current information.".format(patchlevel))
-    else:
-        return False
 
 
 def readSystemPreferences():
