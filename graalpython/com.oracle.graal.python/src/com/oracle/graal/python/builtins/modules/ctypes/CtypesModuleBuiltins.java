@@ -1234,10 +1234,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 throw e;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | AbstractTruffleException e) {
-                throw raiseNode.get(inliningTarget).raise(RuntimeError, FFI_CALL_FAILED);
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
                 // TODO: llvm/GR-???
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError, toTruffleStringUncached("require backend support."));
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("require backend support."));
             }
         }
 
@@ -1271,7 +1273,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             try {
                 return ilib.execute(function, avalues);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(RuntimeError, FFI_CALL_FAILED);
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseUncached(inliningTarget, RuntimeError, FFI_CALL_FAILED);
             }
         }
 

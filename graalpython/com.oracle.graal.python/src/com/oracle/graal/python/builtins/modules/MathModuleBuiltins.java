@@ -1016,18 +1016,18 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long gcd(long x, long y) {
+        static long gcd(long x, long y) {
             return Math.abs(count(x, y));
         }
 
         @Specialization
-        PInt gcd(long x, PInt y,
+        static PInt gcd(long x, PInt y,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
-        PInt gcd(PInt x, long y,
+        static PInt gcd(PInt x, long y,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(x.getValue(), PInt.longToBigInteger(y)));
         }
@@ -1084,9 +1084,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
+        Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b) {
+            CompilerDirectives.transferToInterpreter();
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 
         @NeverDefault
