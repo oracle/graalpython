@@ -87,7 +87,6 @@ import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -227,18 +226,20 @@ public final class CFieldBuiltins extends PythonBuiltins {
      * offset, this will be updated. prev_desc points to the type of the previous bitfield, if any.
      */
     @SuppressWarnings("fallthrough")
-    abstract static class PyCFieldFromDesc extends PNodeWithRaise {
+    abstract static class PyCFieldFromDesc extends Node {
 
         abstract CFieldObject execute(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
 
         @Specialization
-        CFieldObject PyCField_FromDesc(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
+        static CFieldObject PyCField_FromDesc(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             CFieldObject self = factory.createCFieldObject(PythonBuiltinClassType.CField);
             StgDictObject dict = pyTypeStgDictNode.execute(desc);
             if (dict == null) {
-                throw raise(TypeError, HAS_NO_STGINFO);
+                throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
             }
             int fieldtype;
             if (bitsize != 0 /* this is a bitfield request */
@@ -278,7 +279,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 if (adict != null && adict.proto != null) {
                     StgDictObject idict = pyTypeStgDictNode.execute(adict.proto);
                     if (idict == null) {
-                        throw raise(TypeError, HAS_NO_STGINFO);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
                     }
                     if (idict.getfunc == FieldDesc.c.getfunc) {
                         FieldDesc fd = FieldDesc.s;

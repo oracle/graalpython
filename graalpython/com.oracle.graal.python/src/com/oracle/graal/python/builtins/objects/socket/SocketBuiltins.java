@@ -77,7 +77,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -124,7 +124,7 @@ public final class SocketBuiltins extends PythonBuiltins {
         return SocketBuiltinsFactory.getFactories();
     }
 
-    private static void checkSelectable(PNodeWithRaise node, PSocket socket) {
+    private static void checkSelectable(PRaiseNode node, PSocket socket) {
         if (!isSelectable(socket)) {
             throw node.raise(OSError, ErrorMessages.UNABLE_TO_SELECT_ON_SOCKET);
         }
@@ -286,14 +286,14 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            checkSelectable(this, self);
+            checkSelectable(getRaiseNode(), self);
 
             try {
                 PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, getPosixSupport(), gil, self,
                                 (p, s) -> p.accept(s, self.getFd()),
                                 false, false);
                 try {
-                    Object pythonAddr = makeSockAddrNode.execute(frame, acceptResult.sockAddr);
+                    Object pythonAddr = makeSockAddrNode.execute(frame, inliningTarget, acceptResult.sockAddr);
                     posixLib.setInheritable(getPosixSupport(), acceptResult.socketFd, false);
                     return factory.createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
                 } catch (Exception e) {
@@ -476,7 +476,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                return makeSockAddrNode.execute(frame, addr);
+                return makeSockAddrNode.execute(frame, inliningTarget, addr);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -502,7 +502,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                return makeSockAddrNode.execute(frame, addr);
+                return makeSockAddrNode.execute(frame, inliningTarget, addr);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -583,7 +583,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             if (recvlen < 0) {
                 throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV);
             }
-            checkSelectable(this, socket);
+            checkSelectable(getRaiseNode(), socket);
             if (recvlen == 0) {
                 return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
@@ -632,7 +632,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             if (recvlen < 0) {
                 throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM);
             }
-            checkSelectable(this, socket);
+            checkSelectable(getRaiseNode(), socket);
 
             byte[] bytes;
             try {
@@ -652,7 +652,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     // TODO maybe resize if much smaller?
                     resultBytes = factory.createBytes(bytes, result.readBytes);
                 }
-                return factory.createTuple(new Object[]{resultBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
+                return factory.createTuple(new Object[]{resultBytes, makeSockAddrNode.execute(frame, inliningTarget, result.sockAddr)});
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -693,7 +693,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.BUFF_TOO_SMALL);
                 }
 
-                checkSelectable(this, socket);
+                checkSelectable(getRaiseNode(), socket);
 
                 boolean directWrite = bufferLib.hasInternalByteArray(buffer);
                 byte[] bytes;
@@ -761,7 +761,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.NBYTES_GREATER_THAT_BUFF);
                 }
 
-                checkSelectable(this, socket);
+                checkSelectable(getRaiseNode(), socket);
 
                 boolean directWrite = bufferLib.hasInternalByteArray(buffer);
                 byte[] bytes;
@@ -782,7 +782,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     if (!directWrite) {
                         bufferLib.writeFromByteArray(buffer, 0, bytes, 0, result.readBytes);
                     }
-                    return factory.createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
+                    return factory.createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, inliningTarget, result.sockAddr)});
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
@@ -813,7 +813,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
-                checkSelectable(this, socket);
+                checkSelectable(getRaiseNode(), socket);
 
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -852,7 +852,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
-                checkSelectable(this, socket);
+                checkSelectable(getRaiseNode(), socket);
 
                 int offset = 0;
                 int len = bufferLib.getBufferLength(buffer);
@@ -923,7 +923,7 @@ public final class SocketBuiltins extends PythonBuiltins {
 
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
-                checkSelectable(this, socket);
+                checkSelectable(getRaiseNode(), socket);
 
                 UniversalSockAddr addr = getSockAddrArgNode.execute(frame, socket, address, "sendto");
                 auditNode.audit(inliningTarget, "socket.sendto", socket, address);
@@ -978,7 +978,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            long timeout = parseTimeoutNode.execute(frame, seconds);
+            long timeout = parseTimeoutNode.execute(frame, inliningTarget, seconds);
             socket.setTimeoutNs(timeout);
             try {
                 posixLib.setBlocking(getPosixSupport(), socket.getFd(), timeout < 0);

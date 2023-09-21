@@ -81,7 +81,7 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -110,7 +110,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDefaultDict})
 public final class DictBuiltins extends PythonBuiltins {
@@ -300,28 +299,15 @@ public final class DictBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization
-        static Object misssing(VirtualFrame frame, Object self, Object key,
+        static Object missing(VirtualFrame frame, Object self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
-                        @Cached DefaultMissingNode defaultMissing) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callMissing.executeObject(frame, self, key);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
-                return defaultMissing.execute(key);
+                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
             }
             return result;
-        }
-    }
-
-    protected abstract static class DefaultMissingNode extends PNodeWithRaise {
-        public abstract Object execute(Object key);
-
-        @Specialization
-        Object run(TruffleString key) {
-            throw raise(KeyError, new Object[]{key});
-        }
-
-        @Fallback
-        Object run(Object key) {
-            throw raise(KeyError, new Object[]{key});
         }
     }
 

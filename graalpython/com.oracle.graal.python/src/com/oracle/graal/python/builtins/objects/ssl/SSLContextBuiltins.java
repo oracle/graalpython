@@ -110,7 +110,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -212,7 +211,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
+    static SSLEngine createSSLEngine(PRaiseNode node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException | IOException | CertificateException ex) {
@@ -290,7 +289,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
+            SSLEngine engine = createSSLEngine(getRaiseNode(), context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
             PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -326,7 +325,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(inliningTarget, serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
+            SSLEngine engine = createSSLEngine(getRaiseNode(), context, serverSide, serverHostname == null ? null : toJavaStringNode.execute(serverHostname));
             PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -444,7 +443,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    private static void setMinMaxVersion(PNodeWithRaise node, PSSLContext context, boolean maximum, int value) {
+    private static void setMinMaxVersion(PRaiseNode node, PSSLContext context, boolean maximum, int value) {
         if (context.getMethod().isSingleVersion()) {
             throw node.raise(ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
         }
@@ -487,7 +486,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            setMinMaxVersion(this, self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
+            setMinMaxVersion(getRaiseNode(), self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
     }
@@ -505,7 +504,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            setMinMaxVersion(this, self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
+            setMinMaxVersion(getRaiseNode(), self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
     }

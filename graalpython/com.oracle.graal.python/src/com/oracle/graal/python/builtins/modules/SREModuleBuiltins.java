@@ -72,7 +72,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -549,7 +548,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class RECheckInputTypeNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
+    abstract static class RECheckInputTypeNode extends Node {
 
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
@@ -558,23 +558,24 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         public abstract void execute(VirtualFrame frame, Object input, boolean expectBytes);
 
         @Specialization
-        protected void check(VirtualFrame frame, Object input, boolean expectBytes,
+        static void check(VirtualFrame frame, Object input, boolean expectBytes,
                         @Bind("this") Node inliningTarget,
                         @Cached("getSupportedBinaryInputTypes()") PTuple supportedBinaryInputTypes,
                         @Cached BuiltinFunctions.IsInstanceNode isStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                         @Cached InlinedConditionProfile unsupportedInputTypeProfile,
-                        @Cached InlinedConditionProfile unexpectedInputTypeProfile) {
+                        @Cached InlinedConditionProfile unexpectedInputTypeProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
             boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, supportedBinaryInputTypes);
             if (unsupportedInputTypeProfile.profile(inliningTarget, !isString && !isBytes)) {
-                throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
             if (unexpectedInputTypeProfile.profile(inliningTarget, expectBytes != isBytes)) {
                 if (expectBytes) {
-                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_STR);
                 } else {
-                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_BYTES);
                 }
             }
         }

@@ -126,7 +126,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
-        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, @SuppressWarnings("unused") PNone memlimit, @SuppressWarnings("unused") PNone filters,
+        static PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, @SuppressWarnings("unused") PNone memlimit, @SuppressWarnings("unused") PNone filters,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
             return doNotRaw(frame, self, format, Integer.MAX_VALUE, decompressInit);
         }
@@ -141,10 +141,11 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isRaw(format)", "!isPNone(filters)"})
-        PNone raw(VirtualFrame frame, LZMADecompressor self, int format, PNone memlimit, Object filters,
+        static PNone raw(VirtualFrame frame, LZMADecompressor self, int format, PNone memlimit, Object filters,
+                        @Bind("this") Node inliningTarget,
                         @Cached LZMANodes.LZMARawDecompressInit decompressInit) {
             self.setCheck(CHECK_NONE);
-            decompressInit.execute(frame, self, filters);
+            decompressInit.execute(frame, inliningTarget, self, filters);
             return PNone.NONE;
         }
 

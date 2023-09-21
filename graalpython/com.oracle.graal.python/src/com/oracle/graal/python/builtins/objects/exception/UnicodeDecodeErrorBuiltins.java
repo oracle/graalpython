@@ -113,11 +113,11 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
-                            getArgAsBytes(frame, args, 1, this, getArgAsBytesNode),
-                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 3, this, toJavaIntExactNode),
-                            getArgAsString(inliningTarget, args, 4, this, toStringNode)
+                            getArgAsString(inliningTarget, args, 0, getRaiseNode(), toStringNode),
+                            getArgAsBytes(frame, args, 1, getRaiseNode(), getArgAsBytesNode),
+                            getArgAsInt(inliningTarget, args, 2, getRaiseNode(), toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 3, getRaiseNode(), toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 4, getRaiseNode(), toStringNode)
             });
             return PNone.NONE;
         }

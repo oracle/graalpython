@@ -548,10 +548,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PComplex doGeneric(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") PNone mod,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceLeft,
                         @Cached CoerceToComplexNode coerceRight) {
-            return checkOverflow(complexToComplexPower(coerceLeft.execute(frame, left), coerceRight.execute(frame, right)));
+            return checkOverflow(complexToComplexPower(coerceLeft.execute(frame, inliningTarget, left), coerceRight.execute(frame, inliningTarget, right)));
         }
 
         @Specialization(guards = "!isPNone(mod)")

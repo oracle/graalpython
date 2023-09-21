@@ -32,7 +32,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -178,10 +177,12 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PComplex doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached PythonObjectFactory factory) {
-            return doC(frame, coerceToComplex.execute(frame, value), factory);
+            return doC(frame, coerceToComplex.execute(frame, inliningTarget, value), factory);
         }
     }
 
@@ -210,9 +211,11 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+            return doC(coerceToComplex.execute(frame, inliningTarget, value));
         }
     }
 
@@ -265,9 +268,11 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         double doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex) {
-            return doC(coerceToComplex.execute(frame, value));
+            return doC(coerceToComplex.execute(frame, inliningTarget, value));
         }
     }
 
@@ -297,11 +302,13 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         PTuple doGeneral(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return toPolar(coerceToComplex.execute(frame, value), absNode, factory);
+            return toPolar(coerceToComplex.execute(frame, inliningTarget, value), absNode, factory);
         }
 
         private static PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode, PythonObjectFactory factory) {
@@ -426,19 +433,23 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, @SuppressWarnings("unused") PNone yObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unsued") @Shared @Cached CoerceToComplexNode coerceYToComplex,
                         @Shared @Cached PythonObjectFactory factory) {
-            return log(coerceXToComplex.execute(frame, xObj), factory);
+            return log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
         }
 
         @Specialization(guards = "!isNoValue(yObj)")
         PComplex doGeneral(VirtualFrame frame, Object xObj, Object yObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
-                        @Exclusive @Cached CoerceToComplexNode coerceYToComplex,
+                        @Shared @Cached CoerceToComplexNode coerceYToComplex,
                         @Shared @Cached ComplexBuiltins.DivNode divNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            PComplex x = log(coerceXToComplex.execute(frame, xObj), factory);
-            PComplex y = log(coerceYToComplex.execute(frame, yObj), factory);
+            PComplex x = log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
+            PComplex y = log(coerceYToComplex.execute(frame, inliningTarget, yObj), factory);
             return divNode.executeComplex(frame, x, y);
         }
 
@@ -493,9 +504,10 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doGeneral(VirtualFrame frame, Object zObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceXToComplex,
                         @Shared @Cached PythonObjectFactory factory) {
-            return doComplex(frame, coerceXToComplex.execute(frame, zObj), factory);
+            return doComplex(frame, coerceXToComplex.execute(frame, inliningTarget, zObj), factory);
         }
     }
 
@@ -1046,8 +1058,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
                         @Cached PyFloatAsDoubleNode absAsDoubleNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            PComplex a = coerceAToComplex.execute(frame, aObj);
-            PComplex b = coerceBToComplex.execute(frame, bObj);
+            PComplex a = coerceAToComplex.execute(frame, inliningTarget, aObj);
+            PComplex b = coerceBToComplex.execute(frame, inliningTarget, bObj);
             double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
             double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, inliningTarget, absTolObj);
             return isClose(a, b, relTol, absTol, factory);

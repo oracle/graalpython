@@ -85,7 +85,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -113,7 +112,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -644,15 +642,16 @@ public abstract class BytesNodes {
         }
     }
 
-    @GenerateNodeFactory
-    public abstract static class ByteToHexNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ByteToHexNode extends PNodeWithContext {
 
-        public abstract TruffleString execute(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
+        public abstract TruffleString execute(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
 
         @Specialization(guards = "bytesPerSepGroup == 0")
-        public static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+        static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -667,20 +666,19 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = "bytesPerSepGroup < 0")
-        public TruffleString negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit,
-                        @Cached @Shared InlinedConditionProfile memoryError,
-                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+        static TruffleString negative(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
+                        @Shared @Cached InlinedConditionProfile earlyExit,
+                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
             int absBytesPerSepGroup = -bytesPerSepGroup;
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
-            if (memoryError.profile(inliningTarget, arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
-                throw raise(MemoryError);
+            if (arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen) {
+                throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
 
             resultlen += arglen * 2;
@@ -710,20 +708,19 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
-        public TruffleString positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit,
-                        @Cached @Shared InlinedConditionProfile memoryError,
-                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+        static TruffleString positive(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
+                        @Shared @Cached InlinedConditionProfile earlyExit,
+                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
 
-            if (memoryError.profile(inliningTarget, arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
-                throw raise(MemoryError);
+            if (arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen) {
+                throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
 
             resultlen += arglen * 2;
@@ -753,11 +750,12 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class IterableToByteNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 72 -> 54
+    public abstract static class IterableToByteNode extends Node {
         public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
         @Specialization
-        public static byte[] bytearray(VirtualFrame frame, Object iterable,
+        static byte[] bytearray(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
@@ -857,14 +855,18 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class HexStringToBytesNode extends PNodeWithRaise {
+    @ImportStatic(PGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
+    public abstract static class HexStringToBytesNode extends Node {
         public abstract byte[] execute(TruffleString str);
 
         @Specialization(guards = "isAscii(str, getCodeRangeNode)")
-        byte[] ascii(TruffleString str,
+        static byte[] ascii(TruffleString str,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString ascii = switchEncodingNode.execute(str, Encoding.US_ASCII);
             InternalByteArray iba = getInternalByteArrayNode.execute(ascii, Encoding.US_ASCII);
             byte[] bytes = new byte[iba.getLength() / 2];
@@ -877,13 +879,13 @@ public abstract class BytesNodes {
                 }
                 int top = BytesUtils.digitValue(c);
                 if (top >= 16 || top < 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
 
                 c = i + 1 < iba.getEnd() ? strchar[++i] : 0;
                 int bottom = BytesUtils.digitValue(c);
                 if (bottom >= 16 || bottom < 0) {
-                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
 
                 bytes[n++] = (byte) ((top << 4) | bottom);
@@ -895,15 +897,17 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = "!isAscii(str, getCodeRangeNode)")
-        byte[] nonAscii(TruffleString str,
+        static byte[] nonAscii(TruffleString str,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode) {
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             int i = 0;
             while (it.hasNext()) {
                 if (nextNode.execute(it) > 127) {
-                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
                 ++i;
             }

@@ -296,7 +296,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
-            return isCheckSupported.execute(asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
+            return isCheckSupported.execute(inliningTarget, asSizeNode.executeExact(frame, inliningTarget, checkID, ValueError));
         }
     }
 

@@ -316,7 +316,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             TruffleString newline = null;
             if (!isPNone(newlineObj)) {
-                newline = toStringNode.execute(newlineObj);
+                newline = toStringNode.execute(inliningTarget, newlineObj);
                 validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
 
@@ -337,7 +337,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 setNewline(self, newline, equalNode);
             }
 
-            changeEncodingNode.execute(frame, self, encodingObj, errorsObj, !isNoValue(newlineObj));
+            changeEncodingNode.execute(frame, inliningTarget, self, encodingObj, errorsObj, !isNoValue(newlineObj));
             self.setLineBuffering(lineBuffering);
             self.setWriteThrough(writeThrough);
             return PNone.NONE;
@@ -418,12 +418,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
             if (self.getPendingBytesCount() + bytesLen > self.getChunkSize()) {
                 // Prevent to concatenate more than chunk_size data.
-                writeFlushNode.execute(frame, self);
+                writeFlushNode.execute(frame, inliningTarget, self);
             }
 
             self.appendPendingBytes(encodedText, bytesLen);
             if (self.getPendingBytesCount() >= self.getChunkSize() || needflush || self.isWriteThrough()) {
-                writeFlushNode.execute(frame, self);
+                writeFlushNode.execute(frame, inliningTarget, self);
             }
 
             if (needflush) {
@@ -433,7 +433,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             self.clearDecodedChars();
             self.clearSnapshot();
             if (self.hasDecoder()) {
-                decoderResetNode.execute(frame, self);
+                decoderResetNode.execute(frame, inliningTarget, self);
             }
 
             return codePointLengthNode.execute(data, TS_ENCODING);
@@ -454,11 +454,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         static TruffleString readAll(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") int n,
                         @Bind("this") Node inliningTarget,
                         @Cached TextIOWrapperNodes.DecodeNode decodeNode,
-                        @Shared @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.ConcatNode concatNode) {
-            writeFlushNode.execute(frame, self);
+            writeFlushNode.execute(frame, inliningTarget, self);
 
             /* Read everything */
             Object bytes = callMethod.execute(frame, inliningTarget, self.getBuffer(), T_READ);
@@ -472,13 +472,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasDecoder()", "n >= 0"})
         static TruffleString read(VirtualFrame frame, PTextIO self, int n,
+                        @Bind("this") Node inliningTarget,
                         @Cached TextIOWrapperNodes.ReadChunkNode readChunkNode,
-                        @Shared @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            writeFlushNode.execute(frame, self);
+            writeFlushNode.execute(frame, inliningTarget, self);
             TruffleString result = self.consumeDecodedChars(n, substringNode, false);
             int remaining = n - codePointLengthNode.execute(result, TS_ENCODING);
             TruffleStringBuilder chunks = null;
@@ -538,7 +539,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             self.setTelling(self.isSeekable());
-            writeFlushNode.execute(frame, self);
+            writeFlushNode.execute(frame, inliningTarget, self);
             return callMethod.execute(frame, inliningTarget, self.getBuffer(), T_FLUSH);
         }
     }
@@ -633,9 +634,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static void encoderSetState(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie,
+    static void encoderSetState(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie,
                     TextIOWrapperNodes.EncoderResetNode encoderResetNode) {
-        encoderResetNode.execute(frame, self, cookie.startPos == 0 && cookie.decFlags == 0);
+        encoderResetNode.execute(frame, inliningTarget, self, cookie.startPos == 0 && cookie.decFlags == 0);
     }
 
     @Builtin(name = J_SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "cookie", "whence"})
@@ -700,13 +701,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     self.clearDecodedChars();
                     self.clearSnapshot();
                     if (self.hasDecoder()) {
-                        decoderResetNode.execute(frame, self);
+                        decoderResetNode.execute(frame, inliningTarget, self);
                     }
 
                     Object res = callMethodSeek.execute(frame, inliningTarget, self.getBuffer(), T_SEEK, 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
-                        encoderResetNode.execute(frame, self, eqNode.compare(frame, inliningTarget, res, 0));
+                        encoderResetNode.execute(frame, inliningTarget, self, eqNode.compare(frame, inliningTarget, res, 0));
                     }
                     return res;
 
@@ -746,7 +747,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             self.clearSnapshot();
 
             /* Restore the decoder to its state from the safe start point. */
-            decoderSetStateNode.execute(frame, self, cookie, factory);
+            decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
 
             if (cookie.charsToSkip != 0) {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
@@ -775,7 +776,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
             /* Finally, reset the encoder (merely useful for proper BOM handling) */
             if (self.hasEncoder()) {
-                encoderSetState(frame, self, cookie, encoderResetNode);
+                encoderSetState(frame, inliningTarget, self, cookie, encoderResetNode);
             }
             return cookieObj;
         }
@@ -825,7 +826,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell) {
-            writeFlushNode.execute(frame, self);
+            writeFlushNode.execute(frame, inliningTarget, self);
             callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
             return callMethodTell.execute(frame, inliningTarget, self.getBuffer(), T_TELL);
         }
@@ -909,7 +910,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             assert (skipBack <= nextInputLength);
             while (skipBytes > 0) {
                 /* Decode up to temptative start point */
-                decoderSetStateNode.execute(frame, self, cookie, factory);
+                decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
                 PBytes in = factory.createBytes(snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, inliningTarget, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
@@ -933,7 +934,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             if (skipBytes <= 0) {
                 skipBytes = 0;
-                decoderSetStateNode.execute(frame, self, cookie, factory);
+                decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
             }
 
             /* Note our initial start point. */
@@ -1029,7 +1030,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         IONodes.ToTruffleStringNode toString,
                         TruffleString.CodePointLengthNode codePointLengthNode) {
             Object decoded = callMethodDecode.execute(frame, inliningTarget, self.getDecoder(), T_DECODE, start);
-            return codePointLengthNode.execute(toString.execute(decoded), TS_ENCODING);
+            return codePointLengthNode.execute(toString.execute(inliningTarget, decoded), TS_ENCODING);
         }
     }
 
@@ -1225,13 +1226,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     if (modeobj == PNone.NO_VALUE) {
                         return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper encoding='%s'>", self.getEncoding());
                     }
-                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper mode='%s' encoding='%s'>", toString.execute(modeobj), self.getEncoding());
+                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper mode='%s' encoding='%s'>", toString.execute(inliningTarget, modeobj), self.getEncoding());
                 }
                 Object name = repr.executeObject(frame, nameobj);
                 if (modeobj == PNone.NO_VALUE) {
-                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s encoding='%s'>", toString.execute(name), self.getEncoding());
+                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s encoding='%s'>", toString.execute(inliningTarget, name), self.getEncoding());
                 }
-                return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", toString.execute(name), toString.execute(modeobj), self.getEncoding());
+                return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", toString.execute(inliningTarget, name), toString.execute(inliningTarget, modeobj),
+                                self.getEncoding());
             } finally {
                 getContext().reprLeave(self);
             }

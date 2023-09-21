@@ -58,7 +58,8 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -67,9 +68,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -82,7 +84,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  * buffering and network or memory buffer IO. In addition to what the OpenSSL functions would do, it
  * also handles Python-specific error handling, non-blocking IO and socket timeouts.
  */
-public abstract class SSLOperationNode extends PNodeWithRaise {
+@GenerateInline
+@GenerateCached(false)
+public abstract class SSLOperationNode extends PNodeWithContext {
 
     /**
      * Equivalent of {@code SSL_write}. Attempts to transmit all the data in the supplied buffer
@@ -91,8 +95,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void write(VirtualFrame frame, PSSLSocket socket, ByteBuffer input) {
-        execute(frame, socket, input, SSLOperationNode.EMPTY_BUFFER, SSLOperation.WRITE);
+    public void write(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer input) {
+        execute(frame, inliningTarget, socket, input, SSLOperationNode.EMPTY_BUFFER, SSLOperation.WRITE);
     }
 
     /**
@@ -104,8 +108,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void read(VirtualFrame frame, PSSLSocket socket, ByteBuffer target) {
-        execute(frame, socket, SSLOperationNode.EMPTY_BUFFER, target, SSLOperation.READ);
+    public void read(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer target) {
+        execute(frame, inliningTarget, socket, SSLOperationNode.EMPTY_BUFFER, target, SSLOperation.READ);
     }
 
     /**
@@ -116,14 +120,14 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void handshake(VirtualFrame frame, PSSLSocket socket) {
+    public void handshake(VirtualFrame frame, Node inliningTarget, PSSLSocket socket) {
         if (!socket.isHandshakeComplete()) {
             try {
                 beginHandshake(socket);
             } catch (SSLException e) {
                 throw handleSSLException(e);
             }
-            execute(frame, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.HANDSHAKE);
+            execute(frame, inliningTarget, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.HANDSHAKE);
         }
     }
 
@@ -139,9 +143,9 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void shutdown(VirtualFrame frame, PSSLSocket socket) {
+    public void shutdown(VirtualFrame frame, Node inliningTarget, PSSLSocket socket) {
         closeOutbound(socket);
-        execute(frame, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.SHUTDOWN);
+        execute(frame, inliningTarget, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.SHUTDOWN);
     }
 
     @TruffleBoundary
@@ -149,7 +153,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         socket.getEngine().closeOutbound();
     }
 
-    protected abstract void execute(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation);
+    protected abstract void execute(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation);
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int TLS_HEADER_SIZE = 5;
@@ -168,12 +172,12 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @Specialization(guards = "socket.getSocket() != null")
-    void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @Bind("this") Node inliningTarget,
+    static void doSocket(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Cached GilNode gil,
+                    @Cached(inline = false) GilNode gil,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
         assert socket.getSocket() != null;
         prepare(socket);
         TimeoutHelper timeoutHelper = null;
@@ -181,7 +185,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
             timeoutHelper = new TimeoutHelper(socket.getSocket().getTimeoutNs());
         }
         SSLOperationStatus status;
-        PythonContext context = PythonContext.get(this);
+        PythonContext context = PythonContext.get(inliningTarget);
         while (true) {
             try {
                 status = loop(socket, appInput, targetBuffer, operation);
@@ -266,16 +270,16 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
             } catch (SSLException e) {
                 throw handleSSLException(e);
             } catch (OverflowException | OutOfMemoryError node) {
-                throw raise(MemoryError);
+                throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
-            PythonContext.triggerAsyncActions(this);
+            PythonContext.triggerAsyncActions(inliningTarget);
         }
     }
 
     @Specialization(guards = "socket.getSocket() == null")
-    void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+    static void doMemory(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
+                    @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
         prepare(socket);
         SSLOperationStatus status;
         try {
@@ -308,7 +312,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         } catch (SSLException e) {
             throw handleSSLException(e);
         } catch (OverflowException | OutOfMemoryError node) {
-            throw raise(MemoryError);
+            throw raiseNode.get(inliningTarget).raise(MemoryError);
         }
     }
 

@@ -71,7 +71,6 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -146,19 +145,21 @@ public class BufferedIONodes {
         }
     }
 
-    abstract static class CheckIsSeekabledNode extends PNodeWithRaise {
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 104 -> 85
+    abstract static class CheckIsSeekabledNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
 
         @Specialization
-        boolean isSeekable(VirtualFrame frame, PBuffered self,
+        static boolean isSeekable(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectIsTrueNode isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             assert self.isOK();
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
             if (!isTrue.execute(frame, inliningTarget, res)) {
-                throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
+                throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
         }

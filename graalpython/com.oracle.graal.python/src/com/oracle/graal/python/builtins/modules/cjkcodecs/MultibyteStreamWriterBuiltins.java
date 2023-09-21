@@ -206,7 +206,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
             PBytes pwrt = encodeEmptyInput(datalen, MBENC_FLUSH | MBENC_RESET, factory);
             if (pwrt == null) {
                 MultibyteEncodeBuffer buf = new MultibyteEncodeBuffer(self.pending);
-                pwrt = encodeNode.execute(frame, self.codec, self.state, buf,
+                pwrt = encodeNode.execute(frame, inliningTarget, self.codec, self.state, buf,
                                 self.errors, MBENC_FLUSH | MBENC_RESET,
                                 factory);
             }

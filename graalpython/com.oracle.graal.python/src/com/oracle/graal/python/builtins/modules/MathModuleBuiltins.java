@@ -59,7 +59,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -998,7 +998,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
-    public abstract static class Gcd2Node extends PNodeWithRaise {
+    public abstract static class Gcd2Node extends Node {
 
         protected final boolean isRecursive;
 
@@ -1008,7 +1008,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         abstract Object execute(VirtualFrame frame, Object a, Object b);
 
-        private long count(long a, long b) {
+        private static long count(long a, long b) {
             if (b == 0) {
                 return a;
             }
@@ -1016,18 +1016,18 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long gcd(long x, long y) {
+        static long gcd(long x, long y) {
             return Math.abs(count(x, y));
         }
 
         @Specialization
-        PInt gcd(long x, PInt y,
+        static PInt gcd(long x, PInt y,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
-        PInt gcd(PInt x, long y,
+        static PInt gcd(PInt x, long y,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(x.getValue(), PInt.longToBigInteger(y)));
         }
@@ -1044,28 +1044,33 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
-        int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        static int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
-        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization
-        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        static int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization(guards = "!isRecursive")
-        int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
+        static int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
         @Specialization(guards = {"!isRecursive", "!isNumber(x) || !isNumber(y)"})
@@ -1080,7 +1085,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b) {
-            throw raise(SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
+            CompilerDirectives.transferToInterpreter();
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 
         @NeverDefault

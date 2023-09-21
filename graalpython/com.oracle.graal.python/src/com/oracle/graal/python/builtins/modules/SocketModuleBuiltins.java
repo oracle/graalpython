@@ -243,9 +243,10 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class SetDefaultTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object set(VirtualFrame frame, PythonModule module, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
-            long timeout = parseTimeoutNode.execute(frame, value);
+            long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
             writeNode.execute(module, DEFAULT_TIMEOUT_KEY, timeout);
             return PNone.NONE;
         }
@@ -317,7 +318,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     try {
                         do {
                             UniversalSockAddr forwardAddr = addrInfoCursorLib.getSockAddr(cursor);
-                            storage = appendNode.execute(inliningTarget, storage, makeIpAddrNode.execute(frame, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                            storage = appendNode.execute(inliningTarget, storage, makeIpAddrNode.execute(frame, inliningTarget, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                         } while (addrInfoCursorLib.next(cursor));
                     } finally {
                         addrInfoCursorLib.release(cursor);
@@ -653,7 +654,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
                 do {
-                    Object addr = makeSockAddrNode.execute(frame, cursorLib.getSockAddr(cursor));
+                    Object addr = makeSockAddrNode.execute(frame, inliningTarget, cursorLib.getSockAddr(cursor));
                     TruffleString canonName = T_EMPTY_STRING;
                     if (cursorLib.getCanonName(cursor) != null) {
                         canonName = posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor));
