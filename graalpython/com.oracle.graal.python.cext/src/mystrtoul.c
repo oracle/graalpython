@@ -3,8 +3,8 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 #include "Python.h"
+#include "pycore_long.h"          // _PyLong_DigitValue
 
 #if defined(__sgi) && !defined(_SGI_MP_SOURCE)
 #define _SGI_MP_SOURCE

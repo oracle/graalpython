@@ -4,6 +4,7 @@
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 /* Cell object interface */
+
 #ifndef Py_LIMITED_API
 #ifndef Py_CELLOBJECT_H
 #define Py_CELLOBJECT_H
@@ -13,7 +14,8 @@ extern "C" {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *ob_ref;       /* Content of the cell or NULL when empty */
+    /* Content of the cell or NULL when empty */
+    PyObject *ob_ref;
 } PyCellObject;
 
 PyAPI_DATA(PyTypeObject) PyCell_Type;
@@ -25,7 +27,7 @@ PyAPI_FUNC(PyObject *) PyCell_Get(PyObject *);
 PyAPI_FUNC(int) PyCell_Set(PyObject *, PyObject *);
 
 #define PyCell_GET(op) (((PyCellObject *)(op))->ob_ref)
-#define PyCell_SET(op, v) ((void)(((PyCellObject *)(op))->ob_ref = v))
+#define PyCell_SET(op, v) _Py_RVALUE(((PyCellObject *)(op))->ob_ref = (v))
 
 #ifdef __cplusplus
 }

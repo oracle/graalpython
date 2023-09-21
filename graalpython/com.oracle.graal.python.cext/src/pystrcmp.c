@@ -8,7 +8,7 @@
 
 #include "Python.h"
 
-PyAPI_FUNC(int)
+int
 PyOS_mystrnicmp(const char *s1, const char *s2, Py_ssize_t size)
 {
     const unsigned char *p1, *p2;
@@ -23,7 +23,7 @@ PyOS_mystrnicmp(const char *s1, const char *s2, Py_ssize_t size)
     return tolower(*p1) - tolower(*p2);
 }
 
-PyAPI_FUNC(int)
+int
 PyOS_mystricmp(const char *s1, const char *s2)
 {
     const unsigned char *p1 = (const unsigned char *)s1;

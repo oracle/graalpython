@@ -36,7 +36,8 @@ int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
 int PySlice_Unpack(PyObject *r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     /* this is harder to get right than you might think */
 
-    Py_BUILD_ASSERT(PY_SSIZE_T_MIN + 1 <= -PY_SSIZE_T_MAX);
+    static_assert(PY_SSIZE_T_MIN + 1 <= -PY_SSIZE_T_MAX,
+                  "-PY_SSIZE_T_MAX < PY_SSIZE_T_MIN + 1");
 
     PyObject* rstep = PySliceObject_step(r);
     if (rstep == Py_None) {

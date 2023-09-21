@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 import errno
 import unittest
 from unittest import mock
@@ -672,6 +673,47 @@ class EventLoopTestsMixin:
             self.assertEqual(port, expected)
             tr.close()
 
+    def test_create_connection_local_addr_skip_different_family(self):
+        # See https://github.com/python/cpython/issues/86508
+        port1 = socket_helper.find_unused_port()
+        port2 = socket_helper.find_unused_port()
+        getaddrinfo_orig = self.loop.getaddrinfo
+
+        async def getaddrinfo(host, port, *args, **kwargs):
+            if port == port2:
+                return [(socket.AF_INET6, socket.SOCK_STREAM, 0, '', ('::1', 0, 0, 0)),
+                        (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('127.0.0.1', 0))]
+            return await getaddrinfo_orig(host, port, *args, **kwargs)
+
+        self.loop.getaddrinfo = getaddrinfo
+
+        f = self.loop.create_connection(
+            lambda: MyProto(loop=self.loop),
+            'localhost', port1, local_addr=('localhost', port2))
+
+        with self.assertRaises(OSError):
+            self.loop.run_until_complete(f)
+
+    def test_create_connection_local_addr_nomatch_family(self):
+        # See https://github.com/python/cpython/issues/86508
+        port1 = socket_helper.find_unused_port()
+        port2 = socket_helper.find_unused_port()
+        getaddrinfo_orig = self.loop.getaddrinfo
+
+        async def getaddrinfo(host, port, *args, **kwargs):
+            if port == port2:
+                return [(socket.AF_INET6, socket.SOCK_STREAM, 0, '', ('::1', 0, 0, 0))]
+            return await getaddrinfo_orig(host, port, *args, **kwargs)
+
+        self.loop.getaddrinfo = getaddrinfo
+
+        f = self.loop.create_connection(
+            lambda: MyProto(loop=self.loop),
+            'localhost', port1, local_addr=('localhost', port2))
+
+        with self.assertRaises(OSError):
+            self.loop.run_until_complete(f)
+
     def test_create_connection_local_addr_in_use(self):
         with test_utils.run_test_server() as httpd:
             f = self.loop.create_connection(
@@ -738,14 +780,6 @@ class EventLoopTestsMixin:
 
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_ssl_connect_accepted_socket(self):
-        if (sys.platform == 'win32' and
-            sys.version_info < (3, 5) and
-            isinstance(self.loop, proactor_events.BaseProactorEventLoop)
-            ):
-            raise unittest.SkipTest(
-                'SSL not supported with proactor event loops before Python 3.5'
-                )
-
         server_context = test_utils.simple_server_sslcontext()
         client_context = test_utils.simple_client_sslcontext()
 
@@ -2191,8 +2225,7 @@ class HandleTests(test_utils.TestCase):
                         '<Handle cancelled>')
 
         # decorated function
-        with self.assertWarns(DeprecationWarning):
-            cb = asyncio.coroutine(noop)
+        cb = types.coroutine(noop)
         h = asyncio.Handle(cb, (), self.loop)
         self.assertEqual(repr(h),
                         '<Handle noop() at %s:%s>'
@@ -2213,17 +2246,15 @@ class HandleTests(test_utils.TestCase):
         self.assertRegex(repr(h), regex)
 
         # partial method
-        if sys.version_info >= (3, 4):
-            method = HandleTests.test_handle_repr
-            cb = functools.partialmethod(method)
-            filename, lineno = test_utils.get_function_source(method)
-            h = asyncio.Handle(cb, (), self.loop)
+        method = HandleTests.test_handle_repr
+        cb = functools.partialmethod(method)
+        filename, lineno = test_utils.get_function_source(method)
+        h = asyncio.Handle(cb, (), self.loop)
 
-            cb_regex = r'<function HandleTests.test_handle_repr .*>'
-            cb_regex = (r'functools.partialmethod\(%s, , \)\(\)' % cb_regex)
-            regex = (r'^<Handle %s at %s:%s>$'
-                     % (cb_regex, re.escape(filename), lineno))
-            self.assertRegex(repr(h), regex)
+        cb_regex = r'<function HandleTests.test_handle_repr .*>'
+        cb_regex = fr'functools.partialmethod\({cb_regex}, , \)\(\)'
+        regex = fr'^<Handle {cb_regex} at {re.escape(filename)}:{lineno}>$'
+        self.assertRegex(repr(h), regex)
 
     def test_handle_repr_debug(self):
         self.loop.get_debug.return_value = True
@@ -2349,10 +2380,6 @@ class TimerTests(unittest.TestCase):
         self.assertIsNone(h._callback)
         self.assertIsNone(h._args)
 
-        # when cannot be None
-        self.assertRaises(AssertionError,
-                          asyncio.TimerHandle, None, callback, args,
-                          self.loop)
 
     def test_timer_repr(self):
         self.loop.get_debug.return_value = False
@@ -2568,7 +2595,6 @@ class PolicyTests(unittest.TestCase):
     def test_get_event_loop(self):
         policy = asyncio.DefaultEventLoopPolicy()
         self.assertIsNone(policy._local._loop)
-
         loop = policy.get_event_loop()
         self.assertIsInstance(loop, asyncio.AbstractEventLoop)
 
@@ -2584,6 +2610,7 @@ class PolicyTests(unittest.TestCase):
                 wraps=policy.set_event_loop) as m_set_event_loop:
 
             loop = policy.get_event_loop()
+            self.addCleanup(loop.close)
 
             # policy._local._loop must be set through .set_event_loop()
             # (the unix DefaultEventLoopPolicy needs this call to attach
@@ -2617,9 +2644,10 @@ class PolicyTests(unittest.TestCase):
 
     def test_set_event_loop(self):
         policy = asyncio.DefaultEventLoopPolicy()
-        old_loop = policy.get_event_loop()
+        old_loop = policy.new_event_loop()
+        policy.set_event_loop(old_loop)
 
-        self.assertRaises(AssertionError, policy.set_event_loop, object())
+        self.assertRaises(TypeError, policy.set_event_loop, object())
 
         loop = policy.new_event_loop()
         policy.set_event_loop(loop)
@@ -2635,7 +2663,7 @@ class PolicyTests(unittest.TestCase):
 
     def test_set_event_loop_policy(self):
         self.assertRaises(
-            AssertionError, asyncio.set_event_loop_policy, object())
+            TypeError, asyncio.set_event_loop_policy, object())
 
         old_policy = asyncio.get_event_loop_policy()
 
@@ -2730,15 +2758,11 @@ class GetEventLoopTestsMixin:
             asyncio.set_event_loop_policy(Policy())
             loop = asyncio.new_event_loop()
 
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaises(TestError):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            with self.assertRaises(TestError):
+                asyncio.get_event_loop()
             asyncio.set_event_loop(None)
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaises(TestError):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            with self.assertRaises(TestError):
+                asyncio.get_event_loop()
 
             with self.assertRaisesRegex(RuntimeError, 'no running'):
                 asyncio.get_running_loop()
@@ -2752,16 +2776,11 @@ class GetEventLoopTestsMixin:
             loop.run_until_complete(func())
 
             asyncio.set_event_loop(loop)
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaises(TestError):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
-
+            with self.assertRaises(TestError):
+                asyncio.get_event_loop()
             asyncio.set_event_loop(None)
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaises(TestError):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            with self.assertRaises(TestError):
+                asyncio.get_event_loop()
 
         finally:
             asyncio.set_event_loop_policy(old_policy)
@@ -2780,15 +2799,11 @@ class GetEventLoopTestsMixin:
             loop = asyncio.new_event_loop()
             self.addCleanup(loop.close)
 
-            with self.assertWarns(DeprecationWarning) as cm:
-                loop2 = asyncio.get_event_loop()
+            loop2 = asyncio.get_event_loop()
             self.addCleanup(loop2.close)
-            self.assertEqual(cm.warnings[0].filename, __file__)
             asyncio.set_event_loop(None)
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaisesRegex(RuntimeError, 'no current'):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            with self.assertRaisesRegex(RuntimeError, 'no current'):
+                asyncio.get_event_loop()
 
             with self.assertRaisesRegex(RuntimeError, 'no running'):
                 asyncio.get_running_loop()
@@ -2802,15 +2817,11 @@ class GetEventLoopTestsMixin:
             loop.run_until_complete(func())
 
             asyncio.set_event_loop(loop)
-            with self.assertWarns(DeprecationWarning) as cm:
-                self.assertIs(asyncio.get_event_loop(), loop)
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            self.assertIs(asyncio.get_event_loop(), loop)
 
             asyncio.set_event_loop(None)
-            with self.assertWarns(DeprecationWarning) as cm:
-                with self.assertRaisesRegex(RuntimeError, 'no current'):
-                    asyncio.get_event_loop()
-            self.assertEqual(cm.warnings[0].filename, __file__)
+            with self.assertRaisesRegex(RuntimeError, 'no current'):
+                asyncio.get_event_loop()
 
         finally:
             asyncio.set_event_loop_policy(old_policy)

@@ -13,8 +13,8 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-#include "pycore_interp.h"        // PyInterpreterState.small_ints
-#include "pycore_pystate.h"       // _PyThreadState_GET()
+#include "pycore_global_objects.h"  // _PY_NSMALLNEGINTS
+#include "pycore_runtime.h"       // _PyRuntime
 
 /*
  * Default int base conversion size limitation: Denial of Service prevention.
@@ -51,6 +51,22 @@ extern "C" {
 # error "_PY_LONG_DEFAULT_MAX_STR_DIGITS smaller than threshold."
 #endif
 
+/* runtime lifecycle */
+
+extern PyStatus _PyLong_InitTypes(PyInterpreterState *);
+extern void _PyLong_FiniTypes(PyInterpreterState *interp);
+
+
+/* other API */
+
+#define _PyLong_SMALL_INTS _Py_SINGLETON(small_ints)
+
+// _PyLong_GetZero() and _PyLong_GetOne() must always be available
+// _PyLong_FromUnsignedChar must always be available
+#if _PY_NSMALLPOSINTS < 257
+#  error "_PY_NSMALLPOSINTS must be greater than or equal to 257"
+#endif
+
 // GraalVM change: use our own globals instead of interpreter state
 PyAPI_DATA(PyObject*) _PyTruffle_Zero;
 PyAPI_DATA(PyObject*) _PyTruffle_One;
@@ -64,6 +80,41 @@ static inline PyObject* _PyLong_GetZero(void)
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetOne(void)
 { return _PyTruffle_One; }
+
+static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
+{
+    return PyLong_FromLong(i);
+}
+
+PyObject *_PyLong_Add(PyLongObject *left, PyLongObject *right);
+PyObject *_PyLong_Multiply(PyLongObject *left, PyLongObject *right);
+PyObject *_PyLong_Subtract(PyLongObject *left, PyLongObject *right);
+
+/* Used by Python/mystrtoul.c, _PyBytes_FromHex(),
+   _PyBytes_DecodeEscape(), etc. */
+PyAPI_DATA(unsigned char) _PyLong_DigitValue[256];
+
+/* Format the object based on the format_spec, as defined in PEP 3101
+   (Advanced String Formatting). */
+PyAPI_FUNC(int) _PyLong_FormatAdvancedWriter(
+    _PyUnicodeWriter *writer,
+    PyObject *obj,
+    PyObject *format_spec,
+    Py_ssize_t start,
+    Py_ssize_t end);
+
+PyAPI_FUNC(int) _PyLong_FormatWriter(
+    _PyUnicodeWriter *writer,
+    PyObject *obj,
+    int base,
+    int alternate);
+
+PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
+    _PyBytesWriter *writer,
+    char *str,
+    PyObject *obj,
+    int base,
+    int alternate);
 
 #ifdef __cplusplus
 }

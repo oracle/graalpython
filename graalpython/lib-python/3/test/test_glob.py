@@ -38,6 +38,7 @@ class GlobTests(unittest.TestCase):
         self.mktemp('aab', 'F')
         self.mktemp('.aa', 'G')
         self.mktemp('.bb', 'H')
+        self.mktemp('.bb', '.J')
         self.mktemp('aaa', 'zzzF')
         self.mktemp('ZZZ')
         self.mktemp('EF')
@@ -64,7 +65,9 @@ class GlobTests(unittest.TestCase):
             pattern = os.path.join(*parts)
         p = os.path.join(self.tempdir, pattern)
         res = glob.glob(p, **kwargs)
+        res2 = glob.iglob(p, **kwargs)
         self.assertCountEqual(glob.iglob(p, **kwargs), res)
+
         bres = [os.fsencode(x) for x in res]
         self.assertCountEqual(glob.glob(os.fsencode(p), **kwargs), bres)
         self.assertCountEqual(glob.iglob(os.fsencode(p), **kwargs), bres)
@@ -257,6 +260,17 @@ class GlobTests(unittest.TestCase):
     def rglob(self, *parts, **kwargs):
         return self.glob(*parts, recursive=True, **kwargs)
 
+    def hglob(self, *parts, **kwargs):
+        return self.glob(*parts, include_hidden=True, **kwargs)
+
+    def test_hidden_glob(self):
+        eq = self.assertSequencesEqual_noorder
+        l = [('aaa',), ('.aa',)]
+        eq(self.hglob('?aa'), self.joins(*l))
+        eq(self.hglob('*aa'), self.joins(*l))
+        l2 = [('.aa','G',)]
+        eq(self.hglob('**', 'G'), self.joins(*l2))
+
     def test_recursive_glob(self):
         eq = self.assertSequencesEqual_noorder
         full = [('EF',), ('ZZZ',),
@@ -321,6 +335,10 @@ class GlobTests(unittest.TestCase):
             if can_symlink():
                 expect += [join('sym3', 'EF')]
             eq(glob.glob(join('**', 'EF'), recursive=True), expect)
+
+            rec = [('.bb','H'), ('.bb','.J'), ('.aa','G'), ('.aa',), ('.bb',)]
+            eq(glob.glob('**', recursive=True, include_hidden=True),
+               [join(*i) for i in full+rec])
 
     def test_glob_many_open_files(self):
         depth = 30

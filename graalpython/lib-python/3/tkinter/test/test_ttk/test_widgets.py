@@ -5,9 +5,9 @@ from test.support import requires, gc_collect
 import sys
 
 from test.test_ttk_textonly import MockTclObj
-from tkinter.test.support import (AbstractTkTest, tcl_version, get_tk_patchlevel,
+from tkinter.test.support import (AbstractTkTest, tk_version, get_tk_patchlevel,
                                   simulate_mouse_click, AbstractDefaultRootTest)
-from tkinter.test.widget_tests import (add_standard_options, noconv,
+from tkinter.test.widget_tests import (add_standard_options,
     AbstractWidgetTest, StandardOptionsTests, IntegerSizeTests, PixelSizeTests,
     setUpModule)
 
@@ -20,7 +20,7 @@ class StandardTtkOptionsTests(StandardOptionsTests):
         widget = self.create()
         self.assertEqual(widget['class'], '')
         errmsg='attempt to change read-only option'
-        if get_tk_patchlevel() < (8, 6, 0, 'beta', 3):
+        if get_tk_patchlevel(self.root) < (8, 6, 0, 'beta', 3):
             errmsg='Attempt to change read-only option'
         self.checkInvalidParam(widget, 'class', 'Foo', errmsg=errmsg)
         widget2 = self.create(class_='Foo')
@@ -110,7 +110,7 @@ class WidgetTest(AbstractTkTest, unittest.TestCase):
 
 
 class AbstractToplevelTest(AbstractWidgetTest, PixelSizeTests):
-    _conv_pixels = noconv
+    _conv_pixels = False
 
 
 @add_standard_options(StandardTtkOptionsTests)
@@ -193,7 +193,7 @@ class LabelTest(AbstractLabelTest, unittest.TestCase):
         'takefocus', 'text', 'textvariable',
         'underline', 'width', 'wraplength',
     )
-    _conv_pixels = noconv
+    _conv_pixels = False
 
     def create(self, **kwargs):
         return ttk.Label(self.root, **kwargs)
@@ -488,8 +488,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
             self.assertEqual(self.combo.get(), getval)
             self.assertEqual(self.combo.current(), currval)
 
-        self.assertEqual(self.combo['values'],
-                         () if tcl_version < (8, 5) else '')
+        self.assertEqual(self.combo['values'], '')
         check_get_current('', -1)
 
         self.checkParam(self.combo, 'values', 'mon tue wed thur',
@@ -563,7 +562,7 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
         widget = self.create()
         self.assertEqual(str(widget['orient']), 'vertical')
         errmsg='attempt to change read-only option'
-        if get_tk_patchlevel() < (8, 6, 0, 'beta', 3):
+        if get_tk_patchlevel(self.root) < (8, 6, 0, 'beta', 3):
             errmsg='Attempt to change read-only option'
         self.checkInvalidParam(widget, 'orient', 'horizontal',
                 errmsg=errmsg)
@@ -756,7 +755,7 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
         'class', 'command', 'cursor', 'from', 'length',
         'orient', 'style', 'takefocus', 'to', 'value', 'variable',
     )
-    _conv_pixels = noconv
+    _conv_pixels = False
     default_orient = 'horizontal'
 
     def setUp(self):
@@ -863,7 +862,7 @@ class ProgressbarTest(AbstractWidgetTest, unittest.TestCase):
         'mode', 'maximum', 'phase',
         'style', 'takefocus', 'value', 'variable',
     )
-    _conv_pixels = noconv
+    _conv_pixels = False
     default_orient = 'horizontal'
 
     def create(self, **kwargs):
@@ -1246,8 +1245,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
         self.assertEqual(self.spin.get(), '1')
 
     def test_configure_values(self):
-        self.assertEqual(self.spin['values'],
-                         () if tcl_version < (8, 5) else '')
+        self.assertEqual(self.spin['values'], '')
         self.checkParam(self.spin, 'values', 'mon tue wed thur',
                         expected=('mon', 'tue', 'wed', 'thur'))
         self.checkParam(self.spin, 'values', ('mon', 'tue', 'wed', 'thur'))
@@ -1331,7 +1329,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
     def test_configure_height(self):
         widget = self.create()
         self.checkPixelsParam(widget, 'height', 100, -100, 0, '3c', conv=False)
-        self.checkPixelsParam(widget, 'height', 101.2, 102.6, conv=noconv)
+        self.checkPixelsParam(widget, 'height', 101.2, 102.6, conv=False)
 
     def test_configure_selectmode(self):
         widget = self.create()
@@ -1530,7 +1528,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
 
     def test_heading_callback(self):
         def simulate_heading_click(x, y):
-            if tcl_version >= (8, 6):
+            if tk_version >= (8, 6):
                 self.assertEqual(self.tv.identify_column(x), '#0')
                 self.assertEqual(self.tv.identify_region(x, y), 'heading')
             simulate_mouse_click(self.tv, x, y)

@@ -30,6 +30,7 @@ button.pack(side=BOTTOM)
 tk.mainloop()
 """
 
+import collections
 import enum
 import sys
 import types
@@ -143,8 +144,31 @@ def _splitdict(tk, v, cut_minus=True, conv=None):
         dict[key] = value
     return dict
 
+class _VersionInfoType(collections.namedtuple('_VersionInfoType',
+        ('major', 'minor', 'micro', 'releaselevel', 'serial'))):
+    def __str__(self):
+        if self.releaselevel == 'final':
+            return f'{self.major}.{self.minor}.{self.micro}'
+        else:
+            return f'{self.major}.{self.minor}{self.releaselevel[0]}{self.serial}'
 
-class EventType(str, enum.Enum):
+def _parse_version(version):
+    import re
+    m = re.fullmatch(r'(\d+)\.(\d+)([ab.])(\d+)', version)
+    major, minor, releaselevel, serial = m.groups()
+    major, minor, serial = int(major), int(minor), int(serial)
+    if releaselevel == '.':
+        micro = serial
+        serial = 0
+        releaselevel = 'final'
+    else:
+        micro = 0
+        releaselevel = {'a': 'alpha', 'b': 'beta'}[releaselevel]
+    return _VersionInfoType(major, minor, micro, releaselevel, serial)
+
+
+@enum._simple_enum(enum.StrEnum)
+class EventType:
     KeyPress = '2'
     Key = KeyPress
     KeyRelease = '3'
@@ -184,8 +208,6 @@ class EventType(str, enum.Enum):
     Activate = '36'
     Deactivate = '37'
     MouseWheel = '38'
-
-    __str__ = str.__str__
 
 
 class Event:
@@ -1055,6 +1077,11 @@ class Misc:
         self.tk.call('raise', self._w, aboveThis)
 
     lift = tkraise
+
+    def info_patchlevel(self):
+        """Returns the exact version of the Tcl library."""
+        patchlevel = self.tk.call('info', 'patchlevel')
+        return _parse_version(patchlevel)
 
     def winfo_atom(self, name, displayof=0):
         """Return integer which represents atom NAME."""
@@ -2278,7 +2305,7 @@ class Tk(Misc, Wm):
 
     def __init__(self, screenName=None, baseName=None, className='Tk',
                  useTk=True, sync=False, use=None):
-        """Return a new Toplevel widget on screen SCREENNAME. A new Tcl interpreter will
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
         be created. BASENAME will be used for the identification of the profile file (see
         readprofile).
         It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
@@ -3402,8 +3429,7 @@ class Menu(Widget):
     def index(self, index):
         """Return the index of a menu item identified by INDEX."""
         i = self.tk.call(self._w, 'index', index)
-        if i == 'none': return None
-        return self.tk.getint(i)
+        return None if i in ('', 'none') else self.tk.getint(i)  # GH-103685.
 
     def invoke(self, index):
         """Invoke a menu item identified by INDEX and execute
@@ -3621,7 +3647,7 @@ class Text(Widget, XView, YView):
         "lines", "xpixels" and "ypixels". There is an additional possible
         option "update", which if given then all subsequent options ensure
         that any possible out of date information is recalculated."""
-        args = ['-%s' % arg for arg in args if not arg.startswith('-')]
+        args = ['-%s' % arg for arg in args]
         args += [index1, index2]
         res = self.tk.call(self._w, 'count', *args) or None
         if res is not None and len(args) <= 3:
@@ -4042,8 +4068,6 @@ class Image:
         elif kw: cnf = kw
         options = ()
         for k, v in cnf.items():
-            if callable(v):
-                v = self._register(v)
             options = options + ('-'+k, v)
         self.tk.call(('image', 'create', imgtype, name,) + options)
         self.name = name
@@ -4070,8 +4094,6 @@ class Image:
         for k, v in _cnfmerge(kw).items():
             if v is not None:
                 if k[-1] == '_': k = k[:-1]
-                if callable(v):
-                    v = self._register(v)
                 res = res + ('-'+k, v)
         self.tk.call((self.name, 'config') + res)
 

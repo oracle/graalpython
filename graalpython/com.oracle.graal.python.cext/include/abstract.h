@@ -874,7 +874,7 @@ PyAPI_FUNC(int) PyObject_SetDoc(PyObject* object, const char* doc);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_ABSTRACTOBJECT_H
-#  include  "cpython/abstract.h"
+#  include "cpython/abstract.h"
 #  undef Py_CPYTHON_ABSTRACTOBJECT_H
 #endif
 

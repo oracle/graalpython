@@ -1,3 +1,4 @@
+import builtins
 import collections
 import copyreg
 import dbm
@@ -11,6 +12,7 @@ import shutil
 import struct
 import sys
 import threading
+import types
 import unittest
 import weakref
 from textwrap import dedent
@@ -1380,6 +1382,7 @@ class AbstractUnpickleTests:
             self.check_unpickling_error(self.truncated_errors, p)
 
     @threading_helper.reap_threads
+    @threading_helper.requires_working_threading()
     def test_unpickle_module_race(self):
         # https://bugs.python.org/issue34572
         locker_module = dedent("""
@@ -1979,6 +1982,33 @@ class AbstractPickleTests:
                 u = self.loads(s)
                 self.assertIs(type(singleton), u)
 
+    def test_builtin_types(self):
+        for t in builtins.__dict__.values():
+            if isinstance(t, type) and not issubclass(t, BaseException):
+                for proto in protocols:
+                    s = self.dumps(t, proto)
+                    self.assertIs(self.loads(s), t)
+
+    def test_builtin_exceptions(self):
+        for t in builtins.__dict__.values():
+            if isinstance(t, type) and issubclass(t, BaseException):
+                for proto in protocols:
+                    s = self.dumps(t, proto)
+                    u = self.loads(s)
+                    if proto <= 2 and issubclass(t, OSError) and t is not BlockingIOError:
+                        self.assertIs(u, OSError)
+                    elif proto <= 2 and issubclass(t, ImportError):
+                        self.assertIs(u, ImportError)
+                    else:
+                        self.assertIs(u, t)
+
+    def test_builtin_functions(self):
+        for t in builtins.__dict__.values():
+            if isinstance(t, types.BuiltinFunctionType):
+                for proto in protocols:
+                    s = self.dumps(t, proto)
+                    self.assertIs(self.loads(s), t)
+
     # Tests for protocol 2
 
     def test_proto(self):
@@ -2383,9 +2413,11 @@ class AbstractPickleTests:
     def test_bad_getattr(self):
         # Issue #3514: crash when there is an infinite loop in __getattr__
         x = BadGetattr()
-        for proto in protocols:
+        for proto in range(2):
             with support.infinite_recursion():
                 self.assertRaises(RuntimeError, self.dumps, x, proto)
+        for proto in range(2, pickle.HIGHEST_PROTOCOL + 1):
+            s = self.dumps(x, proto)
 
     def test_reduce_bad_iterator(self):
         # Issue4176: crash when 4th and 5th items of __reduce__()

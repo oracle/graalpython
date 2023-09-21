@@ -13,9 +13,27 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState *tstate);
 
-PyAPI_FUNC(void) _PyErr_ClearExcState(_PyErr_StackItem *exc_state);
+/* runtime lifecycle */
+
+extern PyStatus _PyErr_InitTypes(PyInterpreterState *);
+extern void _PyErr_FiniTypes(PyInterpreterState *);
+
+
+/* other API */
+
+static inline PyObject* _PyErr_Occurred(PyThreadState *tstate)
+{
+    return PyErr_Occured();
+}
+
+static inline void _PyErr_ClearExcState(_PyErr_StackItem *exc_state)
+{
+    PyErr_SetExcInfo(NULL, NULL, NULL);
+}
+
+PyAPI_FUNC(PyObject*) _PyErr_StackItemToExcInfoTuple(
+    _PyErr_StackItem *err_info);
 
 PyAPI_FUNC(void) _PyErr_Fetch(
     PyThreadState *tstate,
@@ -69,6 +87,14 @@ PyAPI_FUNC(PyObject *) _PyErr_FormatFromCauseTstate(
     PyObject *exception,
     const char *format,
     ...);
+
+PyAPI_FUNC(PyObject *) _PyExc_CreateExceptionGroup(
+    const char *msg,
+    PyObject *excs);
+
+PyAPI_FUNC(PyObject *) _PyExc_PrepReraiseStar(
+    PyObject *orig,
+    PyObject *excs);
 
 PyAPI_FUNC(int) _PyErr_CheckSignalsTstate(PyThreadState *tstate);
 

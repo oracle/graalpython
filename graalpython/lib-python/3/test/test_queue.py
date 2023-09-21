@@ -11,6 +11,8 @@ from test.support import gc_collect
 from test.support import import_helper
 from test.support import threading_helper
 
+# queue module depends on threading primitives
+threading_helper.requires_working_threading(module=True)
 
 py_queue = import_helper.import_fresh_module('queue', blocked=['_queue'])
 c_queue = import_helper.import_fresh_module('queue', fresh=['_queue'])
@@ -289,6 +291,7 @@ class CPriorityQueueTest(PriorityQueueTest, unittest.TestCase):
 
 # A Queue subclass that can provoke failure at a moment's notice :)
 class FailingQueueException(Exception): pass
+
 
 class FailingQueueTest(BlockingTestMixin):
 

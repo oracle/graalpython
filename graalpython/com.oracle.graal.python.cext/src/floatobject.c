@@ -6,7 +6,16 @@
 
 #include "capi.h"
 #include "pycore_dtoa.h"          // _Py_dg_dtoa()
+#include "pycore_floatobject.h"   // _PyFloat_FormatAdvancedWriter()
+#include "pycore_initconfig.h"    // _PyStatus_OK()
+#include "pycore_interp.h"        // _PyInterpreterState.float_state
+#include "pycore_long.h"          // _PyLong_GetOne()
+#include "pycore_object.h"        // _PyObject_Init()
+#include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
+#include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#include "pycore_structseq.h"     // _PyStructSequence_FiniType()
 
+#include <stdlib.h>               // strtol()
 
 
 typedef enum {
@@ -24,16 +33,67 @@ __pragma(comment(linker,"/include:" "init_formats_"))
 #else
 __attribute__((constructor))
 #endif
-static void init_formats(void) {
-#if SIZEOF_DOUBLE == 8
-    {
-        double x = 9006104071832581.0;
-        if (memcmp(&x, "\x43\x3f\xff\x01\x02\x03\x04\x05", 8) == 0)
-            detected_double_format = ieee_big_endian_format;
-        else if (memcmp(&x, "\x05\x04\x03\x02\x01\xff\x3f\x43", 8) == 0)
-            detected_double_format = ieee_little_endian_format;
-        else
-            detected_double_format = unknown_format;
+
+
+double
+PyFloat_GetMax(void)
+{
+    return DBL_MAX;
+}
+
+double
+PyFloat_GetMin(void)
+{
+    return DBL_MIN;
+}
+
+static PyTypeObject FloatInfoType;
+
+PyDoc_STRVAR(floatinfo__doc__,
+"sys.float_info\n\
+\n\
+A named tuple holding information about the float type. It contains low level\n\
+information about the precision and internal representation. Please study\n\
+your system's :file:`float.h` for more information.");
+
+static PyStructSequence_Field floatinfo_fields[] = {
+    {"max",             "DBL_MAX -- maximum representable finite float"},
+    {"max_exp",         "DBL_MAX_EXP -- maximum int e such that radix**(e-1) "
+                    "is representable"},
+    {"max_10_exp",      "DBL_MAX_10_EXP -- maximum int e such that 10**e "
+                    "is representable"},
+    {"min",             "DBL_MIN -- Minimum positive normalized float"},
+    {"min_exp",         "DBL_MIN_EXP -- minimum int e such that radix**(e-1) "
+                    "is a normalized float"},
+    {"min_10_exp",      "DBL_MIN_10_EXP -- minimum int e such that 10**e is "
+                    "a normalized float"},
+    {"dig",             "DBL_DIG -- maximum number of decimal digits that "
+                    "can be faithfully represented in a float"},
+    {"mant_dig",        "DBL_MANT_DIG -- mantissa digits"},
+    {"epsilon",         "DBL_EPSILON -- Difference between 1 and the next "
+                    "representable float"},
+    {"radix",           "FLT_RADIX -- radix of exponent"},
+    {"rounds",          "FLT_ROUNDS -- rounding mode used for arithmetic "
+                    "operations"},
+    {0}
+};
+
+static PyStructSequence_Desc floatinfo_desc = {
+    "sys.float_info",           /* name */
+    floatinfo__doc__,           /* doc */
+    floatinfo_fields,           /* fields */
+    11
+};
+
+PyObject *
+PyFloat_GetInfo(void)
+{
+    PyObject* floatinfo;
+    int pos = 0;
+
+    floatinfo = PyStructSequence_New(&FloatInfoType);
+    if (floatinfo == NULL) {
+        return NULL;
     }
 #else
     detected_double_format = unknown_format;
@@ -49,9 +109,10 @@ static void init_formats(void) {
         else
             detected_float_format = unknown_format;
     }
-#else
-    detected_float_format = unknown_format;
-#endif
+    _PyObject_Init((PyObject*)op, &PyFloat_Type);
+    op->ob_fval = fval;
+    return (PyObject *) op;
+}
 
     double_format = detected_double_format;
     float_format = detected_float_format;
@@ -125,7 +186,7 @@ PyFloat_AsDouble(PyObject *op)
 
 
 /*----------------------------------------------------------------------------
- * _PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.
+ * PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.
  * To match the NPY_HALF_ROUND_TIES_TO_EVEN behavior in:
  * https://github.com/numpy/numpy/blob/master/numpy/core/src/npymath/halffloat.c
  * We use:
@@ -136,8 +197,9 @@ PyFloat_AsDouble(PyObject *op)
  */
 
 int
-_PyFloat_Pack2(double x, unsigned char *p, int le)
+PyFloat_Pack2(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     unsigned char sign;
     int e;
     double f;
@@ -240,8 +302,9 @@ _PyFloat_Pack2(double x, unsigned char *p, int le)
 }
 
 int
-_PyFloat_Pack4(double x, unsigned char *p, int le)
+PyFloat_Pack4(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (float_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -347,8 +410,9 @@ _PyFloat_Pack4(double x, unsigned char *p, int le)
 }
 
 int
-_PyFloat_Pack8(double x, unsigned char *p, int le)
+PyFloat_Pack8(double x, char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (double_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -476,8 +540,9 @@ _PyFloat_Pack8(double x, unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack2(const unsigned char *p, int le)
+PyFloat_Unpack2(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     unsigned char sign;
     int e;
     unsigned int f;
@@ -499,24 +564,16 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
     f |= *p;
 
     if (e == 0x1f) {
-#ifdef PY_NO_SHORT_FLOAT_REPR
+#if _PY_SHORT_FLOAT_REPR == 0
         if (f == 0) {
             /* Infinity */
             return sign ? -Py_HUGE_VAL : Py_HUGE_VAL;
         }
         else {
             /* NaN */
-#ifdef Py_NAN
             return sign ? -Py_NAN : Py_NAN;
-#else
-            PyErr_SetString(
-                PyExc_ValueError,
-                "can't unpack IEEE 754 NaN "
-                "on platform that does not support NaNs");
-            return -1;
-#endif  /* #ifdef Py_NAN */
         }
-#else
+#else  // _PY_SHORT_FLOAT_REPR == 1
         if (f == 0) {
             /* Infinity */
             return _Py_dg_infinity(sign);
@@ -525,7 +582,7 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
             /* NaN */
             return _Py_dg_stdnan(sign);
         }
-#endif  /* #ifdef PY_NO_SHORT_FLOAT_REPR */
+#endif  // _PY_SHORT_FLOAT_REPR == 1
     }
 
     x = (double)f / 1024.0;
@@ -546,8 +603,9 @@ _PyFloat_Unpack2(const unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack4(const unsigned char *p, int le)
+PyFloat_Unpack4(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (float_format == unknown_format) {
         unsigned char sign;
         int e;
@@ -624,8 +682,9 @@ _PyFloat_Unpack4(const unsigned char *p, int le)
 }
 
 double
-_PyFloat_Unpack8(const unsigned char *p, int le)
+PyFloat_Unpack8(const char *data, int le)
 {
+    unsigned char *p = (unsigned char *)data;
     if (double_format == unknown_format) {
         unsigned char sign;
         int e;

@@ -33,7 +33,19 @@ PyObject * PyComplex_FromCComplex(Py_complex cval) {
 /* Submitted by Jim Hugunin */
 
 #include "Python.h"
+#include "pycore_call.h"          // _PyObject_CallNoArgs()
+#include "pycore_long.h"          // _PyLong_GetZero()
+#include "pycore_object.h"        // _PyObject_Init()
+#include "pycore_pymath.h"        // _Py_ADJUST_ERANGE2()
 #include "structmember.h"         // PyMemberDef
+
+
+/*[clinic input]
+class complex "PyComplexObject *" "&PyComplex_Type"
+[clinic start generated code]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=819e057d2d10f5ec]*/
+
+#include "clinic/complexobject.c.h"
 
 /* elementary operations on complex numbers */
 
@@ -189,14 +201,7 @@ c_powu(Py_complex x, long n)
 static Py_complex
 c_powi(Py_complex x, long n)
 {
-    Py_complex cn;
-
-    if (n > 100 || n < -100) {
-        cn.real = (double) n;
-        cn.imag = 0.;
-        return _Py_c_pow(x,cn);
-    }
-    else if (n > 0)
+    if (n > 0)
         return c_powu(x,n);
     else
         return _Py_c_quot(c_1, c_powu(x,-n));

@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#include <stdarg.h>
+#include <stdarg.h>               // va_list
 
 /*
 Type PyBytesObject represents a byte string.  An extra zero byte is
@@ -64,7 +64,7 @@ PyAPI_FUNC(int) PyBytes_AsStringAndSize(
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_BYTESOBJECT_H
-#  include  "cpython/bytesobject.h"
+#  include "cpython/bytesobject.h"
 #  undef Py_CPYTHON_BYTESOBJECT_H
 #endif
 

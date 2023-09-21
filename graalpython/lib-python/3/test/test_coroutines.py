@@ -29,6 +29,12 @@ class AsyncYield:
         yield self.value
 
 
+async def asynciter(iterable):
+    """Convert an iterable to an asynchronous iterator."""
+    for x in iterable:
+        yield x
+
+
 def run_async(coro):
     assert coro.__class__ in {types.GeneratorType, types.CoroutineType}
 
@@ -128,6 +134,11 @@ class AsyncBadSyntaxTest(unittest.TestCase):
 
             """async def foo():
                 def bar():
+                 [[async for i in b] for b in els]
+            """,
+
+            """async def foo():
+                def bar():
                  [i for i in els
                     for b in await els]
             """,
@@ -199,6 +210,13 @@ class AsyncBadSyntaxTest(unittest.TestCase):
 
             """def bar():
                  [i for i in els if await i]
+            """,
+
+            """def bar():
+                 [[i async for i in a] for a in elts]
+            """,
+
+            """[[i async for i in a] for a in elts]
             """,
 
             """async def foo():
@@ -1213,7 +1231,7 @@ class CoroutineTest(unittest.TestCase):
             async with CM():
                 body_executed = True
 
-        with self.assertRaisesRegex(AttributeError, '__aexit__'):
+        with self.assertRaisesRegex(TypeError, 'asynchronous context manager.*__aexit__'):
             run_async(foo())
         self.assertIs(body_executed, False)
 
@@ -1229,7 +1247,7 @@ class CoroutineTest(unittest.TestCase):
             async with CM():
                 body_executed = True
 
-        with self.assertRaisesRegex(AttributeError, '__aenter__'):
+        with self.assertRaisesRegex(TypeError, 'asynchronous context manager'):
             run_async(foo())
         self.assertIs(body_executed, False)
 
@@ -1244,7 +1262,7 @@ class CoroutineTest(unittest.TestCase):
             async with CM():
                 body_executed = True
 
-        with self.assertRaisesRegex(AttributeError, '__aenter__'):
+        with self.assertRaisesRegex(TypeError, 'asynchronous context manager'):
             run_async(foo())
         self.assertIs(body_executed, False)
 
@@ -2012,6 +2030,60 @@ class CoroutineTest(unittest.TestCase):
             run_async(f()),
             ([], {1: 1, 2: 2, 3: 3}))
 
+    def test_nested_comp(self):
+        async def run_list_inside_list():
+            return [[i + j async for i in asynciter([1, 2])] for j in [10, 20]]
+        self.assertEqual(
+            run_async(run_list_inside_list()),
+            ([], [[11, 12], [21, 22]]))
+
+        async def run_set_inside_list():
+            return [{i + j async for i in asynciter([1, 2])} for j in [10, 20]]
+        self.assertEqual(
+            run_async(run_set_inside_list()),
+            ([], [{11, 12}, {21, 22}]))
+
+        async def run_list_inside_set():
+            return {sum([i async for i in asynciter(range(j))]) for j in [3, 5]}
+        self.assertEqual(
+            run_async(run_list_inside_set()),
+            ([], {3, 10}))
+
+        async def run_dict_inside_dict():
+            return {j: {i: i + j async for i in asynciter([1, 2])} for j in [10, 20]}
+        self.assertEqual(
+            run_async(run_dict_inside_dict()),
+            ([], {10: {1: 11, 2: 12}, 20: {1: 21, 2: 22}}))
+
+        async def run_list_inside_gen():
+            gen = ([i + j async for i in asynciter([1, 2])] for j in [10, 20])
+            return [x async for x in gen]
+        self.assertEqual(
+            run_async(run_list_inside_gen()),
+            ([], [[11, 12], [21, 22]]))
+
+        async def run_gen_inside_list():
+            gens = [(i async for i in asynciter(range(j))) for j in [3, 5]]
+            return [x for g in gens async for x in g]
+        self.assertEqual(
+            run_async(run_gen_inside_list()),
+            ([], [0, 1, 2, 0, 1, 2, 3, 4]))
+
+        async def run_gen_inside_gen():
+            gens = ((i async for i in asynciter(range(j))) for j in [3, 5])
+            return [x for g in gens async for x in g]
+        self.assertEqual(
+            run_async(run_gen_inside_gen()),
+            ([], [0, 1, 2, 0, 1, 2, 3, 4]))
+
+        async def run_list_inside_list_inside_list():
+            return [[[i + j + k async for i in asynciter([1, 2])]
+                     for j in [10, 20]]
+                    for k in [100, 200]]
+        self.assertEqual(
+            run_async(run_list_inside_list_inside_list()),
+            ([], [[[111, 112], [121, 122]], [[211, 212], [221, 222]]]))
+
     def test_copy(self):
         async def func(): pass
         coro = func()
@@ -2120,6 +2192,23 @@ class CoroutineTest(unittest.TestCase):
             return 'end'
         self.assertEqual(run_async(run_gen()), ([], 'end'))
 
+    def test_bpo_45813_1(self):
+        'This would crash the interpreter in 3.11a2'
+        async def f():
+            pass
+        with self.assertWarns(RuntimeWarning):
+            frame = f().cr_frame
+        frame.clear()
+
+    def test_bpo_45813_2(self):
+        'This would crash the interpreter in 3.11a2'
+        async def f():
+            pass
+        gen = f()
+        with self.assertWarns(RuntimeWarning):
+            gen.cr_frame.clear()
+        gen.close()
+
     def test_stack_in_coroutine_throw(self):
         # Regression test for https://github.com/python/cpython/issues/93592
         async def a():
@@ -2144,6 +2233,10 @@ class CoroutineTest(unittest.TestCase):
         self.assertEqual(len_send, len_throw)
 
 
+@unittest.skipIf(
+    support.is_emscripten or support.is_wasi,
+    "asyncio does not work under Emscripten/WASI yet."
+)
 class CoroAsyncIOCompatTest(unittest.TestCase):
 
     def test_asyncio_1(self):
@@ -2319,7 +2412,8 @@ class UnawaitedWarningDuringShutdownTest(unittest.TestCase):
     def test_unawaited_warning_during_shutdown(self):
         code = ("import asyncio\n"
                 "async def f(): pass\n"
-                "asyncio.gather(f())\n")
+                "async def t(): asyncio.gather(f())\n"
+                "asyncio.run(t())\n")
         assert_python_ok("-c", code)
 
         code = ("import sys\n"
