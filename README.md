@@ -12,7 +12,7 @@ We welcome issue reports of all kinds and are working hard to close our compatib
 
 The easiest option to try GraalPy is [pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
 It allows you to easily install different GraalPy releases.
-To install version 22.3.0, for example, just run `pyenv install graalpy-22.3.0`.
+To install version 23.1.0, for example, just run `pyenv install graalpy-community-23.1.0`.
 
 Another option is to use [Conda-Forge](https://conda-forge.org/).
 To get an environment with the latest version of GraalPy, use the following command:
