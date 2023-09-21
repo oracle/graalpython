@@ -98,7 +98,7 @@ public enum CConstants {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object constantsPointer = PCallCapiFunction.getUncached().call(PythonContext.get(null).getCApiContext(), NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
+        Object constantsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
         long[] constants = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(constantsPointer, VALUES.length);
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];

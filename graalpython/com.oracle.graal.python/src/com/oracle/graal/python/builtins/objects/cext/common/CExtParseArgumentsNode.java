@@ -770,7 +770,7 @@ public abstract class CExtParseArgumentsNode {
         private void getbuffer(PCallCapiFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr, boolean readOnly)
                         throws ParseArgumentsException {
             NativeCAPISymbol funSymbol = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
-            Object rc = callGetBufferRwNode.call(PythonContext.get(this).getCApiContext(), funSymbol, toSulongNode.execute(arg), pybufferPtr);
+            Object rc = callGetBufferRwNode.call(funSymbol, toSulongNode.execute(arg), pybufferPtr);
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, funSymbol, rc.getClass());
             }
@@ -790,7 +790,7 @@ public abstract class CExtParseArgumentsNode {
         }
 
         private int convertbuffer(PCallCapiFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulong, Object voidPtr) {
-            Object rc = callConvertbuffer.call(PythonContext.get(this).getCApiContext(), FUN_CONVERTBUFFER, toSulong.execute(arg), voidPtr);
+            Object rc = callConvertbuffer.call(FUN_CONVERTBUFFER, toSulong.execute(arg), voidPtr);
             if (!(rc instanceof Number)) {
                 throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
             }

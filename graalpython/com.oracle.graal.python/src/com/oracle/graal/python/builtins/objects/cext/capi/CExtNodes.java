@@ -201,20 +201,6 @@ public abstract class CExtNodes {
     private static final String J_UNICODE = "unicode";
     private static final String J_SUBTYPE_NEW = "_subtype_new";
 
-    @GenerateUncached
-    public abstract static class ImportCAPISymbolNode extends PNodeWithContext {
-
-        public abstract Object execute(NativeCAPISymbol symbol);
-
-        @Specialization
-        static Object doGeneric(NativeCAPISymbol name,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode) {
-            return importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name);
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * For some builtin classes, the CPython approach to creating a subclass instance is to just
      * call the alloc function and then assign some fields. This needs to be done in C. This node
@@ -243,13 +229,15 @@ public abstract class CExtNodes {
 
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
-                Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
+                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
+                Object result = interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw CompilerDirectives.shouldNotReachHere("C subtype_new function failed", e);
@@ -582,9 +570,10 @@ public abstract class CExtNodes {
     public abstract static class PointerCompareNode extends Node {
         public abstract boolean execute(TruffleString opName, Object a, Object b);
 
-        private static boolean executeCFunction(int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
+        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCExtSymbolNode importCAPISymbolNode) {
             try {
-                return (int) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PTR_COMPARE), a, b, op) != 0;
+                Object sym = importCAPISymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), FUN_PTR_COMPARE);
+                return (int) interopLibrary.execute(sym, a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(FUN_PTR_COMPARE + " didn't work!");
@@ -609,32 +598,35 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
         static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
@@ -1032,38 +1024,26 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends Node {
 
-        public final Object call(CApiContext context, NativeCAPISymbol symbol, Object... args) {
-            return execute(context, symbol, args);
+        public static Object callUncached(NativeCAPISymbol symbol, Object... args) {
+            return PCallCapiFunction.getUncached().execute(symbol, args);
         }
 
         public final Object call(NativeCAPISymbol symbol, Object... args) {
-            return execute(null, symbol, args);
+            return execute(symbol, args);
         }
 
-        protected abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
+        protected abstract Object execute(NativeCAPISymbol symbol, Object[] args);
 
-        @Specialization(guards = "capiContext != null")
-        static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
+        @Specialization
+        static Object doWithoutContext(NativeCAPISymbol name, Object[] args,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
+                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
                 // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args));
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                // consider these exceptions to be fatal internal errors
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = "capiContext == null")
-        static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
-            try {
-                // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args));
+                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);

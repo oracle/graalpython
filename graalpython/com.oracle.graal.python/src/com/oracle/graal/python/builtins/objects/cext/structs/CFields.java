@@ -358,7 +358,7 @@ public enum CFields {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object offsetsPointer = PCallCapiFunction.getUncached().call(PythonContext.get(null).getCApiContext(), NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
+        Object offsetsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
         long[] offsets = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(offsetsPointer, VALUES.length);
         for (CFields field : VALUES) {
             field.offset = offsets[field.ordinal()];
