@@ -63,6 +63,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeBulkFreeHandleReferencesNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -116,7 +118,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
@@ -130,7 +131,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPackKeywordArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
@@ -668,6 +668,11 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     @Override
+    public BulkFreeHandleReferencesNode createBulkFreeHandleReferencesNode() {
+        return UnsafeBulkFreeHandleReferencesNode.UNCACHED;
+    }
+
+    @Override
     public GetElementPtrNode createGetElementPtrNode() {
         return UnsafeGetElementPtrNode.UNCACHED;
     }
@@ -909,6 +914,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @TruffleBoundary
     private static native long initJNITraceModule(long uctxPointer);
+
+    @TruffleBoundary
+    static native long bulkFreeNativeSpace(long[] nativeSpacePtrs, long[] destroyFuncPtrs, int n);
 
     enum HPyJNIUpcall implements HPyUpcall {
         HPyUnicodeFromJCharArray,
@@ -2962,10 +2970,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case Int, HPy_UCS4 -> -1;
             case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case Int32_t, Uint32_t -> argBits & 0xFFFFFFFFL;
-            case CharPtr, ConstCharPtr -> new NativePointer(argBits);
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr, HPyCallFunctionPtr ->
-                PCallHPyFunctionNodeGen.getUncached().call(context, GraalHPyNativeSymbol.GRAAL_HPY_LONG2PTR, argBits);
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr, HPyCallFunctionPtr, CharPtr, ConstCharPtr -> argBits;
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }

@@ -43,15 +43,18 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodes.HPyLLVMCallHelperFunctionNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * This is the implementation of {@link HPyCallHelperFunctionNode} for the LLVM backend. This node
- * currently just delegates to {@link PCallHPyFunction} but this may change in the future.
+ * currently just delegates to {@link HPyLLVMCallHelperFunctionNode} but this may change in the
+ * future.
  */
 @GenerateUncached
 @GenerateInline(false)
@@ -59,7 +62,8 @@ abstract class GraalHPyLLVMCallHelperFunctionNode extends HPyCallHelperFunctionN
 
     @Specialization
     static Object doGeneric(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
-                    @Cached PCallHPyFunction callHPyFunction) {
-        return callHPyFunction.execute(context, name, args);
+                    @Bind("this") Node inliningTarget,
+                    @Cached HPyLLVMCallHelperFunctionNode callHPyFunction) {
+        return callHPyFunction.execute(inliningTarget, context, name, args);
     }
 }

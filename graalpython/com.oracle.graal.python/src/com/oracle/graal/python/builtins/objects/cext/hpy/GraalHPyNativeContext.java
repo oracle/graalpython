@@ -51,6 +51,7 @@ import java.io.PrintStream;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
@@ -325,4 +326,6 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     public abstract WriteGenericNode createWriteGenericNode();
 
     public abstract WriteGenericNode getUncachedWriteGenericNode();
+
+    public abstract BulkFreeHandleReferencesNode createBulkFreeHandleReferencesNode();
 }

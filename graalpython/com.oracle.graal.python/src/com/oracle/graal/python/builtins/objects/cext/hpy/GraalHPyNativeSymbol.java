@@ -40,13 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-
-import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.strings.TruffleString;
-
-public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
+public enum GraalHPyNativeSymbol {
 
     GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
     GRAAL_HPY_BUFFER_FREE("graal_hpy_buffer_free"),
@@ -118,30 +112,12 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_BULK_FREE("graal_hpy_bulk_free");
 
     private final String name;
-    private final TruffleString tsName;
 
     GraalHPyNativeSymbol(String name) {
         this.name = name;
-        this.tsName = toTruffleStringUncached(name);
     }
 
-    @Override
     public String getName() {
         return name;
-    }
-
-    @Override
-    public TruffleString getTsName() {
-        return tsName;
-    }
-
-    @CompilationFinal(dimensions = 1) private static final GraalHPyNativeSymbol[] VALUES = values();
-
-    public static GraalHPyNativeSymbol[] getValues() {
-        return VALUES;
-    }
-
-    public String getSignature() {
-        return null;
     }
 }

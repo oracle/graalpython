@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
@@ -70,12 +71,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI6
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -171,6 +174,53 @@ abstract class GraalHPyJNINodes {
         }
     }
 
+    static final class UnsafeBulkFreeHandleReferencesNode extends BulkFreeHandleReferencesNode {
+
+        private static final int BULK_CAPACITY = 1024;
+
+        static final UnsafeBulkFreeHandleReferencesNode UNCACHED = new UnsafeBulkFreeHandleReferencesNode();
+
+        private UnsafeBulkFreeHandleReferencesNode() {
+        }
+
+        @Override
+        @TruffleBoundary
+        protected void execute(@SuppressWarnings("unused") GraalHPyContext ctx, GraalHPyHandleReference[] references) {
+            long[] nativeSpacePtrs = new long[BULK_CAPACITY];
+            long[] destroyFuncPtrs = new long[BULK_CAPACITY];
+            int i = 0;
+            for (GraalHPyHandleReference ref : references) {
+                long destroyFunPtr = coerceToPointer(ref.getDestroyFunc());
+                long nativeSpacePtr = coerceToPointer(ref.getNativeSpace());
+                if (destroyFunPtr == 0) {
+                    // in this case, we can just use 'free'
+                    UNSAFE.freeMemory(nativeSpacePtr);
+                } else {
+                    if (i >= BULK_CAPACITY) {
+                        GraalHPyJNIContext.bulkFreeNativeSpace(nativeSpacePtrs, destroyFuncPtrs, BULK_CAPACITY);
+                        i = 0;
+                    }
+                    destroyFuncPtrs[i] = destroyFunPtr;
+                    nativeSpacePtrs[i] = nativeSpacePtr;
+                    i++;
+                }
+            }
+            if (i > 0) {
+                GraalHPyJNIContext.bulkFreeNativeSpace(nativeSpacePtrs, destroyFuncPtrs, i);
+            }
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.POLYMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+    }
+
     static final class UnsafeGetElementPtrNode extends GetElementPtrNode {
         static final UnsafeGetElementPtrNode UNCACHED = new UnsafeGetElementPtrNode();
 
@@ -178,7 +228,7 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        protected Object execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
+        public Object execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
             return coerceToPointer(pointer) + offset;
         }
 

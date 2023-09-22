@@ -85,8 +85,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
@@ -98,23 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyInplaceArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyTernaryArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyUnaryArithmeticNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldLoadNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyPackKeywordArgsNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyReadCallFunctionNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyASCIINodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAbsoluteNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAddNodeGen;
@@ -275,7 +258,21 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeReadCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeSubstringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyXorNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldLoadNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyPackKeywordArgsNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyReadCallFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -2014,7 +2011,7 @@ public abstract class GraalHPyContextFunctions {
         static PBytes doGeneric(GraalHPyContext hpyContext, Object charPtr,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
@@ -3142,13 +3139,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, PythonObject owner, Object hpyFieldPtr, Object referent,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached PCallHPyFunction callHelperFunctionNode,
-                        @Cached HPyFieldStoreNode hPyFieldStoreNode) {
-            Object hpyFieldObject = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
-            int idx = hPyFieldStoreNode.execute(inliningTarget, owner, hpyFieldObject, referent);
-            GraalHPyHandle newHandle = asHandleNode.executeField(referent, idx);
-            callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteHPyFieldNode writeHPyFieldNode) {
+            writeHPyFieldNode.write(hpyContext, owner, hpyFieldPtr, referent);
             return 0;
         }
     }
@@ -3172,10 +3164,11 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object hpyGlobalPtr, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadPointerNode readPointerNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WritePointerNode writePointerNode,
                         @Cached InlinedExactClassProfile typeProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            Object hpyGlobal = typeProfile.profile(inliningTarget, callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_GLOBAL_I, hpyGlobalPtr));
+            Object hpyGlobal = typeProfile.profile(inliningTarget, readPointerNode.execute(hpyContext, hpyGlobalPtr, 0));
 
             int idx = -1;
             if (hpyGlobal instanceof GraalHPyHandle) {
@@ -3198,8 +3191,6 @@ public abstract class GraalHPyContextFunctions {
                 }
                 if (GraalHPyBoxing.isBoxedHandle(bits)) {
                     idx = GraalHPyBoxing.unboxHandle(bits);
-                    // idx =
-                    // context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
                 }
             }
 
@@ -3207,7 +3198,7 @@ public abstract class GraalHPyContextFunctions {
             // value can be stored as tagged handle
             idx = hpyContext.createGlobal(value, idx);
             GraalHPyHandle newHandle = GraalHPyHandle.createGlobal(value, idx);
-            callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_SET_GLOBAL_I, hpyGlobalPtr, newHandle);
+            writePointerNode.execute(hpyContext, hpyGlobalPtr, 0, newHandle);
             return 0;
         }
     }

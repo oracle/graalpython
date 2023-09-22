@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_GET_ELEMENT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_D;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY_SSIZE_T;
@@ -50,12 +49,15 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
@@ -78,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteI6
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -86,11 +89,12 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseA
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldLoadNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldStoreNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMCallHelperFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -99,16 +103,20 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -135,8 +143,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext ctx, long size, @SuppressWarnings("unused") boolean zero,
-                        @Cached PCallHPyFunction callHelperNode) {
-            return callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+            return callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
         }
     }
 
@@ -146,8 +155,22 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object pointer,
-                        @Cached PCallHPyFunction callHelperNode) {
-            callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FREE, pointer);
+                              @Bind("this") Node inliningTarget,
+                              @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+            callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FREE, pointer);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMBulkFreeHandleReferencesNode extends BulkFreeHandleReferencesNode {
+
+        @Specialization
+        static void doGeneric(GraalHPyContext ctx, GraalHPyHandleReference[] references,
+                              @Bind("this") Node inliningTarget,
+                              @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+            NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(references);
+            callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper);
         }
     }
 
@@ -157,8 +180,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperNode) {
-            return callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_ELEMENT_PTR, pointer, offset);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+            return callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_ELEMENT_PTR, pointer, offset);
         }
     }
 
@@ -168,15 +192,16 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization(limit = "1")
         static byte[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("pointer") InteropLibrary interopLib,
                         @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached PCallHPyFunction callHPyFunction) {
+                        @Cached HPyLLVMCallHelperFunctionNode callHPyFunction) {
             if (!PInt.isIntRange(n)) {
                 throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
             }
             Object typedPointer;
             if (!interopLib.hasArrayElements(pointer)) {
-                typedPointer = callHPyFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, pointer, n);
+                typedPointer = callHPyFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, pointer, n);
             } else {
                 typedPointer = pointer;
             }
@@ -194,26 +219,29 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization(guards = "!close")
         static Object doGet(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
-                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode) {
-            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
             return asPythonObjectNode.execute(nativeValue);
         }
 
         @Specialization(guards = "close")
         static Object doClose(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
-                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
-            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
             return closeAndGetHandleNode.execute(nativeValue);
         }
 
         @Specialization(replaces = {"doGet", "doClose"})
         static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
-                        @Exclusive @Cached PCallHPyFunction callHelperNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Exclusive @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
-            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
+            Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY, pointer, offset);
             if (close) {
                 return closeAndGetHandleNode.execute(nativeValue);
             }
@@ -228,9 +256,9 @@ abstract class GraalHPyLLVMNodes {
         @Specialization
         static Object doGeneric(GraalHPyContext ctx, PythonObject owner, Object pointer, long offset, @SuppressWarnings("unused") boolean close,
                         @Bind("this") Node inliningTarget,
-                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Cached HPyFieldLoadNode hpyFieldLoadNode) {
-            Object nativeValue = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPYFIELD, pointer, offset);
+            Object nativeValue = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_HPYFIELD, pointer, offset);
             return hpyFieldLoadNode.execute(inliningTarget, owner, nativeValue);
         }
     }
@@ -241,13 +269,14 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization(limit = "1")
         static Object[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("pointer") InteropLibrary lib,
-                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode) {
             if (!PInt.isIntRange(n)) {
                 throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
             }
-            Object typedArrayPtr = callHelperNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, n);
+            Object typedArrayPtr = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, n);
             if (!lib.hasArrayElements(typedArrayPtr)) {
                 throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
             }
@@ -282,10 +311,11 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static int doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
 
-            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I32, pointer, offset);
+            Object nativeValue = callHelperFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I32, pointer, offset);
             if (nativeValue instanceof Integer) {
                 return (int) nativeValue;
             }
@@ -306,10 +336,11 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static long doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
 
-            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I64, pointer, offset);
+            Object nativeValue = callHelperFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_I64, pointer, offset);
             if (nativeValue instanceof Long) {
                 return (long) nativeValue;
             }
@@ -330,11 +361,12 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static double doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
 
             // note: C function 'graal_hpy_read_f' already returns a C double
-            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_F, pointer, offset);
+            Object nativeValue = callHelperFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_F, pointer, offset);
             if (nativeValue instanceof Double d) {
                 return d;
             }
@@ -355,10 +387,11 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static double doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
 
-            Object nativeValue = callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_D, pointer, offset);
+            Object nativeValue = callHelperFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_D, pointer, offset);
             if (nativeValue instanceof Double d) {
                 return d;
             }
@@ -379,8 +412,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            return callHelperFunction.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_PTR, pointer, offset);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            return callHelperFunction.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_READ_PTR, pointer, offset);
         }
     }
 
@@ -400,8 +434,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType ctype,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            return callHelperFunction.call(ctx, getReadAccessorName(ctx, ctype), pointer, offset);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            return callHelperFunction.call(inliningTarget, ctx, getReadAccessorName(ctx, ctype), pointer, offset);
         }
 
         static GraalHPyNativeSymbol getReadAccessorName(GraalHPyContext ctx, HPyContextSignatureType type) {
@@ -463,8 +498,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, int value,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_I32, basePointer, offset, value);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, GRAAL_HPY_WRITE_I32, basePointer, offset, value);
         }
     }
 
@@ -474,8 +510,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, long value,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_I64, basePointer, offset, value);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, GRAAL_HPY_WRITE_I64, basePointer, offset, value);
         }
     }
 
@@ -485,8 +522,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, long value,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_HPY_SSIZE_T, basePointer, offset, value);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, GRAAL_HPY_WRITE_HPY_SSIZE_T, basePointer, offset, value);
         }
     }
 
@@ -496,8 +534,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, double value,
-                        @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, GRAAL_HPY_WRITE_D, basePointer, offset, value);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, GRAAL_HPY_WRITE_D, basePointer, offset, value);
         }
     }
 
@@ -507,15 +546,17 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization(guards = {"type == cachedType"}, limit = "1")
         static void doCached(GraalHPyContext ctx, Object pointer, long offset, @SuppressWarnings("unused") HPyContextSignatureType type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached("type") HPyContextSignatureType cachedType,
-                        @Exclusive @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, getWriteAccessor(ctx, cachedType), pointer, offset, value);
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, getWriteAccessor(ctx, cachedType), pointer, offset, value);
         }
 
         @Specialization(replaces = "doCached")
         static void doGeneric(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType type, Object value,
-                        @Exclusive @Cached PCallHPyFunction callHelperFunction) {
-            callHelperFunction.call(ctx, getWriteAccessor(ctx, type), pointer, offset, value);
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperFunction) {
+            callHelperFunction.call(inliningTarget, ctx, getWriteAccessor(ctx, type), pointer, offset, value);
         }
 
         static GraalHPyNativeSymbol getWriteAccessor(GraalHPyContext ctx, HPyContextSignatureType type) {
@@ -577,9 +618,10 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached PCallHPyFunction callWriteDataNode) {
-            callWriteDataNode.call(ctx, GRAAL_HPY_WRITE_HPY, basePointer, offset, asHandleNode.execute(object));
+                        @Cached HPyLLVMCallHelperFunctionNode callWriteDataNode) {
+            callWriteDataNode.call(inliningTarget, ctx, GRAAL_HPY_WRITE_HPY, basePointer, offset, asHandleNode.execute(object));
         }
     }
 
@@ -592,13 +634,13 @@ abstract class GraalHPyLLVMNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached HPyFieldStoreNode fieldStoreNode,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached PCallHPyFunction callGetElementPtr,
-                        @Cached PCallHPyFunction callHelperFunctionNode) {
-            Object hpyFieldPtr = callGetElementPtr.call(ctx, GRAAL_HPY_GET_ELEMENT_PTR, pointer, offset);
-            Object hpyFieldObject = callHelperFunctionNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
+                        @Cached HPyLLVMCallHelperFunctionNode callGetElementPtr,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperFunctionNode) {
+            Object hpyFieldPtr = HPyLLVMGetElementPtrNode.doGeneric(ctx, pointer, offset, inliningTarget, callGetElementPtr);
+            Object hpyFieldObject = callHelperFunctionNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_GET_FIELD_I, hpyFieldPtr);
             int idx = fieldStoreNode.execute(inliningTarget, owner, hpyFieldObject, referent);
             GraalHPyHandle newHandle = asHandleNode.executeField(referent, idx);
-            callHelperFunctionNode.call(ctx, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
+            callHelperFunctionNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
         }
     }
 
@@ -608,8 +650,9 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object basePointer, long offset, Object valuePointer,
-                        @Cached PCallHPyFunction callWriteDataNode) {
-            callWriteDataNode.call(ctx, GRAAL_HPY_WRITE_PTR, basePointer, offset, valuePointer);
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callWriteDataNode) {
+            callWriteDataNode.call(inliningTarget, ctx, GRAAL_HPY_WRITE_PTR, basePointer, offset, valuePointer);
         }
     }
 
@@ -723,4 +766,63 @@ abstract class GraalHPyLLVMNodes {
         }
     }
 
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HPyLLVMImportSymbolNode extends PNodeWithContext {
+
+        public abstract Object execute(Node inliningTarget, GraalHPyContext hpyContext, GraalHPyNativeSymbol symbol);
+
+        @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
+        static Object doSymbolCached(@SuppressWarnings("unused") GraalHPyContext nativeContext, @SuppressWarnings("unused") GraalHPyNativeSymbol symbol,
+                        @SuppressWarnings("unused") @Cached("symbol") GraalHPyNativeSymbol cachedSymbol,
+                        @Cached("getLLVMSymbol(nativeContext, symbol)") Object llvmSymbol) {
+            return llvmSymbol;
+        }
+
+        @Specialization(replaces = "doSymbolCached")
+        static Object doGeneric(Node inliningTarget, GraalHPyContext hpyContext, GraalHPyNativeSymbol symbol,
+                        @Cached InlinedExactClassProfile exactClassProfile) {
+            return getLLVMSymbol(exactClassProfile.profile(inliningTarget, hpyContext), symbol);
+        }
+
+        static Object getLLVMSymbol(GraalHPyContext hpyContext, GraalHPyNativeSymbol symbol) {
+            if (hpyContext.getBackend() instanceof GraalHPyLLVMContext hpyLLVMContext) {
+                return hpyLLVMContext.getNativeSymbolCache()[symbol.ordinal()];
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HPyLLVMCallHelperFunctionNode extends PNodeWithContext {
+
+        public static Object callUncached(GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
+            return HPyLLVMCallHelperFunctionNodeGen.getUncached().execute(null, context, name, args);
+        }
+
+        public final Object call(Node inliningTarget, GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
+            return execute(inliningTarget, context, name, args);
+        }
+
+        public abstract Object execute(Node inliningTarget, GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
+
+        @Specialization
+        static Object doIt(Node inliningTarget, GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached HPyLLVMImportSymbolNode importCExtSymbolNode,
+                        @Cached(inline = false) EnsureTruffleStringNode ensureTruffleStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                Object llvmFunction = importCExtSymbolNode.execute(inliningTarget, context, name);
+                return ensureTruffleStringNode.execute(interopLibrary.execute(llvmFunction, args));
+            } catch (UnsupportedTypeException | ArityException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
+            } catch (UnsupportedMessageException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
+            }
+        }
+    }
 }

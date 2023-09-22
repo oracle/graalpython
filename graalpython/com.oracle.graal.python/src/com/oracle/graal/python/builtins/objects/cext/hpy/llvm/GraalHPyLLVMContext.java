@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
@@ -94,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyDummyToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
@@ -103,10 +106,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodes.HPyLLVMCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMBulkFreeHandleReferencesNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMGetElementPtrNodeGen;
@@ -205,6 +209,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @CompilationFinal(dimensions = 1) private final int[] cfieldOffsets;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
+    @CompilationFinal(dimensions = 1) private final Object[] nativeSymbolCache;
 
     Object nativePointer;
 
@@ -238,6 +243,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             }
         }
         this.hpyContextMembers = ctxMembers;
+        this.nativeSymbolCache = new Object[GraalHPyNativeSymbol.values().length];
     }
 
     void setHPyContextNativeType(Object nativeType) {
@@ -269,6 +275,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     protected Object nativeToInteropPointer(Object object) {
         return object;
+    }
+
+    Object[] getNativeSymbolCache() {
+        return nativeSymbolCache;
     }
 
     @Override
@@ -362,6 +372,19 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this), new IntArrayWrapper(ctypeSizes), new IntArrayWrapper(cfieldOffsets));
         } catch (InteropException e) {
             throw new ApiInitException(e);
+        }
+        assert nativeSymbolCache != null;
+        for (GraalHPyNativeSymbol symbol : GraalHPyNativeSymbol.values()) {
+            try {
+                String name = symbol.getName();
+                Object nativeSymbol = interopLibrary.readMember(hpyLibrary, name);
+                assert nativeSymbolCache[symbol.ordinal()] == null;
+                nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
+            } catch (UnknownIdentifierException e) {
+                throw new ApiInitException(ErrorMessages.INVALID_CAPI_FUNC, TruffleString.fromJavaStringUncached(symbol.getName(), TS_ENCODING));
+            } catch (UnsupportedMessageException e) {
+                throw new ApiInitException(ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, hpyLibrary);
+            }
         }
     }
 
@@ -457,6 +480,11 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public FreeNode getUncachedFreeNode() {
         return HPyLLVMFreeNodeGen.getUncached();
+    }
+
+    @Override
+    public BulkFreeHandleReferencesNode createBulkFreeHandleReferencesNode() {
+        return HPyLLVMBulkFreeHandleReferencesNodeGen.create();
     }
 
     @Override
@@ -684,7 +712,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CompilerDirectives.transferToInterpreter();
         assert !isPointer();
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.LLVM;
-        nativePointer = PCallHPyFunctionNodeGen.getUncached().call(context, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
+        nativePointer = HPyLLVMCallHelperFunctionNode.callUncached(context, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
     }
 
     @Override

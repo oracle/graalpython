@@ -224,31 +224,6 @@ public abstract class GraalHPyNodes {
         }
     }
 
-    @GenerateUncached
-    public abstract static class PCallHPyFunction extends PNodeWithContext {
-
-        public final Object call(GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
-            return execute(context, name, args);
-        }
-
-        public abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
-
-        @Specialization
-        static Object doIt(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @Cached EnsureTruffleStringNode ensureTruffleStringNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(context, name), args));
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
-            }
-        }
-    }
-
     /**
      * Use this node to transform an exception to native if a Python exception was thrown during an
      * upcall and before returning to native code. This node will correctly link to the current

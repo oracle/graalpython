@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
@@ -133,6 +134,16 @@ public abstract class GraalHPyCAccess {
         }
     }
 
+    public abstract static class BulkFreeHandleReferencesNode extends Node {
+
+        protected abstract void execute(GraalHPyContext ctx, GraalHPyHandleReference[] references);
+
+        @NeverDefault
+        public static BulkFreeHandleReferencesNode create(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().createBulkFreeHandleReferencesNode();
+        }
+    }
+
     public abstract static class IsNullNode extends Node {
 
         protected abstract boolean execute(GraalHPyContext ctx, Object pointer);
@@ -153,7 +164,7 @@ public abstract class GraalHPyCAccess {
 
     public abstract static class GetElementPtrNode extends CStructAccessNode {
 
-        protected abstract Object execute(GraalHPyContext ctx, Object pointer, long offset);
+        public abstract Object execute(GraalHPyContext ctx, Object pointer, long offset);
 
         public final Object getElementPtr(GraalHPyContext ctx, Object pointer, GraalHPyCField field) {
             assert accepts(field);
