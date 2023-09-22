@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -2808,14 +2807,12 @@ public abstract class GraalHPyNodes {
     @GenerateCached(false)
     public abstract static class HPyPackKeywordArgsNode extends Node {
 
-        public abstract PKeyword[] execute(Node inliningTarget, Object[] kwvalues, PTuple kwnames);
+        public abstract PKeyword[] execute(Node inliningTarget, Object[] kwvalues, PTuple kwnames, int nkw);
 
         @Specialization
-        static PKeyword[] doPTuple(Node inliningTarget, Object[] kwvalues, PTuple kwnames,
-                        @Cached PyTupleSizeNode sizeNode,
+        static PKeyword[] doPTuple(Node inliningTarget, Object[] kwvalues, PTuple kwnames, int nkw,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached InlinedLoopConditionProfile loopProfile) {
-            int nkw = sizeNode.execute(inliningTarget, kwnames);
             loopProfile.profileCounted(inliningTarget, nkw);
             if (nkw == 0) {
                 return PKeyword.EMPTY_KEYWORDS;

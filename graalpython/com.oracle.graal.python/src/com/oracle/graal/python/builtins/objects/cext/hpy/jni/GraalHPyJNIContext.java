@@ -2633,7 +2633,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                         long argBits = UNSAFE.getLong(kwvaluesPtr + i * SIZEOF_LONG);
                         kwvalues[i] = context.bitsAsPythonObject(argBits);
                     }
-                    keywords = HPyPackKeywordArgsNodeGen.getUncached().execute(null, kwvalues, kwnamesTuple);
+                    keywords = HPyPackKeywordArgsNodeGen.getUncached().execute(null, kwvalues, kwnamesTuple, nkw);
                 } else {
                     // fatal error (CPython would just cause a memory corruption)
                     throw CompilerDirectives.shouldNotReachHere();
