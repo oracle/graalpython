@@ -64,7 +64,7 @@ Additionally, one can change the polyglot artifacts version with
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <polyglot.version>24.0.0-dev</polyglot.version>
+        <polyglot.version>23.1.1-dev</polyglot.version>
     </properties>
 
     <build>
