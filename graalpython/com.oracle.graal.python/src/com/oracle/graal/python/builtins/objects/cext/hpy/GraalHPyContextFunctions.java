@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -382,6 +381,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -1810,14 +1810,23 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object unicodeObject, Object sizePtr,
-                        @Cached CStructAccess.WriteLongNode writeNode,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @CachedLibrary(limit = "3") InteropLibrary ptrLib) {
-            byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, T_STRICT);
-            if (!ptrLib.isNull(sizePtr)) {
-                writeNode.write(sizePtr, result.length);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteSizeTNode writeSizeTNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.AsNativeNode asNativeNode,
+                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
+            TruffleString tsUtf8 = switchEncodingNode.execute(castToTruffleStringNode.execute(inliningTarget, unicodeObject), Encoding.UTF_8);
+            TruffleString nativeTName = asNativeNode.execute(tsUtf8, (size) -> hpyContext.nativeToInteropPointer(allocateNode.malloc(hpyContext, size)), Encoding.UTF_8, false, true);
+            Object result = getInternalNativePointerNode.execute(nativeTName, Encoding.UTF_8);
+            if (!isNullNode.execute(hpyContext, sizePtr)) {
+                InternalByteArray internalByteArray = getInternalByteArrayNode.execute(tsUtf8, Encoding.UTF_8);
+                writeSizeTNode.write(hpyContext, sizePtr, internalByteArray.getLength());
             }
-            return new CByteArrayWrapper(result);
+            return result;
         }
     }
 
