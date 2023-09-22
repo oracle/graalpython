@@ -238,14 +238,17 @@ public abstract class BytesNodes {
         }
 
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         byte[] doBuffer(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             } catch (PException e) {
-                throw raise(errorType, errorMessageFormat, object);
+                throw raiseNode.get(inliningTarget).raise(errorType, errorMessageFormat, object);
             }
             try {
                 return bufferLib.getCopiedByteArray(buffer);
@@ -544,7 +547,8 @@ public abstract class BytesNodes {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
                 Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
@@ -561,7 +565,7 @@ public abstract class BytesNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
-            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
         }
     }
 

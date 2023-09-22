@@ -52,8 +52,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
@@ -252,6 +252,12 @@ public final class PMemoryView extends PythonBuiltinObject {
         }
     }
 
+    public void checkReleased(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+        if (isReleased()) {
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
+    }
+
     boolean checkShouldReleaseBuffer() {
         if (getReference() != null) {
             return getReference().getLifecycleManager().decrementExports() == 0;
@@ -266,7 +272,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         }
     }
 
-    public void checkReleased(PNodeWithRaiseAndIndirectCall node) {
+    public void checkReleased(PythonBuiltinBaseNode node) {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }

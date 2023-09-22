@@ -76,8 +76,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -359,7 +359,7 @@ public final class PythonCextBuiltins {
 
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
         }
 
         private String getName() {
@@ -374,25 +374,25 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type) {
             if (obj == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             if (IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(obj), type)) {
-                throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
             } else {
-                throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
             }
         }
 
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type1, PythonBuiltinClassType type2) {
             if (obj == PNone.NO_VALUE) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             Object objType = GetClassNode.executeUncached(obj);
             if (IsSubtypeNode.getUncached().execute(objType, type1) || IsSubtypeNode.getUncached().execute(objType, type2)) {
-                throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
             } else {
-                throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
             }
         }
 
@@ -418,6 +418,36 @@ public final class PythonCextBuiltins {
             if (obj1 == PNone.NO_VALUE || obj2 == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
+        }
+
+        @Child private PRaiseNode raiseNode;
+
+        protected final PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                if (isAdoptable()) {
+                    raiseNode = insert(PRaiseNode.create());
+                } else {
+                    raiseNode = PRaiseNode.getUncached();
+                }
+            }
+            return raiseNode;
+        }
+
+        public PException raise(PythonBuiltinClassType type, TruffleString string) {
+            return getRaiseNode().raise(type, string);
+        }
+
+        public PException raise(PythonBuiltinClassType exceptionType) {
+            return getRaiseNode().raise(exceptionType);
+        }
+
+        public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+            return getRaiseNode().raise(type, format, arguments);
+        }
+
+        public final PException raiseBadInternalCall() {
+            return getRaiseNode().raiseBadInternalCall();
         }
     }
 

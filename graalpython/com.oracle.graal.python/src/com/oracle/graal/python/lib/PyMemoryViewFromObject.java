@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -84,8 +86,10 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
 
     @Specialization
     PMemoryView fromMemoryView(PMemoryView object,
-                    @Shared @Cached PythonObjectFactory factory) {
-        object.checkReleased(this);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached PythonObjectFactory factory,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+        object.checkReleased(inliningTarget, raiseNode);
         return factory.createMemoryView(PythonContext.get(this), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                         object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
@@ -120,7 +124,8 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @Shared @Cached PythonObjectFactory factory,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
         if (hasSlotProfile.profile(inliningTarget, getBufferAttr != PNone.NO_VALUE)) {
@@ -160,7 +165,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
     }
 
