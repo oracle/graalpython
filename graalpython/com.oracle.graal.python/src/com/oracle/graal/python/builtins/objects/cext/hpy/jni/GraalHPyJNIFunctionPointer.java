@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,6 +72,7 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
     final HPyMode mode;
 
     public GraalHPyJNIFunctionPointer(long pointer, LLVMType signature, HPyMode mode) {
+        assert !PythonOptions.WITHOUT_JNI;
         this.pointer = pointer;
         this.signature = signature;
         this.mode = mode;
@@ -90,6 +92,10 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached("receiver.signature") LLVMType cachedSignature,
                         @Cached(parameters = "receiver.signature") GraalHPyJNIConvertArgNode convertArgNode) {
+            // Make it explicit, that we cannot to JNI calls if WITHOUT_JNI is true.
+            if (PythonOptions.WITHOUT_JNI) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             return switch (receiver.mode) {
                 case MODE_UNIVERSAL -> callUniversal(receiver, cachedSignature, convertHPyContext(arguments), arguments, interopLibrary, convertArgNode);
                 case MODE_DEBUG -> callDebug(receiver, cachedSignature, convertHPyDebugContext(arguments), arguments, interopLibrary, convertArgNode);

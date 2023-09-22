@@ -218,6 +218,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public GraalHPyJNIContext(GraalHPyContext context, boolean traceUpcalls) {
         super(context, traceUpcalls);
+        assert !PythonOptions.WITHOUT_JNI;
         this.slowPathFactory = context.getContext().factory();
         this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
     }

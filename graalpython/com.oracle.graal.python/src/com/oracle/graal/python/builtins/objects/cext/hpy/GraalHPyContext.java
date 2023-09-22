@@ -446,16 +446,20 @@ public final class GraalHPyContext extends CExtContext {
 
         LOGGER.config("Using HPy backend:" + backendMode.name());
         if (backendMode == HPyBackendMode.JNI) {
-            this.useNativeFastPaths = useNativeFastPaths;
-            backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
+            if (!PythonOptions.WITHOUT_JNI) {
+                this.useNativeFastPaths = useNativeFastPaths;
+                backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
+            } else {
+                throw new RuntimeException("Cannot use HPy JNI backend because JNI access is forbidden.");
+            }
         } else if (backendMode == HPyBackendMode.NFI) {
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+            throw new RuntimeException("HPy NFI backend is not yet implemented");
         } else if (backendMode == HPyBackendMode.LLVM) {
             // TODO(fa): we currently don't use native fast paths with the LLVM backend
             this.useNativeFastPaths = false;
             backend = new GraalHPyLLVMContext(this, traceUpcallsInterval > 0);
         } else {
-            throw CompilerDirectives.shouldNotReachHere();
+            throw new RuntimeException("unknown HPy backend: " + backendMode);
         }
 
         backend.initNativeContext();
