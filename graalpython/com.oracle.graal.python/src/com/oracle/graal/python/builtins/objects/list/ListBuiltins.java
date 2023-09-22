@@ -94,6 +94,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
@@ -327,7 +328,7 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected Object doInt(PList self, int index, Object value,
+        static Object doInt(PList self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
@@ -337,7 +338,7 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
-        public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+        static Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
@@ -349,9 +350,10 @@ public final class ListBuiltins extends PythonBuiltins {
         @InliningCutoff
         @SuppressWarnings("unused")
         @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)")
-        protected Object doError(Object self, Object key, Object value,
-                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
+        static Object doError(Object self, Object key, Object value,
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         private static void updateStorage(Node inliningTarget, PList primary, SequenceStorage newStorage, InlinedConditionProfile generalizedProfile) {

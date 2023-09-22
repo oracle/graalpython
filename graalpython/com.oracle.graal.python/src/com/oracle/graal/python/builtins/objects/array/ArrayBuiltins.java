@@ -573,8 +573,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getFormat() == other.getFormat()")
-        @SuppressWarnings("truffle-static-method")
-        Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
+        static Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile sameArrayProfile,
@@ -587,7 +586,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
-                        @Cached DelItemNode delItemNode) {
+                        @Cached DelItemNode delItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int stop = sliceInfo.stop;
@@ -603,7 +603,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                 if (differentLengthProfile.profile(inliningTarget, sliceLength != needed)) {
-                    self.checkCanResize(getRaiseNode());
+                    self.checkCanResize(inliningTarget, raiseNode);
                     if (growProfile.profile(inliningTarget, sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
@@ -621,21 +621,23 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     bufferLib.readIntoBuffer(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize, bufferLib);
                 }
             } else {
-                throw raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
             }
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat() != other.getFormat()")
         @SuppressWarnings("unused")
-        Object setitemWrongFormat(PArray self, PSlice slice, PArray other) {
-            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        static Object setitemWrongFormat(PArray self, PSlice slice, PArray other,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Specialization(guards = "!isArray(other)")
         @SuppressWarnings("unused")
-        Object setitemWrongType(PArray self, PSlice slice, Object other) {
-            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
+        static Object setitemWrongType(PArray self, PSlice slice, Object other,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
         }
     }
 
@@ -937,12 +939,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
+        static Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(false)") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.CheckValueNode checkValueNode,
                         @Cached ArrayNodes.PutValueNode putValueNode,
-                        @Cached ArrayNodes.ShiftNode shiftNode) {
+                        @Cached ArrayNodes.ShiftNode shiftNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             if (index > self.getLength()) {
                 index = self.getLength();
@@ -952,7 +955,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             // Need to check the validity of the value before moving the memory around to ensure the
             // operation can fail atomically
             checkValueNode.execute(frame, inliningTarget, self, value);
-            self.checkCanResize(getRaiseNode());
+            self.checkCanResize(inliningTarget, raiseNode);
             shiftNode.execute(inliningTarget, self, index, 1);
             putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
@@ -1060,14 +1063,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
+        static Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached InlinedConditionProfile nNegativeProfile,
-                        @Cached FromBytesNode fromBytesNode) {
+                        @Cached FromBytesNode fromBytesNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (nNegativeProfile.profile(inliningTarget, n < 0)) {
-                throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
             }
             int itemsize = self.getFormat().bytesize;
             int nbytes = n * itemsize;
@@ -1078,10 +1082,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
                 if (readLength != nbytes) {
-                    throw raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
+                    throw raiseNode.get(inliningTarget).raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
                 }
             } else {
-                throw raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
             }
             return PNone.NONE;
         }

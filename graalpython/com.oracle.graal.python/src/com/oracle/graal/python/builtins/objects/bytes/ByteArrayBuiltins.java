@@ -228,20 +228,21 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
+        static PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached @Shared SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
-                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices) {
+                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = self.getSequenceStorage();
             int otherLen = getSequenceStorageNode.execute(inliningTarget, value).length();
             SliceInfo unadjusted = unpack.execute(inliningTarget, sliceCast.execute(inliningTarget, slice));
             SliceInfo info = adjustIndices.execute(inliningTarget, storage.length(), unadjusted);
             if (differentLenProfile.profile(inliningTarget, info.sliceLength != otherLen)) {
-                self.checkCanResize(getRaiseNode());
+                self.checkCanResize(inliningTarget, raiseNode);
             }
             setItemSliceNode.execute(frame, inliningTarget, storage, info, value, false);
             return PNone.NONE;
@@ -259,19 +260,20 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(value));
-                return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
+                return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
         @Specialization(replaces = {"doSliceSequence", "doSliceBuffer"})
-        PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        static PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -279,15 +281,17 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
-                        @Cached ListNodes.ConstructListNode constructListNode) {
+                        @Cached ListNodes.ConstructListNode constructListNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PList values = constructListNode.execute(frame, value);
-            return doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
+            return doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object self, Object idx, Object value) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
+        static Object error(Object self, Object idx, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
         }
 
         @NeverDefault
@@ -310,9 +314,11 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         public abstract PNone execute(VirtualFrame frame, PByteArray list, Object index, Object value);
 
         @Specialization(guards = "isByteStorage(self)")
-        PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
-                        @Cached @Shared CastToByteNode toByteNode) {
-            self.checkCanResize(getRaiseNode());
+        static PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CastToByteNode toByteNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             byte v = toByteNode.execute(frame, value);
             ByteSequenceStorage target = (ByteSequenceStorage) self.getSequenceStorage();
             target.insertByteItem(normalizeIndex(index, target.length()), v);
@@ -320,12 +326,13 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
+        static PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
-                        @Cached @Shared CastToByteNode toByteNode) {
-            self.checkCanResize(getRaiseNode());
+                        @Shared @Cached CastToByteNode toByteNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             byte v = toByteNode.execute(frame, value);
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, self);
             insertItemNode.execute(inliningTarget, storage, normalizeIndex(index, storage.length()), v);

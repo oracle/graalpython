@@ -650,8 +650,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "checkAttached(self)")
-        @SuppressWarnings("truffle-static-method") // raise
-        Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
+        static Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
@@ -668,10 +667,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
-                throw raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
+                throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
             }
 
             Object cookieObj = c;
@@ -680,7 +680,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 case SEEK_CUR:
                     /* seek relative to current position */
                     if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
-                        throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
+                        throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
                     }
 
                     /*
@@ -693,7 +693,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 case SEEK_END:
                     /* seek relative to end of file */
                     if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
-                        throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
+                        throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
                     callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
@@ -715,22 +715,22 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     break;
 
                 default:
-                    throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
             }
 
             Object cookieLong = indexNode.execute(frame, inliningTarget, cookieObj);
             PTextIO.CookieType cookie;
             if (cookieLong instanceof PInt) {
                 if (((PInt) cookieLong).isNegative()) {
-                    throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse((PInt) cookieLong, inliningTarget, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse((PInt) cookieLong, inliningTarget, overflow, raiseNode);
             } else {
                 long l = toLong.execute(inliningTarget, cookieLong);
                 if (l < 0) {
-                    throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse(l, inliningTarget, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse(l, inliningTarget, overflow, raiseNode);
             }
 
             callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
@@ -754,7 +754,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 Object inputChunk = callMethodRead.execute(frame, inliningTarget, self.getBuffer(), T_READ, cookie.bytesToFeed);
 
                 if (!(inputChunk instanceof PBytes)) {
-                    throw raise(TypeError, UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S, inputChunk);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S, inputChunk);
                 }
 
                 self.setSnapshotDecFlags(cookie.decFlags);
@@ -766,7 +766,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 /* Skip chars_to_skip of the decoded characters. */
                 if (decodedLen < cookie.charsToSkip) {
-                    throw raise(OSError, CAN_T_RESTORE_LOGICAL_FILE_POSITION);
+                    throw raiseNode.get(inliningTarget).raise(OSError, CAN_T_RESTORE_LOGICAL_FILE_POSITION);
                 }
                 self.incDecodedCharsUsed(cookie.charsToSkip);
             } else {
@@ -786,13 +786,15 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object o1, @SuppressWarnings("unused") Object o2) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object o1, @SuppressWarnings("unused") Object o2,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
 
         @Specialization(guards = {"self.isOK()", "self.isDetached()"})
-        Object attachError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object o1, @SuppressWarnings("unused") Object o2) {
-            throw raise(ValueError, DETACHED_BUFFER);
+        static Object attachError(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") Object o1, @SuppressWarnings("unused") Object o2,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, DETACHED_BUFFER);
         }
     }
 

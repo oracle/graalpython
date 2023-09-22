@@ -225,10 +225,19 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         abstract StgDictObject execute(Object type);
 
+        // TODO replace with the lazy version
         protected StgDictObject checkAbstractClass(Object type, PRaiseNode raiseNode) {
             StgDictObject dict = execute(type);
             if (dict == null) {
                 throw raiseNode.raise(TypeError, ABSTRACT_CLASS);
+            }
+            return dict;
+        }
+
+        protected StgDictObject checkAbstractClass(Node inliningTarget, Object type, PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = execute(type);
+            if (dict == null) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ABSTRACT_CLASS);
             }
             return dict;
         }

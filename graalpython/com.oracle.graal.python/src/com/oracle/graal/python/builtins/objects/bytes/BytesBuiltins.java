@@ -328,12 +328,14 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
+        static Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                        @Cached IsInstanceNode isInstanceNode) {
+                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
             if (!isInstanceNode.executeWith(frame, result, PythonBuiltinClassType.PString)) {
-                throw raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+                throw raiseNode.get(inliningTarget).raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
             return result;
         }
@@ -1200,8 +1202,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        TruffleString err(Object self, Object sep, Object bytesPerSepGroup) {
-            throw raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
+        static TruffleString err(Object self, Object sep, Object bytesPerSepGroup,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
         }
     }
 
@@ -1509,7 +1512,8 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile hasFill,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int width = asSizeNode.executeExact(frame, inliningTarget, widthObj);
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
@@ -1519,7 +1523,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                 if (fillObj instanceof PBytesLike && bufferLib.getBufferLength(fillObj) == 1) {
                     fillByte = bufferLib.readByte(fillObj, 0);
                 } else {
-                    throw raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
                 }
             }
             if (checkSkip(len, width)) {
@@ -1933,8 +1937,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmptySep(sep)"})
-        PList error(Object bytes, byte[] sep, int maxsplit) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
+        static PList error(Object bytes, byte[] sep, int maxsplit,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
         private static PList getBytesResult(List<byte[]> bytes, ListNodes.AppendNode appendNode, Object self, Node inliningTarget, BytesNodes.CreateBytesNode createBytesNode,

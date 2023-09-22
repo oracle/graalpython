@@ -69,6 +69,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -300,7 +301,9 @@ public final class PropertyBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doNone")
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type) {
+        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (PGuards.isPNone(obj)) {
                 return self;
             }
@@ -308,9 +311,9 @@ public final class PropertyBuiltins extends PythonBuiltins {
             Object fget = self.getFget();
             if (fget == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, UNREADABLE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, UNREADABLE_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
-                    throw raise(AttributeError, UNREADABLE_ATTRIBUTE);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, UNREADABLE_ATTRIBUTE);
                 }
             }
             return ensureCallNode().executeObject(frame, fget, obj);
@@ -331,13 +334,15 @@ public final class PropertyBuiltins extends PythonBuiltins {
         @Child private CallBinaryMethodNode callSetNode;
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value) {
+        Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object func = self.getFset();
             if (func == null) {
                 if (self.getPropertyName() != null) {
-                    throw raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.executeUncached(frame, self.getPropertyName()));
                 } else {
-                    throw raise(AttributeError, CANT_SET_ATTRIBUTE);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, CANT_SET_ATTRIBUTE);
                 }
             }
             ensureCallSetNode().executeObject(frame, func, obj, value);

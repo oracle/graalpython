@@ -40,24 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "pyexpat", os = PythonOS.PLATFORM_WIN32)
 public final class PyExpatModuleBuiltins extends PythonBuiltins {
@@ -160,7 +161,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object fail(Object encoding, Object namespace_separator, Object intern) {
-            throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("XML pyexpat parser is not implemented"));
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("XML pyexpat parser is not implemented"));
         }
     }
 }

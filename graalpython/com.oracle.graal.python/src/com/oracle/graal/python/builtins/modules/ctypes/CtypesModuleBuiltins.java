@@ -725,14 +725,15 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
+        static Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached AuditNode auditNode,
                         @Cached CodePointLengthNode codePointLengthNode,
                         @Cached EndsWithNode endsWithNode,
                         @Cached EqualNode eqNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "ctypes.dlopen", name);
             if (name.isEmpty()) {
                 return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
@@ -740,11 +741,11 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(inliningTarget);
             DLHandler handle;
             Exception exception = null;
             boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
-                            (!getContext().getOption(PythonOptions.UseSystemToolchain) &&
+                            (!context.getOption(PythonOptions.UseSystemToolchain) &&
                                             endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
@@ -754,7 +755,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     registerAddress(context, handle.adr, handle);
                     return factory.createNativeVoidPtr(handle);
                 } else {
-                    CtypesThreadState ctypes = CtypesThreadState.get(context, getLanguage());
+                    CtypesThreadState ctypes = CtypesThreadState.get(context, PythonLanguage.get(inliningTarget));
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
@@ -767,7 +768,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (Exception e) {
                 exception = e;
             }
-            throw raise(OSError, getErrMsg(exception));
+            throw raiseNode.get(inliningTarget).raise(OSError, getErrMsg(exception));
         }
     }
 

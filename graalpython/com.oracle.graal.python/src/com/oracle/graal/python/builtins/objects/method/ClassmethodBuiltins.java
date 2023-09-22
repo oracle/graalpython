@@ -59,6 +59,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -78,7 +79,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -112,12 +112,12 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
-        Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+        static Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared GetClassNode getClass,
-                        @Cached @Shared InlinedBranchProfile uninitialized,
-                        @Shared @Cached MakeMethodNode makeMethod) {
-            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), uninitialized, makeMethod);
+                        @Shared @Cached GetClassNode getClass,
+                        @Shared @Cached MakeMethodNode makeMethod,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), makeMethod, raiseNode);
         }
 
         /**
@@ -133,18 +133,17 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
-        Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+        static Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedBranchProfile uninitialized,
-                        @Shared @Cached MakeMethodNode makeMethod) {
-            return doGet(inliningTarget, self, type, uninitialized, makeMethod);
+                        @Shared @Cached MakeMethodNode makeMethod,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doGet(inliningTarget, self, type, makeMethod, raiseNode);
         }
 
-        private Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, InlinedBranchProfile uninitialized, MakeMethodNode makeMethod) {
+        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode.Lazy raiseNode) {
             Object callable = self.getCallable();
             if (callable == null) {
-                uninitialized.enter(inliningTarget);
-                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(inliningTarget, type, callable);
         }

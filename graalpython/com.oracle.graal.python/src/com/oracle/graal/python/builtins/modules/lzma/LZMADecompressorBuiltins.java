@@ -227,8 +227,9 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
-        Object err(LZMADecompressor self, Object data, int maxLength) {
-            throw raise(EOFError, ALREADY_AT_END_OF_STREAM);
+        static Object err(LZMADecompressor self, Object data, int maxLength,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(EOFError, ALREADY_AT_END_OF_STREAM);
         }
     }
 

@@ -229,18 +229,19 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     abstract static class PointerSetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
+        static Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
+                        @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
+                throw raiseNode.get(inliningTarget).raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
 
             if (self.b_ptr.isNull()) {
-                throw raise(ValueError, NULL_POINTER_ACCESS);
+                throw raiseNode.get(inliningTarget).raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);

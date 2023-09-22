@@ -101,6 +101,12 @@ public final class PByteArray extends PBytesLike {
         }
     }
 
+    public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+        if (exports != 0) {
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
+    }
+
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,

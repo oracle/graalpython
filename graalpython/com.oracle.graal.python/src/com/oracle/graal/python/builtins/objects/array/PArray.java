@@ -52,6 +52,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -126,6 +127,12 @@ public final class PArray extends PythonBuiltinObject {
     public void checkCanResize(PRaiseNode node) {
         if (exports.get() != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
+    }
+
+    public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+        if (exports.get() != 0) {
+            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
     }
 

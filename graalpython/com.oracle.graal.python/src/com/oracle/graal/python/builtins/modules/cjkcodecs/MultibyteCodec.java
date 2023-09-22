@@ -45,7 +45,7 @@ import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import java.nio.charset.Charset;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MultibyteCodec {
@@ -126,9 +126,9 @@ public class MultibyteCodec {
     }
 
     @TruffleBoundary
-    public int decode(MultibyteCodecState state, MultibyteDecodeBuffer buf, PRaiseNode raiseNode) {
+    public int decode(MultibyteCodecState state, MultibyteDecodeBuffer buf, Node raisingNode) {
         MultibyteCodecState.Decoder decoder = (MultibyteCodecState.Decoder) state;
-        return decoder.decode(buf, raiseNode);
+        return decoder.decode(buf, raisingNode);
     }
 
     public void decreset(MultibyteCodecState state) {

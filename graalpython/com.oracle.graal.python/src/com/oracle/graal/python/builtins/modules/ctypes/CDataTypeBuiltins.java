@@ -219,31 +219,32 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object CDataType_from_buffer(VirtualFrame frame, Object type, Object obj, int offset,
+        static Object CDataType_from_buffer(VirtualFrame frame, Object type, Object obj, int offset,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached AuditNode auditNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                        @Cached AuditNode auditNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
 
             PMemoryView mv = memoryViewNode.execute(frame, obj);
 
             if (mv.isReadOnly()) {
-                throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
             }
 
             if (!mv.isCContiguous()) {
-                throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
+                throw raiseNode.get(inliningTarget).raise(TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
             }
 
             if (offset < 0) {
-                throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
             }
 
             if (dict.size > mv.getLength() - offset) {
-                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
+                throw raiseNode.get(inliningTarget).raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
             }
 
             auditNode.audit(inliningTarget, "ctypes.cdata/buffer", mv, mv.getLength(), offset);
@@ -269,24 +270,25 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        Object CDataType_from_buffer_copy(Object type, Object buffer, int offset,
+        static Object CDataType_from_buffer_copy(Object type, Object buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached AuditNode auditNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+                StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
 
                 if (offset < 0) {
-                    throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
                 }
 
                 int bufferLen = bufferLib.getBufferLength(buffer);
 
                 if (dict.size > bufferLen - offset) {
-                    throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bufferLen, dict.size + offset);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bufferLen, dict.size + offset);
                 }
 
                 // This prints the raw pointer in C, so just print 0
@@ -316,24 +318,25 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
+        static Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
-                        @Cached CtypesDlSymNode dlSymNode) {
+                        @Cached CtypesDlSymNode dlSymNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             auditNode.audit(inliningTarget, "ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);
             if (!longCheckNode.execute(inliningTarget, obj)) {
-                throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
+                throw raiseNode.get(inliningTarget).raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             Pointer handlePtr;
             try {
                 handlePtr = pointerFromLongNode.execute(inliningTarget, obj);
             } catch (PException e) {
-                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
             }
             Object address = dlSymNode.execute(frame, handlePtr, name, ValueError);
             if (address instanceof PythonNativeVoidPtr ptr) {

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -131,8 +132,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isTruffleString(input)")
-        @SuppressWarnings("truffle-static-method")
-        Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
+        static Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached PyObjectStrAsObjectNode strNode,
@@ -140,12 +140,13 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
                         @Exclusive @Cached MultibyteCodecUtil.EncodeNode encodeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared @Cached TruffleString.EqualNode isEqual,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object ucvt = input;
             if (!unicodeCheck.execute(inliningTarget, input)) {
                 ucvt = strNode.execute(frame, inliningTarget, input);
                 if (!unicodeCheck.execute(inliningTarget, ucvt)) {
-                    throw raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
                 }
             }
 
@@ -196,7 +197,7 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
             MultibyteDecodeBuffer buf = new MultibyteDecodeBuffer(input);
             MultibyteCodecState state = self.codec.decinit(errorcb);
             while (!buf.isFull()) {
-                int r = self.codec.decode(state, buf, getRaiseNode());
+                int r = self.codec.decode(state, buf, this);
                 if (r == 0) {
                     break;
                 } else {

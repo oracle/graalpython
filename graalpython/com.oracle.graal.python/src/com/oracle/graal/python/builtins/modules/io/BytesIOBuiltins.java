@@ -103,6 +103,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -540,31 +541,36 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.hasBuf()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence) {
-            throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
+        static Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getPos())", "whence == 1"})
-        Object largePos1(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos1(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getStringSize())", "whence == 2"})
-        Object largePos2(PBytesIO self, int pos, int whence) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
+        static Object largePos2(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @Specialization(guards = {"self.hasBuf()", "pos < 0", "whence == 0"})
-        Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
+        static Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.hasBuf()")
-        Object closedError(PBytesIO self, int pos, int whence) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(PBytesIO self, int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 

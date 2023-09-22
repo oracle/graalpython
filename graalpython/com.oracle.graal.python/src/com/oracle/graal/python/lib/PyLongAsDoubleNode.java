@@ -85,7 +85,7 @@ public abstract class PyLongAsDoubleNode extends PNodeWithContext {
 
     @Specialization
     double doPInt(PInt self) {
-        return self.doubleValueWithOverflow(PRaiseNode.getUncached());
+        return self.doubleValueWithOverflow(this);
     }
 
     @Fallback

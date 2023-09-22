@@ -97,6 +97,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -108,6 +109,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -279,16 +281,18 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence) {
-            throw raise(ValueError, UNSUPPORTED_WHENCE, whence);
+        static Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, UNSUPPORTED_WHENCE, whence);
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence) {
+        static Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (self.isDetached()) {
-                throw raise(ValueError, IO_STREAM_DETACHED);
+                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raise(ValueError, IO_UNINIT);
+                throw raiseNode.raise(ValueError, IO_UNINIT);
             }
         }
     }

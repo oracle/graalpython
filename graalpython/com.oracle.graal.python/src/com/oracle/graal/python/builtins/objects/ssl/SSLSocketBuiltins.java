@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -99,14 +100,15 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
-        Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
+        static Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SSLOperationNode sslOperationNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (len == 0) {
                 return factory.createBytes(new byte[0]);
             } else if (len < 0) {
-                throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             sslOperationNode.read(frame, inliningTarget, self, output);
@@ -119,7 +121,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached SSLOperationNode sslOperationNode) {
+                        @Shared @Cached SSLOperationNode sslOperationNode,
+                        // unused node to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, this);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);

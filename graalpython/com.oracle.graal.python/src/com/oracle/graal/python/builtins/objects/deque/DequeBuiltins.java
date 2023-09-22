@@ -202,20 +202,20 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doNothing", "doIterable"})
-        @SuppressWarnings("truffle-static-method")
-        PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
+        static PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached GetNextNode getNextNode,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
                     int maxlen = castToIntNode.execute(inliningTarget, maxlenObj);
                     if (maxlen < 0) {
-                        throw raise(ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
                     }
                     self.setMaxLength(maxlen);
                 } catch (PException e) {
@@ -224,9 +224,9 @@ public final class DequeBuiltins extends PythonBuiltins {
                      * OverflowError
                      */
                     e.expect(inliningTarget, TypeError, isTypeErrorProfile);
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
                 } catch (CannotCastException e) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
             }
 

@@ -172,8 +172,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    static void writeString(VirtualFrame frame, PStringIO self, TruffleString obj,
-                    PRaiseNode raise,
+    static void writeString(VirtualFrame frame, Node inliningTarget, PStringIO self, TruffleString obj,
+                    PRaiseNode.Lazy raiseNode,
                     IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                     StringReplaceNode replaceNode,
                     TruffleString.CodePointLengthNode codePointLengthNode,
@@ -200,7 +200,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
          * things like comparing an unsigned and a signed integer.
          */
         if (self.getPos() > Integer.MAX_VALUE - decodedLen) {
-            throw raise.raise(OverflowError, NEW_POSITION_TOO_LARGE);
+            throw raiseNode.get(inliningTarget).raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         if (self.isAccumulating()) {
@@ -265,7 +265,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
+        static PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
@@ -278,7 +278,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached IONodes.ToTruffleStringNode toTruffleStringNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString newline;
 
             if (newlineArg == PNone.NO_VALUE) {
@@ -323,7 +324,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             if (!initialValue.isEmpty()) {
                 self.setRealized();
                 self.setPos(0);
-                writeString(frame, self, initialValue, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode,
+                writeString(frame, inliningTarget, self, initialValue, raiseNode, decodeNode, replaceNode, codePointLengthNode,
                                 substringNode, appendStringNode, appendCodePointNode, toStringNode);
             } else {
                 /* Empty stringio object, we can start by accumulating */
@@ -501,17 +502,19 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
-        Object doWrite(VirtualFrame frame, PStringIO self, TruffleString s,
+        static Object doWrite(VirtualFrame frame, PStringIO self, TruffleString s,
+                        @Bind("this") Node inliningTarget,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                         @Cached StringReplaceNode replaceNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int size = codePointLengthNode.execute(s, TS_ENCODING);
             if (size > 0) {
-                writeString(frame, self, s, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode,
+                writeString(frame, inliningTarget, self, s, raiseNode, decodeNode, replaceNode, codePointLengthNode,
                                 substringNode, appendStringNode, appendCodePointNode, toStringNode);
             }
             return size;
@@ -566,28 +569,33 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isSupportedWhence(whence)"})
-        Object whenceError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, int whence) {
-            throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
+        static Object whenceError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isSupportedWhence(whence)", "pos != 0", "whence != 0"})
-        Object largePos1(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(OSError, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
+        static Object largePos1(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(OSError, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "pos < 0", "whence == 0"})
-        Object negPos(@SuppressWarnings("unused") PStringIO self, int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
+        static Object negPos(@SuppressWarnings("unused") PStringIO self, int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
         }
 
         @Specialization(guards = "!self.isOK()")
-        Object initError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, IO_UNINIT);
+        static Object initError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_UNINIT);
         }
 
         @Specialization(guards = "self.isClosed()")
-        Object closedError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence) {
-            throw raise(ValueError, IO_CLOSED);
+        static Object closedError(@SuppressWarnings("unused") PStringIO self, @SuppressWarnings("unused") int pos, @SuppressWarnings("unused") int whence,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, IO_CLOSED);
         }
     }
 

@@ -104,12 +104,13 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         private static final TruffleString CODEC = tsLiteral("codec");
 
         @Specialization
-        protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
+        static Object mbstreamreaderNew(VirtualFrame frame, Object type, Object stream, Object err,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory) { // "O|s:StreamReader"
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamReader"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
@@ -119,7 +120,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
             MultibyteStreamReaderObject self = factory.createMultibyteStreamReaderObject(type);
             Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -148,7 +149,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
         // mbstreamreader_iread
         @Specialization
-        TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
+        static TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached GetClassNode getClassNode,
@@ -202,7 +203,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (rsize > 0) {
-                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, raiseNode.get(inliningTarget));
+                    decoderFeedBuffer(frame, self, buf, decodeErrorNode, inliningTarget);
                 }
 
                 if (endoffile || sizehint < 0) {
@@ -213,7 +214,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (!buf.isFull()) { /* pending sequence exists */
-                    decoderAppendPending(self, buf, raiseNode.get(inliningTarget));
+                    decoderAppendPending(inliningTarget, self, buf, raiseNode);
                 }
 
                 if (sizehint < 0 || buf.getOutpos() != 0 || rsize == 0) {
