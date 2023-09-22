@@ -113,6 +113,11 @@ public final class PythonOptions {
     public static final boolean WITHOUT_JAVA_INET = Boolean.getBoolean("python.WithoutJavaInet");
 
     /**
+     * This property can be used to disable any usage of JNI.
+     */
+    public static final boolean WITHOUT_JNI = Boolean.getBoolean("python.WithoutJNI");
+
+    /**
      * This property can be used to control if async actions are automatically scheduled using
      * daemon threads or via embedder calling a polling API on the main thread.
      */
