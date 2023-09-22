@@ -1585,21 +1585,21 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object errTypeObj, Object errMessagePtr,
                         @Bind("this") Node inliningTarget,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperFunctionNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CallNode callExceptionConstructorNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached PyExceptionInstanceCheckNode exceptionCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object i = callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
-            Object message = fromCharPointerNode.execute(callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i));
+            Object message = fromCharPointerNode.execute(hpyContext, callHelperFunctionNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i), true);
             if (!isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException)) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
             Object exception = null;
-            if (!lib.isNull(errMessagePtr)) {
-                TruffleString filename_fsencoded = fromCharPointerNode.execute(errMessagePtr);
+            if (!isNullNode.execute(hpyContext, errMessagePtr)) {
+                TruffleString filename_fsencoded = fromCharPointerNode.execute(hpyContext, errMessagePtr, true);
                 exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filename_fsencoded);
             }
 
@@ -1663,7 +1663,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         Object doGeneric(GraalHPyContext hpyContext, Object charPtr) {
             TruffleString errorMessage;
-            if (InteropLibrary.getUncached(charPtr).isNull(charPtr)) {
+            if (GraalHPyCAccess.IsNullNode.getUncached(hpyContext).execute(hpyContext, charPtr)) {
                 errorMessage = ErrorMessages.MSG_NOT_SET;
             } else {
                 // we don't need to copy the bytes since we die anyway
@@ -1724,12 +1724,12 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyErrWarnEx extends HPyQuaternaryContextFunction {
 
         @Specialization
-        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object categoryArg, Object messageArg, long stackLevel,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+        static int doGeneric(GraalHPyContext hpyContext, Object categoryArg, Object messageArg, long stackLevel,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached WarnNode warnNode) {
             Object category = categoryArg == NULL_HANDLE_DELEGATE ? RuntimeWarning : categoryArg;
-            TruffleString message = lib.isNull(messageArg) ? T_EMPTY_STRING : fromCharPointerNode.execute(messageArg);
+            TruffleString message = isNullNode.execute(hpyContext, messageArg) ? T_EMPTY_STRING : fromCharPointerNode.execute(messageArg);
             warnNode.warnEx(null, category, message, (int) stackLevel);
             return 0;
         }
@@ -1907,14 +1907,14 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object charPtr, long size, Object errorsPtr,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromCharPointerNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached TruffleString.EqualNode equalNode) {
             CodingErrorAction errorAction;
-            if (interopLib.isNull(errorsPtr)) {
+            if (isNullNode.execute(hpyContext, errorsPtr)) {
                 errorAction = CodingErrorAction.REPORT;
             } else {
                 TruffleString errors = fromCharPointerNode.execute(hpyContext, errorsPtr, false);
@@ -2041,11 +2041,11 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PBytes doGeneric(GraalHPyContext hpyContext, Object charPtr, long lsize,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            if (interopLib.isNull(charPtr)) {
+            if (isNullNode.execute(hpyContext, charPtr)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.NULL_CHAR_PASSED);
             }
             if (lsize < 0) {
@@ -3014,9 +3014,9 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyNewExceptionWithDoc extends HPy5ContextFunction {
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object namePtr, Object docPtr, Object base, Object dictObj,
+        static Object doGeneric(GraalHPyContext hpyContext, Object namePtr, Object docPtr, Object base, Object dictObj,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -3028,7 +3028,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             TruffleString doc;
-            if (!lib.isNull(docPtr)) {
+            if (!isNullNode.execute(hpyContext, docPtr)) {
                 doc = fromCharPointerNode.execute(docPtr);
             } else {
                 doc = null;
@@ -3430,15 +3430,15 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyCapsuleSet extends HPyQuaternaryContextFunction {
         @Specialization
-        static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object capsule, int key, Object valuePtr,
+        static int doGeneric(GraalHPyContext hpyContext, Object capsule, int key, Object valuePtr,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+                        @Cached PRaiseNode raiseNode) {
             GraalHPyCapsuleGet.isLegalCapsule(capsule, key, raiseNode);
             PyCapsule pyCapsule = (PyCapsule) capsule;
             switch (key) {
                 case CapsuleKey.Pointer -> {
-                    if (interopLib.isNull(valuePtr)) {
+                    if (isNullNode.execute(hpyContext, valuePtr)) {
                         throw raiseNode.raise(ValueError, ErrorMessages.CAPSULE_SETPOINTER_CALLED_WITH_NULL_POINTER);
                     }
                     pyCapsule.setPointer(valuePtr);
@@ -3530,26 +3530,25 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromEncodedObject extends HPyQuaternaryContextFunction {
         @Specialization(limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object obj, Object encodingPtr, Object errorsPtr,
+        static Object doGeneric(GraalHPyContext hpyContext, Object obj, Object encodingPtr, Object errorsPtr,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile nullProfile,
-                        @CachedLibrary("encodingPtr") InteropLibrary encodingLib,
-                        @CachedLibrary("errorsPtr") InteropLibrary errorsLib,
-                        @Cached FromCharPointerNode fromNativeCharPointerNode,
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
+                        @Cached(parameters = "hpyContext") HPyFromCharPointerNode fromNativeCharPointerNode,
                         @Cached PyUnicodeFromEncodedObject libNode) {
             if (nullProfile.profile(inliningTarget, obj == PNone.NO_VALUE)) {
                 throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             TruffleString encoding;
-            if (!encodingLib.isNull(encodingPtr)) {
-                encoding = fromNativeCharPointerNode.execute(encodingPtr);
+            if (!isNullNode.execute(hpyContext, encodingPtr)) {
+                encoding = fromNativeCharPointerNode.execute(hpyContext, encodingPtr, true);
             } else {
                 encoding = T_UTF8;
             }
 
             TruffleString errors;
-            if (!errorsLib.isNull(errorsPtr)) {
-                errors = fromNativeCharPointerNode.execute(errorsPtr);
+            if (!isNullNode.execute(hpyContext, errorsPtr)) {
+                errors = fromNativeCharPointerNode.execute(hpyContext, errorsPtr, true);
             } else {
                 errors = T_STRICT;
             }
