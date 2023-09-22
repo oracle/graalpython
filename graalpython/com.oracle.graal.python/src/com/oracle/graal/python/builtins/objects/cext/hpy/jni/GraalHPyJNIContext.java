@@ -1228,12 +1228,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * {@link InteropLibrary#isPointer(Object)} with {@code true}).
      */
     private static Object truffleStringToNative(TruffleString value) {
-        TruffleString nativeTName = TruffleString.AsNativeNode.getUncached().execute(value, (size) -> {
-            // over-allocate by 1 byte and write a zero terminator
-            long ptr = UNSAFE.allocateMemory(size + 1);
-            UNSAFE.putByte(ptr + size, (byte) 0);
-            return new NativePointer(ptr);
-        }, TS_ENCODING, true, true);
+        TruffleString nativeTName = TruffleString.AsNativeNode.getUncached().execute(value, (size) -> new NativePointer(UNSAFE.allocateMemory(size)), TS_ENCODING, true, true);
         Object result = TruffleString.GetInternalNativePointerNode.getUncached().execute(nativeTName, TS_ENCODING);
         assert InteropLibrary.getUncached().isPointer(result);
         return result;
