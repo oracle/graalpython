@@ -276,7 +276,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
+        static Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasTbProfile,
                         @Cached InlinedConditionProfile startedProfile,
@@ -287,25 +287,26 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
             if (hasTb && !(tb instanceof PTraceback)) {
                 invalidTbProfile.enter(inliningTarget);
-                throw raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
             }
             if (self.isRunning()) {
                 runningProfile.enter(inliningTarget);
-                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             Object instance = prepareExceptionNode.execute(frame, typ, val);
             if (hasTb) {
                 setTracebackNode.execute(inliningTarget, instance, tb);
             }
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
                                                                           // caught
             if (self.isCoroutine() && self.isFinished()) {
-                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location

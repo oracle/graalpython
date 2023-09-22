@@ -85,6 +85,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -169,7 +170,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(source)")
-        public static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+        static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
             self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, inliningTarget, source, encoding, errors)));
@@ -177,13 +178,15 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNone(self)")
-        public PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
+        static PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
         }
 
         @Specialization(guards = "!isBytes(self)")
-        public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
+        static PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
         }
     }
 

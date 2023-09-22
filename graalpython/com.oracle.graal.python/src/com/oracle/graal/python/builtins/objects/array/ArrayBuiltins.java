@@ -1299,10 +1299,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
-        int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
+        static int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached ArrayNodes.GetValueNode getValueNode) {
+                        @Cached ArrayNodes.GetValueNode getValueNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (start < 0) {
                 start += self.getLength();
                 if (start < 0) {
@@ -1317,7 +1318,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     return i;
                 }
             }
-            throw raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
+            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
         }
 
         @Override

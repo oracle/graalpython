@@ -753,9 +753,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
-                        @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end) {
-            throw raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
+        static boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
+                        @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
         protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
@@ -880,12 +881,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int index(VirtualFrame frame, Object self, Object arg, int start, int end,
+        static int index(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int result = findNode.execute(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -904,12 +906,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
+        static int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int result = findNode.executeReverse(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -1660,8 +1663,9 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
+        static boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
         @TruffleBoundary(allowInlining = true)

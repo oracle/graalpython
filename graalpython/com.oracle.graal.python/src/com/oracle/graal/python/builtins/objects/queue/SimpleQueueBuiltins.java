@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -250,13 +251,15 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
     public abstract static class SimpleQueuePutNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        PNone doGeneric(PSimpleQueue self, Object item, @SuppressWarnings("unused") Object block, @SuppressWarnings("unused") Object timeout) {
+        static PNone doGeneric(PSimpleQueue self, Object item, @SuppressWarnings("unused") Object block, @SuppressWarnings("unused") Object timeout,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.put(item)) {
                 /*
                  * CPython uses a Python list as backing storage. This will throw an OverflowError
                  * if no more elements can be added to the list.
                  */
-                throw raise(OverflowError);
+                throw raiseNode.get(inliningTarget).raise(OverflowError);
             }
             return PNone.NONE;
         }

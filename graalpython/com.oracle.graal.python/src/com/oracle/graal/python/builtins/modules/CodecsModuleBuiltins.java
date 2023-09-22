@@ -1305,8 +1305,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UTF16EXDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
+        static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
         }
     }
 
@@ -1375,8 +1376,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UTF32EXDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
+        static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
         }
     }
 
@@ -1601,8 +1603,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodePageDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object decode(Object code_page, Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("code_page_decode"));
+        static Object decode(Object code_page, Object obj, Object errors, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("code_page_decode"));
         }
     }
 

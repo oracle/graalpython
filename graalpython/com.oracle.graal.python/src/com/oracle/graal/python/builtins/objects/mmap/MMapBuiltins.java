@@ -100,6 +100,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -622,7 +623,8 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached LongIndexConverterNode startConverter,
                         @Cached LongIndexConverterNode endConverter,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
                 long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
@@ -641,7 +643,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 byte[] firstBuffer = new byte[bufferSize];
                 byte[] secondBuffer = new byte[bufferSize];
 
-                readBytes(frame, inliningTarget, self, posixLib, start, secondBuffer, constructAndRaiseNode);
+                readBytes(frame, inliningTarget, self, posixLib, start, secondBuffer, constructAndRaiseNode, raiseNode);
                 for (long selfIdx = start; selfIdx <= end - subLen; selfIdx++, buffersIndex++) {
                     // Make sure that the buffers have enough room for the search
                     if (buffersIndex + subLen > bufferSize * 2) {
@@ -650,7 +652,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         secondBuffer = tmp;
                         buffersIndex -= bufferSize; // move to the tail of the first buffer now
                         long readIndex = selfIdx + subLen - 1;
-                        readBytes(frame, inliningTarget, self, posixLib, readIndex, secondBuffer, constructAndRaiseNode);
+                        readBytes(frame, inliningTarget, self, posixLib, readIndex, secondBuffer, constructAndRaiseNode, raiseNode);
                         // It's OK if we read less than buffer size, the outer loop condition
                         // 'selfIdx <= end' and the check in readBytes should cover that we don't
                         // read
@@ -680,13 +682,14 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        private void readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, long index, byte[] buffer, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+        private void readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, long index, byte[] buffer, PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        PRaiseNode.Lazy raiseNode) {
             try {
                 long remaining = self.getLength() - index;
                 int toReadLen = remaining > buffer.length ? buffer.length : (int) remaining;
                 int nread = posixLib.mmapReadBytes(getPosixSupport(), self.getPosixSupportHandle(), index, buffer, toReadLen);
                 if (toReadLen != nread) {
-                    throw raise(PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
                 }
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);

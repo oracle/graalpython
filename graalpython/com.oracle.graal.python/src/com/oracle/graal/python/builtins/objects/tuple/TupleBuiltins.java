@@ -148,7 +148,8 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
-                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, self);
             int start = startIn;
             if (start < 0) {
@@ -170,7 +171,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
     }
 
