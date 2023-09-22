@@ -70,7 +70,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public final class GeneratorBuiltins extends PythonBuiltins {
 
-    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(PythonUnaryBuiltinNode node, PGenerator self) {
         if (self.isFinished()) {
             throw node.raiseStopIteration();
         }

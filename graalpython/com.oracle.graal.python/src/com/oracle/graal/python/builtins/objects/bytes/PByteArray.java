@@ -32,7 +32,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -94,7 +94,8 @@ public final class PByteArray extends PBytesLike {
         this.exports = exports;
     }
 
-    public void checkCanResize(PythonBuiltinBaseNode node) {
+    // TODO replace with the lazy version
+    public void checkCanResize(PRaiseNode node) {
         if (exports != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }

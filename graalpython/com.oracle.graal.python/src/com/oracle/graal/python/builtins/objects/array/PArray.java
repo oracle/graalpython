@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -122,7 +122,8 @@ public final class PArray extends PythonBuiltinObject {
         return exports;
     }
 
-    public void checkCanResize(PythonBuiltinBaseNode node) {
+    // TODO replace with the lazy version
+    public void checkCanResize(PRaiseNode node) {
         if (exports.get() != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }

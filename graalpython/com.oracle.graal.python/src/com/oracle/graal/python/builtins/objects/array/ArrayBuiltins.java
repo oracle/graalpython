@@ -246,7 +246,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                 }
                 int itemsize = self.getFormat().bytesize;
                 int segmentLength = self.getLength() * itemsize;
@@ -603,7 +603,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                 if (differentLengthProfile.profile(inliningTarget, sliceLength != needed)) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                     if (growProfile.profile(inliningTarget, sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
@@ -651,7 +651,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Shared @Cached DeleteArraySliceNode deleteSliceNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             deleteSliceNode.execute(inliningTarget, self, index, 1);
             return PNone.NONE;
@@ -667,7 +667,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
@@ -817,7 +817,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             try {
                 int index = self.getLength();
                 int newLength = PythonUtils.addExact(index, 1);
-                self.checkCanResize(this);
+                self.checkCanResize(getRaiseNode());
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 setLengthNode.execute(inliningTarget, self, newLength);
                 putValueNode.execute(frame, inliningTarget, self, index, value);
@@ -841,7 +841,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), value.getLength());
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                 }
                 int itemsize = self.getFormat().bytesize;
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
@@ -868,7 +868,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), storageLength);
                 if (newLength != self.getLength()) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                     ensureCapacityNode.execute(inliningTarget, self, newLength);
                 }
             } catch (OverflowException e) {
@@ -910,7 +910,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 // in CPython
                 try {
                     length = PythonUtils.addExact(length, 1);
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                     ensureCapacityNode.execute(inliningTarget, self, length);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -952,7 +952,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             // Need to check the validity of the value before moving the memory around to ensure the
             // operation can fail atomically
             checkValueNode.execute(frame, inliningTarget, self, value);
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             shiftNode.execute(inliningTarget, self, index, 1);
             putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
@@ -976,7 +976,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(inliningTarget, self, i);
                 if (eqNode.compare(frame, inliningTarget, item, value)) {
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                     deleteSliceNode.execute(inliningTarget, self, i, 1);
                     return PNone.NONE;
                 }
@@ -1000,7 +1000,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             Object value = getValueNode.execute(inliningTarget, self, index);
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             deleteSliceNode.execute(inliningTarget, self, index, 1);
             return value;
         }
@@ -1035,7 +1035,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         throw raise(ValueError, ErrorMessages.BYTES_ARRAY_NOT_MULTIPLE_OF_ARRAY_SIZE);
                     }
                     int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
-                    self.checkCanResize(this);
+                    self.checkCanResize(getRaiseNode());
                     ensureCapacityNode.execute(inliningTarget, self, newLength);
                     setLengthNode.execute(inliningTarget, self, newLength);
                     bufferLib.readIntoBuffer(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength, bufferLib);
@@ -1108,7 +1108,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, list);
                 int length = storage.length();
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.checkCanResize(this);
+                self.checkCanResize(getRaiseNode());
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(inliningTarget, storage, i));
@@ -1146,7 +1146,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             try {
                 int length = codePointLengthNode.execute(str, TS_ENCODING);
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.checkCanResize(this);
+                self.checkCanResize(getRaiseNode());
                 ensureCapacityNode.execute(inliningTarget, self, newLength);
                 TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
                 int codePointIndex = 0;

@@ -135,7 +135,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         return CommonGeneratorBuiltinsFactory.getFactories();
     }
 
-    private static void checkResumable(PythonBuiltinBaseNode node, PGenerator self) {
+    private static void checkResumable(PRaiseNode node, PGenerator self) {
         if (self.isFinished()) {
             if (self.isAsyncGen()) {
                 throw node.raise(StopAsyncIteration);
@@ -262,7 +262,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
-            checkResumable(this, self);
+            checkResumable(getRaiseNode(), self);
             if (!self.isStarted() && value != PNone.NONE) {
                 throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
