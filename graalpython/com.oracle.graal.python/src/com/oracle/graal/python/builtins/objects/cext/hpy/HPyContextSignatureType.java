@@ -103,7 +103,8 @@ public enum HPyContextSignatureType {
     HPyMember_FieldType("HPyMember_FieldType", null, null),
     HPySlot_Slot("HPySlot_Slot", null, null),
     PyMemberDef("PyMemberDef", null, null),
-    HPy_buffer("HPy_buffer", null, null);
+    HPy_buffer("HPy_buffer", null, null),
+    PyGetSetDef("PyGetSetDef", null, null);
 
     /**
      * The type definition used in C source code.

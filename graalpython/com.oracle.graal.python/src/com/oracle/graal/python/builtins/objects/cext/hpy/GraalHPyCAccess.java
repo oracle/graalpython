@@ -88,6 +88,10 @@ public abstract class GraalHPyCAccess {
             return idx * elementSize + ctx.getCFieldOffset(field);
         }
 
+        public static long getElementPtr(GraalHPyContext ctx, long idx, HPyContextSignatureType elementType, GraalHPyCField field) {
+            return idx * ctx.getCTypeSize(elementType) + ctx.getCFieldOffset(field);
+        }
+
     }
 
     public abstract static class AllocateNode extends Node {

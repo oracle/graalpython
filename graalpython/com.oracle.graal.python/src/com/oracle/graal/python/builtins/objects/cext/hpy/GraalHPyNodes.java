@@ -68,12 +68,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
@@ -712,29 +714,49 @@ public abstract class GraalHPyNodes {
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
-            TruffleString getSetDescrName = fromCharPointerNode.execute(readPointerNode.read(context, legacyGetSetDef, GraalHPyCField.PyGetSetDef__name));
+            // compute offset of name and read name pointer
+            long nameOffset = GraalHPyCAccess.ReadPointerNode.getElementPtr(context, i, HPyContextSignatureType.PyGetSetDef, GraalHPyCField.PyGetSetDef__name);
+            Object namePtr = readPointerNode.execute(context, legacyGetSetDef, nameOffset);
+
+            // if the name pointer is null, this is the sentinel
+            if (isNullNode.execute(context, namePtr)) {
+                return null;
+            }
+            TruffleString getSetDescrName = fromCharPointerNode.execute(namePtr);
+
+            // compute remaining offsets
+            long docOffset = GraalHPyCAccess.ReadPointerNode.getElementPtr(context, i, HPyContextSignatureType.PyGetSetDef, GraalHPyCField.PyGetSetDef__doc);
+            long getOffset = GraalHPyCAccess.ReadPointerNode.getElementPtr(context, i, HPyContextSignatureType.PyGetSetDef, GraalHPyCField.PyGetSetDef__get);
+            long setOffset = GraalHPyCAccess.ReadPointerNode.getElementPtr(context, i, HPyContextSignatureType.PyGetSetDef, GraalHPyCField.PyGetSetDef__set);
+            long closureOffset = GraalHPyCAccess.ReadPointerNode.getElementPtr(context, i, HPyContextSignatureType.PyGetSetDef, GraalHPyCField.PyGetSetDef__closure);
 
             // note: 'doc' may be NULL; in this case, we would store 'None'
             Object getSetDescrDoc = PNone.NONE;
-            Object docPtr = readPointerNode.read(context, legacyGetSetDef, GraalHPyCField.HPyModuleDef__doc);
+            Object docPtr = readPointerNode.execute(context, legacyGetSetDef, docOffset);
             if (!isNullNode.execute(context, docPtr)) {
                 getSetDescrDoc = fromCharPointerNode.execute(docPtr);
             }
 
-            Object getterFunPtr = readPointerNode.read(context, legacyGetSetDef, GraalHPyCField.PyGetSetDef__get);
-            Object setterFunPtr = readPointerNode.read(context, legacyGetSetDef, GraalHPyCField.PyGetSetDef__set);
-            Object closurePtr = readPointerNode.read(context, legacyGetSetDef, GraalHPyCField.PyGetSetDef__closure);
+            Object getterFunPtr = readPointerNode.execute(context, legacyGetSetDef, getOffset);
+            Object setterFunPtr = readPointerNode.execute(context, legacyGetSetDef, setOffset);
+            /*
+             * Note: we need to convert the native closure pointer to an interop pointer because it
+             * will be handed to a C API root which expects that.
+             */
+            Object closurePtr = context.nativeToInteropPointer(readPointerNode.execute(context, legacyGetSetDef, closureOffset));
 
             PythonLanguage lang = PythonLanguage.get(raiseNode);
             PBuiltinFunction getterObject = null;
             if (!isNullNode.execute(context, getterFunPtr)) {
-                getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+                Object getterFunInteropPtr = NativeCExtSymbol.ensureExecutable(context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
+                getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunInteropPtr, closurePtr);
             }
 
             PBuiltinFunction setterObject = null;
             boolean hasSetter = !isNullNode.execute(context, setterFunPtr);
             if (hasSetter) {
-                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+                Object setterFunInteropPtr = NativeCExtSymbol.ensureExecutable(context.nativeToInteropPointer(setterFunPtr), PExternalFunctionWrapper.SETTER);
+                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunInteropPtr, closurePtr);
             }
 
             GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, hasSetter);

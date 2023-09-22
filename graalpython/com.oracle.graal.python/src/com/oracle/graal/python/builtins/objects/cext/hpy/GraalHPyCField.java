@@ -97,6 +97,7 @@ public enum GraalHPyCField {
     PyGetSetDef__name(ConstCharPtr),
     PyGetSetDef__get(VoidPtr),
     PyGetSetDef__set(VoidPtr),
+    PyGetSetDef__doc(ConstCharPtr),
     PyGetSetDef__closure(VoidPtr),
     PyMemberDef__name(ConstCharPtr),
     PyMemberDef__type(Int),
