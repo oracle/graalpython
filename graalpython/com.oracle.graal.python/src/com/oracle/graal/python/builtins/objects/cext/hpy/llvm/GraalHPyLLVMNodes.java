@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -155,8 +156,8 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, Object pointer,
-                              @Bind("this") Node inliningTarget,
-                              @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
             callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FREE, pointer);
         }
     }
@@ -167,8 +168,8 @@ abstract class GraalHPyLLVMNodes {
 
         @Specialization
         static void doGeneric(GraalHPyContext ctx, GraalHPyHandleReference[] references,
-                              @Bind("this") Node inliningTarget,
-                              @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
             NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(references);
             callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper);
         }
@@ -424,12 +425,24 @@ abstract class GraalHPyLLVMNodes {
 
         @Override
         protected final int executeInt(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType size) {
-            return ((Number) execute(ctx, pointer, offset, size)).intValue();
+            Object object = execute(ctx, pointer, offset, size);
+            if (object instanceof Integer i) {
+                return i;
+            } else if (object instanceof Long l) {
+                return (int) (long) l;
+            }
+            return numberAsInt((Number) object);
         }
 
         @Override
         protected final long executeLong(GraalHPyContext ctx, Object pointer, long offset, HPyContextSignatureType size) {
-            return ((Number) execute(ctx, pointer, offset, size)).longValue();
+            Object object = execute(ctx, pointer, offset, size);
+            if (object instanceof Integer i) {
+                return (int) i;
+            } else if (object instanceof Long l) {
+                return l;
+            }
+            return numberAsLong((Number) object);
         }
 
         @Specialization
@@ -489,6 +502,16 @@ abstract class GraalHPyLLVMNodes {
                     return GraalHPyNativeSymbol.GRAAL_HPY_READ_I64;
             }
             throw CompilerDirectives.shouldNotReachHere("invalid member type");
+        }
+
+        @TruffleBoundary
+        private int numberAsInt(Number number) {
+            return number.intValue();
+        }
+
+        @TruffleBoundary
+        private long numberAsLong(Number number) {
+            return number.longValue();
         }
     }
 
