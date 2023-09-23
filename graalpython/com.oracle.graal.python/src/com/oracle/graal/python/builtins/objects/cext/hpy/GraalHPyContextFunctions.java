@@ -2267,7 +2267,7 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyFromPyObject extends HPyBinaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
+        static Object doGeneric(GraalHPyContext hpyContext, Object object,
                         @Cached NativeToPythonNode toJavaNode) {
             // IMPORTANT: this is not stealing the reference. The CPython implementation
             // actually increases the reference count by 1.

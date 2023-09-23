@@ -2966,7 +2966,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t, VoidPtr, CVoid -> argBits;
             case Int32_t, Uint32_t -> argBits & 0xFFFFFFFFL;
             case CDouble -> throw CompilerDirectives.shouldNotReachHere("invalid argument handle");
-            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, Cpy_PyObjectPtr, ConstHPyPtr, HPyPtr, HPyCallFunctionPtr, CharPtr, ConstCharPtr -> argBits;
+            case HPyModuleDefPtr, HPyType_SpecPtr, HPyType_SpecParamPtr, HPy_ssize_tPtr, ConstHPyPtr, HPyPtr, HPyCallFunctionPtr, CharPtr, ConstCharPtr -> argBits;
+            case Cpy_PyObjectPtr -> nativeToInteropPointer(argBits);
             default -> throw CompilerDirectives.shouldNotReachHere("unsupported arg type");
         };
     }
