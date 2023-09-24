@@ -1812,6 +1812,7 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object unicodeObject, Object sizePtr,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteSizeTNode writeSizeTNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
@@ -1819,7 +1820,12 @@ public abstract class GraalHPyContextFunctions {
                         @Cached TruffleString.AsNativeNode asNativeNode,
                         @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
-            TruffleString tsUtf8 = switchEncodingNode.execute(castToTruffleStringNode.execute(inliningTarget, unicodeObject), Encoding.UTF_8);
+            TruffleString tsUtf8;
+            try {
+                tsUtf8 = switchEncodingNode.execute(castToTruffleStringNode.execute(inliningTarget, unicodeObject), Encoding.UTF_8);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
             TruffleString nativeTName = asNativeNode.execute(tsUtf8, (size) -> hpyContext.nativeToInteropPointer(allocateNode.malloc(hpyContext, size)), Encoding.UTF_8, false, true);
             Object result = getInternalNativePointerNode.execute(nativeTName, Encoding.UTF_8);
             if (!isNullNode.execute(hpyContext, sizePtr)) {
