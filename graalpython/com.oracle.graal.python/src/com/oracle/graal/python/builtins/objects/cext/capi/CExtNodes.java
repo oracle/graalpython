@@ -2274,6 +2274,7 @@ public abstract class CExtNodes {
             return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, language, context.factory(), true);
         }
 
+        @TruffleBoundary
         public static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
             if (lib.isPointer(callable)) {
                 long pointer;
