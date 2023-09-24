@@ -917,7 +917,7 @@ abstract class GraalHPyJNINodes {
             return result;
         }
 
-        private static int strlen(long charPtr) {
+        static int strlen(long charPtr) {
             int length = 0;
             while (UNSAFE.getByte(charPtr + length) != 0) {
                 length++;

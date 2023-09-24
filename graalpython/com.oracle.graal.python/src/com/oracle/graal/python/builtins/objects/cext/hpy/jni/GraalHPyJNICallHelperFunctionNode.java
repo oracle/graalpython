@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -64,6 +65,7 @@ final class GraalHPyJNICallHelperFunctionNode extends HPyCallHelperFunctionNode 
         return switch (name) {
             case GRAAL_HPY_GET_ERRNO -> GraalHPyJNIContext.getErrno();
             case GRAAL_HPY_GET_STRERROR -> GraalHPyJNIContext.getStrerror((int) args[0]);
+            case GRAAL_HPY_STRLEN -> HPyJNIFromCharPointerNode.strlen((long) args[0]);
             default -> throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         };
     }
