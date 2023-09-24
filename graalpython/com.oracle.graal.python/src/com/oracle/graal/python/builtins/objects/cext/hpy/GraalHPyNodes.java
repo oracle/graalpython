@@ -65,14 +65,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
@@ -1163,6 +1162,8 @@ public abstract class GraalHPyNodes {
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached ReadAttributeFromObjectNode readAttributeToObjectNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
 
             // computes '&(slotDefArrPtr[i].slot)'
@@ -1209,6 +1210,24 @@ public abstract class GraalHPyNodes {
                             break;
                         }
                         writeAttributeToObjectNode.execute(enclosingType, getSetDescriptor.getName(), getSetDescriptor);
+                    }
+                default:
+                    // this is the generic slot case
+                    TruffleString attributeKey = slot.getAttributeKey();
+                    if (attributeKey != null) {
+                        if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
+                            Object interopPFuncPtr = context.nativeToInteropPointer(pfuncPtr);
+                            PBuiltinFunction method = CreateFunctionNode.resolveClosurePointer(context.getContext(), interopPFuncPtr, lib);
+                            if (method == null) {
+                                PythonLanguage lang = PythonLanguage.get(raiseNode);
+                                method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, interopPFuncPtr, enclosingType, 0, slot.getSignature(), lang, factory, true);
+                            }
+                            writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                        } else {
+                            // TODO(fa): implement support for remaining legacy slot kinds
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw CompilerDirectives.shouldNotReachHere(PythonUtils.formatJString("support for legacy slot %s not yet implemented", slot.name()));
+                        }
                     }
             }
             return true;
