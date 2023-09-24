@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 public enum GraalHPyNativeSymbol {
 
     GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
-    GRAAL_HPY_BUFFER_FREE("graal_hpy_buffer_free"),
     GRAAL_HPY_FREE("graal_hpy_free"),
     GRAAL_HPY_FROM_HPY_ARRAY("graal_hpy_from_HPy_array"),
     GRAAL_HPY_GET_ERRNO("graal_hpy_get_errno"),
@@ -51,19 +50,12 @@ public enum GraalHPyNativeSymbol {
     GRAAL_HPY_STRLEN("graal_hpy_strlen"),
     GRAAL_HPY_ARRAY_TO_NATIVE("graal_hpy_array_to_native"),
     GRAAL_HPY_FROM_I8_ARRAY("graal_hpy_from_i8_array"),
-    GRAAL_HPY_FROM_WCHAR_ARRAY("graal_hpy_from_wchar_array"),
     GRAAL_HPY_CONTEXT_TO_NATIVE("graal_hpy_context_to_native"),
-    GRAAL_HPY_BYTE_ARRAY_TO_NATIVE("graal_hpy_byte_array_to_native"),
-    GRAAL_HPY_INT_ARRAY_TO_NATIVE("graal_hpy_int_array_to_native"),
-    GRAAL_HPY_LONG_ARRAY_TO_NATIVE("graal_hpy_long_array_to_native"),
-    GRAAL_HPY_DOUBLE_ARRAY_TO_NATIVE("graal_hpy_double_array_to_native"),
-    GRAAL_HPY_POINTER_ARRAY_TO_NATIVE("graal_hpy_pointer_array_to_native"),
     GRAAL_HPY_CALLOC("graal_hpy_calloc"),
     GRAAL_HPY_GET_FIELD_I("graal_hpy_get_field_i"),
     GRAAL_HPY_SET_FIELD_I("graal_hpy_set_field_i"),
     GRAAL_HPY_GET_GLOBAL_I("graal_hpy_get_global_i"),
     GRAAL_HPY_SET_GLOBAL_I("graal_hpy_set_global_i"),
-    GRAAL_HPY_LONG2PTR("graal_hpy_long2ptr"),
     GRAAL_HPY_GET_ELEMENT_PTR("graal_hpy_get_element_ptr"),
 
     /* C functions for reading native members by offset */
@@ -76,7 +68,6 @@ public enum GraalHPyNativeSymbol {
     GRAAL_HPY_READ_UI32("graal_hpy_read_ui32"),
     GRAAL_HPY_READ_I64("graal_hpy_read_i64"),
     GRAAL_HPY_READ_UI64("graal_hpy_read_ui64"),
-    GRAAL_HPY_READ_S("graal_hpy_read_s"),
     GRAAL_HPY_READ_I("graal_hpy_read_i"),
     GRAAL_HPY_READ_L("graal_hpy_read_l"),
     GRAAL_HPY_READ_F("graal_hpy_read_f"),

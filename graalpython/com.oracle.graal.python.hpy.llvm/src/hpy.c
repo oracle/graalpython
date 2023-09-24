@@ -64,6 +64,7 @@ typedef PyType_Slot cpy_PyTypeSlot;
 
 POLYGLOT_DECLARE_TYPE(HPy)
 POLYGLOT_DECLARE_TYPE(HPyContext)
+POLYGLOT_DECLARE_TYPE(int8_t)
 
 int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject, int32_t *c_type_sizes, int32_t *c_field_offsets) {
 	// save context in global for NFI upcalls
@@ -86,10 +87,6 @@ int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject, int
 
 void *graal_hpy_get_element_ptr(void *base, int64_t offset) {
 	return base + offset;
-}
-
-void *graal_hpy_long2ptr(int64_t lval) {
-	return (void *)lval;
 }
 
 void* graal_hpy_calloc(size_t count, size_t eltsize) {
@@ -137,6 +134,10 @@ uint64_t graal_hpy_strlen(const char *ptr) {
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
        return polyglot_from_HPy_array(arr, len);
+}
+
+void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
+       return polyglot_from_i8_array(arr, len);
 }
 
 /*
