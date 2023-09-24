@@ -916,7 +916,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private static native long initJNITraceModule(long uctxPointer);
 
     @TruffleBoundary
-    static native long bulkFreeNativeSpace(long[] nativeSpacePtrs, long[] destroyFuncPtrs, int n);
+    static native void bulkFreeNativeSpace(long[] nativeSpacePtrs, long[] destroyFuncPtrs, int n);
 
     enum HPyJNIUpcall implements HPyUpcall {
         HPyUnicodeFromJCharArray,
