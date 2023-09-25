@@ -2870,7 +2870,7 @@ public abstract class GraalHPyNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(true)
+    @GenerateCached(false)
     public abstract static class HPyFieldLoadNode extends Node {
 
         public abstract Object execute(Node inliningTarget, PythonObject owner, Object hpyFieldPtr);
@@ -2916,7 +2916,7 @@ public abstract class GraalHPyNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(true)
+    @GenerateCached(false)
     public abstract static class HPyFieldStoreNode extends Node {
 
         public abstract int execute(Node inliningTarget, PythonObject owner, Object hpyFieldObject, Object referent);

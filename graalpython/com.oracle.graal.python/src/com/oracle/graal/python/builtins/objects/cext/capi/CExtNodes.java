@@ -1046,7 +1046,7 @@ public abstract class CExtNodes {
             try {
                 CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
                 // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
+                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);

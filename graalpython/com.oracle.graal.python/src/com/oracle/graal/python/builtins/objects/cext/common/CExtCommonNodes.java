@@ -207,17 +207,19 @@ public abstract class CExtCommonNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class EnsureTruffleStringNode extends Node {
-        public abstract Object execute(Object obj);
+        public abstract Object execute(Node inliningTarget, Object obj);
 
         @Specialization
-        protected TruffleString doString(String s,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        static TruffleString doString(String s,
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(s, TS_ENCODING);
         }
 
         @Fallback
-        protected Object doObj(Object o) {
+        static Object doObj(Object o) {
             return o;
         }
     }

@@ -3535,7 +3535,7 @@ public abstract class GraalHPyContextFunctions {
     @HPyContextFunction("ctx_Unicode_FromEncodedObject")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromEncodedObject extends HPyQuaternaryContextFunction {
-        @Specialization(limit = "1")
+        @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object obj, Object encodingPtr, Object errorsPtr,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile nullProfile,

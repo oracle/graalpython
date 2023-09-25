@@ -836,15 +836,15 @@ abstract class GraalHPyLLVMNodes {
         static Object doIt(Node inliningTarget, GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached HPyLLVMImportSymbolNode importCExtSymbolNode,
-                        @Cached(inline = false) EnsureTruffleStringNode ensureTruffleStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached EnsureTruffleStringNode ensureTruffleStringNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 Object llvmFunction = importCExtSymbolNode.execute(inliningTarget, context, name);
-                return ensureTruffleStringNode.execute(interopLibrary.execute(llvmFunction, args));
+                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(llvmFunction, args));
             } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
             }
         }
     }
