@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "5a21d6dd0051ff99f561d89dfc530d723edb3ab8",
+                "version": "4a416d7aa58e00898962b2efc3e73a22df65d5cf",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "5a21d6dd0051ff99f561d89dfc530d723edb3ab8",
+                "version": "4a416d7aa58e00898962b2efc3e73a22df65d5cf",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "5a21d6dd0051ff99f561d89dfc530d723edb3ab8",
+                "version": "4a416d7aa58e00898962b2efc3e73a22df65d5cf",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "5a21d6dd0051ff99f561d89dfc530d723edb3ab8",
+                "version": "4a416d7aa58e00898962b2efc3e73a22df65d5cf",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -430,6 +430,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.shell",
                 "com.oracle.graal.python",
+                "com.oracle.graal.python.test.integration",
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
@@ -453,6 +454,26 @@ suite = {
                 # normally live in GraalPython source tree
                 "test.graalpython.home": "<suite:graalpython>/graalpython"
             },
+        },
+
+        # GRAALPYTHON_INTEGRATION_UNIT_TESTS
+        "com.oracle.graal.python.test.integration": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "mx:JUNIT",
+                "sdk:GRAAL_SDK",
+            ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
+            "workingSets": "Truffle,Python",
+            "testProject": True,
         },
 
         "com.oracle.graal.python.hpy.test": {
@@ -1037,10 +1058,27 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "truffle:TRUFFLE_TCK",
+                "GRAALPYTHON_INTEGRATION_UNIT_TESTS",
             ],
             "testDistribution": True,
             "maven": False,
             "unittestConfig": "python-internal",
+        },
+
+        "GRAALPYTHON_INTEGRATION_UNIT_TESTS": {
+            "description": "Python integration tests. These tests access GraalPy only via the GraalVM SDK APIs",
+            "dependencies": [
+                "com.oracle.graal.python.test.integration",
+            ],
+            "exclude": ["mx:JUNIT"],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
+                "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
+                "sdk:GRAAL_SDK",
+            ],
+            "testDistribution": True,
+            "maven": False,
         },
 
         "GRAALPYTHON_BENCH": {
@@ -1064,6 +1102,8 @@ suite = {
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
+                # We run the TCK with Python home served from resources
+                "GRAALPYTHON_RESOURCES",
             ],
             "testDistribution": True,
             "maven": False,
