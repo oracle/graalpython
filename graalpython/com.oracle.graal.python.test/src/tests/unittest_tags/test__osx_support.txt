@@ -12,4 +12,5 @@
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__remove_unsupported_archs
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__save_modified_value
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__save_modified_value_unchanged
+*graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__supports_universal_builds
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test_get_platform_osx
