@@ -1211,6 +1211,7 @@ public abstract class GraalHPyNodes {
                         }
                         writeAttributeToObjectNode.execute(enclosingType, getSetDescriptor.getName(), getSetDescriptor);
                     }
+                    break;
                 default:
                     // this is the generic slot case
                     TruffleString attributeKey = slot.getAttributeKey();
@@ -1229,6 +1230,7 @@ public abstract class GraalHPyNodes {
                             throw CompilerDirectives.shouldNotReachHere(PythonUtils.formatJString("support for legacy slot %s not yet implemented", slot.name()));
                         }
                     }
+                    break;
             }
             return true;
         }
