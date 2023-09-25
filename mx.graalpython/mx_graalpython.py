@@ -827,7 +827,7 @@ def _graalpy_launcher(managed=False):
 
 def graalpy_standalone_home(standalone_type, enterprise=False):
     assert standalone_type in ['native', 'jvm']
-    jdk_version = mx.get_jdk().javaCompliance  # Not our "get_jdk", because we do not want the jvmci tag.
+    jdk_version = mx.get_jdk().version
     python_home = os.environ.get("GRAALPY_HOME", None)
     if python_home and "*" in python_home:
         python_home = os.path.abspath(glob.glob(python_home)[0])
@@ -844,7 +844,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False):
                 line = f.readline()
         if 'JAVA_VERSION=' not in line:
             mx.abort(f"GRAALPY_HOME does not contain 'release' file. Cannot check Java version.")
-        actual_jdk_version = line.strip('JAVA_VERSION=').strip(' "\n\r')
+        actual_jdk_version = mx.VersionSpec(line.strip('JAVA_VERSION=').strip(' "\n\r'))
         if actual_jdk_version != jdk_version:
             mx.abort(f"GRAALPY_HOME is not compatible with the requested JDK version.\n"
                      f"actual version: '{actual_jdk_version}', version string: {line}, requested version: {jdk_version}.")
@@ -865,7 +865,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False):
         mx_args = ['-p', vm_suite_path, '--env', env_file]
         if not DISABLE_REBUILD:
             dep_type = 'JAVA' if standalone_type == 'jvm' else 'NATIVE'
-            mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE_SVM{svm_distr}_JAVA{jdk_version}"])
+            mx.run_mx(mx_args + ["build", "--dep", f"PYTHON_{dep_type}_STANDALONE_SVM{svm_distr}_JAVA{jdk_version.parts[0]}"])
         out = mx.OutputCapture()
         mx.run_mx(mx_args + ["standalone-home", "--type", standalone_type, "python"], out=out)
         python_home = out.data.splitlines()[-1].strip()
@@ -901,10 +901,10 @@ def graalpy_standalone_native_managed():
 
 
 def graalvm_jdk():
-    jdk_version = mx.get_jdk().javaCompliance  # Not our "get_jdk", because we do not want the jvmci tag.
+    jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
-        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_version}"])
+        mx.run_mx(mx_args + ["build", "--dep", f"GRAALVM_COMMUNITY_JAVA{jdk_major_version}"])
     out = mx.OutputCapture()
     mx.run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
