@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
@@ -450,16 +451,16 @@ public final class GraalHPyContext extends CExtContext {
                 this.useNativeFastPaths = useNativeFastPaths;
                 backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
             } else {
-                throw new RuntimeException("Cannot use HPy JNI backend because JNI access is forbidden.");
+                throw new ApiInitException(null, null, ErrorMessages.HPY_CANNOT_USE_JNI_BACKEND);
             }
         } else if (backendMode == HPyBackendMode.NFI) {
-            throw new RuntimeException("HPy NFI backend is not yet implemented");
+            throw new ApiInitException(null, null, ErrorMessages.HPY_NFI_NOT_YET_IMPLEMENTED);
         } else if (backendMode == HPyBackendMode.LLVM) {
             // TODO(fa): we currently don't use native fast paths with the LLVM backend
             this.useNativeFastPaths = false;
             backend = new GraalHPyLLVMContext(this, traceUpcallsInterval > 0);
         } else {
-            throw new RuntimeException("unknown HPy backend: " + backendMode);
+            throw new ApiInitException(null, null, ErrorMessages.HPY_UNKNOWN_BACKEND, TruffleString.fromJavaStringUncached(backendMode.name(), TS_ENCODING));
         }
 
         backend.initNativeContext();
