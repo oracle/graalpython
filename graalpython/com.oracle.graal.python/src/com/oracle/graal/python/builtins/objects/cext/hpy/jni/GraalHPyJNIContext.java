@@ -411,7 +411,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (hPyDebugContext == 0) {
             CompilerDirectives.transferToInterpreter();
             if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
-                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
+                throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
             }
             try {
                 toNativeInternal();
@@ -422,7 +422,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 hPyDebugContext = debugCtxPtr;
             } catch (CannotCastException e) {
                 // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
-                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
+                throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
             }
         }
     }
@@ -432,7 +432,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (hPyTraceContext == 0) {
             CompilerDirectives.transferToInterpreter();
             if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
-                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_TRACE);
+                throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_TRACE);
             }
             try {
                 toNativeInternal();
@@ -443,7 +443,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 hPyTraceContext = traceCtxPtr;
             } catch (CannotCastException e) {
                 // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
-                throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, "trace");
+                throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, "trace");
             }
         }
     }
