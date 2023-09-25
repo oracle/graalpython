@@ -69,3 +69,5 @@
 *graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolShutdownTest.test_shutdown_no_wait
 *graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown
 *graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_20369
+*graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_all_completed
+*graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_first_completed
