@@ -671,6 +671,8 @@ def update_unittest_tags(args):
         'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
         # Transiently ends up with 2 processes
         'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_all_completed',
+        'graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolSpawnWaitTest.test_first_completed',
     ]
 
     result_tags = linux_tags & darwin_tags
