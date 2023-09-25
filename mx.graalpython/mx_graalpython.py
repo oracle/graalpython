@@ -2524,6 +2524,31 @@ def python_build_watch(args):
             mx.log("Build done.")
 
 
+class MavenProject(mx.Project):
+    def __init__(self, suite, name, deps, workingSets=None, theLicense=None, **args):
+        super().__init__(suite, name, subDir := args.pop("subDir", ""), [], deps, workingSets, os.path.join(SUITE.dir, subDir, name), theLicense, **args)
+
+    def getBuildTask(self, args):
+        return MavenBuildTask(self, args, parallelism=1)
+
+
+class MavenBuildTask(mx.BuildTask):
+    def build(self):
+        mx.run_maven(["package"], cwd=self.subject.dir)
+
+    def needsBuild(self, newestInput):
+        return (True, "maven build")
+
+    def newestOutput(self):
+        return None
+
+    def clean(self, forBuild=False):
+        mx.run_maven(["clean"], cwd=self.subject.dir)
+
+    def __str__(self):
+        return f"MavenBuildTask({self.name})"
+
+
 class GraalpythonBuildTask(mx.ProjectBuildTask):
     class PrefixingOutput():
         def __init__(self, prefix, printfunc):
