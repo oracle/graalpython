@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
-
 import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.CharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType.Cpy_PyObjectPtr;
