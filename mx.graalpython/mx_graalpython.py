@@ -2578,6 +2578,7 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
 
         args[:0] = [
             f"--python.PyCachePrefix={pycache_dir}",
+            "--python.DisableFrozenModules",
             "-B",
             "-S"
         ]
