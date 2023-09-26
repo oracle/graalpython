@@ -1022,25 +1022,45 @@ PyAPI_FUNC(PyObject*) PyClassMethod_New(PyObject* a) {
 PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject* a, int b) {
     return GraalPyCode_Addr2Line(a, b);
 }
+#undef PyCode_Addr2Location
+PyAPI_FUNC(int) PyCode_Addr2Location(PyCodeObject* a, int b, int* c, int* d, int* e, int* f) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyCode_GetCellvars
+PyAPI_FUNC(PyObject*) PyCode_GetCellvars(PyCodeObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyCode_GetCode
+PyAPI_FUNC(PyObject*) PyCode_GetCode(PyCodeObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyCode_GetFileName
 PyAPI_FUNC(PyObject*) PyCode_GetFileName(PyCodeObject* a) {
     return GraalPyCode_GetFileName(a);
+}
+#undef PyCode_GetFreevars
+PyAPI_FUNC(PyObject*) PyCode_GetFreevars(PyCodeObject* a) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyCode_GetName
 PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* a) {
     return GraalPyCode_GetName(a);
 }
+#undef PyCode_GetVarnames
+PyAPI_FUNC(PyObject*) PyCode_GetVarnames(PyCodeObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyCode_New
-PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* asdf, PyObject* m, int n, PyObject* o, PyObject* p) {
-    return NULL;
+PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p, PyObject* q) {
+    return GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q);
 }
 #undef PyCode_NewEmpty
 PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
     return GraalPyCode_NewEmpty(a, b, c);
 }
 #undef PyCode_NewWithPosOnlyArgs
-PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, PyObject* adsf, int o, PyObject* p, PyObject* q) {
-    return NULL;
+PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, PyObject* o, int p, PyObject* q, PyObject* r) {
+    return GraalPyCode_NewWithPosOnlyArgs(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r);
 }
 #undef PyCode_Optimize
 PyAPI_FUNC(PyObject*) PyCode_Optimize(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
@@ -1215,7 +1235,7 @@ PyAPI_FUNC(PyObject*) PyCoro_New(PyFrameObject* a, PyObject* b, PyObject* c) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyDescr_NewMember
-PyAPI_FUNC(PyObject*) PyDescr_NewMember(PyTypeObject* a, struct PyMemberDef* b) {
+PyAPI_FUNC(PyObject*) PyDescr_NewMember(PyTypeObject* a, PyMemberDef* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyDescr_NewMethod
@@ -1298,6 +1318,10 @@ PyAPI_FUNC(PyObject*) PyDict_Values(PyObject* a) {
 PyAPI_FUNC(void) PyErr_Display(PyObject* a, PyObject* b, PyObject* c) {
     GraalPyErr_Display(a, b, c);
 }
+#undef PyErr_GetHandledException
+PyAPI_FUNC(PyObject*) PyErr_GetHandledException() {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyErr_GivenExceptionMatches
 PyAPI_FUNC(int) PyErr_GivenExceptionMatches(PyObject* a, PyObject* b) {
     return GraalPyErr_GivenExceptionMatches(a, b);
@@ -1337,6 +1361,10 @@ PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
 #undef PyErr_SetExcInfo
 PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
     GraalPyErr_SetExcInfo(a, b, c);
+}
+#undef PyErr_SetHandledException
+PyAPI_FUNC(void) PyErr_SetHandledException(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyErr_SetImportError
 PyAPI_FUNC(PyObject*) PyErr_SetImportError(PyObject* a, PyObject* b, PyObject* c) {
@@ -1533,6 +1561,10 @@ PyAPI_FUNC(PyObject*) PyFrame_GetBuiltins(PyFrameObject* a) {
 #undef PyFrame_GetCode
 PyAPI_FUNC(PyCodeObject*) PyFrame_GetCode(PyFrameObject* a) {
     return GraalPyFrame_GetCode(a);
+}
+#undef PyFrame_GetGenerator
+PyAPI_FUNC(PyObject*) PyFrame_GetGenerator(PyFrameObject* a) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyFrame_GetGlobals
 PyAPI_FUNC(PyObject*) PyFrame_GetGlobals(PyFrameObject* a) {
@@ -1762,18 +1794,6 @@ PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
 PyAPI_FUNC(PySendResult) PyIter_Send(PyObject* a, PyObject* b, PyObject** c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyLineTable_InitAddressRange
-PyAPI_FUNC(void) PyLineTable_InitAddressRange(const char* a, Py_ssize_t b, int c, PyCodeAddressRange* d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyLineTable_NextAddressRange
-PyAPI_FUNC(int) PyLineTable_NextAddressRange(PyCodeAddressRange* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyLineTable_PreviousAddressRange
-PyAPI_FUNC(int) PyLineTable_PreviousAddressRange(PyCodeAddressRange* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyList_Append
 PyAPI_FUNC(int) PyList_Append(PyObject* a, PyObject* b) {
     return GraalPyList_Append(a, b);
@@ -1801,6 +1821,10 @@ PyAPI_FUNC(PyObject*) PyList_New(Py_ssize_t a) {
 #undef PyList_Reverse
 PyAPI_FUNC(int) PyList_Reverse(PyObject* a) {
     return GraalPyList_Reverse(a);
+}
+#undef PyList_SET_ITEM
+PyAPI_FUNC(void) PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    GraalPyList_SET_ITEM(a, b, c);
 }
 #undef PyList_SetItem
 PyAPI_FUNC(int) PyList_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
@@ -1907,11 +1931,11 @@ PyAPI_FUNC(void) PyMem_SetupDebugHooks() {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyMember_GetOne
-PyAPI_FUNC(PyObject*) PyMember_GetOne(const char* a, struct PyMemberDef* b) {
+PyAPI_FUNC(PyObject*) PyMember_GetOne(const char* a, PyMemberDef* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyMember_SetOne
-PyAPI_FUNC(int) PyMember_SetOne(char* a, struct PyMemberDef* b, PyObject* c) {
+PyAPI_FUNC(int) PyMember_SetOne(char* a, PyMemberDef* b, PyObject* c) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyMemoryView_FromObject
@@ -2554,6 +2578,10 @@ PyAPI_FUNC(void) PySys_WriteStdout(const char* a, ...) {
 PyAPI_FUNC(void) PyThreadState_Delete(PyThreadState* a) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef PyThreadState_EnterTracing
+PyAPI_FUNC(void) PyThreadState_EnterTracing(PyThreadState* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyThreadState_Get
 PyAPI_FUNC(PyThreadState*) PyThreadState_Get() {
     return GraalPyThreadState_Get();
@@ -2572,6 +2600,10 @@ PyAPI_FUNC(uint64_t) PyThreadState_GetID(PyThreadState* a) {
 }
 #undef PyThreadState_GetInterpreter
 PyAPI_FUNC(PyInterpreterState*) PyThreadState_GetInterpreter(PyThreadState* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyThreadState_LeaveTracing
+PyAPI_FUNC(void) PyThreadState_LeaveTracing(PyThreadState* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyThreadState_New
@@ -2738,6 +2770,10 @@ PyAPI_FUNC(PyObject*) PyTuple_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) 
 PyAPI_FUNC(PyObject*) PyTuple_New(Py_ssize_t a) {
     return GraalPyTuple_New(a);
 }
+#undef PyTuple_SET_ITEM
+PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    GraalPyTuple_SET_ITEM(a, b, c);
+}
 #undef PyTuple_SetItem
 PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
     return GraalPyTuple_SetItem(a, b, c);
@@ -2750,9 +2786,21 @@ PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
 PyAPI_FUNC(unsigned int) PyType_ClearCache() {
     FUNC_NOT_IMPLEMENTED
 }
+#undef PyType_GetName
+PyAPI_FUNC(PyObject*) PyType_GetName(PyTypeObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyType_GetQualName
+PyAPI_FUNC(PyObject*) PyType_GetQualName(PyTypeObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyType_IsSubtype
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
     return GraalPyType_IsSubtype(a, b);
+}
+#undef PyType_SUPPORTS_WEAKREFS
+PyAPI_FUNC(int) PyType_SUPPORTS_WEAKREFS(PyTypeObject* a) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicodeDecodeError_Create
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
@@ -2790,10 +2838,6 @@ PyAPI_FUNC(int) PyUnicodeDecodeError_SetReason(PyObject* a, const char* b) {
 PyAPI_FUNC(int) PyUnicodeDecodeError_SetStart(PyObject* a, Py_ssize_t b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyUnicodeEncodeError_Create
-PyAPI_FUNC(PyObject*) PyUnicodeEncodeError_Create(const char* a, const Py_UNICODE* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyUnicodeEncodeError_GetEncoding
 PyAPI_FUNC(PyObject*) PyUnicodeEncodeError_GetEncoding(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
@@ -2824,10 +2868,6 @@ PyAPI_FUNC(int) PyUnicodeEncodeError_SetReason(PyObject* a, const char* b) {
 }
 #undef PyUnicodeEncodeError_SetStart
 PyAPI_FUNC(int) PyUnicodeEncodeError_SetStart(PyObject* a, Py_ssize_t b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicodeTranslateError_Create
-PyAPI_FUNC(PyObject*) PyUnicodeTranslateError_Create(const Py_UNICODE* a, Py_ssize_t b, Py_ssize_t c, Py_ssize_t d, const char* e) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicodeTranslateError_GetEnd
@@ -2906,6 +2946,10 @@ PyAPI_FUNC(wchar_t*) PyUnicode_AsWideCharString(PyObject* a, Py_ssize_t* b) {
 PyAPI_FUNC(PyObject*) PyUnicode_BuildEncodingMap(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef PyUnicode_CHECK_INTERNED
+PyAPI_FUNC(unsigned int) PyUnicode_CHECK_INTERNED(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef PyUnicode_Compare
 PyAPI_FUNC(int) PyUnicode_Compare(PyObject* a, PyObject* b) {
     return GraalPyUnicode_Compare(a, b);
@@ -2962,57 +3006,9 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF7Stateful(const char* a, Py_ssize_t b, 
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUnicodeEscape(const char* a, Py_ssize_t b, const char* c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyUnicode_Encode
-PyAPI_FUNC(PyObject*) PyUnicode_Encode(const Py_UNICODE* a, Py_ssize_t b, const char* c, const char* d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeASCII
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeASCII(const Py_UNICODE* a, Py_ssize_t b, const char* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeCharmap
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeCharmap(const Py_UNICODE* a, Py_ssize_t b, PyObject* c, const char* d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeDecimal
-PyAPI_FUNC(int) PyUnicode_EncodeDecimal(Py_UNICODE* a, Py_ssize_t b, char* c, const char* d) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyUnicode_EncodeFSDefault
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeFSDefault(PyObject* a) {
     return GraalPyUnicode_EncodeFSDefault(a);
-}
-#undef PyUnicode_EncodeLatin1
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeLatin1(const Py_UNICODE* a, Py_ssize_t b, const char* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeLocale
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeLocale(PyObject* a, const char* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeRawUnicodeEscape
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeRawUnicodeEscape(const Py_UNICODE* a, Py_ssize_t b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeUTF16
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeUTF16(const Py_UNICODE* a, Py_ssize_t b, const char* c, int d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeUTF32
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeUTF32(const Py_UNICODE* a, Py_ssize_t b, const char* c, int d) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeUTF7
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeUTF7(const Py_UNICODE* a, Py_ssize_t b, int c, int d, const char* e) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeUTF8
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeUTF8(const Py_UNICODE* a, Py_ssize_t b, const char* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyUnicode_EncodeUnicodeEscape
-PyAPI_FUNC(PyObject*) PyUnicode_EncodeUnicodeEscape(const Py_UNICODE* a, Py_ssize_t b) {
-    FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_FSDecoder
 PyAPI_FUNC(int) PyUnicode_FSDecoder(PyObject* a, void* b) {
@@ -3049,6 +3045,10 @@ PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
 #undef PyUnicode_FromWideChar
 PyAPI_FUNC(PyObject*) PyUnicode_FromWideChar(const wchar_t* a, Py_ssize_t b) {
     return GraalPyUnicode_FromWideChar(a, b);
+}
+#undef PyUnicode_GET_SIZE
+PyAPI_FUNC(Py_ssize_t) PyUnicode_GET_SIZE(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_GetDefaultEncoding
 PyAPI_FUNC(const char*) PyUnicode_GetDefaultEncoding() {
@@ -3114,20 +3114,20 @@ PyAPI_FUNC(PyObject*) PyUnicode_Substring(PyObject* a, Py_ssize_t b, Py_ssize_t 
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Tailmatch(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d, int e) {
     return GraalPyUnicode_Tailmatch(a, b, c, d, e);
 }
-#undef PyUnicode_TransformDecimalToASCII
-PyAPI_FUNC(PyObject*) PyUnicode_TransformDecimalToASCII(Py_UNICODE* a, Py_ssize_t b) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef PyUnicode_Translate
 PyAPI_FUNC(PyObject*) PyUnicode_Translate(PyObject* a, PyObject* b, const char* c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef PyUnicode_TranslateCharmap
-PyAPI_FUNC(PyObject*) PyUnicode_TranslateCharmap(const Py_UNICODE* a, Py_ssize_t b, PyObject* c, const char* d) {
+#undef PyUnicode_WSTR_LENGTH
+PyAPI_FUNC(Py_ssize_t) PyUnicode_WSTR_LENGTH(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyUnicode_WriteChar
 PyAPI_FUNC(int) PyUnicode_WriteChar(PyObject* a, Py_ssize_t b, Py_UCS4 c) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef PyWeakref_GET_OBJECT
+PyAPI_FUNC(PyObject*) PyWeakref_GET_OBJECT(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyWeakref_GetObject
@@ -3220,6 +3220,10 @@ PyAPI_FUNC(int) Py_FinalizeEx() {
 }
 #undef Py_FrozenMain
 PyAPI_FUNC(int) Py_FrozenMain(int a, char** b) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef Py_GETENV
+PyAPI_FUNC(char*) Py_GETENV(const char* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef Py_GenericAlias
@@ -3342,10 +3346,6 @@ PyAPI_FUNC(int) Py_SetStandardStreamEncoding(const char* a, const char* b) {
 PyAPI_FUNC(char*) Py_UniversalNewlineFgets(char* a, int b, FILE* c, PyObject* d) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyArg_Fini
-PyAPI_FUNC(void) _PyArg_Fini() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyArg_NoKwnames
 PyAPI_FUNC(int) _PyArg_NoKwnames(const char* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
@@ -3358,8 +3358,8 @@ PyAPI_FUNC(int) _PyArg_ParseStack(PyObject*const* a, Py_ssize_t b, const char* c
 PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(PyObject*const* a, Py_ssize_t b, PyObject* c, struct _PyArg_Parser* d, ...) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyArg_ParseStackAndKeywords_SizeT
-PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords_SizeT(PyObject*const* a, Py_ssize_t b, PyObject* c, struct _PyArg_Parser* d, ...) {
+#undef _PyArg_UnpackKeywordsWithVararg
+PyAPI_FUNC(PyObject*const*) _PyArg_UnpackKeywordsWithVararg(PyObject*const* a, Py_ssize_t b, PyObject* c, PyObject* d, struct _PyArg_Parser* e, int f, int g, int h, int i, PyObject** j) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyArray_Data
@@ -3369,10 +3369,6 @@ PyAPI_FUNC(char*) _PyArray_Data(PyObject* a) {
 #undef _PyArray_Resize
 PyAPI_FUNC(int) _PyArray_Resize(PyObject* a, Py_ssize_t b) {
     return Graal_PyArray_Resize(a, b);
-}
-#undef _PyAsyncGenValueWrapperNew
-PyAPI_FUNC(PyObject*) _PyAsyncGenValueWrapperNew(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
 }
 #undef _PyBytes_DecodeEscape
 PyAPI_FUNC(PyObject*) _PyBytes_DecodeEscape(const char* a, Py_ssize_t b, const char* c, const char** d) {
@@ -3400,10 +3396,6 @@ PyAPI_FUNC(PyObject*) _PyCode_ConstantKey(PyObject* a) {
 }
 #undef _PyCode_GetExtra
 PyAPI_FUNC(int) _PyCode_GetExtra(PyObject* a, Py_ssize_t b, void** c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyCode_InitAddressRange
-PyAPI_FUNC(int) _PyCode_InitAddressRange(PyCodeObject* a, PyCodeAddressRange* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyCode_SetExtra
@@ -3446,10 +3438,6 @@ PyAPI_FUNC(int) _PyComplex_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b
 PyAPI_FUNC(PyObject*) _PyContext_NewHamtForTests() {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyCoro_GetAwaitableIter
-PyAPI_FUNC(PyObject*) _PyCoro_GetAwaitableIter(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyCrossInterpreterData_Lookup
 PyAPI_FUNC(crossinterpdatafunc) _PyCrossInterpreterData_Lookup(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
@@ -3464,6 +3452,14 @@ PyAPI_FUNC(int) _PyCrossInterpreterData_RegisterClass(PyTypeObject* a, crossinte
 }
 #undef _PyCrossInterpreterData_Release
 PyAPI_FUNC(void) _PyCrossInterpreterData_Release(_PyCrossInterpreterData* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyDeadline_Get
+PyAPI_FUNC(_PyTime_t) _PyDeadline_Get(_PyTime_t a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyDeadline_Init
+PyAPI_FUNC(_PyTime_t) _PyDeadline_Init(_PyTime_t a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyDebugAllocatorStats
@@ -3498,24 +3494,12 @@ PyAPI_FUNC(int) _PyDict_DelItemIf(PyObject* a, PyObject* b, int (*c)(PyObject*va
 PyAPI_FUNC(int) _PyDict_DelItem_KnownHash(PyObject* a, PyObject* b, Py_hash_t c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyDict_FromKeys
-PyAPI_FUNC(PyObject*) _PyDict_FromKeys(PyObject* a, PyObject* b, PyObject* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyDict_GetItemHint
-PyAPI_FUNC(Py_ssize_t) _PyDict_GetItemHint(PyDictObject* a, PyObject* b, Py_ssize_t c, PyObject** d) {
+#undef _PyDict_GetItemWithError
+PyAPI_FUNC(PyObject*) _PyDict_GetItemWithError(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyDict_HasOnlyStringKeys
 PyAPI_FUNC(int) _PyDict_HasOnlyStringKeys(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyDict_KeysSize
-PyAPI_FUNC(Py_ssize_t) _PyDict_KeysSize(PyDictKeysObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyDict_LoadGlobal
-PyAPI_FUNC(PyObject*) _PyDict_LoadGlobal(PyDictObject* a, PyDictObject* b, PyObject* c) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyDict_MaybeUntrack
@@ -3526,17 +3510,9 @@ PyAPI_FUNC(void) _PyDict_MaybeUntrack(PyObject* a) {
 PyAPI_FUNC(int) _PyDict_MergeEx(PyObject* a, PyObject* b, int c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyDict_NewKeysForClass
-PyAPI_FUNC(PyDictKeysObject*) _PyDict_NewKeysForClass() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyDict_Pop
 PyAPI_FUNC(PyObject*) _PyDict_Pop(PyObject* a, PyObject* b, PyObject* c) {
     return Graal_PyDict_Pop(a, b, c);
-}
-#undef _PyDict_Pop_KnownHash
-PyAPI_FUNC(PyObject*) _PyDict_Pop_KnownHash(PyObject* a, PyObject* b, Py_hash_t c, PyObject* d) {
-    FUNC_NOT_IMPLEMENTED
 }
 #undef _PyDict_SetItem_KnownHash
 PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c, Py_hash_t d) {
@@ -3562,6 +3538,10 @@ PyAPI_FUNC(int) _PyErr_CheckSignals() {
 PyAPI_FUNC(void) _PyErr_GetExcInfo(PyThreadState* a, PyObject** b, PyObject** c, PyObject** d) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyErr_GetHandledException
+PyAPI_FUNC(PyObject*) _PyErr_GetHandledException(PyThreadState* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyErr_GetTopmostException
 PyAPI_FUNC(_PyErr_StackItem*) _PyErr_GetTopmostException(PyThreadState* a) {
     FUNC_NOT_IMPLEMENTED
@@ -3574,6 +3554,10 @@ PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState* a) {
 PyAPI_FUNC(PyObject*) _PyErr_ProgramDecodedTextObject(PyObject* a, int b, const char* c) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyErr_SetHandledException
+PyAPI_FUNC(void) _PyErr_SetHandledException(PyThreadState* a, PyObject* b) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyErr_SetKeyError
 PyAPI_FUNC(void) _PyErr_SetKeyError(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
@@ -3582,32 +3566,20 @@ PyAPI_FUNC(void) _PyErr_SetKeyError(PyObject* a) {
 PyAPI_FUNC(PyObject*) _PyErr_TrySetFromCause(const char* a, ...) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyErr_WarnUnawaitedCoroutine
-PyAPI_FUNC(void) _PyErr_WarnUnawaitedCoroutine(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyErr_WriteUnraisableMsg
 PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
     Graal_PyErr_WriteUnraisableMsg(a, b);
 }
-#undef _PyEval_CallTracing
-PyAPI_FUNC(PyObject*) _PyEval_CallTracing(PyObject* a, PyObject* b) {
+#undef _PyEval_EvalFrameDefault
+PyAPI_FUNC(PyObject*) _PyEval_EvalFrameDefault(PyThreadState* a, struct _PyInterpreterFrame* b, int c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyEval_GetAsyncGenFinalizer
-PyAPI_FUNC(PyObject*) _PyEval_GetAsyncGenFinalizer() {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyEval_GetAsyncGenFirstiter
-PyAPI_FUNC(PyObject*) _PyEval_GetAsyncGenFirstiter() {
+#undef _PyEval_GetBuiltin
+PyAPI_FUNC(PyObject*) _PyEval_GetBuiltin(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyEval_GetBuiltinId
 PyAPI_FUNC(PyObject*) _PyEval_GetBuiltinId(_Py_Identifier* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyEval_GetCoroutineOriginTrackingDepth
-PyAPI_FUNC(int) _PyEval_GetCoroutineOriginTrackingDepth() {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyEval_GetSwitchInterval
@@ -3616,18 +3588,6 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwitchInterval() {
 }
 #undef _PyEval_RequestCodeExtraIndex
 PyAPI_FUNC(Py_ssize_t) _PyEval_RequestCodeExtraIndex(freefunc a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyEval_SetAsyncGenFinalizer
-PyAPI_FUNC(int) _PyEval_SetAsyncGenFinalizer(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyEval_SetAsyncGenFirstiter
-PyAPI_FUNC(int) _PyEval_SetAsyncGenFirstiter(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyEval_SetCoroutineOriginTrackingDepth
-PyAPI_FUNC(void) _PyEval_SetCoroutineOriginTrackingDepth(int a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyEval_SetProfile
@@ -3646,20 +3606,8 @@ PyAPI_FUNC(int) _PyEval_SetTrace(PyThreadState* a, Py_tracefunc b, PyObject* c) 
 PyAPI_FUNC(int) _PyEval_SliceIndexNotNone(PyObject* a, Py_ssize_t* b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyFloat_DebugMallocStats
-PyAPI_FUNC(void) _PyFloat_DebugMallocStats(FILE* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyFloat_FormatAdvancedWriter
-PyAPI_FUNC(int) _PyFloat_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyFrame_DebugMallocStats
-PyAPI_FUNC(void) _PyFrame_DebugMallocStats(FILE* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyFrame_New_NoTrack
-PyAPI_FUNC(PyFrameObject*) _PyFrame_New_NoTrack(PyThreadState* a, PyFrameConstructor* b, PyObject* c) {
+#undef _PyFrame_IsEntryFrame
+PyAPI_FUNC(int) _PyFrame_IsEntryFrame(PyFrameObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyFunction_Vectorcall
@@ -3672,10 +3620,6 @@ PyAPI_FUNC(PyInterpreterState*) _PyGILState_GetInterpreterStateUnsafe() {
 }
 #undef _PyImport_AcquireLock
 PyAPI_FUNC(void) _PyImport_AcquireLock() {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyImport_FindExtensionObject
-PyAPI_FUNC(PyObject*) _PyImport_FindExtensionObject(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyImport_FixupBuiltin
@@ -3700,10 +3644,6 @@ PyAPI_FUNC(PyObject*) _PyImport_GetModuleId(struct _Py_Identifier* a) {
 }
 #undef _PyImport_IsInitialized
 PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyImport_ReInitLock
-PyAPI_FUNC(PyStatus) _PyImport_ReInitLock() {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyImport_ReleaseLock
@@ -3754,10 +3694,6 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     return Graal_PyList_Extend(a, b);
 }
-#undef PyList_SET_ITEM
-PyAPI_FUNC(void) PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    Graal_PyList_SET_ITEM(a, b, c);
-}
 #undef _PyLong_AsByteArray
 PyAPI_FUNC(int) _PyLong_AsByteArray(PyLongObject* a, unsigned char* b, size_t c, int d, int e) {
     return Graal_PyLong_AsByteArray(a, b, c, d, e);
@@ -3780,18 +3716,6 @@ PyAPI_FUNC(int) _PyLong_FileDescriptor_Converter(PyObject* a, void* b) {
 }
 #undef _PyLong_Format
 PyAPI_FUNC(PyObject*) _PyLong_Format(PyObject* a, int b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_FormatAdvancedWriter
-PyAPI_FUNC(int) _PyLong_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_FormatBytesWriter
-PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(_PyBytesWriter* a, char* b, PyObject* c, int d, int e) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyLong_FormatWriter
-PyAPI_FUNC(int) _PyLong_FormatWriter(_PyUnicodeWriter* a, PyObject* b, int c, int d) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyLong_Frexp
@@ -3870,12 +3794,20 @@ PyAPI_FUNC(char*) _PyMem_Strdup(const char* a) {
 PyAPI_FUNC(int) _PyModuleSpec_IsInitializing(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyModule_Add
+PyAPI_FUNC(int) _PyModule_Add(PyObject* a, const char* b, PyObject* c) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyModule_Clear
 PyAPI_FUNC(void) _PyModule_Clear(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyModule_ClearDict
 PyAPI_FUNC(void) _PyModule_ClearDict(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyModule_IsExtension
+PyAPI_FUNC(int) _PyModule_IsExtension(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyNamespace_New
@@ -3898,12 +3830,12 @@ PyAPI_FUNC(int) _PyOS_URandom(void* a, Py_ssize_t b) {
 PyAPI_FUNC(int) _PyOS_URandomNonblock(void* a, Py_ssize_t b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyObjectDict_SetItem
-PyAPI_FUNC(int) _PyObjectDict_SetItem(PyTypeObject* a, PyObject** b, PyObject* c, PyObject* d) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyObject_AssertFailed
 PyAPI_FUNC(void) _PyObject_AssertFailed(PyObject* a, const char* b, const char* c, const char* d, int e, const char* f) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyObject_CallMethod
+PyAPI_FUNC(PyObject*) _PyObject_CallMethod(PyObject* a, PyObject* b, const char* c, ...) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyObject_CallMethodId
@@ -3914,20 +3846,12 @@ PyAPI_FUNC(PyObject*) _PyObject_CallMethodId(PyObject* a, _Py_Identifier* b, con
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId_SizeT(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyObject_Call_Prepend
-PyAPI_FUNC(PyObject*) _PyObject_Call_Prepend(PyThreadState* a, PyObject* b, PyObject* c, PyObject* d, PyObject* e) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyObject_CheckConsistency
 PyAPI_FUNC(int) _PyObject_CheckConsistency(PyObject* a, int b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyObject_CheckCrossInterpreterData
 PyAPI_FUNC(int) _PyObject_CheckCrossInterpreterData(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyObject_DebugMallocStats
-PyAPI_FUNC(int) _PyObject_DebugMallocStats(FILE* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyObject_DebugTypeStats
@@ -3958,6 +3882,10 @@ PyAPI_FUNC(int) _PyObject_GenericSetAttrWithDict(PyObject* a, PyObject* b, PyObj
 PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject* a, _PyCrossInterpreterData* b) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyObject_GetState
+PyAPI_FUNC(PyObject*) _PyObject_GetState(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyObject_HasLen
 PyAPI_FUNC(int) _PyObject_HasLen(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
@@ -3970,8 +3898,8 @@ PyAPI_FUNC(int) _PyObject_IsAbstract(PyObject* a) {
 PyAPI_FUNC(int) _PyObject_IsFreed(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyObject_LookupSpecial
-PyAPI_FUNC(PyObject*) _PyObject_LookupSpecial(PyObject* a, _Py_Identifier* b) {
+#undef _PyObject_LookupSpecialId
+PyAPI_FUNC(PyObject*) _PyObject_LookupSpecialId(PyObject* a, _Py_Identifier* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyObject_MakeTpCall
@@ -4010,10 +3938,6 @@ PyAPI_FUNC(Py_ssize_t) _PySequence_IterSearch(PyObject* a, PyObject* b, int c) {
 PyAPI_FUNC(int) _PySet_Update(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PySignal_AfterFork
-PyAPI_FUNC(void) _PySignal_AfterFork() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PySlice_FromIndices
 PyAPI_FUNC(PyObject*) _PySlice_FromIndices(Py_ssize_t a, Py_ssize_t b) {
     FUNC_NOT_IMPLEMENTED
@@ -4026,20 +3950,12 @@ PyAPI_FUNC(int) _PySlice_GetLongIndices(PySliceObject* a, PyObject* b, PyObject*
 PyAPI_FUNC(PyObject*) _PyStack_AsDict(PyObject*const* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyState_AddModule
-PyAPI_FUNC(int) _PyState_AddModule(PyThreadState* a, PyObject* b, struct PyModuleDef* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PySys_GetObjectId
-PyAPI_FUNC(PyObject*) _PySys_GetObjectId(_Py_Identifier* a) {
+#undef _PySys_GetAttr
+PyAPI_FUNC(PyObject*) _PySys_GetAttr(PyThreadState* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PySys_GetSizeOf
 PyAPI_FUNC(size_t) _PySys_GetSizeOf(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PySys_SetObjectId
-PyAPI_FUNC(int) _PySys_SetObjectId(_Py_Identifier* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyThreadState_GetDict
@@ -4062,12 +3978,20 @@ PyAPI_FUNC(PyObject*) _PyThread_CurrentFrames() {
 PyAPI_FUNC(int) _PyThread_at_fork_reinit(PyThread_type_lock* a) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyTime_Add
+PyAPI_FUNC(_PyTime_t) _PyTime_Add(_PyTime_t a, _PyTime_t b) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyTime_AsMicroseconds
 PyAPI_FUNC(_PyTime_t) _PyTime_AsMicroseconds(_PyTime_t a, _PyTime_round_t b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyTime_AsMilliseconds
 PyAPI_FUNC(_PyTime_t) _PyTime_AsMilliseconds(_PyTime_t a, _PyTime_round_t b) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyTime_AsNanoseconds
+PyAPI_FUNC(_PyTime_t) _PyTime_AsNanoseconds(_PyTime_t a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyTime_AsNanosecondsObject
@@ -4082,6 +4006,10 @@ PyAPI_FUNC(double) _PyTime_AsSecondsDouble(_PyTime_t a) {
 PyAPI_FUNC(int) _PyTime_AsTimespec(_PyTime_t a, struct timespec* b) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyTime_AsTimespec_clamp
+PyAPI_FUNC(void) _PyTime_AsTimespec_clamp(_PyTime_t a, struct timespec* b) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyTime_AsTimeval
 PyAPI_FUNC(int) _PyTime_AsTimeval(_PyTime_t a, struct timeval* b, _PyTime_round_t c) {
     FUNC_NOT_IMPLEMENTED
@@ -4090,8 +4018,8 @@ PyAPI_FUNC(int) _PyTime_AsTimeval(_PyTime_t a, struct timeval* b, _PyTime_round_
 PyAPI_FUNC(int) _PyTime_AsTimevalTime_t(_PyTime_t a, time_t* b, int* c, _PyTime_round_t d) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyTime_AsTimeval_noraise
-PyAPI_FUNC(int) _PyTime_AsTimeval_noraise(_PyTime_t a, struct timeval* b, _PyTime_round_t c) {
+#undef _PyTime_AsTimeval_clamp
+PyAPI_FUNC(void) _PyTime_AsTimeval_clamp(_PyTime_t a, struct timeval* b, _PyTime_round_t c) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyTime_FromMillisecondsObject
@@ -4174,40 +4102,20 @@ PyAPI_FUNC(int) _PyTime_localtime(time_t a, struct tm* b) {
 PyAPI_FUNC(PyObject*) _PyTraceMalloc_GetTraceback(unsigned int a, uintptr_t b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyTraceMalloc_NewReference
-PyAPI_FUNC(int) _PyTraceMalloc_NewReference(PyObject* a) {
-    return Graal_PyTraceMalloc_NewReference(a);
-}
 #undef _PyTraceback_Add
 PyAPI_FUNC(void) _PyTraceback_Add(const char* a, const char* b, int c) {
     Graal_PyTraceback_Add(a, b, c);
 }
 #undef _PyTrash_begin
-PyAPI_FUNC(int) _PyTrash_begin(struct _ts* a, PyObject* b) {
+PyAPI_FUNC(int) _PyTrash_begin(PyThreadState* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyTrash_cond
 PyAPI_FUNC(int) _PyTrash_cond(PyObject* a, destructor b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyTrash_deposit_object
-PyAPI_FUNC(void) _PyTrash_deposit_object(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyTrash_destroy_chain
-PyAPI_FUNC(void) _PyTrash_destroy_chain() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyTrash_end
-PyAPI_FUNC(void) _PyTrash_end(struct _ts* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyTrash_thread_deposit_object
-PyAPI_FUNC(void) _PyTrash_thread_deposit_object(PyObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _PyTrash_thread_destroy_chain
-PyAPI_FUNC(void) _PyTrash_thread_destroy_chain() {
+PyAPI_FUNC(void) _PyTrash_end(PyThreadState* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyTruffleErr_CreateAndSetException
@@ -4233,10 +4141,6 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject* a) {
 #undef _PyTuple_Resize
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject** a, Py_ssize_t b) {
     FUNC_NOT_IMPLEMENTED
-}
-#undef PyTuple_SET_ITEM
-PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    return Graal_PyTuple_SET_ITEM(a, b, c);
 }
 #undef _PyType_CalculateMetaclass
 PyAPI_FUNC(PyTypeObject*) _PyType_CalculateMetaclass(PyTypeObject* a, PyObject* b) {
@@ -4318,6 +4222,10 @@ PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
 PyAPI_FUNC(const Py_UNICODE*) _PyUnicode_AsUnicode(PyObject* a) {
     FUNC_NOT_IMPLEMENTED
 }
+#undef _PyUnicode_COMPACT_DATA
+PyAPI_FUNC(void*) _PyUnicode_COMPACT_DATA(PyObject* a) {
+    FUNC_NOT_IMPLEMENTED
+}
 #undef _PyUnicode_CheckConsistency
 PyAPI_FUNC(int) _PyUnicode_CheckConsistency(PyObject* a, int b) {
     FUNC_NOT_IMPLEMENTED
@@ -4356,6 +4264,10 @@ PyAPI_FUNC(PyObject*) _PyUnicode_EncodeUTF32(PyObject* a, const char* b, int c) 
 }
 #undef _PyUnicode_EncodeUTF7
 PyAPI_FUNC(PyObject*) _PyUnicode_EncodeUTF7(PyObject* a, int b, int c, const char* d) {
+    FUNC_NOT_IMPLEMENTED
+}
+#undef _PyUnicode_Equal
+PyAPI_FUNC(int) _PyUnicode_Equal(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _PyUnicode_EqualToASCIIString
@@ -4414,10 +4326,6 @@ PyAPI_FUNC(int) _PyUnicode_WideCharString_Opt_Converter(PyObject* a, void* b) {
 PyAPI_FUNC(PyObject*) _PyUnicode_XStrip(PyObject* a, int b, PyObject* c) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyWarnings_Init
-PyAPI_FUNC(PyObject*) _PyWarnings_Init() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyWeakref_ClearRef
 PyAPI_FUNC(void) _PyWeakref_ClearRef(PyWeakReference* a) {
     FUNC_NOT_IMPLEMENTED
@@ -4434,28 +4342,12 @@ PyAPI_FUNC(void) _Py_BreakPoint() {
 PyAPI_FUNC(PyObject*) _Py_CheckFunctionResult(PyThreadState* a, PyObject* b, PyObject* c, const char* d) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_CheckRecursiveCall
-PyAPI_FUNC(int) _Py_CheckRecursiveCall(PyThreadState* a, const char* b) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _Py_CoerceLegacyLocale
 PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_DecodeLocaleEx
-PyAPI_FUNC(int) _Py_DecodeLocaleEx(const char* a, wchar_t** b, size_t* c, const char** d, int e, _Py_error_handler f) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _Py_DisplaySourceLine
-PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject* a, PyObject* b, int c, int d, int *truncation, PyObject **line) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_EncodeLocaleEx
-PyAPI_FUNC(int) _Py_EncodeLocaleEx(const wchar_t* a, char** b, size_t* c, const char** d, int e, _Py_error_handler f) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_EncodeLocaleRaw
-PyAPI_FUNC(char*) _Py_EncodeLocaleRaw(const wchar_t* a, size_t* b) {
+PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject* a, PyObject* b, int c, int d, int* e, PyObject** f) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _Py_FatalErrorFormat
@@ -4470,17 +4362,9 @@ PyAPI_FUNC(int) _Py_FdIsInteractive(FILE* a, PyObject* b) {
 PyAPI_FUNC(void) _Py_FreeCharPArray(char*const a[]) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_GetAllocatedBlocks
-PyAPI_FUNC(Py_ssize_t) _Py_GetAllocatedBlocks() {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _Py_GetConfig
 PyAPI_FUNC(const PyConfig*) _Py_GetConfig() {
     FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_GetErrorHandler
-PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
-    return Graal_Py_GetErrorHandler(a);
 }
 #undef _Py_HashBytes
 PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void* a, Py_ssize_t b) {
@@ -4506,10 +4390,6 @@ PyAPI_FUNC(int) _Py_IsFinalizing() {
 PyAPI_FUNC(int) _Py_LegacyLocaleDetected(int a) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_Mangle
-PyAPI_FUNC(PyObject*) _Py_Mangle(PyObject* a, PyObject* b) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _Py_NewInterpreter
 PyAPI_FUNC(PyThreadState*) _Py_NewInterpreter(int a) {
     FUNC_NOT_IMPLEMENTED
@@ -4530,8 +4410,8 @@ PyAPI_FUNC(void) _Py_SetProgramFullPath(const wchar_t* a) {
 PyAPI_FUNC(const char*) _Py_SourceAsString(PyObject* a, const char* b, const char* c, PyCompilerFlags* d, PyObject** e) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_abspath
-PyAPI_FUNC(int) _Py_abspath(const wchar_t* a, wchar_t** b) {
+#undef _Py_UniversalNewlineFgetsWithSize
+PyAPI_FUNC(char*) _Py_UniversalNewlineFgetsWithSize(char* a, int b, FILE* c, PyObject* d, size_t* e) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _Py_add_one_to_index_C
@@ -4546,88 +4426,8 @@ PyAPI_FUNC(void) _Py_add_one_to_index_F(int a, Py_ssize_t* b, const Py_ssize_t* 
 PyAPI_FUNC(int) _Py_convert_optional_to_ssize_t(PyObject* a, void* b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _Py_device_encoding
-PyAPI_FUNC(PyObject*) _Py_device_encoding(int a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_dup
-PyAPI_FUNC(int) _Py_dup(int a) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _Py_fopen_obj
 PyAPI_FUNC(FILE*) _Py_fopen_obj(PyObject* a, const char* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_fstat
-PyAPI_FUNC(int) _Py_fstat(int a, struct _Py_stat_struct* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_fstat_noraise
-PyAPI_FUNC(int) _Py_fstat_noraise(int a, struct _Py_stat_struct* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_get_blocking
-PyAPI_FUNC(int) _Py_get_blocking(int a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_get_inheritable
-PyAPI_FUNC(int) _Py_get_inheritable(int a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_isabs
-PyAPI_FUNC(int) _Py_isabs(const wchar_t* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_open
-PyAPI_FUNC(int) _Py_open(const char* a, int b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_open_noraise
-PyAPI_FUNC(int) _Py_open_noraise(const char* a, int b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_read
-PyAPI_FUNC(Py_ssize_t) _Py_read(int a, void* b, size_t c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_set_blocking
-PyAPI_FUNC(int) _Py_set_blocking(int a, int b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_set_inheritable
-PyAPI_FUNC(int) _Py_set_inheritable(int a, int b, int* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_set_inheritable_async_safe
-PyAPI_FUNC(int) _Py_set_inheritable_async_safe(int a, int b, int* c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_stat
-PyAPI_FUNC(int) _Py_stat(PyObject* a, struct stat* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_wfopen
-PyAPI_FUNC(FILE*) _Py_wfopen(const wchar_t* a, const wchar_t* b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_wgetcwd
-PyAPI_FUNC(wchar_t*) _Py_wgetcwd(wchar_t* a, size_t b) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_wreadlink
-PyAPI_FUNC(int) _Py_wreadlink(const wchar_t* a, wchar_t* b, size_t c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_wrealpath
-PyAPI_FUNC(wchar_t*) _Py_wrealpath(const wchar_t* a, wchar_t* b, size_t c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_write
-PyAPI_FUNC(Py_ssize_t) _Py_write(int a, const void* b, size_t c) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef _Py_write_noraise
-PyAPI_FUNC(Py_ssize_t) _Py_write_noraise(int a, const void* b, size_t c) {
     FUNC_NOT_IMPLEMENTED
 }
 PyAPI_FUNC(int64_t*) PyTruffle_constants() {
@@ -4794,6 +4594,7 @@ PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_offsets() {
         offsetof(PyTypeObject, tp_vectorcall),
         offsetof(PyBytesObject, ob_shash),
         offsetof(PyBytesObject, ob_sval),
+        offsetof(PyByteArrayObject, ob_start),
         offsetof(PyListObject, ob_item),
         offsetof(PyListObject, allocated),
         offsetof(PyTupleObject, ob_item),
@@ -4838,6 +4639,7 @@ PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {
         sizeof(PyMethodDef),
         sizeof(PyObject),
         sizeof(PyBytesObject),
+        sizeof(PyByteArrayObject),
         sizeof(PyListObject),
         sizeof(PyVarObject),
         sizeof(PyMemoryViewObject),

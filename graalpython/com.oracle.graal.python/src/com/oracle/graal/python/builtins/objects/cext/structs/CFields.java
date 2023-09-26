@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
@@ -275,10 +276,9 @@ public enum CFields {
     PyTypeObject__tp_vectorcall(vectorcallfunc),
 
     PyBytesObject__ob_shash(Py_hash_t),
-    PyBytesObject__ob_sval(CHAR),
+    PyBytesObject__ob_sval(CHAR_PTR),
 
-    // XXX regenerate the file
-    PyByteArrayObject__ob_start(CHAR),
+    PyByteArrayObject__ob_start(CHAR_PTR),
 
     PyListObject__ob_item(PyObjectPtr),
     PyListObject__allocated(Py_ssize_t),

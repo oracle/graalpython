@@ -53,6 +53,7 @@ public enum CStructs {
     PyMethodDef,
     PyObject,
     PyBytesObject,
+    PyByteArrayObject,
     PyListObject,
     PyVarObject,
     PyMemoryViewObject,

@@ -65,7 +65,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
@@ -95,7 +94,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCall
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.GetErrorHandlerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
@@ -1077,16 +1075,6 @@ public final class PythonCextUnicodeBuiltins {
         Object doGeneric(TruffleString format, Object vaList,
                         @Cached UnicodeFromFormatNode unicodeFromFormatNode) {
             return unicodeFromFormatNode.execute(format, vaList);
-        }
-    }
-
-    @CApiBuiltin(ret = _PY_ERROR_HANDLER, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class _Py_GetErrorHandler extends CApiUnaryBuiltinNode {
-        @Specialization
-        Object doGeneric(TruffleString errors,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetErrorHandlerNode getErrorHandlerNode) {
-            return getErrorHandlerNode.execute(inliningTarget, errors).getNativeValue();
         }
     }
 

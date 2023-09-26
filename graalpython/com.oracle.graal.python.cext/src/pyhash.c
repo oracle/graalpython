@@ -40,6 +40,9 @@
  */
 #include "capi.h"
 
+long _PyHASH_INF;
+long _PyHASH_MODULUS;
+long _PyHASH_IMAG;
 _Py_HashSecret_t _Py_HashSecret = {{0}};
 
 void initialize_hashes() {

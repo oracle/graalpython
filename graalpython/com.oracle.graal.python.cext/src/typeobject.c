@@ -1455,7 +1455,7 @@ _PyType_Name(PyTypeObject *type)
 
 // taken from CPython
 PyObject *
-_PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
+PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
 {
     assert(PyType_Check(type));
 

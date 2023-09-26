@@ -239,13 +239,6 @@ PyAPI_FUNC(int) _PyUnicode_CheckConsistency(
     PyObject *op,
     int check_content);
 
-PyAPI_FUNC(Py_ssize_t) _PyUnicode_GET_LENGTH(PyObject* op);
-PyAPI_FUNC(unsigned int) _PyUnicode_IS_ASCII(PyObject* op);
-PyAPI_FUNC(unsigned int) _PyUnicode_KIND(PyObject* op);
-PyAPI_FUNC(unsigned int) _PyUnicode_IS_READY(PyObject* op);
-PyAPI_FUNC(unsigned int) _PyUnicode_CHECK_INTERNED(PyObject* op);
-PyAPI_FUNC(void*) _PyUnicodeObject_DATA(PyUnicodeObject* op);
-
 #define _PyASCIIObject_CAST(op) \
     (assert(PyUnicode_Check(op)), \
      _Py_CAST(PyASCIIObject*, (op)))
@@ -267,18 +260,16 @@ PyAPI_FUNC(void*) _PyUnicodeObject_DATA(PyUnicodeObject* op);
 #define SSTATE_INTERNED_IMMORTAL 2
 
 /* Use only if you know it's a string */
-static inline unsigned int PyUnicode_CHECK_INTERNED(PyObject *op) {
-    return _PyUnicode_CHECK_INTERNED(op);
-}
+PyAPI_FUNC(unsigned int) PyUnicode_CHECK_INTERNED(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_CHECK_INTERNED(op) PyUnicode_CHECK_INTERNED(_PyObject_CAST(op))
 #endif
 
 /* Fast check to determine whether an object is ready. Equivalent to:
    PyUnicode_IS_COMPACT(op) || _PyUnicodeObject_CAST(op)->data.any */
-static inline unsigned int PyUnicode_IS_READY(PyObject *op) {
-    return _PyUnicode_IS_READY(op);
-}
+PyAPI_FUNC(unsigned int) PyUnicode_IS_READY(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_IS_READY(op) PyUnicode_IS_READY(_PyObject_CAST(op))
 #endif
@@ -286,20 +277,16 @@ static inline unsigned int PyUnicode_IS_READY(PyObject *op) {
 /* Return true if the string contains only ASCII characters, or 0 if not. The
    string may be compact (PyUnicode_IS_COMPACT_ASCII) or not, but must be
    ready. */
-static inline unsigned int PyUnicode_IS_ASCII(PyObject *op) {
-    assert(PyUnicode_IS_READY(op));
-    return _PyUnicode_IS_ASCII(op);
-}
+PyAPI_FUNC(unsigned int) PyUnicode_IS_ASCII(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_IS_ASCII(op) PyUnicode_IS_ASCII(_PyObject_CAST(op))
 #endif
 
 /* Return true if the string is compact or 0 if not.
    No type checks or Ready calls are performed. */
-static inline unsigned int PyUnicode_IS_COMPACT(PyObject *op) {
-    // strings are never compact in GraalPy
-    return 0;
-}
+PyAPI_FUNC(unsigned int) PyUnicode_IS_COMPACT(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_IS_COMPACT(op) PyUnicode_IS_COMPACT(_PyObject_CAST(op))
 #endif
@@ -324,21 +311,15 @@ enum PyUnicode_Kind {
     PyUnicode_4BYTE_KIND = 4
 };
 
+PyAPI_FUNC(int) _PyUnicode_KIND(PyObject*);
+
 /* Return one of the PyUnicode_*_KIND values defined above. */
-#define PyUnicode_KIND(op) \
-    (assert(PyUnicode_IS_READY(op)), \
-     _PyUnicode_KIND(op))
+#define PyUnicode_KIND(op) ((enum PyUnicode_Kind)_PyUnicode_KIND(_PyObject_CAST(op)))
 
 /* Return a void pointer to the raw unicode buffer. */
-static inline void* _PyUnicode_COMPACT_DATA(PyObject *op) {
-    // strings are never compact in GraalPy
-    assert(0);
-    return NULL;
-}
+PyAPI_FUNC(void*) _PyUnicode_COMPACT_DATA(PyObject *op);
 
-static inline void* _PyUnicode_NONCOMPACT_DATA(PyObject *op) {
-    return _PyUnicodeObject_DATA((PyUnicodeObject *)op);
-}
+PyAPI_FUNC(void*) _PyUnicode_NONCOMPACT_DATA(PyObject *op);
 
 static inline void* PyUnicode_DATA(PyObject *op) {
     if (PyUnicode_IS_COMPACT(op)) {
@@ -362,10 +343,8 @@ static inline void* PyUnicode_DATA(PyObject *op) {
 /* Returns the length of the unicode string. The caller has to make sure that
    the string has it's canonical representation set before calling
    this function.  Call PyUnicode_(FAST_)Ready to ensure that. */
-static inline Py_ssize_t PyUnicode_GET_LENGTH(PyObject *op) {
-    assert(PyUnicode_IS_READY(op));
-    return _PyUnicode_GET_LENGTH(op);
-}
+PyAPI_FUNC(Py_ssize_t) PyUnicode_GET_LENGTH(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_GET_LENGTH(op) PyUnicode_GET_LENGTH(_PyObject_CAST(op))
 #endif
@@ -637,15 +616,8 @@ Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicodeAndSize(
 /* Fast access macros */
 
 Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_WSTR_LENGTH(PyObject *op)
-{
-    if (PyUnicode_IS_COMPACT_ASCII(op)) {
-        return _PyASCIIObject_CAST(op)->length;
-    }
-    else {
-        return _PyCompactUnicodeObject_CAST(op)->wstr_length;
-    }
-}
+PyAPI_FUNC(Py_ssize_t) PyUnicode_WSTR_LENGTH(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_WSTR_LENGTH(op) PyUnicode_WSTR_LENGTH(_PyObject_CAST(op))
 #endif
@@ -656,17 +628,8 @@ static inline Py_ssize_t PyUnicode_WSTR_LENGTH(PyObject *op)
    on request.  Use PyUnicode_GET_LENGTH() for the length in code points. */
 
 Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_GET_SIZE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    if (_PyASCIIObject_CAST(op)->wstr == _Py_NULL) {
-        (void)PyUnicode_AsUnicode(op);
-        assert(_PyASCIIObject_CAST(op)->wstr != _Py_NULL);
-    }
-    return PyUnicode_WSTR_LENGTH(op);
-    _Py_COMP_DIAG_POP
-}
+PyAPI_FUNC(Py_ssize_t) PyUnicode_GET_SIZE(PyObject *op);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyUnicode_GET_SIZE(op) PyUnicode_GET_SIZE(_PyObject_CAST(op))
 #endif
@@ -691,11 +654,6 @@ static inline Py_ssize_t PyUnicode_GET_DATA_SIZE(PyObject *op)
 Py_DEPRECATED(3.3)
 static inline Py_UNICODE* PyUnicode_AS_UNICODE(PyObject *op)
 {
-    wchar_t *wstr = _PyASCIIObject_CAST(op)->wstr;
-    if (wstr != _Py_NULL) {
-        return wstr;
-    }
-
     _Py_COMP_DIAG_PUSH
     _Py_COMP_DIAG_IGNORE_DEPR_DECLS
     return PyUnicode_AsUnicode(op);

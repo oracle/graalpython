@@ -118,9 +118,9 @@ typedef struct {
     BUILTIN(PyCode_Addr2Line, int, PyCodeObject*, int) \
     BUILTIN(PyCode_GetFileName, PyObject*, PyCodeObject*) \
     BUILTIN(PyCode_GetName, PyObject*, PyCodeObject*) \
-    BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
+    BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
-    BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
+    BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*, PyObject*) \
     BUILTIN(PyCodec_Decoder, PyObject*, const char*) \
     BUILTIN(PyCodec_Encoder, PyObject*, const char*) \
     BUILTIN(PyComplex_FromDoubles, PyObject*, double, double) \
@@ -190,6 +190,7 @@ typedef struct {
     BUILTIN(PyList_Insert, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_New, PyObject*, Py_ssize_t) \
     BUILTIN(PyList_Reverse, int, PyObject*) \
+    BUILTIN(PyList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
     BUILTIN(PyList_Size, Py_ssize_t, PyObject*) \
@@ -399,6 +400,7 @@ typedef struct {
     BUILTIN(PyTuple_GetItem, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PyTuple_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
     BUILTIN(PyTuple_New, PyObject*, Py_ssize_t) \
+    BUILTIN(PyTuple_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
     BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
@@ -516,14 +518,12 @@ typedef struct {
     BUILTIN(_PyErr_Occurred, PyObject*, PyThreadState*) \
     BUILTIN(_PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
     BUILTIN(_PyList_Extend, PyObject*, PyListObject*, PyObject*) \
-    BUILTIN(_PyList_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyLong_AsByteArray, int, PyLongObject*, unsigned char*, size_t, int, int) \
     BUILTIN(_PyLong_Sign, int, PyObject*) \
     BUILTIN(_PyNamespace_New, PyObject*, PyObject*) \
     BUILTIN(_PyNumber_Index, PyObject*, PyObject*) \
     BUILTIN(_PyObject_Dump, void, PyObject*) \
     BUILTIN(_PyObject_MakeTpCall, PyObject*, PyThreadState*, PyObject*, PyObject*const*, Py_ssize_t, PyObject*) \
-    BUILTIN(_PyTraceMalloc_NewReference, int, PyObject*) \
     BUILTIN(_PyTraceback_Add, void, const char*, const char*, int) \
     BUILTIN(_PyTruffleBytes_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(_PyTruffleErr_CreateAndSetException, void, PyObject*, PyObject*) \
@@ -534,13 +534,11 @@ typedef struct {
     BUILTIN(_PyTruffleObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
     BUILTIN(_PyTruffleObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(_PyTuple_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
     BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsUTF8String, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_EqualToASCIIString, int, PyObject*, const char*) \
-    BUILTIN(_Py_GetErrorHandler, _Py_error_handler, const char*) \
     BUILTIN(_Py_HashBytes, Py_hash_t, const void*, Py_ssize_t) \
     BUILTIN(_Py_HashDouble, Py_hash_t, PyObject*, double) \
 

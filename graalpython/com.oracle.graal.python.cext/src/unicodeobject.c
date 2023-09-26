@@ -613,7 +613,8 @@ int _PyUnicode_EqualToASCIIId(PyObject *left, _Py_Identifier *right) {
     return _PyUnicode_EqualToASCIIString(left, right->string);
 }
 
-Py_ssize_t _PyASCIIObject_LENGTH(PyASCIIObject* op) {
+#undef PyUnicode_GET_LENGTH
+Py_ssize_t PyUnicode_GET_LENGTH(PyObject* op) {
 	return PyASCIIObject_length(op);
 }
 
@@ -621,30 +622,27 @@ wchar_t* _PyASCIIObject_WSTR(PyASCIIObject* op) {
 	return PyASCIIObject_wstr(op);
 }
 
-unsigned int _PyASCIIObject_STATE_ASCII(PyASCIIObject* op) {
+#undef PyUnicode_IS_ASCII
+unsigned int PyUnicode_IS_ASCII(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
 }
 
-unsigned int _PyASCIIObject_STATE_COMPACT(PyASCIIObject* op) {
+#undef PyUnicode_IS_COMPACT
+unsigned int PyUnicode_IS_COMPACT(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
 }
 
-unsigned int _PyASCIIObject_STATE_KIND(PyASCIIObject* op) {
+int _PyUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
 }
 
-unsigned int _PyASCIIObject_STATE_READY(PyASCIIObject* op) {
+#undef PyUnicode_IS_READY
+unsigned int PyUnicode_IS_READY(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ready, state.ready);
 }
 
-void* _PyUnicodeObject_DATA(PyUnicodeObject* op) {
+void* _PyUnicode_NONCOMPACT_DATA(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
-}
-
-Py_ssize_t _PyUnicode_get_wstr_length(PyObject* op) {
-    return PyUnicode_IS_COMPACT_ASCII(op) ?
-            PyASCIIObject_length(op) :
-            PyCompactUnicodeObject_wstr_length(op);
 }
 
 Py_ssize_t PyUnicode_Find(PyObject *str, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction) {

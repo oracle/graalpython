@@ -58,10 +58,5 @@ int _PyGen_FetchStopIterationValue(PyObject **gen) {
 	return -1;
 }
 
-PyObject *_PyGen_yf(PyGenObject *gen) {
-	return NULL;
-}
-
-
 void _PyGen_Finalize(PyObject *self) {
 }

@@ -76,8 +76,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -551,7 +551,7 @@ public final class PythonCextBuiltins {
 
     public abstract static class CApi17BuiltinNode extends CApiBuiltinNode {
         public abstract Object execute(Object arg0, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6, Object arg7, Object arg8, Object arg9, Object arg10, Object arg11,
-                                       Object arg12, Object arg13, Object arg14, Object arg15, Object arg16);
+                        Object arg12, Object arg13, Object arg14, Object arg15, Object arg16);
 
         @Override
         public final Object execute(Object[] args) {
@@ -561,7 +561,7 @@ public final class PythonCextBuiltins {
 
     public abstract static class CApi18BuiltinNode extends CApiBuiltinNode {
         public abstract Object execute(Object arg0, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6, Object arg7, Object arg8, Object arg9, Object arg10, Object arg11,
-                                       Object arg12, Object arg13, Object arg14, Object arg15, Object arg16, Object arg17);
+                        Object arg12, Object arg13, Object arg14, Object arg15, Object arg16, Object arg17);
 
         @Override
         public final Object execute(Object[] args) {
@@ -1527,18 +1527,6 @@ public final class PythonCextBuiltins {
 
         int lookupDomain(int domain) {
             return getCApiContext().findOrCreateTraceMallocDomain(domain);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class _PyTraceMalloc_NewReference extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static int doCachedDomainIdx(Object pointerObject) {
-            // TODO(fa): implement; capture tracebacks in PyTraceMalloc_Track and update them
-            // here
-            return 0;
         }
     }
 

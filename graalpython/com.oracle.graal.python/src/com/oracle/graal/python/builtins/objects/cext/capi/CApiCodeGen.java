@@ -489,11 +489,10 @@ public final class CApiCodeGen {
      * to avoid direct fields accesses:
      */
     private static final String[] ADDITIONAL = new String[]{"PyCMethod_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
-                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyASCIIObject_LENGTH", "_PyASCIIObject_STATE_ASCII",
-                    "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
-                    "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length",
-                    "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef",
-                    "PyCode_GetName", "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data", "_PyErr_Occurred"};
+                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer",
+                    "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_KIND", "_PyCFunction_GetModule", "_PyCFunction_GetMethodDef", "PyCode_GetName",
+                    "PyCode_GetFileName", "_PyList_SET_ITEM", "_PyArray_Resize", "_PyArray_Data",
+                    "_PyErr_Occurred", "_PyNamespace_New"};
 
     /**
      * Check the list of implemented and unimplemented builtins against the list of CPython exported

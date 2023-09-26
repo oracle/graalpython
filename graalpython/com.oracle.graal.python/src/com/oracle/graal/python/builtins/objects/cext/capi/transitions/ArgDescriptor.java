@@ -51,9 +51,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToNativeReplacedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
@@ -201,6 +201,7 @@ public enum ArgDescriptor {
     PyFrameObject(ArgBehavior.PyObject, "PyFrameObject*"),
     PyFrameObjectTransfer(ArgBehavior.PyObject, "PyFrameObject*", true),
     _PyFrameEvalFunction("_PyFrameEvalFunction"),
+    _PyInterpreterFrame("struct _PyInterpreterFrame*"),
     PY_GEN_OBJECT(ArgBehavior.PyObject, "PyGenObject*"),
     PyGetSetDef(ArgBehavior.Pointer, "PyGetSetDef*"),
     PY_GIL_STATE_STATE(ArgBehavior.Int32, "PyGILState_STATE"),
@@ -210,7 +211,7 @@ public enum ArgDescriptor {
     PY_LOCK_STATUS("PyLockStatus"),
     PyLongObject(ArgBehavior.PyObject, "PyLongObject*"),
     PyLongObjectTransfer(ArgBehavior.PyObject, "PyLongObject*", true),
-    PyMemberDef(ArgBehavior.Pointer, "struct PyMemberDef*"),
+    PyMemberDef(ArgBehavior.Pointer, "PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true),
     PyMethodDef(ArgBehavior.WrappedPointer, "PyMethodDef*"),
@@ -236,7 +237,6 @@ public enum ArgDescriptor {
     PyTryBlock("PyTryBlock*"),
     PY_TRACEFUNC("Py_tracefunc"),
     PY_TSS_T_PTR("Py_tss_t*"),
-    TS_PTR("struct _ts*"),
     PY_TYPE_SPEC("PyType_Spec*"),
     PY_UCS4(ArgBehavior.Int32, "Py_UCS4"),
     PY_UCS4_PTR("Py_UCS4*"),

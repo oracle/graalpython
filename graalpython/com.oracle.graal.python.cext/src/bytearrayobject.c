@@ -42,11 +42,6 @@
 
 char _PyByteArray_empty_string[] = "";
 
-
-char* _PyByteArray_Start(PyObject* obj) {
-	return PyByteArrayObject_ob_start(obj);
-}
-
 // taken from CPython 3.7.0 "Objects/bytearrayobject.c"
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
     void *ptr;
