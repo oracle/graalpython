@@ -61,7 +61,7 @@ FROZEN = [
             "<collections.*>",
             "functools",
             "copyreg",
-            "re",
+            "<re.*>",
             "locale",
             "rlcompleter",
             "_collections_abc",

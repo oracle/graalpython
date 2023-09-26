@@ -761,3 +761,6 @@ def compile(p, flags=0):
         p.state.groups-1,
         groupindex, tuple(indexgroup)
         )
+
+
+compile = _sre.setup(compile, error, _parser.FLAGS)
