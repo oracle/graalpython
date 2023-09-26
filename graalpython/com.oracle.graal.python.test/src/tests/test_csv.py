@@ -74,31 +74,6 @@ class TestUnicodeCharacters(unittest.TestCase):
             self.assertEqual(fileobj.read(),
                              expected + writer.dialect.lineterminator)
 
-class TestDialectValidity(unittest.TestCase):
-    # CPython supports empty quotechars and escapechars until inclusive 3.10.
-    def test_quoting(self):
-        class MyDialect(csv.Dialect):
-            delimiter = ";"
-            escapechar = '\\'
-            doublequote = False
-            skipinitialspace = True
-            lineterminator = '\r\n'
-            quoting = csv.QUOTE_NONE
-            quotechar = ""
-        d = MyDialect()
-        self.assertEqual(d.quotechar, "")
-
-    def test_escapechar(self):
-        class MyDialect(csv.Dialect):
-            delimiter = ";"
-            doublequote = False
-            skipinitialspace = True
-            lineterminator = '\r\n'
-            quoting = csv.QUOTE_NONE
-            escapechar = ""
-        d = MyDialect()
-        self.assertEqual(d.escapechar, "")
-
 
 
 
