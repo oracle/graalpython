@@ -26,6 +26,7 @@
 package com.oracle.graal.python.test.integration.grammar;
 
 import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
+import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineErrorContains;
 
 import org.junit.Test;
 
@@ -96,6 +97,22 @@ public class CallTests {
                         "foo.func()\n";
 
         assertPrints("42\n", source);
+    }
+
+    @Test
+    public void objectMethodEvaluationOrder() {
+        String source = "class Foo:\n" + //
+                        "  def bar(self, w, x, y, z):\n" + //
+                        "    print(z)\n" + //
+                        "\n" + //
+                        "foo = Foo()\n" + //
+                        "foo.qux = 42\n";
+
+        // expected order: compute callee, compute arguments, perform call
+        assertLastLineErrorContains("AttributeError", source + "foo.baz(0,0,0,1/0)");
+        assertLastLineErrorContains("ZeroDivisionError", source + "foo.bar(0,0,0,1/0)");
+        assertLastLineErrorContains("ZeroDivisionError", source + "foo.qux(0,0,0,1/0)");
+        assertLastLineErrorContains("TypeError", source + "foo.qux(0)");
     }
 
     @Test

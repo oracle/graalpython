@@ -2105,8 +2105,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.CALL_METHOD_VARARGS: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeCallMethodVarargs(virtualFrame, stackTop, beginBci, localNames, oparg, localNodes, useCachedNodes, mutableData, tracingOrProfilingEnabled);
+                        stackTop = bytecodeCallMethodVarargs(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes, mutableData, tracingOrProfilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_FUNCTION: {
@@ -5049,13 +5048,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, int stackTop, int bci, TruffleString[] localNames, int oparg, Node[] localNodes, boolean useCachedNodes,
-                    MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
-        PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, PyObjectGetMethodNodeGen.class, NODE_OBJECT_GET_METHOD, useCachedNodes);
+    private int bytecodeCallMethodVarargs(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData,
+                    byte tracingOrProfilingEnabled) {
+        int stackTop = initialStackTop;
+        Object func = virtualFrame.getObject(stackTop - 1);
         Object[] args = (Object[]) virtualFrame.getObject(stackTop);
-        TruffleString methodName = localNames[oparg];
-        Object rcvr = args[0];
-        Object func = getMethodNode.executeCached(virtualFrame, rcvr, methodName);
         CallNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
 
         Object result;
@@ -5068,7 +5065,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             throw pe;
         }
 
-        virtualFrame.setObject(stackTop, result);
+        virtualFrame.setObject(stackTop - 1, result);
+        virtualFrame.setObject(stackTop--, null);
+        return stackTop;
     }
 
     @BytecodeInterpreterSwitch

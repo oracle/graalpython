@@ -435,11 +435,11 @@ public enum OpCodes {
      * element of the array. The method name is determined by the immediate operand which indexes
      * the names array ({@code co_names}).
      *
-     * Pops: args ({@code Object[]} of size >= 1)
+     * Pops: args ({@code Object[]} of size >= 1) and the method
      *
      * Pushes: call result
      */
-    CALL_METHOD_VARARGS(1, 1, 1),
+    CALL_METHOD_VARARGS(0, 2, 1),
     /**
      * Calls method on an object using a number of stack args determined by the first immediate
      * operand.
