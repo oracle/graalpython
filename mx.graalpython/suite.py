@@ -299,9 +299,11 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
+                "sdk:MAVEN_DOWNLOADER",
             ],
             "requires": [
                 "java.management",
+                "java.xml",
             ],
             "jacoco": "include",
             "javaCompliance": "17+",
@@ -882,6 +884,7 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
+                "sdk:MAVEN_DOWNLOADER",
             ],
             "description": "GraalPython launcher",
             "maven": {
