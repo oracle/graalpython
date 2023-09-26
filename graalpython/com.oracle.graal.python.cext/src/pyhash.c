@@ -40,14 +40,11 @@
  */
 #include "capi.h"
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
 _Py_HashSecret_t _Py_HashSecret = {{0}};
 
 void initialize_hashes() {
     _PyHASH_INF = GraalPyTruffle_HashConstant(0);
-    _PyHASH_NAN = GraalPyTruffle_HashConstant(1);
+    _PyHASH_MODULUS = GraalPyTruffle_HashConstant(1);
     _PyHASH_IMAG = GraalPyTruffle_HashConstant(2);
     GraalPyTruffleHash_InitSecret((int8_t *)&_Py_HashSecret);
 }

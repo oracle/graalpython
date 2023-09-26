@@ -3,7 +3,6 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-#ifndef PY_NO_SHORT_FLOAT_REPR
 #ifdef __cplusplus
 extern "C" {
 #endif

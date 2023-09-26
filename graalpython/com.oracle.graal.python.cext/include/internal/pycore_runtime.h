@@ -15,8 +15,7 @@ extern "C" {
 
 #include "pycore_atomic.h"          /* _Py_atomic_address */
 #include "pycore_gil.h"             // struct _gil_runtime_state
-#include "pycore_global_objects.h"  // struct _Py_global_objects
-#include "pycore_interp.h"          // PyInterpreterState
+// #include "pycore_interp.h"          // PyInterpreterState
 #include "pycore_unicodeobject.h"   // struct _Py_unicode_runtime_ids
 
 
@@ -131,7 +130,7 @@ typedef struct pyruntimestate {
     struct _Py_unicode_runtime_ids unicode_ids;
 
     /* All the objects that are shared by the runtime's interpreters. */
-    struct _Py_global_objects global_objects;
+    // struct _Py_global_objects global_objects;
 
     /* The following fields are here to avoid allocation during init.
        The data is exposed through _PyRuntimeState pointer fields.

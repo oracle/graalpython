@@ -14,10 +14,10 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
-#include "pycore_interp.h"        // PyInterpreterState.gc
-#include "pycore_pystate.h"       // _PyInterpreterState_GET()
-#include "pycore_runtime.h"       // _PyRuntime
+// #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
+// #include "pycore_interp.h"        // PyInterpreterState.gc
+// #include "pycore_pystate.h"       // _PyInterpreterState_GET()
+// #include "pycore_runtime.h"       // _PyRuntime
 
 #define _PyObject_IMMORTAL_INIT(type) \
     { \
@@ -134,23 +134,8 @@ static inline void _PyObject_GC_TRACK(
 #endif
     PyObject *op)
 {
-    _PyObject_ASSERT_FROM(op, !_PyObject_GC_IS_TRACKED(op),
-                          "object already tracked by the garbage collector",
-                          filename, lineno, __func__);
-
-    PyGC_Head *gc = _Py_AS_GC(op);
-    _PyObject_ASSERT_FROM(op,
-                          (gc->_gc_prev & _PyGC_PREV_MASK_COLLECTING) == 0,
-                          "object is in generation which is garbage collected",
-                          filename, lineno, __func__);
-
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    PyGC_Head *generation0 = interp->gc.generation0;
-    PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
-    _PyGCHead_SET_NEXT(last, gc);
-    _PyGCHead_SET_PREV(gc, last);
-    _PyGCHead_SET_NEXT(gc, generation0);
-    generation0->_gc_prev = (uintptr_t)gc;
+    // GraalPy change
+    PyObject_GC_Track(op);
 }
 
 /* Tell the GC to stop tracking this object.
@@ -170,17 +155,8 @@ static inline void _PyObject_GC_UNTRACK(
 #endif
     PyObject *op)
 {
-    _PyObject_ASSERT_FROM(op, _PyObject_GC_IS_TRACKED(op),
-                          "object not tracked by the garbage collector",
-                          filename, lineno, __func__);
-
-    PyGC_Head *gc = _Py_AS_GC(op);
-    PyGC_Head *prev = _PyGCHead_PREV(gc);
-    PyGC_Head *next = _PyGCHead_NEXT(gc);
-    _PyGCHead_SET_NEXT(prev, next);
-    _PyGCHead_SET_PREV(next, prev);
-    gc->_gc_next = 0;
-    gc->_gc_prev &= _PyGC_PREV_MASK_FINALIZED;
+    // GraalPy change
+    PyObject_GC_UnTrack(op);
 }
 
 // Macros to accept any type for the parameter, and to automatically pass
@@ -227,6 +203,8 @@ _PyObject_IS_GC(PyObject *obj)
 // Fast inlined version of PyType_IS_GC()
 #define _PyType_IS_GC(t) _PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
 
+// GraalPy change: we don't want to pull in CPython GC implementation details
+/*
 static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
@@ -235,6 +213,7 @@ _PyType_PreHeaderSize(PyTypeObject *tp)
 }
 
 void _PyObject_GC_Link(PyObject *op);
+*/
 
 // Usage: assert(_Py_CheckSlotResult(obj, "__getitem__", result != NULL));
 extern int _Py_CheckSlotResult(

@@ -92,7 +92,7 @@ public final class PythonCextHashBuiltins {
                 case 0:
                     return PyObjectHashNode.hash(Double.POSITIVE_INFINITY);
                 case 1:
-                    return PyObjectHashNode.hash(Double.NaN);
+                    return SysModuleBuiltins.HASH_MODULUS;
                 case 2:
                     return SysModuleBuiltins.HASH_IMAG;
                 default:

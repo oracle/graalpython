@@ -277,6 +277,9 @@ public enum CFields {
     PyBytesObject__ob_shash(Py_hash_t),
     PyBytesObject__ob_sval(CHAR),
 
+    // XXX regenerate the file
+    PyByteArrayObject__ob_start(CHAR),
+
     PyListObject__ob_item(PyObjectPtr),
     PyListObject__allocated(Py_ssize_t),
 

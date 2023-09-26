@@ -45,11 +45,8 @@ static inline Py_ssize_t PyList_GET_SIZE(PyObject *op) {
 
 #define PyList_GET_ITEM(op, index) (PyList_GetItem((PyObject*)(op), (index)))
 
-static inline void
-PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyListObject *list = _PyList_CAST(op);
-    _PyList_SET_ITEM(op, index, value);
-}
+PyAPI_FUNC(void) PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #define PyList_SET_ITEM(op, index, value) \
     PyList_SET_ITEM(_PyObject_CAST(op), index, _PyObject_CAST(value))

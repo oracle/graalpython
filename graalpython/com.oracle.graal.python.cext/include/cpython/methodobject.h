@@ -64,7 +64,7 @@ static inline int PyCFunction_GET_FLAGS(PyObject *func) {
 #endif
 
 static inline PyTypeObject* PyCFunction_GET_CLASS(PyObject *func_obj) {
-    return PyCFunction_GetClass(func_obj);
+    return PyCMethod_GetClass(func_obj);
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define PyCFunction_GET_CLASS(func) PyCFunction_GET_CLASS(_PyObject_CAST(func))

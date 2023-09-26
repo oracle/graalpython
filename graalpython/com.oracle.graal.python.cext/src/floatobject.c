@@ -5,16 +5,10 @@
  */
 
 #include "capi.h"
-#include "pycore_dtoa.h"          // _Py_dg_dtoa()
-#include "pycore_floatobject.h"   // _PyFloat_FormatAdvancedWriter()
-#include "pycore_initconfig.h"    // _PyStatus_OK()
-#include "pycore_interp.h"        // _PyInterpreterState.float_state
-#include "pycore_long.h"          // _PyLong_GetOne()
-#include "pycore_object.h"        // _PyObject_Init()
-#include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
-#include "pycore_pystate.h"       // _PyInterpreterState_GET()
-#include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#include "floatobject.h"
 
+#include <ctype.h>
+#include <float.h>
 #include <stdlib.h>               // strtol()
 
 
@@ -25,103 +19,8 @@ typedef enum {
 static float_format_type double_format, float_format;
 static float_format_type detected_double_format, detected_float_format;
 
-#ifdef _MSC_VER
-#pragma section(".CRT$XCU",read)
-static void init_formats(void);
-__declspec(allocate(".CRT$XCU")) void (*init_formats_)(void) = init_formats;
-__pragma(comment(linker,"/include:" "init_formats_"))
-#else
-__attribute__((constructor))
-#endif
-
-
-double
-PyFloat_GetMax(void)
-{
-    return DBL_MAX;
-}
-
-double
-PyFloat_GetMin(void)
-{
-    return DBL_MIN;
-}
-
-static PyTypeObject FloatInfoType;
-
-PyDoc_STRVAR(floatinfo__doc__,
-"sys.float_info\n\
-\n\
-A named tuple holding information about the float type. It contains low level\n\
-information about the precision and internal representation. Please study\n\
-your system's :file:`float.h` for more information.");
-
-static PyStructSequence_Field floatinfo_fields[] = {
-    {"max",             "DBL_MAX -- maximum representable finite float"},
-    {"max_exp",         "DBL_MAX_EXP -- maximum int e such that radix**(e-1) "
-                    "is representable"},
-    {"max_10_exp",      "DBL_MAX_10_EXP -- maximum int e such that 10**e "
-                    "is representable"},
-    {"min",             "DBL_MIN -- Minimum positive normalized float"},
-    {"min_exp",         "DBL_MIN_EXP -- minimum int e such that radix**(e-1) "
-                    "is a normalized float"},
-    {"min_10_exp",      "DBL_MIN_10_EXP -- minimum int e such that 10**e is "
-                    "a normalized float"},
-    {"dig",             "DBL_DIG -- maximum number of decimal digits that "
-                    "can be faithfully represented in a float"},
-    {"mant_dig",        "DBL_MANT_DIG -- mantissa digits"},
-    {"epsilon",         "DBL_EPSILON -- Difference between 1 and the next "
-                    "representable float"},
-    {"radix",           "FLT_RADIX -- radix of exponent"},
-    {"rounds",          "FLT_ROUNDS -- rounding mode used for arithmetic "
-                    "operations"},
-    {0}
-};
-
-static PyStructSequence_Desc floatinfo_desc = {
-    "sys.float_info",           /* name */
-    floatinfo__doc__,           /* doc */
-    floatinfo_fields,           /* fields */
-    11
-};
-
-PyObject *
-PyFloat_GetInfo(void)
-{
-    PyObject* floatinfo;
-    int pos = 0;
-
-    floatinfo = PyStructSequence_New(&FloatInfoType);
-    if (floatinfo == NULL) {
-        return NULL;
-    }
-#else
-    detected_double_format = unknown_format;
-#endif
-
-#if SIZEOF_FLOAT == 4
-    {
-        float y = 16711938.0;
-        if (memcmp(&y, "\x4b\x7f\x01\x02", 4) == 0)
-            detected_float_format = ieee_big_endian_format;
-        else if (memcmp(&y, "\x02\x01\x7f\x4b", 4) == 0)
-            detected_float_format = ieee_little_endian_format;
-        else
-            detected_float_format = unknown_format;
-    }
-    _PyObject_Init((PyObject*)op, &PyFloat_Type);
-    op->ob_fval = fval;
-    return (PyObject *) op;
-}
-
-    double_format = detected_double_format;
-    float_format = detected_float_format;
-}
-
 
 // Below taken from CPython
-
-
 double
 PyFloat_AsDouble(PyObject *op)
 {

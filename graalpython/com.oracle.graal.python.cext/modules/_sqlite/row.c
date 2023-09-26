@@ -23,13 +23,16 @@
 
 #include "row.h"
 #include "cursor.h"
+
+#define clinic_state() (pysqlite_get_state_by_type(type))
 #include "clinic/row.c.h"
+#undef clinic_state
 
 /*[clinic input]
 module _sqlite3
-class _sqlite3.Row "pysqlite_Row *" "pysqlite_RowType"
+class _sqlite3.Row "pysqlite_Row *" "clinic_state()->RowType"
 [clinic start generated code]*/
-/*[clinic end generated code: output=da39a3ee5e6b4b0d input=384227da65f250fd]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=966c53403d7f3a40]*/
 
 static int
 row_clear(pysqlite_Row *self)
@@ -62,7 +65,7 @@ pysqlite_row_dealloc(PyObject *self)
 @classmethod
 _sqlite3.Row.__new__ as pysqlite_row_new
 
-    cursor: object(type='pysqlite_Cursor *', subclass_of='pysqlite_CursorType')
+    cursor: object(type='pysqlite_Cursor *', subclass_of='clinic_state()->CursorType')
     data: object(subclass_of='&PyTuple_Type')
     /
 
@@ -71,7 +74,7 @@ _sqlite3.Row.__new__ as pysqlite_row_new
 static PyObject *
 pysqlite_row_new_impl(PyTypeObject *type, pysqlite_Cursor *cursor,
                       PyObject *data)
-/*[clinic end generated code: output=10d58b09a819a4c1 input=f6cd7e6e0935828d]*/
+/*[clinic end generated code: output=10d58b09a819a4c1 input=b9e954ca31345dbf]*/
 {
     pysqlite_Row *self;
 
@@ -111,19 +114,10 @@ equal_ignore_case(PyObject *left, PyObject *right)
     if (PyUnicode_GET_LENGTH(right) != len) {
         return 0;
     }
-
-	/*
-	 * Modified in GraalPy:
-	 * PyUnicode_IS_ASCII does not imply PyUnicode_1BYTE_KIND, so use the
-	 * proper PyUnicode_READ idiom for iterating the strings.
-	 */
-	int left_kind = PyUnicode_KIND(left);
-    int right_kind = PyUnicode_KIND(right);
-    void* left_data = PyUnicode_DATA(left);
-    void* right_data = PyUnicode_DATA(right);
-
-    for (int i = 0; i < len; i++) {
-        if (Py_TOLOWER(PyUnicode_READ(left_kind, left_data, i)) != Py_TOLOWER(PyUnicode_READ(right_kind, right_data, i))) {
+    const Py_UCS1 *p1 = PyUnicode_1BYTE_DATA(left);
+    const Py_UCS1 *p2 = PyUnicode_1BYTE_DATA(right);
+    for (; len; len--, p1++, p2++) {
+        if (Py_TOLOWER(*p1) != Py_TOLOWER(*p2)) {
             return 0;
         }
     }
@@ -225,7 +219,8 @@ static PyObject* pysqlite_row_richcompare(pysqlite_Row *self, PyObject *_other, 
     if (opid != Py_EQ && opid != Py_NE)
         Py_RETURN_NOTIMPLEMENTED;
 
-    if (PyObject_TypeCheck(_other, pysqlite_RowType)) {
+    pysqlite_state *state = pysqlite_get_state_by_type(Py_TYPE(self));
+    if (PyObject_TypeCheck(_other, state->RowType)) {
         pysqlite_Row *other = (pysqlite_Row *)_other;
         int eq = PyObject_RichCompareBool(self->description, other->description, Py_EQ);
         if (eq < 0) {
@@ -268,14 +263,14 @@ static PyType_Spec row_spec = {
     .slots = row_slots,
 };
 
-PyTypeObject *pysqlite_RowType = NULL;
-
 int
 pysqlite_row_setup_types(PyObject *module)
 {
-    pysqlite_RowType = (PyTypeObject *)PyType_FromModuleAndSpec(module, &row_spec, NULL);
-    if (pysqlite_RowType == NULL) {
+    PyObject *type = PyType_FromModuleAndSpec(module, &row_spec, NULL);
+    if (type == NULL) {
         return -1;
     }
+    pysqlite_state *state = pysqlite_get_state(module);
+    state->RowType = (PyTypeObject *)type;
     return 0;
 }

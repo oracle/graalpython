@@ -28,7 +28,7 @@
 #include "Python.h"
 #include "datetime.h"             // PyDateTimeAPI
 #include "frameobject.h"          // PyFrame_New
-#include "marshal.h"              // PyMarshal_WriteLongToFile
+// #include "marshal.h"              // PyMarshal_WriteLongToFile
 #include "structmember.h"         // PyMemberDef
 #include <float.h>                // FLT_MAX
 #include <signal.h>
@@ -1328,9 +1328,11 @@ test_get_type_qualname(PyObject *self, PyObject *Py_UNUSED(ignored))
     assert(strcmp(PyUnicode_AsUTF8(tp_qualname), "int") == 0);
     Py_DECREF(tp_qualname);
 
+    /* TODO GraalPy add PyODict_Type
     tp_qualname = PyType_GetQualName(&PyODict_Type);
     assert(strcmp(PyUnicode_AsUTF8(tp_qualname), "OrderedDict") == 0);
     Py_DECREF(tp_qualname);
+    */
 
     PyObject *HeapTypeNameType = PyType_FromSpec(&HeapTypeNameType_Spec);
     if (HeapTypeNameType == NULL) {
@@ -6233,7 +6235,8 @@ eval_eval_code_ex(PyObject *mod, PyObject *pos_args)
             PyErr_SetString(PyExc_TypeError, "args must be a tuple");
             goto exit;
         } else {
-            c_args = &PyTuple_GET_ITEM(args, 0);
+            // GraalPy change
+            c_args = PySequence_Fast_ITEMS(args);
             c_args_len = PyTuple_Size(args);
         }
     }
@@ -6275,7 +6278,8 @@ eval_eval_code_ex(PyObject *mod, PyObject *pos_args)
     Py_ssize_t c_defaults_len = 0;
 
     if (defaults && PyTuple_Check(defaults)) {
-        c_defaults = &PyTuple_GET_ITEM(defaults, 0);
+        // GraalPy change
+        c_defaults = PySequence_Fast_ITEMS(defaults);
         c_defaults_len = PyTuple_Size(defaults);
     }
 
@@ -6312,6 +6316,7 @@ exit:
     return result;
 }
 
+/*
 static PyObject *
 get_feature_macros(PyObject *self, PyObject *Py_UNUSED(args))
 {
@@ -6323,6 +6328,7 @@ get_feature_macros(PyObject *self, PyObject *Py_UNUSED(args))
 #include "_testcapi_feature_macros.inc"
     return result;
 }
+*/
 
 static PyObject *
 test_code_api(PyObject *self, PyObject *Py_UNUSED(args))
@@ -6857,7 +6863,7 @@ static PyMethodDef TestMethods[] = {
     {"frame_new", frame_new, METH_VARARGS, NULL},
     {"eval_get_func_name", eval_get_func_name, METH_O, NULL},
     {"eval_get_func_desc", eval_get_func_desc, METH_O, NULL},
-    {"get_feature_macros", get_feature_macros, METH_NOARGS, NULL},
+    // {"get_feature_macros", get_feature_macros, METH_NOARGS, NULL},
     {"test_code_api", test_code_api, METH_NOARGS, NULL},
     {"settrace_to_error", settrace_to_error, METH_O, NULL},
     {"settrace_to_record", settrace_to_record, METH_O, NULL},

@@ -102,7 +102,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
               ${CAPI_SRC}/modsupport_shared.c ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
-              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c
+              ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/call.c
 )
 
 file(GLOB_RECURSE ACTUAL_SRC_FILES
@@ -172,7 +172,7 @@ endfunction()
 ######################################################################
 
 add_library(${TARGET_LIBPYTHON} SHARED)
-simple_native_module("_cpython_sre")
+native_module("_cpython_sre" TRUE "${SRC_DIR}/modules/_cpython_sre/sre.c")
 simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
 simple_native_module("_sqlite3")

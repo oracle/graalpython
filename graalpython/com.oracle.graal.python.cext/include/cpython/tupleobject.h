@@ -36,10 +36,8 @@ static inline Py_ssize_t PyTuple_GET_SIZE(PyObject *op) {
 #define PyTuple_GET_ITEM(op, index) PyTuple_GetItem(_PyObject_CAST(op), (index))
 
 /* Function *only* to be used to fill in brand new tuples */
-static inline void
-PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    _PyTuple_SET_ITEM(op, index, value);
-}
+PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #define PyTuple_SET_ITEM(op, index, value) \
     PyTuple_SET_ITEM(_PyObject_CAST(op), index, _PyObject_CAST(value))

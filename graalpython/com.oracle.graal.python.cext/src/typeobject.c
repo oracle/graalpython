@@ -3,6 +3,7 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+#define NEEDS_PY_IDENTIFIER
 #include "capi.h"
 #include "pycore_object.h"
 
@@ -17,29 +18,43 @@ _Py_IDENTIFIER(__module__);
 
 static void PyTruffle_Type_AddSlots(PyTypeObject* cls, PyGetSetDef** getsets, uint64_t n_getsets, PyMemberDef** members, uint64_t n_members);
 
-
-PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
+// Partially taken from CPython typeobject.c
+PyObject *
+_PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems)
+{
     PyObject *obj;
-    const size_t size = _PyObject_VAR_SIZE(cls, nitems+1);
+    const size_t size = _PyObject_VAR_SIZE(type, nitems+1);
+    /* note that we need to add one, for the sentinel */
 
-    if (PyType_IS_GC(cls))
-        obj = _PyObject_GC_Malloc(size);
-    else
-        obj = (PyObject *)PyObject_MALLOC(size);
-
-    if (obj == NULL)
+    // GraalPy change: remove the GC header
+    char *alloc = PyObject_Malloc(size);
+    if (alloc  == NULL) {
         return PyErr_NoMemory();
-
+    }
+    obj = (PyObject *)alloc;
     memset(obj, '\0', size);
 
-    if (cls->tp_flags & Py_TPFLAGS_HEAPTYPE)
-        Py_INCREF(cls);
+    if (type->tp_itemsize == 0) {
+        _PyObject_Init(obj, type);
+    }
+    else {
+        _PyObject_InitVar((PyVarObject *)obj, type, nitems);
+    }
+    return obj;
+}
 
-    if (cls->tp_itemsize == 0)
-        (void)PyObject_INIT(obj, cls);
-    else
-        (void) PyObject_INIT_VAR((PyVarObject *)obj, cls, nitems);
+// Taken from CPython typeobject.c
+PyObject *
+PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
+{
+    PyObject *obj = _PyType_AllocNoTrack(type, nitems);
+    if (obj == NULL) {
+        return NULL;
+    }
 
+    if (_PyType_IS_GC(type)) {
+        _PyObject_GC_TRACK(obj);
+    }
     return obj;
 }
 
@@ -1298,8 +1313,8 @@ PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
         else if (slot->slot == Py_tp_members) {
             /* Move the slots to the heap type itself */
             size_t len = Py_TYPE(type)->tp_itemsize * nmembers;
-            memcpy(PyHeapType_GET_MEMBERS(res), slot->pfunc, len);
-            type->tp_members = PyHeapType_GET_MEMBERS(res);
+            memcpy(_PyHeapType_GET_MEMBERS(res), slot->pfunc, len);
+            type->tp_members = _PyHeapType_GET_MEMBERS(res);
         }
         else {
             /* Copy other slots directly */

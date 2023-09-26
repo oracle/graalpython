@@ -53,6 +53,7 @@ typedef PyObject *(*PyCMethod)(PyObject *, PyTypeObject *, PyObject *const *,
 PyAPI_FUNC(PyCFunction) PyCFunction_GetFunction(PyObject *);
 PyAPI_FUNC(PyObject *) PyCFunction_GetSelf(PyObject *);
 PyAPI_FUNC(int) PyCFunction_GetFlags(PyObject *);
+PyAPI_FUNC(PyTypeObject *) PyCMethod_GetClass(PyObject *func);
 
 Py_DEPRECATED(3.9) PyAPI_FUNC(PyObject *) PyCFunction_Call(PyObject *, PyObject *, PyObject *);
 

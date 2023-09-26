@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PYCONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PYPRECONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
@@ -133,7 +134,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySendResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTryBlock;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
@@ -259,12 +259,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_c_quot", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_sum", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_BuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "_Py_REFCNT", ret = Py_ssize_t, args = {ConstPyObject}, call = CImpl)
-    @CApiBuiltin(name = "_Py_SET_REFCNT", ret = Py_ssize_t, args = {PyObject, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_Py_SET_SIZE", ret = Void, args = {PyVarObject, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_Py_SET_TYPE", ret = Void, args = {PyObject, PyTypeObject}, call = CImpl)
-    @CApiBuiltin(name = "_Py_SIZE", ret = Py_ssize_t, args = {ConstPyVarObject}, call = CImpl)
-    @CApiBuiltin(name = "_Py_TYPE", ret = PyTypeObject, args = {ConstPyObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_REFCNT", ret = Py_ssize_t, args = {ConstPyObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_SET_REFCNT", ret = Py_ssize_t, args = {PyObject, Py_ssize_t}, call = CImpl)
+    @CApiBuiltin(name = "Py_SET_SIZE", ret = Void, args = {PyVarObject, Py_ssize_t}, call = CImpl)
+    @CApiBuiltin(name = "Py_SET_TYPE", ret = Void, args = {PyObject, PyTypeObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_SIZE", ret = Py_ssize_t, args = {ConstPyVarObject}, call = CImpl)
+    @CApiBuiltin(name = "Py_TYPE", ret = PyTypeObject, args = {ConstPyObject}, call = CImpl)
     @CApiBuiltin(name = "_Py_VaBuildStack_SizeT", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_Py_VaBuildStack", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_Py_VaBuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
@@ -613,7 +613,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyFrame_SetLineNumber", ret = Void, args = {PyFrameObject, Int}, call = CImpl)
     @CApiBuiltin(name = "_Py_FatalErrorFunc", ret = VoidNoReturn, args = {ConstCharPtr, ConstCharPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyMemoryView_GetBuffer", ret = PY_BUFFER_PTR, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyMemoryView_FromBuffer", ret = PyObject, args = {PY_BUFFER_PTR}, call = CImpl)
+    @CApiBuiltin(name = "PyMemoryView_FromBuffer", ret = PyObject, args = {CONST_PY_BUFFER_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyMemoryView_FromMemory", ret = PyObject, args = {CHAR_PTR, Py_ssize_t, Int}, call = CImpl)
     @CApiBuiltin(name = "_PySet_NextEntry", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PY_HASH_T_PTR}, call = CImpl)
 
@@ -706,7 +706,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_convert_optional_to_ssize_t", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_DecodeLocaleEx", ret = Int, args = {ConstCharPtrAsTruffleString, WCHAR_T_PTR_LIST, SIZE_T_PTR, CONST_CHAR_PTR_LIST, Int, _PY_ERROR_HANDLER}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_device_encoding", ret = PyObject, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_DisplaySourceLine", ret = Int, args = {PyObject, PyObject, Int, Int}, call = NotImplemented)
+    @CApiBuiltin(name = "_Py_DisplaySourceLine", ret = Int, args = {PyObject, PyObject, Int, Int, INT_LIST, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_dup", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_EncodeLocaleEx", ret = Int, args = {CONST_WCHAR_PTR, CHAR_PTR_LIST, SIZE_T_PTR, CONST_CHAR_PTR_LIST, Int, _PY_ERROR_HANDLER}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_EncodeLocaleRaw", ret = CHAR_PTR, args = {CONST_WCHAR_PTR, SIZE_T_PTR}, call = NotImplemented)
@@ -798,7 +798,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyErr_TrySetFromCause", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyErr_WarnUnawaitedCoroutine", ret = Void, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_CallTracing", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyEval_EvalFrameDefault", ret = PyObject, args = {PyThreadState, PyFrameObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_GetAsyncGenFinalizer", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_GetAsyncGenFirstiter", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_GetBuiltinId", ret = PyObject, args = {PY_IDENTIFIER}, call = NotImplemented)
@@ -1034,10 +1033,10 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyArg_ValidateKeywordArguments", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyAsyncGen_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_FillContiguousStrides", ret = Void, args = {Int, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, Int, CHAR}, call = NotImplemented)
-    @CApiBuiltin(name = "PyBuffer_FromContiguous", ret = Int, args = {PY_BUFFER_PTR, Pointer, Py_ssize_t, CHAR}, call = NotImplemented)
-    @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {PY_BUFFER_PTR, PY_SSIZE_T_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyBuffer_FromContiguous", ret = Int, args = {CONST_PY_BUFFER_PTR, CONST_VOID_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyBuffer_GetPointer", ret = Pointer, args = {CONST_PY_BUFFER_PTR, CONST_PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyBuffer_SizeFromFormat", ret = Py_ssize_t, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyBuffer_ToContiguous", ret = Int, args = {Pointer, CONST_PY_BUFFER_PTR, Py_ssize_t, CHAR}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t,
@@ -1123,8 +1122,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFloat_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyFloat_GetMax", ret = Double, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyFloat_GetMin", ret = Double, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_BlockPop", ret = PyTryBlock, args = {PyFrameObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyFrame_BlockSetup", ret = Void, args = {PyFrameObject, Int, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocals", ret = Void, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_FastToLocalsWithError", ret = Int, args = {PyFrameObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyFrame_LocalsToFast", ret = Void, args = {PyFrameObject, Int}, call = NotImplemented)

@@ -61,6 +61,7 @@
 #include "frameobject.h"
 #include "pycore_moduleobject.h"
 #include "pycore_pymem.h"
+#include "pycore_fileutils.h"
 #include "bytesobject.h"
 
 #define SRC_CS "utf-8"
@@ -533,7 +534,7 @@ typedef struct {
     BUILTIN(_PyTruffleObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
     BUILTIN(_PyTruffleObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(_PyTuple_SET_ITEM, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(_PyTuple_SET_ITEM, void, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
     BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \

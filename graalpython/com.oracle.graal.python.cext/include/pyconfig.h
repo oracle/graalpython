@@ -161,6 +161,7 @@
 #define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
 #define HAVE_FCNTL_H
+#define HAVE_PTHREAD_H
 
 #define HAVE_STDARG_PROTOTYPES
 

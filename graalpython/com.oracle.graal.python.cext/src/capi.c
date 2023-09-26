@@ -899,11 +899,11 @@ PyAPI_FUNC(void) PyBuffer_FillContiguousStrides(int a, Py_ssize_t* b, Py_ssize_t
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyBuffer_FromContiguous
-PyAPI_FUNC(int) PyBuffer_FromContiguous(Py_buffer* a, void* b, Py_ssize_t c, char d) {
+PyAPI_FUNC(int) PyBuffer_FromContiguous(const Py_buffer* a, const void* b, Py_ssize_t c, char d) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyBuffer_GetPointer
-PyAPI_FUNC(void*) PyBuffer_GetPointer(Py_buffer* a, Py_ssize_t* b) {
+PyAPI_FUNC(void*) PyBuffer_GetPointer(const Py_buffer* a, const Py_ssize_t* b) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyBuffer_SizeFromFormat
@@ -911,7 +911,7 @@ PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyBuffer_ToContiguous
-PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, Py_buffer* b, Py_ssize_t c, char d) {
+PyAPI_FUNC(int) PyBuffer_ToContiguous(void* a, const Py_buffer* b, Py_ssize_t c, char d) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyByteArray_Concat
@@ -1031,16 +1031,16 @@ PyAPI_FUNC(PyObject*) PyCode_GetName(PyCodeObject* a) {
     return GraalPyCode_GetName(a);
 }
 #undef PyCode_New
-PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, int n, PyObject* o) {
-    return GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
+PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* asdf, PyObject* m, int n, PyObject* o, PyObject* p) {
+    return NULL;
 }
 #undef PyCode_NewEmpty
 PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
     return GraalPyCode_NewEmpty(a, b, c);
 }
 #undef PyCode_NewWithPosOnlyArgs
-PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p) {
-    return GraalPyCode_NewWithPosOnlyArgs(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, PyObject* adsf, int o, PyObject* p, PyObject* q) {
+    return NULL;
 }
 #undef PyCode_Optimize
 PyAPI_FUNC(PyObject*) PyCode_Optimize(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
@@ -1512,14 +1512,6 @@ PyAPI_FUNC(double) PyFloat_GetMax() {
 }
 #undef PyFloat_GetMin
 PyAPI_FUNC(double) PyFloat_GetMin() {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyFrame_BlockPop
-PyAPI_FUNC(PyTryBlock*) PyFrame_BlockPop(PyFrameObject* a) {
-    FUNC_NOT_IMPLEMENTED
-}
-#undef PyFrame_BlockSetup
-PyAPI_FUNC(void) PyFrame_BlockSetup(PyFrameObject* a, int b, int c, int d) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef PyFrame_FastToLocals
@@ -3602,10 +3594,6 @@ PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) _PyEval_CallTracing(PyObject* a, PyObject* b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyEval_EvalFrameDefault
-PyAPI_FUNC(PyObject*) _PyEval_EvalFrameDefault(PyThreadState* a, PyFrameObject* b, int c) {
-    FUNC_NOT_IMPLEMENTED
-}
 #undef _PyEval_GetAsyncGenFinalizer
 PyAPI_FUNC(PyObject*) _PyEval_GetAsyncGenFinalizer() {
     FUNC_NOT_IMPLEMENTED
@@ -3766,8 +3754,8 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     return Graal_PyList_Extend(a, b);
 }
-#undef _PyList_SET_ITEM
-PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+#undef PyList_SET_ITEM
+PyAPI_FUNC(void) PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
     Graal_PyList_SET_ITEM(a, b, c);
 }
 #undef _PyLong_AsByteArray
@@ -4246,8 +4234,8 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject* a) {
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject** a, Py_ssize_t b) {
     FUNC_NOT_IMPLEMENTED
 }
-#undef _PyTuple_SET_ITEM
-PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+#undef PyTuple_SET_ITEM
+PyAPI_FUNC(void) PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
     return Graal_PyTuple_SET_ITEM(a, b, c);
 }
 #undef _PyType_CalculateMetaclass
@@ -4459,7 +4447,7 @@ PyAPI_FUNC(int) _Py_DecodeLocaleEx(const char* a, wchar_t** b, size_t* c, const 
     FUNC_NOT_IMPLEMENTED
 }
 #undef _Py_DisplaySourceLine
-PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject* a, PyObject* b, int c, int d) {
+PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject* a, PyObject* b, int c, int d, int *truncation, PyObject **line) {
     FUNC_NOT_IMPLEMENTED
 }
 #undef _Py_EncodeLocaleEx

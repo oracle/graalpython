@@ -125,27 +125,23 @@ PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
 #define Py_Is(x, y) ((x) == (y))
 
 
-static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
-    return _Py_REFCNT(ob);
-}
+PyAPI_FUNC(Py_ssize_t) Py_REFCNT(PyObject *ob);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_REFCNT(ob) Py_REFCNT(_PyObject_CAST(ob))
 #endif
 
 
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
-static inline PyTypeObject* Py_TYPE(PyObject *ob) {
-    return _Py_TYPE(ob);
-}
+PyAPI_FUNC(PyTypeObject*) Py_TYPE(PyObject *ob);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
 #endif
 
 // bpo-39573: The Py_SET_SIZE() function must be used to set an object size.
-static inline Py_ssize_t Py_SIZE(PyObject *ob) {
-    PyVarObject *var_ob = _PyVarObject_CAST(ob);
-    return _Py_SIZE(var_ob);
-}
+PyAPI_FUNC(Py_ssize_t) Py_SIZE(PyObject *ob);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SIZE(ob) Py_SIZE(_PyObject_CAST(ob))
 #endif
@@ -159,25 +155,22 @@ static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
 #endif
 
 
-static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
-    _Py_SET_REFCNT(ob, refcnt);
-}
+PyAPI_FUNC(void) Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_REFCNT(ob, refcnt) Py_SET_REFCNT(_PyObject_CAST(ob), refcnt)
 #endif
 
 
-static inline void Py_SET_TYPE(PyObject *ob, PyTypeObject *type) {
-    _Py_SET_TYPE(ob, type);
-}
+PyAPI_FUNC(void) Py_SET_TYPE(PyObject *ob, PyTypeObject *type);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_TYPE(ob, type) Py_SET_TYPE(_PyObject_CAST(ob), type)
 #endif
 
 
-static inline void Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size) {
-    _Py_SET_SIZE(ob, size);
-}
+PyAPI_DATA(void) Py_SET_SIZE(PyVarObject *ob, Py_ssize_t size);
+
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #  define Py_SET_SIZE(ob, size) Py_SET_SIZE(_PyVarObject_CAST(ob), size)
 #endif

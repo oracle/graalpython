@@ -297,9 +297,9 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    abstract static class _PyList_SET_ITEM extends CApiTernaryBuiltinNode {
+    abstract static class PyList_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
-        int doManaged(PList list, long index, Object element,
+        Object doManaged(PList list, long index, Object element,
                         @Bind("this") Node inliningTarget,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
@@ -311,17 +311,17 @@ public final class PythonCextListBuiltins {
             if (generalizedProfile.profile(list.getSequenceStorage() != newStorage)) {
                 list.setSequenceStorage(newStorage);
             }
-            return 0;
+            return PNone.NO_VALUE;
         }
 
         @Specialization
-        int doNative(PythonAbstractNativeObject list, long index, Object element,
+        Object doNative(PythonAbstractNativeObject list, long index, Object element,
                         @Cached GetNativeListStorage asNativeStorage,
                         @Cached SequenceStorageNodes.InitializeNativeItemScalarNode setItemNode) {
             NativeSequenceStorage sequenceStorage = asNativeStorage.execute(list);
             checkBounds(sequenceStorage, index);
             setItemNode.execute(sequenceStorage, (int) index, element);
-            return 0;
+            return PNone.NO_VALUE;
         }
 
         @Fallback

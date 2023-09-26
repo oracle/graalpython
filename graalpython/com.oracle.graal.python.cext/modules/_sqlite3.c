@@ -42,7 +42,9 @@
 // prevent unresolved symbols
 #define SQLITE_EXTERN
 
-#include "_sqlite/cache.c"
+#include "_sqlite/sqlite/sqlite3.c"
+
+#include "_sqlite/blob.c"
 #include "_sqlite/connection.c"
 #include "_sqlite/cursor.c"
 #include "_sqlite/microprotocols.c"
@@ -51,5 +53,3 @@
 #include "_sqlite/row.c"
 #include "_sqlite/statement.c"
 #include "_sqlite/util.c"
-
-#include "_sqlite/sqlite/sqlite3.c"

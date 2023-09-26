@@ -1795,7 +1795,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 418:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltinsFactory._PyList_ExtendNodeGen.create();
             case 419:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltinsFactory._PyList_SET_ITEMNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltinsFactory.PyList_SET_ITEMNodeGen.create();
             case 420:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory._PyLong_AsByteArrayNodeGen.create();
             case 421:
@@ -1831,7 +1831,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 436:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory._PyTruffleSet_NextEntryNodeGen.create();
             case 437:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory._PyTuple_SET_ITEMNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_SET_ITEMNodeGen.create();
             case 438:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory._PyType_LookupNodeGen.create();
             case 439:

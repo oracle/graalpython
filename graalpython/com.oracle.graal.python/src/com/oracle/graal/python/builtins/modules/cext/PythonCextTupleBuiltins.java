@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -132,10 +133,10 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    abstract static class _PyTuple_SET_ITEM extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
+    abstract static class PyTuple_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
-        int doManaged(PTuple tuple, long index, Object element,
+        Object doManaged(PTuple tuple, long index, Object element,
                         @Bind("this") Node inliningTarget,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
@@ -152,7 +153,7 @@ public final class PythonCextTupleBuiltins {
             if (generalizedProfile.profile(tuple.getSequenceStorage() != newStorage)) {
                 tuple.setSequenceStorage(newStorage);
             }
-            return 0;
+            return PNone.NO_VALUE;
         }
 
         @Specialization
