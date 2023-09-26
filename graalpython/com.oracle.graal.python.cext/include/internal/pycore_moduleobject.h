@@ -23,9 +23,17 @@ typedef struct {
     PyObject *md_name;
 } PyModuleObject;
 
-PyAPI_FUNC(PyModuleDef*) _PyModule_GetDef(PyObject *mod);
-PyAPI_FUNC(void*) _PyModule_GetState(PyObject* mod);
-PyAPI_FUNC(PyObject*) _PyModule_GetDict(PyObject *mod);
+static inline PyModuleDef* _PyModule_GetDef(PyObject *mod) {
+    return PyModule_GetDef(mod);
+}
+
+static inline void* _PyModule_GetState(PyObject* mod) {
+    return PyModule_GetState(mod);
+}
+
+static inline PyObject* _PyModule_GetDict(PyObject *mod) {
+    return PyModule_GetDict(mod);
+}
 
 #ifdef __cplusplus
 }

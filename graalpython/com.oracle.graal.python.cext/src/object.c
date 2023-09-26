@@ -121,9 +121,6 @@ _Py_Dealloc(PyObject *op)
 void
 _Py_NewReference(PyObject *op)
 {
-    if (_Py_tracemalloc_config.tracing) {
-        _PyTraceMalloc_NewReference(op);
-    }
 #ifdef Py_REF_DEBUG
     _Py_RefTotal++;
 #endif
