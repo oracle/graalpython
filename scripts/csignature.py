@@ -37,24 +37,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# This script parses the output of "gcc -E"
-# (e..g, "gcc -I /Library/Frameworks/Python.framework/Versions/3.10/include/python3.10/ -E incl.c")
-# and generates a list of C API functions that can be stored in CAPIFunctions.txt to automatically check
-# the consistency of the C API implementation in GraalPy.
-#
-# Example contents of incl.c:
-# #include <Python.h>
-# #include <frameobject.h>
-# #include <datetime.h>
-# #include <pystrhex.h>
-# #include <structmember.h>
 
-from pycparser import c_ast, parse_file, c_generator
 import re
+import sys
+import argparse
+import tempfile
+import subprocess
 
-gen = c_generator.CGenerator()
-ast = parse_file("/Users/ls/Source/upstream-python/graalpython/symbols.c")
+import pycparser_fake_libc
+from pycparser import c_ast, parse_file, c_generator
 
+parser = argparse.ArgumentParser()
+parser.add_argument('include_path')
+args = parser.parse_args()
+
+source = """\
+#define __attribute__(x)
+#define _POSIX_THREADS
+#define Py_BUILD_CORE
+
+#include <Python.h>
+#include <frameobject.h>
+#include <datetime.h>
+#include <structmember.h>
+"""
+
+with tempfile.NamedTemporaryFile('w') as f:
+    f.write(source)
+    f.flush()
+    cpp_args = ['-I', pycparser_fake_libc.directory, '-I', args.include_path]
+    ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
 
 def cleanup(str):
     for i in range(4):
@@ -64,9 +76,13 @@ def cleanup(str):
 
 
 class FuncDeclVisitor(c_ast.NodeVisitor):
+    def __init__(self):
+        self.gen = c_generator.CGenerator()
+        self.results = []
+
     def visit_Decl(self, node):
         if isinstance(node.type, c_ast.FuncDecl):
-            ret = cleanup(gen.visit(node.type.type))
+            ret = cleanup(self.gen.visit(node.type.type))
             for p in node.type.args.params:
                 # erase parameter names
                 if not isinstance(p, c_ast.EllipsisParam):
@@ -74,10 +90,12 @@ class FuncDeclVisitor(c_ast.NodeVisitor):
                     while isinstance(t, c_ast.PtrDecl) or isinstance(t, c_ast.FuncDecl) or isinstance(t, c_ast.ArrayDecl):
                         t = t.type
                     t.declname = None
-            args = [cleanup(gen.visit(p)) for p in node.type.args.params]
+            args = [cleanup(self.gen.visit(p)) for p in node.type.args.params]
             args = "|".join(args)
-            print(f"{node.name};{ret};{args}")
+            self.results.append(f"{node.name};{ret};{args}")
 
 
 v = FuncDeclVisitor()
 v.visit(ast)
+for line in sorted(v.results):
+    print(line)
