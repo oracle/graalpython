@@ -2,8 +2,6 @@
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-#
-# taken from CPython commit 6cc6b13308b3202270ea7ac0ee776762a66f6a2f (tag: v3.10.7)
 # PEG grammar for Python
 
 @trailer '''

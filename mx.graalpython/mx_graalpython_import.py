@@ -174,6 +174,7 @@ CPYTHON_SOURCES_MAPPING = {
     # PEG Parser
     "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen"),
     "graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py": CopyFrom("Parser/asdl.py"),
+    "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Python.asdl": CopyFrom("Parser/Python.asdl"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/python.gram": CopyFrom("Grammar/python.gram"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Tokens": CopyFrom("Grammar/Tokens"),
     "graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py": Ignore(),

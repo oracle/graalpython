@@ -2,6 +2,7 @@
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import os.path
 import token
 from typing import IO, Any, Dict, Optional, Sequence, Set, Text, Tuple
 

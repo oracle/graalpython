@@ -171,16 +171,16 @@ SHORTCUTS = {
 #     the action is written to Parser.java
 # If no (exact) match is found in ACTION_MAPPINGS, we try regular expressions in ACTION_MAPPINGS_RE below.
 ACTION_MAPPINGS = {
-    '( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )': (1, 'new AliasTy [] {factory.createAlias("*", null, $RANGE)}'),
-    '( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_seq_append_to_end ( p , a , b ) ) , c )': (1, 'this.appendToEnd(this.appendToEnd(a,b),c)'),
-    '( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_singleton_seq ( p , a ) ) , b )': (1, 'this.appendToEnd(new ExprTy[] {a},b)'),
-    '( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b )': (2, 'this.appendToEnd(a,b)'),
-    '( asdl_expr_seq * ) _PyPegen_seq_insert_in_front ( p , a , b )': (1, 'this.insertInFront(a,b)'),
-    '( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )': (3, 'new ExprTy[] {a}'),
-    '( asdl_stmt_seq * ) _PyPegen_seq_flatten ( p , a )': (1, 'a'),
-    '( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )': (1, 'new StmtTy[] {factory.createPass($RANGE)}'),
-    '( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , a )': (3, 'new StmtTy[] {a}'),
-    'CHECK_VERSION ( AugOperator * , 5 , "The \'@\' operator is" , _PyPegen_augoperator ( p , MatMult ) )': (1, 'checkVersion(5, "The \'@\' operator is", OperatorTy.MatMult)'),
+    '( asdl_alias_seq* ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )': (1, 'new AliasTy [] {factory.createAlias("*", null, $RANGE)}'),
+    '( asdl_expr_seq* ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq* , _PyPegen_seq_append_to_end ( p , a , b ) ) , c )': (1, 'this.appendToEnd(this.appendToEnd(a,b),c)'),
+    '( asdl_expr_seq* ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq* , _PyPegen_singleton_seq ( p , a ) ) , b )': (1, 'this.appendToEnd(new ExprTy[] {a},b)'),
+    '( asdl_expr_seq* ) _PyPegen_seq_append_to_end ( p , a , b )': (2, 'this.appendToEnd(a,b)'),
+    '( asdl_expr_seq* ) _PyPegen_seq_insert_in_front ( p , a , b )': (1, 'this.insertInFront(a,b)'),
+    '( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , a )': (3, 'new ExprTy[] {a}'),
+    '( asdl_stmt_seq* ) _PyPegen_seq_flatten ( p , a )': (1, 'a'),
+    '( asdl_stmt_seq* ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )': (1, 'new StmtTy[] {factory.createPass($RANGE)}'),
+    '( asdl_stmt_seq* ) _PyPegen_singleton_seq ( p , a )': (3, 'new StmtTy[] {a}'),
+    'CHECK_VERSION ( AugOperator* , 5 , "The \'@\' operator is" , _PyPegen_augoperator ( p , MatMult ) )': (1, 'checkVersion(5, "The \'@\' operator is", OperatorTy.MatMult)'),
     'CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )': (1, 'checkVersion(5, "Await expressions are", factory.createAwait(a, $RANGE))'),
     'CHECK_VERSION ( expr_ty , 5 , "The \'@\' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )': (1, 'checkVersion(5, "The \'@\' operator is", factory.createBinaryOp(OperatorTy.MatMult, a, b, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, a, newTypeComment((Token) tc), $RANGE))'),
@@ -202,24 +202,24 @@ ACTION_MAPPINGS = {
     '_PyAST_AugAssign ( a , b -> kind , c , EXTRA )': (1, 'factory.createAugAssignment(a, b, (ExprTy) c, $RANGE)'),
     '_PyAST_BinOp ( real , Add , imag , EXTRA )': (1, 'factory.createBinaryOp(OperatorTy.Add, real, imag, $RANGE)'),
     '_PyAST_BinOp ( real , Sub , imag , EXTRA )': (1, 'factory.createBinaryOp(OperatorTy.Sub, real, imag, $RANGE)'),
-    '_PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )': (1, 'factory.createAnd(this.insertInFront(a, b), $RANGE)'),
-    '_PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )': (1, 'factory.createOr(this.insertInFront(a, b), $RANGE)'),
+    '_PyAST_BoolOp ( And , CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )': (1, 'factory.createAnd(this.insertInFront(a, b), $RANGE)'),
+    '_PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )': (1, 'factory.createOr(this.insertInFront(a, b), $RANGE)'),
     '_PyAST_Break ( EXTRA )': (1, 'factory.createBreak($RANGE)'),
-    '_PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq * , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq * , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )': (1, 'factory.createCall(dummyName(), extractStarredExpressions(a), deleteStarredExpressions(a), $RANGE)'),
+    '_PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq* , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq* , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )': (1, 'factory.createCall(dummyName(), extractStarredExpressions(a), deleteStarredExpressions(a), $RANGE)'),
     '_PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )': (2, 'factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR_ARRAY, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KEYWORD_ARRAY, $RANGE)'),
-    '_PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )': (2, 'factory.createCall(a, new ExprTy[] {b}, EMPTY_KEYWORD_ARRAY, $RANGE)'),
+    '_PyAST_Call ( a , CHECK ( asdl_expr_seq* , ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )': (2, 'factory.createCall(a, new ExprTy[] {b}, EMPTY_KEYWORD_ARRAY, $RANGE)'),
     '_PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )': (1, 'factory.createClassDef(a, b, c, $RANGE)'),
-    '_PyAST_Compare ( a , CHECK ( asdl_int_seq * , _PyPegen_get_cmpops ( p , b ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_exprs ( p , b ) ) , EXTRA )': (1, 'factory.createComparison(a, b, $RANGE)'),
+    '_PyAST_Compare ( a , CHECK ( asdl_int_seq* , _PyPegen_get_cmpops ( p , b ) ) , CHECK ( asdl_expr_seq* , _PyPegen_get_exprs ( p , b ) ) , EXTRA )': (1, 'factory.createComparison(a, b, $RANGE)'),
     '_PyAST_Constant ( Py_Ellipsis , NULL , EXTRA )': (1, 'factory.createEllipsis($LOC)'),
     '_PyAST_Constant ( Py_False , NULL , EXTRA )': (2, 'factory.createBooleanLiteral(false, $LOC)'),
     '_PyAST_Constant ( Py_None , NULL , EXTRA )': (2, 'factory.createNone($LOC)'),
     '_PyAST_Constant ( Py_True , NULL , EXTRA )': (2, 'factory.createBooleanLiteral(true, $LOC)'),
     '_PyAST_Continue ( EXTRA )': (1, 'factory.createContinue($RANGE)'),
     '_PyAST_Delete ( a , EXTRA )': (1, 'factory.createDelete(a, $RANGE)'),
-    '_PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA )': (1, 'factory.createDict(extractKeys(a), extractValues(a), $RANGE)'),
+    '_PyAST_Dict ( CHECK ( asdl_expr_seq* , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq* , _PyPegen_get_values ( p , a ) ) , EXTRA )': (1, 'factory.createDict(extractKeys(a), extractValues(a), $RANGE)'),
     '_PyAST_DictComp ( a -> key , a -> value , b , EXTRA )': (1, 'factory.createDictComprehension(a, b, $RANGE)'),
     '_PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )': (1, 'factory.createExceptHandler(null, null, b, $RANGE)'),
-    '_PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )': (1, 'factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, $RANGE)'),
+    '_PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )': (2, 'factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, $RANGE)'),
     '_PyAST_Expr ( e , EXTRA )': (1, 'factory.createExpression(e, $RANGE)'),
     '_PyAST_Expr ( y , EXTRA )': (1, 'factory.createExpression(y, $RANGE)'),
     '_PyAST_Expression ( a , p -> arena )': (1, 'factory.createExpressionModule(a, $RANGE)'),
@@ -227,8 +227,8 @@ ACTION_MAPPINGS = {
     '_PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), $RANGE)'),
     '_PyAST_FunctionType ( a , b , p -> arena )': (1, 'factory.createFunctionType(a, b, $RANGE)'),
     '_PyAST_GeneratorExp ( a , b , EXTRA )': (1, 'factory.createGenerator(a, b, $RANGE)'),
-    '_PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
-    '_PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )': (2, 'factory.createIf(a, b, new StmtTy[] {c}, $RANGE)'),
+    '_PyAST_Global ( CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
+    '_PyAST_If ( a , b , CHECK ( asdl_stmt_seq* , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )': (2, 'factory.createIf(a, b, new StmtTy[] {c}, $RANGE)'),
     '_PyAST_If ( a , b , c , EXTRA )': (2, 'factory.createIf(a, b, c, $RANGE)'),
     '_PyAST_IfExp ( b , a , c , EXTRA )': (2, 'factory.createIfExpression(b, a, c, $RANGE)'),
     '_PyAST_Import ( a , EXTRA )': (1, 'factory.createImport(a, $RANGE)'),
@@ -238,7 +238,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )': (1, 'factory.createLambda(a == null ? factory.emptyArguments() : a, b, $RANGE)'),
     '_PyAST_ListComp ( a , b , EXTRA )': (1, 'factory.createListComprehension(a, b, $RANGE)'),
     'CHECK_VERSION ( expr_ty , 8 , "Assignment expressions are" , _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) )': (1, 'checkVersion(8, "Assignment expressions are", factory.createNamedExp(this.check(this.setExprContext(a, ExprContextTy.Store)), b, $RANGE))'),
-    '_PyAST_Nonlocal ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createNonLocal(extractNames(a), $RANGE)'),
+    '_PyAST_Nonlocal ( CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createNonLocal(extractNames(a), $RANGE)'),
     '_PyAST_Pass ( EXTRA )': (1, 'factory.createPass($RANGE)'),
     '_PyAST_Raise ( NULL , NULL , EXTRA )': (1, 'factory.createRaise(null, null, $RANGE)'),
     '_PyAST_Raise ( a , b , EXTRA )': (1, 'factory.createRaise(a, b, $RANGE)'),
@@ -250,9 +250,10 @@ ACTION_MAPPINGS = {
     '_PyAST_Starred ( a , Load , EXTRA )': (3, 'factory.createStarred(a, ExprContextTy.Load, $RANGE)'),
     '_PyAST_Try ( b , NULL , NULL , f , EXTRA )': (1, 'factory.createTry(b, null, null, f, $RANGE)'),
     '_PyAST_Try ( b , ex , el , f , EXTRA )': (1, 'factory.createTry(b, ex, el, f, $RANGE)'),
-    '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )': (2, 'factory.createTuple(this.insertInFront(a, b), ExprContextTy.Load, $RANGE)'),
-    '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )': (1, 'factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, $RANGE)'),
-    '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )': (2, 'factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, $RANGE)'),
+    'CHECK_VERSION ( stmt_ty , 11 , "Exception groups are" , _PyAST_TryStar ( b , ex , el , f , EXTRA ) )': (1, 'checkVersion(10, "Pattern matching is", factory.createTryStar(b, ex, el, f, $RANGE))'),
+    '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )': (2, 'factory.createTuple(this.insertInFront(a, b), ExprContextTy.Load, $RANGE)'),
+    '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )': (1, 'factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, $RANGE)'),
+    '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )': (2, 'factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, $RANGE)'),
     '_PyAST_While ( a , b , c , EXTRA )': (1, 'factory.createWhile(a, b, c, $RANGE)'),
     '_PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createWith(a, b, newTypeComment(tc), $RANGE)'),
     'CHECK_VERSION ( stmt_ty , 9 , "Parenthesized context managers are" , _PyAST_With ( a , b , NULL , EXTRA ) )': (1, 'checkVersion(9, "Parenthesized context managers are", factory.createWith(a, b, null, $RANGE))'),
@@ -260,15 +261,15 @@ ACTION_MAPPINGS = {
     '_PyAST_YieldFrom ( a , EXTRA )': (1, 'factory.createYield(a, true, $RANGE)'),
     '_PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )': (2, 'factory.createAlias(((ExprTy.Name) a).id, b == null ? null : ((ExprTy.Name) b).id, $RANGE)'),
     '_PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )': (1, 'factory.createArgument(((ExprTy.Name) a).id, null, null, $RANGE)'),
-    '_PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )': (1, 'factory.createArgument(((ExprTy.Name) a).id, b, null, $RANGE)'),
+    '_PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )': (2, 'factory.createArgument(((ExprTy.Name) a).id, b, null, $RANGE)'),
     '_PyAST_comprehension ( a , b , c , 0 , p -> arena )': (1, 'factory.createComprehension(a, b, c, false, $RANGE)'),
     '_PyAST_withitem ( e , NULL , p -> arena )': (1, 'factory.createWithItem(e, null, $RANGE)'),
     '_PyAST_withitem ( e , t , p -> arena )': (1, 'factory.createWithItem(e, t, $RANGE)'),
-    '_PyPegen_add_type_comment_to_arg ( p , a , tc )': (2, 'factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange())'),
+    '_PyPegen_add_type_comment_to_arg ( p , a , tc )': (4, 'factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange())'),
     '_PyPegen_arguments_parsing_error ( p , a )': (1, 'raiseArgumentsParsingError(a)'),
     '_PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok': (1, 'this.checkBarryAsFlufl(tok)? null : tok'),
     '_PyPegen_check_legacy_stmt ( p , a ) ? RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "Missing parentheses in call to \'%U\'. Did you mean %U(...)?" , a -> v . Name . id , a -> v . Name . id ) : NULL': (1, 'checkLegacyStmt(a) ? this.raiseSyntaxErrorKnownRange(a, b, "Missing parentheses in call to \'%s\'. Did you mean %s(...)?", ((ExprTy.Name) a).id, ((ExprTy.Name) a).id) : null'),
-    '_PyPegen_check_legacy_stmt ( p , a ) ? NULL : p -> tokens [ p -> mark - 1 ] -> level == 0 ? NULL : RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'checkLegacyStmt(a) ? null : peekToken(mark() - 1).level == 0 ? null : this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax. Perhaps you forgot a comma?")'),
+    '_PyPegen_check_legacy_stmt ( p , a ) ? NULL : p -> tokens [p -> mark - 1] -> level == 0 ? NULL : RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'checkLegacyStmt(a) ? null : peekToken(mark() - 1).level == 0 ? null : this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax. Perhaps you forgot a comma?")'),
     '_PyPegen_class_def_decorators ( p , a , b )': (1, 'factory.createClassDef(b, a, $RANGE)'),
     '_PyPegen_collect_call_seqs ( p , a , b , EXTRA )': (1, 'this.collectCallSequences(a, b, $RANGE)'),
     '_PyPegen_concatenate_strings ( p , a )': (1, 'this.concatenateStrings(a)'),
@@ -294,11 +295,11 @@ ACTION_MAPPINGS = {
     '_PyPegen_set_expr_context ( p , a , Del )': (2, 'this.setExprContext(a, ExprContextTy.Del)'),
     '_PyPegen_set_expr_context ( p , a , Store )': (3, 'this.setExprContext(a, ExprContextTy.Store)'),
     '_PyPegen_singleton_seq ( p , a )': (2, 'new SlashWithDefault[] {a}'),
-    '_PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )': (4, 'new SlashWithDefault(a,b)'),
+    '_PyPegen_slash_with_default ( p , ( asdl_arg_seq* ) a , b )': (4, 'new SlashWithDefault(a,b)'),
     '_PyPegen_star_etc ( p , NULL , NULL , a )': (2, 'new StarEtc(null,null,a)'),
     '_PyPegen_star_etc ( p , NULL , b , c )': (2, 'new StarEtc(null,b,c)'),
-    '_PyPegen_star_etc ( p , a , b , c )': (2, 'new StarEtc(a,b,c)'),
-    'a': (33, 'a'),
+    '_PyPegen_star_etc ( p , a , b , c )': (3, 'new StarEtc(a,b,c)'),
+    'a': (34, 'a'),
     'args': (1, 'args'),
     'b': (2, 'b'),
     'c': (6, 'c'),
@@ -307,13 +308,13 @@ ACTION_MAPPINGS = {
     'guard': (1, 'guard'),
     'k': (1, 'k'),
     't': (1, 't'),
-    'z': (11, 'z'),
+    'z': (12, 'z'),
 
     # Pattern matching:
     'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )': (1, 'checkVersion(10, "Pattern matching is", factory.createMatch(subject, cases, $RANGE))'),
-    'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected \':\'" ) )': (1, 'checkVersion(10, "Pattern matching is", () -> this.raiseSyntaxError("expected \':\'"))'),
+    'CHECK_VERSION ( void* , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected \':\'" ) )': (1, 'checkVersion(10, "Pattern matching is", () -> this.raiseSyntaxError("expected \':\'"))'),
     '_PyAST_match_case ( pattern , guard , body , p -> arena )': (1, 'factory.createMatchCase(pattern, guard, body, $RANGE)'),
-    '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )': (1, 'factory.createTuple(insertInFront(value, values), ExprContextTy.Load, $RANGE)'),
+    '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )': (1, 'factory.createTuple(insertInFront(value, values), ExprContextTy.Load, $RANGE)'),
     'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )': (1, 'patterns.length == 1 ? patterns[0] : factory.createMatchOr(patterns, $RANGE)'),
     '_PyAST_MatchSingleton ( Py_None , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.NONE, $RANGE)'),
     '_PyAST_MatchSingleton ( Py_True , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.TRUE, $RANGE)'),
@@ -335,14 +336,14 @@ ACTION_MAPPINGS = {
     'pattern': (1, 'pattern'),
     '_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )': (1, 'factory.createMatchMapping(null, null, null, $RANGE)'),
     '_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )': (1, 'factory.createMatchMapping(null, null, ((ExprTy.Name) rest).id, $RANGE)'),
-    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), ((ExprTy.Name) rest).id, $RANGE)'),
-    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), null, $RANGE)'),
+    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq* , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq* , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), ((ExprTy.Name) rest).id, $RANGE)'),
+    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq* , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq* , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), null, $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , key , pattern )': (1, 'new KeyPatternPair(key, pattern)'),
     'target': (1, 'target'),
     '_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )': (1, 'factory.createMatchClass(cls, null, null, null, $RANGE)'),
     '_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, null, null, $RANGE)'),
-    '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, null, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
-    '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
+    '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq* , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq* , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, null, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
+    '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq* , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq* , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , arg , value )': (1, 'new KeyPatternPair(arg, value)'),
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
 }
@@ -364,13 +365,13 @@ ACTION_MAPPINGS_RE = {
     r'_PyAST_UnaryOp \( (\w+) , (\w+) , EXTRA \)': (6, 'factory.createUnaryOp(UnaryOpTy.\\1, \\2, $RANGE)'),
     r'_PyPegen_augoperator \( p , (\w+) \)': (12, 'OperatorTy.\\1'),
     r'_PyPegen_cmpop_expr_pair \( p , (\w+) , a \)': (10, 'new CmpopExprPair(CmpOpTy.\\1, a)'),
-    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (15, 'this.raiseSyntaxError("\\1")'),
-    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (15, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
-    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (6, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
+    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (16, 'this.raiseSyntaxError("\\1")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (35, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (9, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
     r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" , _PyPegen_get_expr_name \( \1 \) \)': (4, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2", getExprName(\\1))'),
     r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (3, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" \)': (1, 'this.raiseIndentationError("\\1")'),
-    r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (15, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
+    r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (16, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
 }
 
 LICENSE = '''/*
@@ -646,7 +647,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         if node in self.cache:
             return self.cache[node]
         # TODO can we inline generated calls?
-        name = self.gen.name_node(node)
+        name = self.gen.artifical_rule_from_rhs(node)
         self.cache[node] = FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
@@ -748,7 +749,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
     def visit_Repeat0(self, node: Repeat0) -> FunctionCall:
         if node in self.cache:
             return self.cache[node]
-        name = self.gen.name_loop(node.node, False)
+        name = self.gen.artificial_rule_from_repeat(node.node, False)
         self.cache[node] = FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
@@ -761,7 +762,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
     def visit_Repeat1(self, node: Repeat1) -> FunctionCall:
         if node in self.cache:
             return self.cache[node]
-        name = self.gen.name_loop(node.node, True)
+        name = self.gen.artificial_rule_from_repeat(node.node, True)
         self.cache[node] = FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
@@ -774,7 +775,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
     def visit_Gather(self, node: Gather) -> FunctionCall:
         if node in self.cache:
             return self.cache[node]
-        name = self.gen.name_gather(node)
+        name = self.gen.artifical_rule_from_gather(node)
         self.cache[node] = FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
@@ -849,7 +850,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         debug: bool = True,
         skip_actions: bool = False,
     ):
-        super().__init__(grammar, tokens, file)
+        super().__init__(grammar, set(tokens.values()), file)
         self.typingvisitor = TypingVisitor(self) # Java type hack
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
@@ -893,7 +894,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         pass
 
     def generate(self, filename: str) -> None:
-        self.collect_todo()
+        self.collect_rules()
         # Java specific stuff
         self.print(LICENSE)
         self.print("// Checkstyle: stop")
@@ -912,7 +913,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # Now back to c generator analogue
         self._setup_keywords()
         self._setup_soft_keywords()
-        for i, (rulename, rule) in enumerate(self.todo.items(), 1000):
+        for i, (rulename, rule) in enumerate(self.all_rules.items(), 1000):
             comment = "  // Left-recursive" if rule.left_recursive else ""
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
@@ -927,13 +928,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print("super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
-        while self.todo:
-            for rulename, rule in list(self.todo.items()):
-                del self.todo[rulename]
-                self.print()
-                if rule.left_recursive:
-                    self.print("// Left-recursive")
-                self.visit(rule)
+        for rulename, rule in list(self.all_rules.items()):
+            self.print()
+            if rule.left_recursive:
+                self.print("// Left-recursive")
+            self.visit(rule)
 
         self._generate_lookahead_methods()
         for todo in getattr(self, "_type_conversions", {}).keys():

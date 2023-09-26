@@ -222,6 +222,7 @@ final class AstState {
     static final TruffleString T_C_SUB = tsLiteral("Sub");
     static final TruffleString T_C_SUBSCRIPT = tsLiteral("Subscript");
     static final TruffleString T_C_TRY = tsLiteral("Try");
+    static final TruffleString T_C_TRYSTAR = tsLiteral("TryStar");
     static final TruffleString T_C_TUPLE = tsLiteral("Tuple");
     static final TruffleString T_C_TYPEIGNORE = tsLiteral("TypeIgnore");
     static final TruffleString T_C_UADD = tsLiteral("UAdd");
@@ -274,6 +275,7 @@ final class AstState {
     final PythonClass clsMatch;
     final PythonClass clsRaise;
     final PythonClass clsTry;
+    final PythonClass clsTryStar;
     final PythonClass clsAssert;
     final PythonClass clsImport;
     final PythonClass clsImportFrom;
@@ -470,6 +472,7 @@ final class AstState {
                         "     | Match(expr subject, match_case* cases)\n" +
                         "     | Raise(expr? exc, expr? cause)\n" +
                         "     | Try(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)\n" +
+                        "     | TryStar(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)\n" +
                         "     | Assert(expr test, expr? msg)\n" +
                         "     | Import(alias* names)\n" +
                         "     | ImportFrom(identifier? module, alias* names, int? level)\n" +
@@ -615,6 +618,14 @@ final class AstState {
                         null,
                         tsa(),
                         ts("Try(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)")
+        );
+
+        // StmtTy.TryStar
+        clsTryStar = factory.makeType(T_C_TRYSTAR, clsStmtTy,
+                        tsa(T_F_BODY, T_F_HANDLERS, T_F_ORELSE, T_F_FINALBODY),
+                        null,
+                        tsa(),
+                        ts("TryStar(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)")
         );
 
         // StmtTy.Assert

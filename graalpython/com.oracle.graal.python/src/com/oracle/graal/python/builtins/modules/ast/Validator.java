@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_IMPORTFR
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_MATCH;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_NONLOCAL;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_TRY;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_TRYSTAR;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_WHILE;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_WITH;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_BODY;
@@ -292,6 +293,29 @@ final class Validator implements SSTreeVisitor<Void> {
         }
         if (seqLen(node.handlers) == 0 && seqLen(node.orElse) != 0) {
             throw raiseValueError(ErrorMessages.TRY_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS);
+        }
+        if (node.handlers != null) {
+            for (ExceptHandlerTy handler : node.handlers) {
+                handler.accept(this);
+            }
+        }
+        if (seqLen(node.finalBody) != 0) {
+            validateStmts(node.finalBody);
+        }
+        if (seqLen(node.orElse) != 0) {
+            validateStmts(node.orElse);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(StmtTy.TryStar node) {
+        validateBody(node.body, T_C_TRYSTAR);
+        if (seqLen(node.handlers) == 0 && seqLen(node.finalBody) == 0) {
+            throw raiseValueError(ErrorMessages.TRYSTAR_HAS_NEITHER_EXCEPT_HANDLERS_NOR_FINALBODY);
+        }
+        if (seqLen(node.handlers) == 0 && seqLen(node.orElse) != 0) {
+            throw raiseValueError(ErrorMessages.TRYSTAR_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS);
         }
         if (node.handlers != null) {
             for (ExceptHandlerTy handler : node.handlers) {

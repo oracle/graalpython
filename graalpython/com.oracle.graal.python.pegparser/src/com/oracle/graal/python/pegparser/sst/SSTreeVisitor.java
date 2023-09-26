@@ -100,6 +100,8 @@ public interface SSTreeVisitor<T> {
 
     T visit(StmtTy.Try node);
 
+    T visit(StmtTy.TryStar node);
+
     T visit(StmtTy.Assert node);
 
     T visit(StmtTy.Import node);

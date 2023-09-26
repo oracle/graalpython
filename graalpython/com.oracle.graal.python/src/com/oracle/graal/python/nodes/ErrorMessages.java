@@ -1521,6 +1521,8 @@ public abstract class ErrorMessages {
     public static final TruffleString RAISE_WITH_CAUSE_BUT_NO_EXCEPTION = tsLiteral("Raise with cause but no exception");
     public static final TruffleString TRY_HAS_NEITHER_EXCEPT_HANDLERS_NOR_FINALBODY = tsLiteral("Try has neither except handlers nor finalbody");
     public static final TruffleString TRY_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS = tsLiteral("Try has orelse but no except handlers");
+    public static final TruffleString TRYSTAR_HAS_NEITHER_EXCEPT_HANDLERS_NOR_FINALBODY = tsLiteral("TryStar has neither except handlers nor finalbody");
+    public static final TruffleString TRYSTAR_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS = tsLiteral("TryStar has orelse but no except handlers");
 
     // hashlib
     public static final TruffleString COMPARING_STRINGS_WITH_NON_ASCII = tsLiteral("comparing strings with non-ASCII characters is not supported");

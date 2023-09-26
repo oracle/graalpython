@@ -178,6 +178,9 @@ final class Obj2Sst extends Obj2SstBase {
         if (isInstanceOf(obj, state.clsTry)) {
             return obj2Try(obj, sourceRange);
         }
+        if (isInstanceOf(obj, state.clsTryStar)) {
+            return obj2TryStar(obj, sourceRange);
+        }
         if (isInstanceOf(obj, state.clsAssert)) {
             return obj2Assert(obj, sourceRange);
         }
@@ -333,6 +336,14 @@ final class Obj2Sst extends Obj2SstBase {
         StmtTy[] orElse = lookupAndConvertSequence(obj, AstState.T_F_ORELSE, AstState.T_C_TRY, this::obj2StmtTy, StmtTy[]::new);
         StmtTy[] finalBody = lookupAndConvertSequence(obj, AstState.T_F_FINALBODY, AstState.T_C_TRY, this::obj2StmtTy, StmtTy[]::new);
         return new StmtTy.Try(body, handlers, orElse, finalBody, sourceRange);
+    }
+
+    StmtTy.TryStar obj2TryStar(Object obj, SourceRange sourceRange) {
+        StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_TRYSTAR, this::obj2StmtTy, StmtTy[]::new);
+        ExceptHandlerTy[] handlers = lookupAndConvertSequence(obj, AstState.T_F_HANDLERS, AstState.T_C_TRYSTAR, this::obj2ExceptHandlerTy, ExceptHandlerTy[]::new);
+        StmtTy[] orElse = lookupAndConvertSequence(obj, AstState.T_F_ORELSE, AstState.T_C_TRYSTAR, this::obj2StmtTy, StmtTy[]::new);
+        StmtTy[] finalBody = lookupAndConvertSequence(obj, AstState.T_F_FINALBODY, AstState.T_C_TRYSTAR, this::obj2StmtTy, StmtTy[]::new);
+        return new StmtTy.TryStar(body, handlers, orElse, finalBody, sourceRange);
     }
 
     StmtTy.Assert obj2Assert(Object obj, SourceRange sourceRange) {

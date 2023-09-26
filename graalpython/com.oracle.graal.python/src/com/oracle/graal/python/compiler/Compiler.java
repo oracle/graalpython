@@ -464,16 +464,24 @@ public class Compiler implements SSTreeVisitor<Void> {
     private boolean containsAnnotations(StmtTy stmt) {
         if (stmt instanceof StmtTy.AnnAssign) {
             return true;
-        } else if (stmt instanceof StmtTy.For) {
-            return containsAnnotations(((StmtTy.For) stmt).body) || containsAnnotations(((StmtTy.For) stmt).orElse);
-        } else if (stmt instanceof StmtTy.While) {
-            return containsAnnotations(((StmtTy.While) stmt).body) || containsAnnotations(((StmtTy.While) stmt).orElse);
-        } else if (stmt instanceof StmtTy.If) {
-            return containsAnnotations(((StmtTy.If) stmt).body) || containsAnnotations(((StmtTy.If) stmt).orElse);
-        } else if (stmt instanceof StmtTy.With) {
-            return containsAnnotations(((StmtTy.With) stmt).body);
-        } else if (stmt instanceof StmtTy.Try) {
-            StmtTy.Try tryStmt = (StmtTy.Try) stmt;
+        } else if (stmt instanceof StmtTy.For forStmt) {
+            return containsAnnotations(forStmt.body) || containsAnnotations(forStmt.orElse);
+        } else if (stmt instanceof StmtTy.While whileStmt) {
+            return containsAnnotations(whileStmt.body) || containsAnnotations(whileStmt.orElse);
+        } else if (stmt instanceof StmtTy.If ifStmt) {
+            return containsAnnotations(ifStmt.body) || containsAnnotations(ifStmt.orElse);
+        } else if (stmt instanceof StmtTy.With withStmt) {
+            return containsAnnotations(withStmt.body);
+        } else if (stmt instanceof StmtTy.Try tryStmt) {
+            if (tryStmt.handlers != null) {
+                for (ExceptHandlerTy h : tryStmt.handlers) {
+                    if (containsAnnotations(((ExceptHandlerTy.ExceptHandler) h).body)) {
+                        return true;
+                    }
+                }
+            }
+            return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
+        } else if (stmt instanceof StmtTy.TryStar tryStmt) {
             if (tryStmt.handlers != null) {
                 for (ExceptHandlerTy h : tryStmt.handlers) {
                     if (containsAnnotations(((ExceptHandlerTy.ExceptHandler) h).body)) {
@@ -3441,7 +3449,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(PatternTy.MatchStar node) {
-        return emitNotImplemented("match star");
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
@@ -3649,6 +3657,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         unit.useNextBlock(end);
 
+        return null;
+    }
+
+    @Override
+    public Void visit(StmtTy.TryStar node) {
+        emitNotImplemented("try star");
         return null;
     }
 

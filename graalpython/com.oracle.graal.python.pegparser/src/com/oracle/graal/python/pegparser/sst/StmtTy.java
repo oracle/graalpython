@@ -393,6 +393,26 @@ public abstract class StmtTy extends SSTNode {
         }
     }
 
+    public static final class TryStar extends StmtTy {
+        public final StmtTy[] body;   // nullable
+        public final ExceptHandlerTy[] handlers;   // nullable
+        public final StmtTy[] orElse;   // nullable
+        public final StmtTy[] finalBody;   // nullable
+
+        public TryStar(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+            super(sourceRange);
+            this.body = body;
+            this.handlers = handlers;
+            this.orElse = orElse;
+            this.finalBody = finalBody;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
     public static final class Assert extends StmtTy {
         public final ExprTy test;
         public final ExprTy msg;   // nullable

@@ -1094,7 +1094,19 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         appendNodes(sb, "Else", node.orElse);
         level--;
         return sb.toString();
+    }
 
+    @Override
+    public String visit(StmtTy.TryStar node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Body", node.body);
+        appendNodes(sb, "Except", node.handlers);
+        appendNodes(sb, "Finally", node.finalBody);
+        appendNodes(sb, "Else", node.orElse);
+        level--;
+        return sb.toString();
     }
 
     @Override
@@ -1107,7 +1119,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         appendNodes(sb, "Body", node.body);
         level--;
         return sb.toString();
-
     }
 
     @Override
