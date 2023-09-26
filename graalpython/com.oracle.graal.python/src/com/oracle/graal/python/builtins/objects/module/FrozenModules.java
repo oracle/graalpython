@@ -188,7 +188,11 @@ public final class FrozenModules {
         private static final PythonFrozenModule COLLECTIONS_ABC = new PythonFrozenModule("COLLECTIONS_ABC", "collections.abc", false);
         private static final PythonFrozenModule FUNCTOOLS = new PythonFrozenModule("FUNCTOOLS", "functools", false);
         private static final PythonFrozenModule COPYREG = new PythonFrozenModule("COPYREG", "copyreg", false);
-        private static final PythonFrozenModule RE = new PythonFrozenModule("RE", "re", false);
+        private static final PythonFrozenModule RE = new PythonFrozenModule("RE", "re", true);
+        private static final PythonFrozenModule RE__CASEFIX = new PythonFrozenModule("RE__CASEFIX", "re._casefix", false);
+        private static final PythonFrozenModule RE__COMPILER = new PythonFrozenModule("RE__COMPILER", "re._compiler", false);
+        private static final PythonFrozenModule RE__CONSTANTS = new PythonFrozenModule("RE__CONSTANTS", "re._constants", false);
+        private static final PythonFrozenModule RE__PARSER = new PythonFrozenModule("RE__PARSER", "re._parser", false);
         private static final PythonFrozenModule LOCALE = new PythonFrozenModule("LOCALE", "locale", false);
         private static final PythonFrozenModule RLCOMPLETER = new PythonFrozenModule("RLCOMPLETER", "rlcompleter", false);
         private static final PythonFrozenModule _COLLECTIONS_ABC = new PythonFrozenModule("_COLLECTIONS_ABC", "_collections_abc", false);
@@ -509,6 +513,16 @@ public final class FrozenModules {
                 return Map.COPYREG;
             case "re":
                 return Map.RE;
+            case "re.__init__":
+                return Map.RE.asPackage(false);
+            case "re._casefix":
+                return Map.RE__CASEFIX;
+            case "re._compiler":
+                return Map.RE__COMPILER;
+            case "re._constants":
+                return Map.RE__CONSTANTS;
+            case "re._parser":
+                return Map.RE__PARSER;
             case "locale":
                 return Map.LOCALE;
             case "rlcompleter":
