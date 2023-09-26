@@ -1,3 +1,8 @@
+/* Copyright (c) 2023, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2023 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 // Forward declarations of types of the Python C API.
 // Declare them at the same place since redefining typedef is a C11 feature.
 // Only use a forward declaration if there is an interdependency between two
