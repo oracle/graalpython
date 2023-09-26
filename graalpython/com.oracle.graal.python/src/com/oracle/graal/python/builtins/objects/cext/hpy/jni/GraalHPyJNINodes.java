@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSi
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -840,7 +842,11 @@ abstract class GraalHPyJNINodes {
 
         @Override
         protected void execute(GraalHPyContext ctx, Object basePointer, long offset, long valuePointer) {
-            UNSAFE.putAddress(coerceToPointer(basePointer) + offset, valuePointer);
+            write(coerceToPointer(basePointer) + offset, valuePointer);
+        }
+
+        static void write(long address, long value) {
+            UNSAFE.putAddress(address, value);
         }
 
         @Override
@@ -923,6 +929,34 @@ abstract class GraalHPyJNINodes {
                 length++;
             }
             return length;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyJNIAsCharPointerNode extends HPyAsCharPointerNode {
+
+        abstract long executeLong(GraalHPyContext hpyContext, TruffleString string, Encoding encoding);
+
+        @Specialization
+        static long doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, TruffleString string, Encoding encoding,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile classProfile,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.AsNativeNode asNativeNode,
+                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode) {
+            TruffleString tsEncoded = switchEncodingNode.execute(string, encoding);
+            TruffleString tsNative = asNativeNode.execute(tsEncoded, GraalHPyJNIContext.TS_NATIVE_ALLOCATOR, encoding, false, true);
+            Object profiledInteropPointer = classProfile.profile(inliningTarget, getInternalNativePointerNode.execute(tsNative, encoding));
+            if (profiledInteropPointer instanceof NativePointer nativePointer) {
+                return nativePointer.asPointer();
+            }
+            return interopPointerToNative(profiledInteropPointer);
+        }
+
+        @TruffleBoundary
+        private static long interopPointerToNative(Object object) {
+            return GraalHPyJNIContext.interopPointerToNative(object, InteropLibrary.getUncached(object));
         }
     }
 }

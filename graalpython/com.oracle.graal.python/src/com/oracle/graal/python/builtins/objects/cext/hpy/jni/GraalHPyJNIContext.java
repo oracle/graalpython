@@ -63,8 +63,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeBulkFreeHandleReferencesNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -82,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.BulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.IsNullNode;
@@ -118,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyData;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeAllocateNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeBulkFreeHandleReferencesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeFreeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeGetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeIsNullNode;
@@ -157,6 +158,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.Un
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteI64Node;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.UnsafeWriteSizeTNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodesFactory.HPyJNIAsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodesFactory.HPyJNIFromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -196,6 +198,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -222,7 +225,14 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.NativeAllocator;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.AsNativeNode;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleString.GetInternalByteArrayNode;
+import com.oracle.truffle.api.strings.TruffleString.GetInternalNativePointerNode;
+import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 
 /**
  * This object is used to override specific native upcall pointers in the HPyContext. This is
@@ -236,6 +246,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private static final String J_NAME = "HPy Universal ABI (GraalVM JNI backend)";
 
     private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyJNIContext.class);
+
+    static final NativeAllocator TS_NATIVE_ALLOCATOR = byteSize -> new NativePointer(UNSAFE.allocateMemory(byteSize));
 
     private static boolean jniBackendLoaded = false;
 
@@ -364,6 +376,17 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     protected NativePointer nativeToInteropPointer(Object object) {
         assert object instanceof Long;
         return new NativePointer((Long) object);
+    }
+
+    static long interopPointerToNative(Object object, InteropLibrary lib) {
+        if (!lib.isPointer(object)) {
+            lib.toNative(object);
+        }
+        try {
+            return lib.asPointer(object);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @Override
@@ -645,6 +668,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @Override
     public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
         return HPyJNIFromCharPointerNodeGen.getUncached();
+    }
+
+    @Override
+    public HPyAsCharPointerNode createAsCharPointerNode() {
+        return HPyJNIAsCharPointerNodeGen.create();
+    }
+
+    @Override
+    public HPyAsCharPointerNode getUncachedAsCharPointerNode() {
+        return HPyJNIAsCharPointerNodeGen.getUncached();
     }
 
     @Override
@@ -1181,25 +1214,16 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     /**
      * Coerces an object to a native pointer (i.e. a {@code void *}; represented as Java
      * {@code long}). This is similar to {@link #expectPointer(Object)} but will send
-     * {@link InteropLibrary#toNative(Object)} if the object is not a pointer already. The method
-     * will throw a {@link CannotCastException} if coercion is not possible.
+     * {@link InteropLibrary#toNative(Object)} if the object is not a pointer already.
      */
-    static long coerceToPointer(Object value) throws CannotCastException {
+    static long coerceToPointer(Object value) {
         if (value == null) {
             return 0;
         }
         if (value instanceof Long) {
             return (long) value;
         }
-        InteropLibrary interopLibrary = InteropLibrary.getUncached(value);
-        if (!interopLibrary.isPointer(value)) {
-            interopLibrary.toNative(value);
-        }
-        try {
-            return interopLibrary.asPointer(value);
-        } catch (UnsupportedMessageException e) {
-            throw CannotCastException.INSTANCE;
-        }
+        return interopPointerToNative(value, InteropLibrary.getUncached(value));
     }
 
     /**
@@ -1222,24 +1246,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return 0;
     }
 
-    /**
-     * Transforms the given {@link TruffleString} to a string with native buffer and returns the
-     * internal pointer object (which is guaranteed to answer
-     * {@link InteropLibrary#isPointer(Object)} with {@code true}).
-     */
-    private static Object truffleStringToNative(TruffleString value) {
-        TruffleString nativeTName = TruffleString.AsNativeNode.getUncached().execute(value, (size) -> new NativePointer(UNSAFE.allocateMemory(size)), TS_ENCODING, true, true);
-        Object result = TruffleString.GetInternalNativePointerNode.getUncached().execute(nativeTName, TS_ENCODING);
-        assert InteropLibrary.getUncached().isPointer(result);
-        return result;
-    }
-
-    private static Object capsuleNameToNative(Object name) {
+    private long capsuleNameToNative(Object name) {
         if (name instanceof TruffleString tname) {
             // The capsule's name may either be a native pointer or a TruffleString.
-            return truffleStringToNative(tname);
+            return HPyJNIAsCharPointerNodeGen.getUncached().executeLong(context, tname, Encoding.UTF_8);
         }
-        return name;
+        return (long) name;
     }
 
     // {{start ctx funcs}}
@@ -2440,7 +2452,24 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxUnicodeAsUTF8AndSize(long h, long size) {
         increment(HPyJNIUpcall.HPyUnicodeAsUTF8AndSize);
-        return executeLongTernaryContextFunction(HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE, h, size);
+        Object string = context.bitsAsPythonObject(h);
+        TruffleString tsUtf8;
+        try {
+            tsUtf8 = SwitchEncodingNode.getUncached().execute(CastToTruffleStringNode.executeUncached(string), Encoding.UTF_8);
+        } catch (CannotCastException e) {
+            return HPyRaiseNode.raiseIntUncached(context, 0, SystemError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+        TruffleString nativeTName = AsNativeNode.getUncached().execute(tsUtf8, TS_NATIVE_ALLOCATOR, Encoding.UTF_8, false, true);
+        Object result = GetInternalNativePointerNode.getUncached().execute(nativeTName, Encoding.UTF_8);
+        if (size != 0) {
+            InternalByteArray internalByteArray = GetInternalByteArrayNode.getUncached().execute(tsUtf8, Encoding.UTF_8);
+            UnsafeWriteSizeTNode.write(size, internalByteArray.getLength());
+        }
+
+        if (result instanceof NativePointer nativePointer) {
+            return nativePointer.asPointer();
+        }
+        return interopPointerToNative(result, InteropLibrary.getUncached(result));
     }
 
     public long ctxUnicodeDecodeFSDefault(long v) {

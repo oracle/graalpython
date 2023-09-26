@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFieldS
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMCallHelperFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.LLVMAllocateNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -118,6 +120,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -147,6 +150,14 @@ abstract class GraalHPyLLVMNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached HPyLLVMCallHelperFunctionNode callHelperNode) {
             return callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, size, 1L);
+        }
+
+        static LLVMAllocateNode create() {
+            return LLVMAllocateNodeGen.create();
+        }
+
+        static LLVMAllocateNode getUncached() {
+            return LLVMAllocateNodeGen.getUncached();
         }
     }
 
@@ -786,6 +797,38 @@ abstract class GraalHPyLLVMNodes {
 
         static boolean isPointer(InteropLibrary lib, Object object) {
             return lib.isPointer(object);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    abstract static class HPyLLVMAsCharPointerNode extends HPyAsCharPointerNode {
+
+        @Specialization(guards = "isNativeAccessAllowed(hpyContext)")
+        static Object doNative(GraalHPyContext hpyContext, TruffleString string, Encoding encoding,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
+                        @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Exclusive @Cached TruffleString.AsNativeNode asNativeNode,
+                        @Exclusive @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode) {
+            TruffleString tsEncoded = switchEncodingNode.execute(string, encoding);
+            TruffleString tsNative = asNativeNode.execute(tsEncoded, byteSize -> callHelperNode.call(inliningTarget, hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, byteSize, 1L), encoding,
+                            false, true);
+            return getInternalNativePointerNode.execute(tsNative, encoding);
+        }
+
+        @Specialization(replaces = "doNative")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, TruffleString string, Encoding encoding,
+                        @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Exclusive @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
+            TruffleString tsEncoded = switchEncodingNode.execute(string, encoding);
+            InternalByteArray internalByteArray = getInternalByteArrayNode.execute(tsEncoded, encoding);
+            return new CByteArrayWrapper(internalByteArray.getArray());
+
+        }
+
+        static boolean isNativeAccessAllowed(GraalHPyContext hpyContext) {
+            return hpyContext.getContext().isNativeAccessAllowed();
         }
     }
 

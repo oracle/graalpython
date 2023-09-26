@@ -146,7 +146,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -347,6 +346,19 @@ public abstract class GraalHPyNodes {
 
         public static HPyFromCharPointerNode getUncached(GraalHPyContext hpyContext) {
             return hpyContext.getBackend().getUncachedFromCharPointerNode();
+        }
+    }
+
+    public abstract static class HPyAsCharPointerNode extends Node {
+
+        public abstract Object execute(GraalHPyContext hpyContext, TruffleString string, Encoding encoding);
+
+        public static HPyAsCharPointerNode create(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().createAsCharPointerNode();
+        }
+
+        public static HPyAsCharPointerNode getUncached(GraalHPyContext hpyContext) {
+            return hpyContext.getBackend().getUncachedAsCharPointerNode();
         }
     }
 
@@ -2161,11 +2173,10 @@ public abstract class GraalHPyNodes {
                         @Cached(parameters = "context") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadI32Node readI32Node,
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
+                        @Cached(parameters = "context") HPyAsCharPointerNode asCharPointerNode,
                         @Cached HPyTypeSplitNameNode splitName,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached TruffleString.AsNativeNode asNativeNode,
-                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached HasSameConstructorNode hasSameConstructorNode,
                         @Cached CStructAccess.ReadI64Node getMetaSizeNode,
@@ -2190,8 +2201,7 @@ public abstract class GraalHPyNodes {
                 TruffleString[] names = splitName.execute(inliningTarget, specName);
                 assert names.length == 2;
 
-                TruffleString tpNameNative = asNativeNode.execute(names[1], byteSize -> context.nativeToInteropPointer(allocateNode.malloc(context, byteSize)), TS_ENCODING, true, true);
-                Object tpName = getInternalNativePointerNode.execute(tpNameNative, TS_ENCODING);
+                Object tpName = asCharPointerNode.execute(context, names[1], Encoding.UTF_8);
 
                 PDict namespace;
                 Object doc = readPointerNode.read(context, typeSpec, GraalHPyCField.HPyType_Spec__doc);
@@ -2549,15 +2559,12 @@ public abstract class GraalHPyNodes {
         @Specialization(replaces = "doTpName")
         static Object doGeneric(Node inliningTarget, GraalHPyContext ctx, Object type,
                         @Cached GetNameNode getName,
-                        @Cached(parameters = "ctx") GraalHPyCAccess.AllocateNode allocateNode,
-                        @Cached TruffleString.AsNativeNode asNativeNode,
-                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode) {
+                        @Cached(parameters = "ctx") HPyAsCharPointerNode asCharPointerNode) {
             if (type instanceof PythonClass pythonClass && pythonClass.getTpName() != null) {
                 return pythonClass.getTpName();
             }
             TruffleString baseName = getName.execute(inliningTarget, type);
-            TruffleString tpNameNative = asNativeNode.execute(baseName, byteSize -> ctx.nativeToInteropPointer(allocateNode.malloc(ctx, byteSize)), TS_ENCODING, true, true);
-            return getInternalNativePointerNode.execute(tpNameNative, TS_ENCODING);
+            return asCharPointerNode.execute(ctx, baseName, Encoding.UTF_8);
         }
     }
 

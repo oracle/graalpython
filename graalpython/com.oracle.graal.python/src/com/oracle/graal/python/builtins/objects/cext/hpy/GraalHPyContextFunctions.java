@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -1813,12 +1814,9 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteSizeTNode writeSizeTNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.AsNativeNode asNativeNode,
-                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
             TruffleString tsUtf8;
             try {
@@ -1826,13 +1824,11 @@ public abstract class GraalHPyContextFunctions {
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
-            TruffleString nativeTName = asNativeNode.execute(tsUtf8, (size) -> hpyContext.nativeToInteropPointer(allocateNode.malloc(hpyContext, size)), Encoding.UTF_8, false, true);
-            Object result = getInternalNativePointerNode.execute(nativeTName, Encoding.UTF_8);
+            InternalByteArray internalByteArray = getInternalByteArrayNode.execute(tsUtf8, Encoding.UTF_8);
             if (!isNullNode.execute(hpyContext, sizePtr)) {
-                InternalByteArray internalByteArray = getInternalByteArrayNode.execute(tsUtf8, Encoding.UTF_8);
                 writeSizeTNode.write(hpyContext, sizePtr, internalByteArray.getLength());
             }
-            return result;
+            return new CByteArrayWrapper(internalByteArray.getArray());
         }
     }
 

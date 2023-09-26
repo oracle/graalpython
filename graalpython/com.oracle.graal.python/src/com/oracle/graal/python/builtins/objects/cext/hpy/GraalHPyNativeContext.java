@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WritePo
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.WriteSizeTNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyABIVersion;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -328,4 +329,8 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
     public abstract WriteGenericNode getUncachedWriteGenericNode();
 
     public abstract BulkFreeHandleReferencesNode createBulkFreeHandleReferencesNode();
+
+    public abstract HPyAsCharPointerNode createAsCharPointerNode();
+
+    public abstract HPyAsCharPointerNode getUncachedAsCharPointerNode();
 }

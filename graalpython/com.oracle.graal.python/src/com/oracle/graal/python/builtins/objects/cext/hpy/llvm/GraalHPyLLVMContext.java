@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyDummyToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCharPointerNode;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodes.HPyLLVMCallHelperFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMAsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMBulkFreeHandleReferencesNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMFromCharPointerNodeGen;
@@ -460,6 +462,16 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public HPyFromCharPointerNode getUncachedFromCharPointerNode() {
         return HPyLLVMFromCharPointerNodeGen.getUncached();
+    }
+
+    @Override
+    public HPyAsCharPointerNode createAsCharPointerNode() {
+        return HPyLLVMAsCharPointerNodeGen.create();
+    }
+
+    @Override
+    public HPyAsCharPointerNode getUncachedAsCharPointerNode() {
+        return HPyLLVMAsCharPointerNodeGen.getUncached();
     }
 
     @Override
