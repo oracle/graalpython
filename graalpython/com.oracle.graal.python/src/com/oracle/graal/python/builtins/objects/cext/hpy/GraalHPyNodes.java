@@ -2850,7 +2850,7 @@ public abstract class GraalHPyNodes {
         @NeverDefault
         public static HPyAttachFunctionTypeNode create() {
             PythonLanguage language = PythonLanguage.get(null);
-            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+            if (!PythonOptions.WITHOUT_JNI && language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 return HPyAttachJNIFunctionTypeNodeGen.create();
             }
             assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
@@ -2859,7 +2859,7 @@ public abstract class GraalHPyNodes {
 
         public static HPyAttachFunctionTypeNode getUncached() {
             PythonLanguage language = PythonLanguage.get(null);
-            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+            if (!PythonOptions.WITHOUT_JNI && language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 return HPyAttachJNIFunctionTypeNodeGen.getUncached();
             }
             assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;

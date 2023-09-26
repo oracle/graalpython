@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -50,12 +51,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LoadCExtException extends Exception {
     private static final long serialVersionUID = 3517291912314595890L;
-    protected final PException cause;
-    protected final transient Object name;
     protected final transient TruffleString formatString;
     protected final transient Object[] formatArgs;
 
-    protected LoadCExtException(PException cause, TruffleString name, TruffleString formatString, Object[] formatArgs) {
+    protected LoadCExtException(TruffleString formatString, Object[] formatArgs) {
         /*
          * We use the super constructor that initializes the cause to null. Without that, the cause
          * would be this exception itself. This helps escape analysis: it avoids the circle of an
@@ -63,8 +62,6 @@ public abstract class LoadCExtException extends Exception {
          * also allows us to set the message to null.
          */
         super(null, null);
-        this.cause = cause;
-        this.name = name;
         this.formatString = formatString;
         this.formatArgs = formatArgs;
     }
@@ -80,14 +77,23 @@ public abstract class LoadCExtException extends Exception {
 
     public static final class ApiInitException extends LoadCExtException {
         private static final long serialVersionUID = 982734876234786L;
+        private final Exception cause;
 
-        public ApiInitException(PException cause, TruffleString name, TruffleString formatString, Object... formatArgs) {
-            super(cause, name, formatString, formatArgs);
+        public ApiInitException(Exception cause) {
+            super(null, null);
+            this.cause = cause;
+        }
+
+        public ApiInitException(TruffleString formatString, Object... formatArgs) {
+            super(formatString, formatArgs);
+            this.cause = null;
         }
 
         public PException reraise(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode) {
-            if (cause != null) {
-                throw cause.getExceptionForReraise(false);
+            if (cause instanceof PException pcause) {
+                throw pcause.getExceptionForReraise(false);
+            } else if (cause != null) {
+                throw raiseNode.get(inliningTarget).executeWithFmtMessageAndArgs(frame, SystemError, ErrorMessages.M, new Object[]{cause}, null);
             }
             throw raiseNode.get(inliningTarget).executeWithFmtMessageAndArgs(frame, SystemError, formatString, formatArgs, null);
         }
@@ -95,10 +101,14 @@ public abstract class LoadCExtException extends Exception {
 
     public static final class ImportException extends LoadCExtException {
         private static final long serialVersionUID = 7862376523476548L;
+        private final PException cause;
+        private final transient TruffleString name;
         private final transient Object path;
 
         public ImportException(PException cause, TruffleString name, TruffleString path, TruffleString formatString, Object... formatArgs) {
-            super(cause, name, formatString, formatArgs);
+            super(formatString, formatArgs);
+            this.cause = cause;
+            this.name = name;
             this.path = path;
         }
 

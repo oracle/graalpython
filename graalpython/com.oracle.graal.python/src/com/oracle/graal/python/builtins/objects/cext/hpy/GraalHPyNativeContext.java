@@ -90,7 +90,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         return context.getContext();
     }
 
-    protected abstract void initNativeContext() throws Exception;
+    protected abstract void initNativeContext() throws ApiInitException;
 
     protected abstract void finalizeNativeContext();
 

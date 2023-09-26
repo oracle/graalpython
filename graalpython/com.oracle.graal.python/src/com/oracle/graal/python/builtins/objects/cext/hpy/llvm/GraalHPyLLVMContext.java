@@ -307,10 +307,14 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @Override
-    protected void initNativeContext() throws InteropException {
+    protected void initNativeContext() throws ApiInitException {
         Object hpyLibrary = context.getLLVMLibrary();
         InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
-        interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this));
+        try {
+            interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", context, new GraalHPyInitObject(this));
+        } catch (InteropException e) {
+            throw new ApiInitException(e);
+        }
     }
 
     @Override
@@ -336,7 +340,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public void initHPyDebugContext() throws ApiInitException {
         // debug mode is currently not available with the LLVM backend
-        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
+        throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_DEBUG);
     }
 
     @Override
@@ -348,7 +352,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     @Override
     public void initHPyTraceContext() throws ApiInitException {
         // debug mode is currently not available with the LLVM backend
-        throw new ApiInitException(null, null, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
+        throw new ApiInitException(ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, StringLiterals.J_TRACE);
     }
 
     @Override

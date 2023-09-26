@@ -597,7 +597,7 @@ public final class CApiContext extends CExtContext {
                 if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
-                throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                throw new ApiInitException(e);
             }
         }
         return context.getCApiContext();

@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFac
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -2457,7 +2458,7 @@ public final class PythonContext extends Python3Core {
         return hPyContext != null;
     }
 
-    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws Exception {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) throws ApiInitException {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
         GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
         this.hPyContext = hpyContext;

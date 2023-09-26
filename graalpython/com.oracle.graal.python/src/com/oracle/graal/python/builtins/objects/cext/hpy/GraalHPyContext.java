@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.UNSAFE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
@@ -154,14 +155,11 @@ public final class GraalHPyContext extends CExtContext {
                 GraalHPyContext hPyContext = context.createHPyContext(GraalHPyLLVMContext.loadLLVMLibrary(context));
                 assert hPyContext == context.getHPyContext();
                 return hPyContext;
-            } catch (PException e) {
-                /*
-                 * Python exceptions that occur during the HPy API initialization are just passed
-                 * through.
-                 */
-                throw e.getExceptionForReraise(false);
+            } catch (ApiInitException e) {
+                throw e;
             } catch (Exception e) {
-                throw new ApiInitException(CExtContext.wrapJavaException(e, node), name, ErrorMessages.HPY_LOAD_ERROR);
+                // we don't expect any other exception
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
         return context.getHPyContext();
@@ -427,7 +425,7 @@ public final class GraalHPyContext extends CExtContext {
 
     private final ScheduledExecutorService scheduler;
 
-    public GraalHPyContext(PythonContext context, Object hpyLibrary) throws Exception {
+    public GraalHPyContext(PythonContext context, Object hpyLibrary) throws ApiInitException {
         super(context, hpyLibrary, false /* TODO: provide proper value */);
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = context.getLanguage();
@@ -446,16 +444,20 @@ public final class GraalHPyContext extends CExtContext {
 
         LOGGER.config("Using HPy backend:" + backendMode.name());
         if (backendMode == HPyBackendMode.JNI) {
-            this.useNativeFastPaths = useNativeFastPaths;
-            backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
+            if (!PythonOptions.WITHOUT_JNI) {
+                this.useNativeFastPaths = useNativeFastPaths;
+                backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
+            } else {
+                throw new ApiInitException(ErrorMessages.HPY_CANNOT_USE_JNI_BACKEND);
+            }
         } else if (backendMode == HPyBackendMode.NFI) {
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+            throw new ApiInitException(ErrorMessages.HPY_NFI_NOT_YET_IMPLEMENTED);
         } else if (backendMode == HPyBackendMode.LLVM) {
             // TODO(fa): we currently don't use native fast paths with the LLVM backend
             this.useNativeFastPaths = false;
             backend = new GraalHPyLLVMContext(this, traceUpcallsInterval > 0);
         } else {
-            throw CompilerDirectives.shouldNotReachHere();
+            throw new ApiInitException(ErrorMessages.HPY_UNKNOWN_BACKEND, TruffleString.fromJavaStringUncached(backendMode.name(), TS_ENCODING));
         }
 
         backend.initNativeContext();

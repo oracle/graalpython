@@ -706,11 +706,10 @@ class autogen_ctx_handles_init(AutoGenFilePart):
 class autogen_svm_jni_upcall_config(AutoGenFilePart):
     """
     """
-    LANGUAGE = 'json'
-
-    PATH = 'graalpython/com.oracle.graal.python/src/META-INF/native-image/org.graalvm.py/jni-config.json'
-    BEGIN_MARKER = '  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext",\n  "methods":[\n'
-    END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] },'
+    INDENT = '                '
+    PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/JNIFeature.java'
+    BEGIN_MARKER = INDENT + '// {{start jni upcall config}}\n'
+    END_MARKER = INDENT + '// {{end jni upcall config}}'
 
     def generate(self, old):
         lines = []
@@ -720,12 +719,13 @@ class autogen_svm_jni_upcall_config(AutoGenFilePart):
                 continue
             node = func.node
             jname = func.ctx_name().replace('_', '')
-            jni_params = []
+            jni_params = [f'"{jname}"']
             for p in node.type.args.params[1:]:
                 jtype = get_java_signature_type(p.type)
-                jni_params.append(f'"{jtype}"')
-            w(f'  {{"name":"{jname}","parameterTypes":[{",".join(jni_params)}]}}')
-        return ',\n'.join(lines)
+                jni_params.append(f'{jtype}.class')
+            w(f'RuntimeJNIAccess.register(GraalHPyJNIContext.class.getDeclaredMethod({", ".join(jni_params)}));')
+
+        return '\n'.join(lines)
 
 
 class autogen_jni_upcall_method_stub(AutoGenFilePart):
@@ -1216,4 +1216,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_llvm_init,
               autogen_ctx_function_factory,
               autogen_llvm_trampolines_h,
-              autogen_llvm_upcall_wrappers)
+              # autogen_llvm_upcall_wrappers
+              )

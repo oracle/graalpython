@@ -1493,6 +1493,9 @@ public abstract class ErrorMessages {
     public static final TruffleString LLVM_NOT_AVAILABLE = tsLiteral("GraalPy option 'NativeModules' is set to false, but the 'llvm' language, which is required for this feature, is not available. " +
                     "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: are you missing a runtime dependency " +
                     "'org.graalvm.polyglot:llvm{-community}'?");
+    public static final TruffleString HPY_CANNOT_USE_JNI_BACKEND = tsLiteral("Cannot use HPy JNI backend because JNI access is forbidden.");
+    public static final TruffleString HPY_NFI_NOT_YET_IMPLEMENTED = tsLiteral("HPy NFI backend is not yet implemented");
+    public static final TruffleString HPY_UNKNOWN_BACKEND = tsLiteral("unknown HPy backend: ");
     private static final String HPY_NON_DEFAULT_MESSAGE = "This is not allowed because custom HPy_mod_create slot cannot return a builtin module object and cannot make any use of any other " +
                     "data defined in the HPyModuleDef. Either do not define HPy_mod_create slot and let the runtime create a builtin module object from the provided HPyModuleDef, or do not " +
                     "define anything else but the HPy_mod_create slot.";
