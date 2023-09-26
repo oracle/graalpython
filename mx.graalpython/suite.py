@@ -837,26 +837,6 @@ suite = {
             "ignorePatterns": [],
             "license": ["PSF-License"],
         },
-
-        "graalpy-archetype": {
-            "class": "MavenProject",
-            "subDir": "graalpython",
-            "maven": {
-                "groupId": "org.graalvm.python",
-                "artifactId": "graalpy-archetype",
-                "tag": ["default", "public"],
-            },
-        },
-
-        "graalpy-maven-plugin": {
-            "class": "MavenProject",
-            "subDir": "graalpython",
-            "maven": {
-                "groupId": "org.graalvm.python",
-                "artifactId": "graalpy-maven-plugin",
-                "tag": ["default", "public"],
-            },
-        },
     },
 
     "licenses": {
@@ -1368,6 +1348,22 @@ suite = {
                 "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
+        },
+
+        "graalpy-archetype": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
+
+        "graalpy-maven-plugin": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "maven": {
+                "tag": ["default", "public"],
+            },
         },
     },
 }

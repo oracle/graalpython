@@ -37,6 +37,7 @@ import shlex
 import shutil
 import sys
 import time
+import xml.etree.ElementTree as ET
 from functools import wraps
 from textwrap import dedent
 
@@ -2524,29 +2525,114 @@ def python_build_watch(args):
             mx.log("Build done.")
 
 
-class MavenProject(mx.Project):
-    def __init__(self, suite, name, deps, workingSets=None, theLicense=None, **args):
-        super().__init__(suite, name, subDir := args.pop("subDir", ""), [], deps, workingSets, os.path.join(SUITE.dir, subDir, name), theLicense, **args)
+class MavenProject(mx.AbstractDistribution):
+    def __init__(self, suite, name, deps, excludedLibs, platformDependent, theLicense, testDistribution, layout, path, **args):
+        self._sourceDir = os.path.join(SUITE.dir, args.pop('subDir', ''), name)
+        pom = ET.parse(os.path.join(self._sourceDir, 'pom.xml'))
+        maven = args.pop('maven', {})
+        assert 'groupId' not in maven
+        assert 'artifactId' not in maven
+        url = pom.getroot().find("*").tag.split("}")[0]
+        if url:
+            url += "}"
+        maven["groupId"] = pom.find(f"{url}groupId").text
+        maven["artifactId"] = pom.find(f"{url}artifactId").text
+        maven["version"] = pom.find(f"{url}version").text
+        self.description = self._pomGetText(pom, f"{url}description")
+        self.packaging = self.extension = self._pomGetText(pom, f"{url}packaging") or "jar"
+        if self.extension in ["maven-plugin", "maven-archetype"]:
+            self.extension = "jar"
+        if mvnDeps := pom.find(f"{url}dependencies"):
+            excludedLibs = excludedLibs or []
+            for dependency in mvnDeps.findall(f"{url}dependency"):
+                gid = dependency.find(f"{url}groupId").text
+                aid = dependency.find(f"{url}artifactId").text
+                ver = dependency.find(f"{url}version").text
+                sco = self._pomGetText(dependency, f"{url}scope") or "compile"
+                if sco in ["compile", "runtime"]:
+                    d = mx.Library(suite, name=f"{gid}:{aid}:{ver}", path=None, optional=True, urls=[], digest=None,
+                                   sourcePath="", sourceUrls=[], sourceDigest=None, deps=[], theLicense=None, ignore=False,
+                                   maven={"groupId": gid, "artifactId": aid, "version": ver})
+                    excludedLibs.append(d)
+        args['maven'] = maven
+        self._output = os.path.join(self._sourceDir, 'target', f"{maven['artifactId']}-{maven['version']}.{self.extension}")
+        self.sourcesPath = os.path.join(self._sourceDir, 'target', f"{maven['artifactId']}-{maven['version']}-sources.{self.extension}")
+        super().__init__(suite, name=name, deps=deps, excludedLibs=excludedLibs, platformDependent=platformDependent,
+                         theLicense=theLicense, testDistribution=testDistribution, layout=layout, path=path, output=self._output, **args)
+
+    def _pomGetText(self, pom, path):
+        e = pom.find(path)
+        if e is not None:
+            return e.text
+
+    def isJARDistribution(self):
+        return self.extension == "jar"
+
+    def isPOMDistribution(self):
+        return self.extension == "pom"
+
+    def isTARDistribution(self):
+        return self.extension in ["tar", "tar.gz"]
+
+    def isZIPDistribution(self):
+        return self.extension == "zip"
+
+    def localExtension(self):
+        return self.extension
+
+    def remoteExtension(self):
+        return self.packaging
 
     def getBuildTask(self, args):
-        return MavenBuildTask(self, args, parallelism=1)
+        return MavenArchiveTask(args, self)
+
+    def make_archive(self):
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        shutil.copy(self._output, self.path)
+        return self.path
+
+    def is_stripped(self):
+        return False
 
 
-class MavenBuildTask(mx.BuildTask):
-    def build(self):
-        mx.run_maven(["package"], cwd=self.subject.dir)
-
+class MavenArchiveTask(mx.DefaultArchiveTask):
     def needsBuild(self, newestInput):
-        return (True, "maven build")
+        needsBuild, reason = super().needsBuild(newestInput)
+        if needsBuild:
+            return needsBuild, reason
+        return self.needsMavenBuild()
 
-    def newestOutput(self):
-        return None
+    def needsMavenBuild(self):
+        if not os.path.exists(self.subject._output):
+            return True, "Maven package does not exist"
+        if not os.path.exists(self.subject.sourcesPath):
+            return True, "Maven sources do not exist"
+        newestSource = 0
+        for root, dirs, files in os.walk(self.subject._sourceDir):
+            if files:
+                newestSource = max(newestSource, max(mx.getmtime(os.path.join(root, f)) for f in files))
+        if mx.getmtime(self.subject._output) < newestSource:
+            return True, "Maven package out of date"
+        return False, "Maven package is up to date"
 
     def clean(self, forBuild=False):
-        mx.run_maven(["clean"], cwd=self.subject.dir)
+        if not forBuild:
+            mx.run_maven(["clean"], cwd=self.subject._sourceDir)
+        for o in [self.subject._output, self.subject.path]:
+            if os.path.exists(o):
+                os.unlink(o)
 
-    def __str__(self):
-        return f"MavenBuildTask({self.name})"
+    def get_output(self):
+        return os.path.join(self.subject.get_output_root(), self.subject.name + '.' + self.subject.localExtension())
+
+    def build(self):
+        if self.needsMavenBuild():
+            mx.run_maven(["package"], cwd=self.subject._sourceDir)
+            mx.run_maven(["source:jar"], cwd=self.subject._sourceDir)
+        path = self.get_output()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copy(self.subject._output, path)
+        super().build()
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):
