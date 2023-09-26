@@ -1223,6 +1223,9 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         if (value instanceof Long) {
             return (long) value;
         }
+        if (value instanceof NativePointer nativePointer) {
+            return nativePointer.asPointer();
+        }
         return interopPointerToNative(value, InteropLibrary.getUncached(value));
     }
 
@@ -1251,7 +1254,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             // The capsule's name may either be a native pointer or a TruffleString.
             return HPyJNIAsCharPointerNodeGen.getUncached().executeLong(context, tname, Encoding.UTF_8);
         }
-        return (long) name;
+        return coerceToPointer(name);
     }
 
     // {{start ctx funcs}}
@@ -2457,7 +2460,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             tsUtf8 = SwitchEncodingNode.getUncached().execute(CastToTruffleStringNode.executeUncached(string), Encoding.UTF_8);
         } catch (CannotCastException e) {
-            return HPyRaiseNode.raiseIntUncached(context, 0, SystemError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            return HPyRaiseNode.raiseIntUncached(context, 0, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
         TruffleString nativeTName = AsNativeNode.getUncached().execute(tsUtf8, TS_NATIVE_ALLOCATOR, Encoding.UTF_8, false, true);
         Object result = GetInternalNativePointerNode.getUncached().execute(nativeTName, Encoding.UTF_8);

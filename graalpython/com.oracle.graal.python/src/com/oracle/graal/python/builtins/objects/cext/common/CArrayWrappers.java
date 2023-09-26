@@ -359,7 +359,7 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         void toNative(
-                @Bind("$node") Node node) {
+                        @Bind("$node") Node node) {
             if (!PythonContext.get(node).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
@@ -421,7 +421,7 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         void toNative(
-                @Bind("$node") Node node) {
+                        @Bind("$node") Node node) {
             if (!PythonContext.get(node).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
