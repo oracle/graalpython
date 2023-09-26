@@ -2586,26 +2586,38 @@ public abstract class GraalHPyNodes {
         }
     }
 
-    abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+    public abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
         public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
 
         @NeverDefault
         public static HPyAttachFunctionTypeNode create() {
             PythonLanguage language = PythonLanguage.get(null);
-            if (!PythonOptions.WITHOUT_JNI && language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
-                return HPyAttachJNIFunctionTypeNodeGen.create();
+            switch (language.getEngineOption(PythonOptions.HPyBackend)) {
+                case JNI:
+                    if (!PythonOptions.WITHOUT_JNI) {
+                        return HPyAttachJNIFunctionTypeNodeGen.create();
+                    }
+                case LLVM:
+                    return HPyLLVMAttachFunctionTypeNode.UNCACHED;
+                case NFI:
+                    return HPyAttachNFIFunctionTypeNodeGen.create();
             }
-            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
-            return HPyAttachNFIFunctionTypeNodeGen.create();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         public static HPyAttachFunctionTypeNode getUncached() {
             PythonLanguage language = PythonLanguage.get(null);
-            if (!PythonOptions.WITHOUT_JNI && language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
-                return HPyAttachJNIFunctionTypeNodeGen.getUncached();
+            switch (language.getEngineOption(PythonOptions.HPyBackend)) {
+                case JNI:
+                    if (!PythonOptions.WITHOUT_JNI) {
+                        return HPyAttachJNIFunctionTypeNodeGen.getUncached();
+                    }
+                case LLVM:
+                    return HPyLLVMAttachFunctionTypeNode.UNCACHED;
+                case NFI:
+                    return HPyAttachNFIFunctionTypeNodeGen.getUncached();
             }
-            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
-            return HPyAttachNFIFunctionTypeNodeGen.getUncached();
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -2748,6 +2760,27 @@ public abstract class GraalHPyNodes {
                 }
             }
             return new GraalHPyJNIFunctionPointer(pointer, llvmFunctionType, hpyContext.getCurrentMode());
+        }
+    }
+
+    public static final class HPyLLVMAttachFunctionTypeNode extends HPyAttachFunctionTypeNode {
+
+        private static final HPyLLVMAttachFunctionTypeNode UNCACHED = new HPyLLVMAttachFunctionTypeNode();
+
+        @Override
+        public Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType) {
+            assert InteropLibrary.getUncached().isExecutable(pointerObject);
+            return pointerObject;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MONOMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 
