@@ -955,6 +955,7 @@ suite = {
             "requires": [
                 "java.base",
             ],
+            "compress": True,
             "description": "GraalPython runtime resources",
             "maven": {
                 "artifactId": "python-resources",
