@@ -420,10 +420,10 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
-        private static void checkSign(boolean negative, int isSigned, PRaiseNode raise) {
+        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode.Lazy raiseNode) {
             if (negative) {
                 if (isSigned == 0) {
-                    throw raise.raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
                 }
             }
         }
@@ -432,10 +432,10 @@ public final class PythonCextLongBuiltins {
         static Object get(int value, Object bytes, long n, int littleEndian, int isSigned,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached PRaiseNode raise,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            checkSign(value < 0, isSigned, raise);
-            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+                        @Shared @Cached CStructAccess.WriteByteNode write,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
             return 0;
         }
@@ -444,10 +444,10 @@ public final class PythonCextLongBuiltins {
         static Object get(long value, Object bytes, long n, int littleEndian, int isSigned,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached PRaiseNode raise,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            checkSign(value < 0, isSigned, raise);
-            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+                        @Shared @Cached CStructAccess.WriteByteNode write,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
             return 0;
         }
@@ -456,10 +456,10 @@ public final class PythonCextLongBuiltins {
         static Object get(PInt value, Object bytes, long n, int littleEndian, int isSigned,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached PRaiseNode raise,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            checkSign(value.isNegative(), isSigned, raise);
-            byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raise);
+                        @Shared @Cached CStructAccess.WriteByteNode write,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            checkSign(inliningTarget, value.isNegative(), isSigned, raiseNode);
+            byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
             return 0;
         }

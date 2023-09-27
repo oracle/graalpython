@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -603,26 +604,30 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"bufsize >= 0", "!useNative()"})
         PBytes doJava(VirtualFrame frame, Object data, int wbits, int bufsize,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             byte[] array = toBytesNode.execute(frame, data);
             try {
                 return factory.createBytes(javaDecompress(array, wbits, bufsize == 0 ? 1 : bufsize));
             } catch (DataFormatException e) {
-                throw raise(ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
+                throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
             }
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"bufsize >= 0"})
-        PBytes doNative(PBytesLike data, int wbits, int bufsize) {
-            throw raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
+        static PBytes doNative(PBytesLike data, int wbits, int bufsize,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, Object data, Object wbits, Object bufsize) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
+        static Object error(VirtualFrame frame, Object data, Object wbits, Object bufsize,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
         @TruffleBoundary
@@ -638,7 +643,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             while (!decompresser.finished()) {
                 int howmany = decompresser.inflate(resultArray);
                 if (howmany == 0 && decompresser.needsInput()) {
-                    throw raise(ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
+                    throw PRaiseNode.raiseUncached(this, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                 }
                 baos.write(resultArray, 0, howmany);
             }

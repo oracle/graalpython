@@ -641,7 +641,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(self)"})
-        Object encode(Object self, TruffleString encoding, TruffleString errors,
+        static Object encode(Object self, TruffleString encoding, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -653,8 +653,10 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, str);
+        static Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_IMPLICITLY, str);
         }
     }
 
@@ -1137,7 +1139,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
+        static Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
@@ -1145,11 +1147,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode callEncoderNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectTypeCheck typeCheck,
-                        @Cached InlinedConditionProfile isTupleProfile) {
+                        @Cached InlinedConditionProfile isTupleProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object encoder = CodecsModuleBuiltins.encoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(encoder, obj, errors);
             if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
-                throw raise(TypeError, S_MUST_RETURN_TUPLE, "encoder");
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_MUST_RETURN_TUPLE, "encoder");
             }
             return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);
         }
@@ -1169,7 +1172,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
+        static Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
@@ -1177,11 +1180,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode callEncoderNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectTypeCheck typeCheck,
-                        @Cached InlinedConditionProfile isTupleProfile) {
+                        @Cached InlinedConditionProfile isTupleProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object decoder = CodecsModuleBuiltins.decoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(decoder, obj, errors);
             if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
-                throw raise(TypeError, S_MUST_RETURN_TUPLE, "decoder");
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_MUST_RETURN_TUPLE, "decoder");
             }
             return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);
         }
@@ -1305,8 +1309,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UTF16EXDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
+        static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
         }
     }
 
@@ -1375,8 +1380,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class UTF32EXDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
+        static Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
         }
     }
 
@@ -1581,8 +1587,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class OEMDecodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object decode(Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("oem_decode"));
+        static Object decode(Object obj, Object errors, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("oem_decode"));
         }
     }
 
@@ -1591,8 +1598,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodePageEncodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object code_page, Object string, Object errors) {
-            throw raise(NotImplementedError, toTruffleStringUncached("code_page_encode"));
+        static Object encode(Object code_page, Object string, Object errors,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("code_page_encode"));
         }
     }
 
@@ -1601,8 +1609,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodePageDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object decode(Object code_page, Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, toTruffleStringUncached("code_page_decode"));
+        static Object decode(Object code_page, Object obj, Object errors, Object ffinal,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("code_page_decode"));
         }
     }
 

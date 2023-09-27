@@ -372,28 +372,15 @@ public final class PInt extends PythonBuiltinObject {
         return value.doubleValue();
     }
 
-    public double doubleValueWithOverflow(PRaiseNode raise) {
-        return doubleValueWithOverflow(value, raise);
-    }
-
-    public double doubleValueWithOverflow(Node inliningTarget, PRaiseNode.Lazy raise) {
-        return doubleValueWithOverflow(inliningTarget, value, raise);
+    public double doubleValueWithOverflow(Node raisingNode) {
+        return doubleValueWithOverflow(raisingNode, value);
     }
 
     @TruffleBoundary
-    public static double doubleValueWithOverflow(BigInteger value, PRaiseNode raise) {
+    public static double doubleValueWithOverflow(Node raisingNode, BigInteger value) {
         double d = value.doubleValue();
         if (Double.isInfinite(d)) {
-            throw raise.raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
-        }
-        return d;
-    }
-
-    @TruffleBoundary
-    public static double doubleValueWithOverflow(Node inliningTarget, BigInteger value, PRaiseNode.Lazy raise) {
-        double d = value.doubleValue();
-        if (Double.isInfinite(d)) {
-            throw raise.get(inliningTarget).raise(OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
+            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
         }
         return d;
     }

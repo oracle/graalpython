@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -143,8 +144,9 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
-        Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength) {
-            throw raise(EOFError, END_OF_STREAM_ALREADY_REACHED);
+        static Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(EOFError, END_OF_STREAM_ALREADY_REACHED);
         }
     }
 

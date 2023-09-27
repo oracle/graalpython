@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -235,14 +236,15 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castKeyToStringNode,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached GetClassNode getClassNode,
-                        @Cached LookupAttributeInMRONode.Dynamic getExisting) {
+                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
             }
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);

@@ -190,17 +190,17 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+        static Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasKeyProfile,
-                        @Cached InlinedConditionProfile defaultIsNoneProfile,
-                        @Cached HashingStorageDelItem delItem) {
+                        @Cached HashingStorageDelItem delItem,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object retVal = delItem.executePop(frame, inliningTarget, dict.getDictStorage(), key, dict);
             if (hasKeyProfile.profile(inliningTarget, retVal != null)) {
                 return retVal;
             } else {
-                if (defaultIsNoneProfile.profile(inliningTarget, PGuards.isNoValue(defaultValue))) {
-                    throw raise(KeyError, new Object[]{key});
+                if (PGuards.isNoValue(defaultValue)) {
+                    throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
                 } else {
                     return defaultValue;
                 }
@@ -515,7 +515,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+        static Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
@@ -523,7 +523,8 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
                         @Cached CallTernaryMethodNode callSetItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, inliningTarget, iterable);
@@ -540,7 +541,7 @@ public final class DictBuiltins extends PythonBuiltins {
                 }
                 return dict;
             } else {
-                throw raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, iterable);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, iterable);
             }
         }
 

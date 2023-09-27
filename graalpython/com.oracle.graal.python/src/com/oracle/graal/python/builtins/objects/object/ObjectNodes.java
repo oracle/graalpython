@@ -1067,12 +1067,13 @@ public abstract class ObjectNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached LookupAttributeInMRONode.Dynamic getExisting) {
+                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
@@ -1089,9 +1090,9 @@ public abstract class ObjectNodes {
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
         }
 

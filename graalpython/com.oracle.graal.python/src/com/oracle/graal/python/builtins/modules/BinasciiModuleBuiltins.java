@@ -346,12 +346,15 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         @CompilationFinal(dimensions = 1) private static final byte[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
-                throw raise(NotImplementedError);
+                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
             }
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), factory);

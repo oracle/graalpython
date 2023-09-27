@@ -144,14 +144,16 @@ public final class CFieldBuiltins extends PythonBuiltins {
     @SuppressWarnings("unused")
     public abstract static class SetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "!isNone(value)")
-        protected Object doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
+        static Object doit(VirtualFrame frame, CFieldObject self, Object inst, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyCDataSetNode cDataSetNode) {
+                        @Cached PyCDataSetNode cDataSetNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
             }
             CDataObject dst = (CDataObject) inst;
             cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.withOffset(self.offset));
@@ -160,9 +162,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        protected Object doit(CFieldObject self, Object inst, PNone value,
-                        @Cached PyCDataSetNode cDataSetNode) {
-            throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
+        static Object doit(CFieldObject self, Object inst, PNone value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
     }
 
@@ -171,14 +173,16 @@ public final class CFieldBuiltins extends PythonBuiltins {
     abstract static class GetNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
+        static Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeCheck pyTypeCheck) {
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (inst instanceof PNone) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
             return pyCDataGetNode.execute(self.proto, self.getfunc, src, self.index, self.size, src.b_ptr.withOffset(self.offset));

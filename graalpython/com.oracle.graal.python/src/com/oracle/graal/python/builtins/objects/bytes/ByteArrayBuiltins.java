@@ -85,6 +85,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -169,7 +170,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(source)")
-        public static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+        static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
             self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, inliningTarget, source, encoding, errors)));
@@ -177,13 +178,15 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNone(self)")
-        public PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
+        static PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
         }
 
         @Specialization(guards = "!isBytes(self)")
-        public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
+        static PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___INIT__, "bytearray", self);
         }
     }
 
@@ -215,9 +218,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = {"!isPSlice(idx)", "indexCheckNode.execute(this, idx)"}, limit = "1")
+        @Specialization(guards = {"!isPSlice(idx)", "indexCheckNode.execute(inliningTarget, idx)"}, limit = "1")
         static PNone doItem(VirtualFrame frame, PByteArray self, Object idx, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, self.getSequenceStorage(), idx, value);
@@ -225,20 +228,21 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
+        static PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached @Shared SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
-                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices) {
+                        @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = self.getSequenceStorage();
             int otherLen = getSequenceStorageNode.execute(inliningTarget, value).length();
             SliceInfo unadjusted = unpack.execute(inliningTarget, sliceCast.execute(inliningTarget, slice));
             SliceInfo info = adjustIndices.execute(inliningTarget, storage.length(), unadjusted);
             if (differentLenProfile.profile(inliningTarget, info.sliceLength != otherLen)) {
-                self.checkCanResize(this);
+                self.checkCanResize(inliningTarget, raiseNode);
             }
             setItemSliceNode.execute(frame, inliningTarget, storage, info, value, false);
             return PNone.NONE;
@@ -256,19 +260,20 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(value));
-                return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
+                return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
         @Specialization(replaces = {"doSliceSequence", "doSliceBuffer"})
-        PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        static PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -276,15 +281,17 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared SliceNodes.CoerceToIntSlice sliceCast,
                         @Cached @Shared SliceNodes.SliceUnpack unpack,
                         @Cached @Shared SliceNodes.AdjustIndices adjustIndices,
-                        @Cached ListNodes.ConstructListNode constructListNode) {
+                        @Cached ListNodes.ConstructListNode constructListNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PList values = constructListNode.execute(frame, value);
-            return doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
+            return doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object self, Object idx, Object value) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
+        static Object error(Object self, Object idx, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
         }
 
         @NeverDefault
@@ -307,9 +314,11 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         public abstract PNone execute(VirtualFrame frame, PByteArray list, Object index, Object value);
 
         @Specialization(guards = "isByteStorage(self)")
-        PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
-                        @Cached @Shared CastToByteNode toByteNode) {
-            self.checkCanResize(this);
+        static PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CastToByteNode toByteNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             byte v = toByteNode.execute(frame, value);
             ByteSequenceStorage target = (ByteSequenceStorage) self.getSequenceStorage();
             target.insertByteItem(normalizeIndex(index, target.length()), v);
@@ -317,12 +326,13 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
+        static PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
-                        @Cached @Shared CastToByteNode toByteNode) {
-            self.checkCanResize(this);
+                        @Shared @Cached CastToByteNode toByteNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
             byte v = toByteNode.execute(frame, value);
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, self);
             insertItemNode.execute(inliningTarget, storage, normalizeIndex(index, storage.length()), v);
@@ -381,7 +391,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         PByteArray add(PByteArray self, PBytesLike other,
                         @Cached @Shared SequenceStorageNodes.ConcatNode concatNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             updateSequenceStorage(self, res);
             return self;
@@ -400,7 +410,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
             try {
-                self.checkCanResize(this);
+                self.checkCanResize(getRaiseNode());
                 // TODO avoid copying
                 PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(buffer));
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), bytes.getSequenceStorage());
@@ -424,7 +434,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         public Object mul(VirtualFrame frame, PByteArray self, int times,
                         @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             self.setSequenceStorage(res);
             return self;
@@ -436,7 +446,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, inliningTarget, times));
             self.setSequenceStorage(res);
             return self;
@@ -459,7 +469,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createCast()") CastToByteNode cast,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage storage = self.getSequenceStorage();
             int len = storage.length();
             int pos = FindNode.find(getBytes.execute(inliningTarget, self.getSequenceStorage()), len, cast.execute(frame, value), 0, len, false);
@@ -493,7 +503,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         public Object popLast(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone none,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") @Shared SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(store, -1);
             deleteNode.execute(frame, store, -1);
@@ -504,7 +514,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         public Object doIndex(VirtualFrame frame, PByteArray self, Object idx,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") @Shared SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(frame, store, idx);
             deleteNode.execute(frame, store, idx);
@@ -534,7 +544,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         protected PNone doGeneric(VirtualFrame frame, PByteArray self, Object key,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             deleteNode.execute(frame, self.getSequenceStorage(), key);
             return PNone.NONE;
         }
@@ -555,7 +565,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createCast()") CastToByteNode toByteNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode) {
-            byteArray.checkCanResize(this);
+            byteArray.checkCanResize(getRaiseNode());
             appendNode.execute(inliningTarget, byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
         }
@@ -581,7 +591,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             int len = lenNode.execute(frame, inliningTarget, source);
             extend(frame, self, source, len, extendNode);
             return PNone.NONE;
@@ -598,7 +608,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode,
                         @Cached PythonObjectFactory factory) {
-            self.checkCanResize(this);
+            self.checkCanResize(getRaiseNode());
             byte[] b;
             if (bufferProfile.profile(inliningTarget, bufferAcquireLib.hasBuffer(source))) {
                 Object buffer = bufferAcquireLib.acquireReadonly(source, frame, this);
@@ -669,7 +679,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached PySliceNew sliceNode) {
-            byteArray.checkCanResize(this);
+            byteArray.checkCanResize(getRaiseNode());
             deleteNode.execute(frame, byteArray.getSequenceStorage(), sliceNode.execute(inliningTarget, PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
         }

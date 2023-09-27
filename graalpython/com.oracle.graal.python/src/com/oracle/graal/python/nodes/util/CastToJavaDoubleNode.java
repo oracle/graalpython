@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -100,9 +99,8 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    static double doPInt(Node inliningTarget, PInt x,
-                    @Cached PRaiseNode.Lazy raise) {
-        return x.doubleValueWithOverflow(inliningTarget, raise);
+    double doPInt(PInt x) {
+        return x.doubleValueWithOverflow(this);
     }
 
     @Specialization

@@ -328,12 +328,14 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
+        static Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                        @Cached IsInstanceNode isInstanceNode) {
+                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
             if (!isInstanceNode.executeWith(frame, result, PythonBuiltinClassType.PString)) {
-                throw raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+                throw raiseNode.get(inliningTarget).raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
             return result;
         }
@@ -753,9 +755,10 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
-                        @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end) {
-            throw raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
+        static boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
+                        @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
         protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
@@ -880,12 +883,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int index(VirtualFrame frame, Object self, Object arg, int start, int end,
+        static int index(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int result = findNode.execute(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -904,12 +908,13 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
+        static int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int result = findNode.executeReverse(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -1197,8 +1202,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        TruffleString err(Object self, Object sep, Object bytesPerSepGroup) {
-            throw raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
+        static TruffleString err(Object self, Object sep, Object bytesPerSepGroup,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
         }
     }
 
@@ -1506,7 +1512,8 @@ public final class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile hasFill,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             int width = asSizeNode.executeExact(frame, inliningTarget, widthObj);
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
@@ -1516,7 +1523,7 @@ public final class BytesBuiltins extends PythonBuiltins {
                 if (fillObj instanceof PBytesLike && bufferLib.getBufferLength(fillObj) == 1) {
                     fillByte = bufferLib.readByte(fillObj, 0);
                 } else {
-                    throw raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
                 }
             }
             if (checkSkip(len, width)) {
@@ -1660,8 +1667,9 @@ public final class BytesBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
+        static boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1929,8 +1937,9 @@ public final class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmptySep(sep)"})
-        PList error(Object bytes, byte[] sep, int maxsplit) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
+        static PList error(Object bytes, byte[] sep, int maxsplit,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
         private static PList getBytesResult(List<byte[]> bytes, ListNodes.AppendNode appendNode, Object self, Node inliningTarget, BytesNodes.CreateBytesNode createBytesNode,

@@ -344,15 +344,17 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doDI(double left, int right, @SuppressWarnings("unused") PNone none) {
-            return doOperation(left, right);
+        static double doDI(double left, int right, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            return doOperation(inliningTarget, left, right, raiseNode);
         }
 
         /**
          * The special cases we need to deal with always return 1, so 0 means no special case, not a
          * result.
          */
-        private double doSpecialCases(double left, double right) {
+        private static double doSpecialCases(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
             // see cpython://Objects/floatobject.c#float_pow for special cases
             if (Double.isNaN(right) && left == 1) {
                 // 1**nan = 1, unlike on Java
@@ -364,13 +366,13 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             if (left == 0 && right < 0 && Double.isFinite(right)) {
                 // 0**w is an error if w is finite and negative, unlike Java
-                throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
         }
 
-        private double doOperation(double left, double right) {
-            if (doSpecialCases(left, right) == 1) {
+        private static double doOperation(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             return Math.pow(left, right);
@@ -378,9 +380,11 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         @InliningCutoff
-        double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
-            if (doSpecialCases(left, right) == 1) {
+        static double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
@@ -394,11 +398,12 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doDD")
         @InliningCutoff
-        Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
+        static Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
-            if (doSpecialCases(left, right) == 1) {
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
@@ -411,14 +416,14 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         @InliningCutoff
-        @SuppressWarnings("truffle-static-method")
-        Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
+        static Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory) {
+                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!(mod instanceof PNone)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
             }
 
             double leftDouble, rightDouble;
@@ -428,7 +433,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, callPow, factory);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, callPow, factory, raiseNode);
         }
 
         public static PowNode create() {

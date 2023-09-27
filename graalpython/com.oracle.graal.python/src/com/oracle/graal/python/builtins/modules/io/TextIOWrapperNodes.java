@@ -503,7 +503,8 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * The return value is True unless EOF was reached. The decoded string is placed in
              * self._decoded_chars (replacing its previous value). The entire input chunk is sent to
@@ -523,15 +524,15 @@ public abstract class TextIOWrapperNodes {
                  * with decoder state (b'', decFlags).
                  */
                 if (!(state instanceof PTuple)) {
-                    throw raise(TypeError, ILLEGAL_DECODER_STATE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE);
                 }
                 Object[] array = getArray.execute(inliningTarget, state);
                 if (array.length < 2) {
-                    throw raise(TypeError, ILLEGAL_DECODER_STATE);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE);
                 }
 
                 if (!(array[0] instanceof PBytes)) {
-                    throw raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
                 }
 
                 decBuffer = (PBytes) array[0];
@@ -556,7 +557,7 @@ public abstract class TextIOWrapperNodes {
             try {
                 inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, this);
             } catch (PException e) {
-                throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? T_READ1 : T_READ), inputChunk);
+                throw raiseNode.get(inliningTarget).raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? T_READ1 : T_READ), inputChunk);
             }
             try {
                 int nbytes = bufferLib.getBufferLength(inputChunkBuf);
@@ -596,8 +597,9 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = "!self.hasDecoder()")
-        boolean error(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int size_hint) {
-            throw raise(IOUnsupportedOperation, NOT_READABLE);
+        boolean error(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int size_hint,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(IOUnsupportedOperation, NOT_READABLE);
         }
     }
 

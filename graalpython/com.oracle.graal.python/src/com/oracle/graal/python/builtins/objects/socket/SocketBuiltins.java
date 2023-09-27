@@ -124,9 +124,16 @@ public final class SocketBuiltins extends PythonBuiltins {
         return SocketBuiltinsFactory.getFactories();
     }
 
+    // TODO replace with the lazy version
     private static void checkSelectable(PRaiseNode node, PSocket socket) {
         if (!isSelectable(socket)) {
             throw node.raise(OSError, ErrorMessages.UNABLE_TO_SELECT_ON_SOCKET);
+        }
+    }
+
+    private static void checkSelectable(Node inliningTarget, PRaiseNode.Lazy raiseNode, PSocket socket) {
+        if (!isSelectable(socket)) {
+            throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.UNABLE_TO_SELECT_ON_SOCKET);
         }
     }
 
@@ -579,11 +586,12 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (recvlen < 0) {
-                throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV);
             }
-            checkSelectable(getRaiseNode(), socket);
+            checkSelectable(inliningTarget, raiseNode, socket);
             if (recvlen == 0) {
                 return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
@@ -592,7 +600,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 bytes = new byte[recvlen];
             } catch (OutOfMemoryError error) {
-                throw raise(MemoryError);
+                throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
 
             try {
@@ -628,17 +636,18 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (recvlen < 0) {
-                throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM);
             }
-            checkSelectable(getRaiseNode(), socket);
+            checkSelectable(inliningTarget, raiseNode, socket);
 
             byte[] bytes;
             try {
                 bytes = new byte[recvlen];
             } catch (OutOfMemoryError error) {
-                throw raise(MemoryError);
+                throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
 
             try {
@@ -678,11 +687,12 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
-                    throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV_INTO);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV_INTO);
                 }
                 int buflen = bufferLib.getBufferLength(buffer);
                 int recvlen = recvlenIn;
@@ -690,10 +700,10 @@ public final class SocketBuiltins extends PythonBuiltins {
                     recvlen = buflen;
                 }
                 if (buflen < recvlen) {
-                    throw raise(ValueError, ErrorMessages.BUFF_TOO_SMALL);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BUFF_TOO_SMALL);
                 }
 
-                checkSelectable(getRaiseNode(), socket);
+                checkSelectable(inliningTarget, raiseNode, socket);
 
                 boolean directWrite = bufferLib.hasInternalByteArray(buffer);
                 byte[] bytes;
@@ -703,7 +713,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     try {
                         bytes = new byte[recvlen];
                     } catch (OutOfMemoryError error) {
-                        throw raise(MemoryError);
+                        throw raiseNode.get(inliningTarget).raise(MemoryError);
                     }
                 }
 
@@ -746,11 +756,12 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
-                    throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM_INTO);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM_INTO);
                 }
                 int buflen = bufferLib.getBufferLength(buffer);
                 int recvlen = recvlenIn;
@@ -758,10 +769,10 @@ public final class SocketBuiltins extends PythonBuiltins {
                     recvlen = buflen;
                 }
                 if (buflen < recvlen) {
-                    throw raise(ValueError, ErrorMessages.NBYTES_GREATER_THAT_BUFF);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NBYTES_GREATER_THAT_BUFF);
                 }
 
-                checkSelectable(getRaiseNode(), socket);
+                checkSelectable(inliningTarget, raiseNode, socket);
 
                 boolean directWrite = bufferLib.hasInternalByteArray(buffer);
                 byte[] bytes;
@@ -771,7 +782,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     try {
                         bytes = new byte[recvlen];
                     } catch (OutOfMemoryError error) {
-                        throw raise(MemoryError);
+                        throw raiseNode.get(inliningTarget).raise(MemoryError);
                     }
                 }
 
@@ -810,10 +821,11 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
-                checkSelectable(getRaiseNode(), socket);
+                checkSelectable(inliningTarget, raiseNode, socket);
 
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -849,10 +861,11 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
-                checkSelectable(getRaiseNode(), socket);
+                checkSelectable(inliningTarget, raiseNode, socket);
 
                 int offset = 0;
                 int len = bufferLib.getBufferLength(buffer);
@@ -1145,7 +1158,8 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (buflen == 0) {
                     byte[] result = new byte[4];
@@ -1156,7 +1170,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     int len = posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);
                     return factory.createBytes(result, len);
                 } else {
-                    throw raise(OSError, ErrorMessages.GETSECKOPT_BUFF_OUT_OFRANGE);
+                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.GETSECKOPT_BUFF_OUT_OFRANGE);
                 }
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

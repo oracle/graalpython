@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonUnaryBuiltinNode extends PythonBuiltinBaseNode {
 
@@ -49,4 +54,34 @@ public abstract class PythonUnaryBuiltinNode extends PythonBuiltinBaseNode {
     // execute methods:
 
     public abstract Object execute(VirtualFrame VirtualFrame, Object arg);
+
+    @Child private PRaiseNode raiseNode;
+
+    protected final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseNode = insert(PRaiseNode.create());
+            } else {
+                raiseNode = PRaiseNode.getUncached();
+            }
+        }
+        return raiseNode;
+    }
+
+    public PException raise(PythonBuiltinClassType type, TruffleString string) {
+        return getRaiseNode().raise(type, string);
+    }
+
+    public PException raise(PythonBuiltinClassType exceptionType) {
+        return getRaiseNode().raise(exceptionType);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+        return getRaiseNode().raise(type, format, arguments);
+    }
+
+    public final PException raiseStopIteration() {
+        return getRaiseNode().raiseStopIteration();
+    }
 }

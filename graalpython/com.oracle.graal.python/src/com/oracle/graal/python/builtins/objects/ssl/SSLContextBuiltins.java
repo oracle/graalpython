@@ -711,15 +711,16 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached ToByteArrayNode toBytes,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
-                throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
             }
             if (!(cafile instanceof PNone) && !PGuards.isString(cafile) && !PGuards.isBytes(cafile)) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
             }
             if (!(capath instanceof PNone) && !PGuards.isString(capath) && !PGuards.isBytes(capath)) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
             }
             final TruffleFile file;
             if (!(cafile instanceof PNone)) {
@@ -741,12 +742,12 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 if (!(cadata instanceof PNone)) {
                     Collection<?> certificates;
                     try {
-                        certificates = fromString(castToString.execute(cadata));
+                        certificates = fromString(inliningTarget, castToString.execute(cadata), raiseNode);
                     } catch (CannotCastException cannotCastException) {
                         if (cadata instanceof PBytesLike) {
                             certificates = fromBytesLike(toBytes.execute(inliningTarget, ((PBytesLike) cadata).getSequenceStorage()));
                         } else {
-                            throw raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
+                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
                         }
                     }
                     self.setCAEntries(certificates);
@@ -778,10 +779,10 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private List<Object> fromString(String dataString)
+        private static List<Object> fromString(Node inliningTarget, String dataString, PRaiseNode.Lazy raiseNode)
                         throws IOException, CertificateException, CRLException {
             if (dataString.isEmpty()) {
-                throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
             return getCertificates(dataString);
         }
@@ -832,12 +833,13 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached GetPasswordNode getPasswordNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!PGuards.isString(certfile) && !PGuards.isBytes(certfile)) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
             }
             if (!(keyfile instanceof PNone) && !PGuards.isString(keyfile) && !PGuards.isBytes(keyfile)) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
             }
             Object kf = keyfile instanceof PNone ? certfile : keyfile;
             TruffleFile certTruffleFile = toTruffleFile(frame, inliningTarget, asPath.execute(frame, certfile), toJavaStringNode, eqNode, constructAndRaiseNode);
@@ -854,7 +856,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
-                    throw raise(NotImplementedError, ErrorMessages.PASSWORD_NOT_IMPLEMENTED);
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.PASSWORD_NOT_IMPLEMENTED);
                 }
             } catch (IOException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
@@ -875,7 +877,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 LOGGER.fine(() -> String.format("load_cert_chain %s:%s", arg, file.getPath()));
                 return file.newBufferedReader();
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
             }
         }
 
