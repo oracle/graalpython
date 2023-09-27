@@ -2597,6 +2597,7 @@ public abstract class GraalHPyNodes {
                     if (!PythonOptions.WITHOUT_JNI) {
                         return HPyAttachJNIFunctionTypeNodeGen.create();
                     }
+                    throw CompilerDirectives.shouldNotReachHere();
                 case LLVM:
                     return HPyLLVMAttachFunctionTypeNode.UNCACHED;
                 case NFI:
@@ -2612,6 +2613,7 @@ public abstract class GraalHPyNodes {
                     if (!PythonOptions.WITHOUT_JNI) {
                         return HPyAttachJNIFunctionTypeNodeGen.getUncached();
                     }
+                    throw CompilerDirectives.shouldNotReachHere();
                 case LLVM:
                     return HPyLLVMAttachFunctionTypeNode.UNCACHED;
                 case NFI:
