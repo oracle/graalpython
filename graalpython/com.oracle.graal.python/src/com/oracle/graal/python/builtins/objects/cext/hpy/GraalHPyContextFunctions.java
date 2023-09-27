@@ -2889,7 +2889,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode,
                         @Cached PyTupleSizeNode tupleSizeNode,
                         @Cached HPyPackKeywordArgsNode packKeywordArgsNode,
-                        @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
 
             if (!PInt.isIntRange(lnargs)) {
@@ -2918,7 +2917,12 @@ public abstract class GraalHPyContextFunctions {
                 keywords = PKeyword.EMPTY_KEYWORDS;
             }
 
-            return callNode.execute(callable, positionalArgs, keywords);
+            /*
+             * We use the uncached CallNode for now as a workaround because
+             * 'AbstractCallMethodNode.callerExceedsMaxSize' assumes that a call node is always
+             * under a root node. However, in cross-language calls, this may not be the case.
+             */
+            return CallNode.getUncached().execute(callable, positionalArgs, keywords);
         }
     }
 
