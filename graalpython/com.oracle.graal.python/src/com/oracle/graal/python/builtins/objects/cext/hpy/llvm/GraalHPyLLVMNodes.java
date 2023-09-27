@@ -93,12 +93,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyFromCh
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.HPyLLVMCallHelperFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMNodesFactory.LLVMAllocateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -114,11 +116,11 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -279,17 +281,28 @@ abstract class GraalHPyLLVMNodes {
     @GenerateInline(false)
     abstract static class HPyLLVMReadHPyArrayNode extends ReadHPyArrayNode {
 
-        @Specialization(limit = "1")
-        static Object[] doGeneric(GraalHPyContext ctx, Object pointer, long offset, long n,
+        @Specialization
+        static Object[] doHPyArrayWrapper(@SuppressWarnings("unused") GraalHPyContext ctx, HPyArrayWrapper pointer, long loffset, long ln,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Cached InlinedConditionProfile profile) {
+            int n = ensureIntRange(ln);
+            int offset = ensureIntRange(loffset);
+            Object[] delegate = pointer.getDelegate();
+            if (profile.profile(inliningTarget, offset == 0 && delegate.length == n)) {
+                return delegate;
+            }
+            return PythonUtils.arrayCopyOfRange(delegate, offset, offset + n);
+        }
+
+        @Specialization
+        static Object[] doPointer(GraalHPyContext ctx, Object pointer, long offset, long ln,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") InteropLibrary arrayLib,
                         @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode) {
-            if (!PInt.isIntRange(n)) {
-                throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
-            }
-            Object typedArrayPtr = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, n);
-            if (!lib.hasArrayElements(typedArrayPtr)) {
+            int n = ensureIntRange(ln);
+            Object typedArrayPtr = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, ln);
+            if (!arrayLib.hasArrayElements(typedArrayPtr)) {
                 throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
             }
 
@@ -297,23 +310,27 @@ abstract class GraalHPyLLVMNodes {
             try {
                 for (int i = 0; i < elements.length; i++) {
                     /*
-                     * This will read an element of a 'HPy arr[]' and the returned value will be an
-                     * HPy "structure". So, we also need to read element "_i" to get the internal
-                     * handle value.
+                     * This will read an element of a 'VoidPtr arr[]' and the returned value will be
+                     * 'void *'. So, there is no need to read any further element (in particular
+                     * "_i") to get the internal handle value.
                      */
-                    Object hpyStructPtr = lib.readArrayElement(typedArrayPtr, offset + i);
-                    elements[i] = asPythonObjectNode.execute(lib.readMember(hpyStructPtr, GraalHPyHandle.J_I));
+                    Object element = arrayLib.readArrayElement(typedArrayPtr, offset + i);
+                    elements[i] = asPythonObjectNode.execute(element);
                 }
                 return elements;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(lib, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
-            } catch (UnknownIdentifierException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(lib, SystemError, ErrorMessages.CANNOT_READ_HANDLE_VAL);
+                throw PRaiseNode.raiseUncached(arrayLib, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
             }
+        }
+
+        private static int ensureIntRange(long n) {
+            if (PInt.isIntRange(n)) {
+                return (int) n;
+            }
+            throw CompilerDirectives.shouldNotReachHere("cannot fit long into int");
         }
     }
 

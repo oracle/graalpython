@@ -61,7 +61,9 @@ typedef HPyDef* HPyDefPtr;
 typedef PyMemberDef cpy_PyMemberDef;
 typedef PyGetSetDef cpy_PyGetSetDef;
 typedef PyType_Slot cpy_PyTypeSlot;
+typedef void* VoidPtr;
 
+POLYGLOT_DECLARE_TYPE(VoidPtr);
 POLYGLOT_DECLARE_TYPE(HPy)
 POLYGLOT_DECLARE_TYPE(HPyContext)
 POLYGLOT_DECLARE_TYPE(int8_t)
@@ -133,7 +135,11 @@ uint64_t graal_hpy_strlen(const char *ptr) {
 }
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
-       return polyglot_from_HPy_array(arr, len);
+    /*
+     * We attach type 'VoidPtr arr[len]' instead of 'HPy arr[len]' because that
+     * saves the additional read of member '_i' if we would use
+     */
+    return polyglot_from_VoidPtr_array(arr, len);
 }
 
 void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
@@ -150,9 +156,6 @@ int8_t* graal_hpy_i8_from_wchar_array(wchar_t *arr, uint64_t len) {
     }
 	return polyglot_from_i8_array((int8_t *) arr, len);
 }
-
-typedef void* VoidPtr;
-POLYGLOT_DECLARE_TYPE(VoidPtr);
 
 /*
  * Transforms a Java handle array to native.
