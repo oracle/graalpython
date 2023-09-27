@@ -2912,7 +2912,7 @@ public abstract class GraalHPyContextFunctions {
             PKeyword[] keywords;
             if (nkw > 0) {
                 // keyword arg values are from 'args[nargs]' ... 'args[nargs + nkw - 1]'
-                Object[] kwObjs = readHPyArrayNode.execute(hpyContext, args, nargs, nargs);
+                Object[] kwObjs = readHPyArrayNode.execute(hpyContext, args, nargs, nkw);
                 keywords = packKeywordArgsNode.execute(inliningTarget, kwObjs, kwnames, nkw);
             } else {
                 keywords = PKeyword.EMPTY_KEYWORDS;
