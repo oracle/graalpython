@@ -77,7 +77,7 @@ public enum GraalHPyCField {
     HPyDef__member__doc(ConstCharPtr),
     HPyDef__getset__name(ConstCharPtr),
     HPyDef__getset__getter_impl(VoidPtr),
-    HPyDef__getset__setter_impl(HPy_ssize_t),
+    HPyDef__getset__setter_impl(VoidPtr),
     HPyDef__getset__doc(ConstCharPtr),
     HPyDef__getset__closure(VoidPtr),
     HPyDef__slot__slot(HPySlot_Slot),
