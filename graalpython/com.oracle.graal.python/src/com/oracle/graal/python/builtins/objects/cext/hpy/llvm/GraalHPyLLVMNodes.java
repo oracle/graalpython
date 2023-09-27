@@ -301,7 +301,7 @@ abstract class GraalHPyLLVMNodes {
                         @Cached HPyLLVMCallHelperFunctionNode callHelperNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode) {
             int n = ensureIntRange(ln);
-            Object typedArrayPtr = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, ln);
+            Object typedArrayPtr = callHelperNode.call(inliningTarget, ctx, GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_ARRAY, pointer, offset + ln);
             if (!arrayLib.hasArrayElements(typedArrayPtr)) {
                 throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
             }
