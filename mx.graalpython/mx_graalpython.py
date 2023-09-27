@@ -1423,7 +1423,12 @@ def graalpython_gate_runner(args, tasks):
             mvn_repo_path = pathlib.Path(deploy_local_maven_repo()).as_uri()
             central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
-            mvn_cmd_base = ['-f', pom_path, f'-Dpolyglot_repo={mvn_repo_path}', f'-Dcentral_repo={central_override}', '--batch-mode']
+            artifacts_version = GRAAL_VERSION + '-dev'
+            mvn_cmd_base = ['-f', pom_path,
+                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
+                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
+                            '--batch-mode']
 
             mx.logv("Purging the local repository before the test")
             mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
