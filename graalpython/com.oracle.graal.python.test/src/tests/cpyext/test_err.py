@@ -721,10 +721,7 @@ class TestNativeExceptionSubclass:
             tb = e.__traceback__
         else:
             assert False
-        assert tb
-        assert tb.tb_frame.f_code is TestNativeExceptionSubclass.test_traceback_reraise.__code__
-        assert tb.tb_next
-        assert tb.tb_next.tb_frame.f_code is raise_native_exception.__code__
+        assert not tb
 
     def test_chaining(self):
         inner_e = ExceptionSubclass()

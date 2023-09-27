@@ -1074,7 +1074,7 @@ def test_module_dict():
     ModuleType = type(sys)
 
     foo = ModuleType.__new__(ModuleType)
-    assert foo.__dict__ == None
+    assert foo.__dict__ == {}
 
     foo = ModuleType.__new__(ModuleType)
     foo.f = 1

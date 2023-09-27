@@ -61,6 +61,18 @@ def _reference_hash(args):
     return hash(args[0])
 
 
+def check_managed_subtype_basicsize(subtype):
+    # CPython added optimizations for storing __dict__ in the GC header, so let's leave some flexibility in the tests
+    base = subtype.__base__
+    expected_basicsize = base.__basicsize__
+    if base.__dictoffset__ == 0 and subtype.__dictoffset__ > 0:
+        expected_basicsize += 8
+    if base.__weakrefoffset__ == 0 and subtype.__weakrefoffset__ > 0:
+        expected_basicsize += 8
+    assert subtype.__basicsize__ == expected_basicsize, \
+        f"Type {subtype} should have basicsize {expected_basicsize}, got {subtype.__basicsize__}"
+
+
 class AttroClass(object):
     def __getattribute__(self, key):
         if key == "foo":
@@ -120,8 +132,12 @@ class TestObject(object):
             static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
                 return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
             }
+            static int test_traverse(PyObject *self, visitproc visit, void *arg) {
+                return 0;
+            }
             """,
             tp_alloc="test_alloc",
+            tp_traverse="test_traverse",
             tp_methods='{"call_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_O | METH_STATIC, ""}',
             tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC',
             tp_free='PyObject_GC_Del',
@@ -716,18 +732,18 @@ class TestObject(object):
         assert hash(tester) != 0
 
     def test_float_subclass2(self):
-        NativeFloatSubclass = CPyExtType(
-            "NativeFloatSubclass",
+        NativeFloatSubclass2 = CPyExtType(
+            "NativeFloatSubclass2",
             """
             static PyObject* fp_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
                 PyObject *result = PyFloat_Type.tp_new(type, args, kwds);
-                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)result;
+                NativeFloatSubclass2Object *nfs = (NativeFloatSubclass2Object *)result;
                 nfs->myobval = PyFloat_AsDouble(result);
                 return result;
             }
 
             static PyObject* fp_tp_repr(PyObject* self) {
-                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)self;
+                NativeFloatSubclass2Object *nfs = (NativeFloatSubclass2Object *)self;
                 return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
             }
             """,
@@ -737,7 +753,7 @@ class TestObject(object):
             tp_new="fp_tp_new",
             tp_repr="fp_tp_repr"
         )
-        class MyFloat(NativeFloatSubclass):
+        class MyFloat(NativeFloatSubclass2):
             pass
         assert MyFloat() == 0.0
         assert MyFloat(123.0) == 123.0
@@ -745,28 +761,25 @@ class TestObject(object):
         assert repr(MyFloat(123.0)) == "native 123.0"
 
     def test_custom_basicsize(self):
-        TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
+        TestCustomBasicsize = CPyExtType("TestCustomBasicsize",
                                       '''
                                           Py_ssize_t global_basicsize = -1;
 
                                           static PyObject* get_basicsize(PyObject* self, PyObject* ignored) {
-                                              return PyLong_FromSsize_t(global_basicsize + 2 * sizeof(PyObject*));
+                                              return PyLong_FromSsize_t(global_basicsize);
                                           }
                                       ''',
                                       cmembers='''long long field0;
                                       int field1;
                                       ''',
-                                      tp_methods='{"get_basicsize", (PyCFunction)get_basicsize, METH_NOARGS, ""}',
+                                      tp_methods='{"get_basicsize", (PyCFunction)get_basicsize, METH_NOARGS | METH_STATIC, ""}',
                                       post_ready_code="global_basicsize = TestCustomBasicsizeType.tp_basicsize;"
                                       )
         class TestCustomBasicsizeSubclass(TestCustomBasicsize):
             pass
         
-        obj = TestCustomBasicsizeSubclass()
-
-        expected_basicsize = obj.get_basicsize()
-        actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
-        assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
+        assert TestCustomBasicsize.get_basicsize() == TestCustomBasicsize.__basicsize__
+        check_managed_subtype_basicsize(TestCustomBasicsizeSubclass)
 
     def test_tp_basicsize(self):
         TpBasicsize1Type = CPyExtType("TpBasicsize1",
@@ -833,7 +846,7 @@ class TestObject(object):
             pass
 
         assert Foo.__base__ == TpBasicsize1Type
-        assert Foo.__basicsize__ == 192, "Foo.__basicsize__ %d != 192" % Foo.__basicsize__
+        check_managed_subtype_basicsize(Foo)
         objs = [Foo() for i in range(5)]
         for foo in objs:
             foo.set_values()
@@ -847,7 +860,7 @@ class TestObject(object):
             pass
 
         assert Foo.__base__ == TpBasicsize2Type
-        assert Foo.__basicsize__ == 112, "Foo.__basicsize__ %d != 112" % Foo.__basicsize__
+        check_managed_subtype_basicsize(Foo)
         objs = [Foo() for i in range(5)]
         for foo in objs:
             foo.set_values()
@@ -1147,8 +1160,6 @@ class TestObject(object):
     def test_doc(self):
         TestDoc = CPyExtType("TestDoc",
                                          '''
-                                             Py_ssize_t global_basicsize = -1;
-   
                                              static PyObject* some_member(PyObject* self) {
                                                  return PyLong_FromLong(42);
                                              }

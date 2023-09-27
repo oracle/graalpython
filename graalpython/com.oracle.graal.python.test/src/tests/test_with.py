@@ -241,14 +241,13 @@ def test_with_non_inherited():
     try:
         with x as l:
             pass
-    except AttributeError as e:
-        if sys.version_info.minor > 5:
-            assert "__enter__" in str(e)
-        else:
-            assert "__exit__" in str(e)
-
+    except TypeError as e:
+        assert str(e) == "'X' object does not support the context manager protocol"
+    else:
+        assert False
 
     y_enter_called = 0
+
     class Y():
         def __enter__(self):
             nonlocal y_enter_called
@@ -257,6 +256,8 @@ def test_with_non_inherited():
     try:
         with Y() as y:
             pass
-    except AttributeError as e:
-        assert "__exit__" in str(e)
+    except TypeError as e:
+        assert str(e) == "'Y' object does not support the context manager protocol (missed __exit__ method)"
+    else:
+        assert False
     assert y_enter_called == 0
