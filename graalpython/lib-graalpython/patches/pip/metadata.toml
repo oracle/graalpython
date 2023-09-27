@@ -1,4 +1,4 @@
 [[rules]]
-version = '== 22.2.2'
-patch = 'pip-22.2.2.patch'
+version = '== 23.2.1'
+patch = 'pip-23.2.1.patch'
 subdir = 'src'

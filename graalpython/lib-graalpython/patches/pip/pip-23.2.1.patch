@@ -1,5 +1,5 @@
 diff --git a/pip/__init__.py b/pip/__init__.py
-index 3d4b45a..3aa11e8 100644
+index 6633ef7..d7c21db 100644
 --- a/pip/__init__.py
 +++ b/pip/__init__.py
 @@ -11,3 +11,6 @@ def main(args: Optional[List[str]] = None) -> int:
@@ -10,10 +10,10 @@ index 3d4b45a..3aa11e8 100644
 +
 +__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 47ed927..1d182de 100644
+index 02ba608..a3bba70 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
-@@ -891,7 +891,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+@@ -892,7 +892,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
      "--disable-pip-version-check",
      dest="disable_pip_version_check",
      action="store_true",
@@ -23,17 +23,17 @@ index 47ed927..1d182de 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 9bf247f..3e8f187 100644
+index b6f8d57..6c37e0b 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
-@@ -38,6 +38,7 @@ from pip._internal.utils.logging import indent_log
+@@ -35,6 +35,7 @@ from pip._internal.utils.logging import indent_log
  from pip._internal.utils.misc import build_netloc
  from pip._internal.utils.packaging import check_requires_python
  from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
 +from pip._internal.utils.graalpy import apply_graalpy_sort_order, get_graalpy_candidates
  
- __all__ = ["FormatControl", "BestCandidateResult", "PackageFinder"]
- 
+ if TYPE_CHECKING:
+     from pip._vendor.typing_extensions import TypeGuard
 @@ -487,6 +488,7 @@ class CandidateEvaluator:
  
          return sorted(filtered_applicable_candidates, key=self._sort_key)
@@ -42,7 +42,7 @@ index 9bf247f..3e8f187 100644
      def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
          """
          Function to pass as the `key` argument to a call to sorted() to sort
-@@ -851,8 +853,11 @@ class PackageFinder:
+@@ -852,8 +854,11 @@ class PackageFinder:
  
              logger.debug("Local files found: %s", ", ".join(paths))
  
@@ -77,10 +77,10 @@ index 79b82a5..1eddfa3 100644
      ext: Optional[str] = splitext(filename)[1]
      if not ext:
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
-index 1af8978..15fee7f 100644
+index a8cd133..20dd1e6 100644
 --- a/pip/_internal/operations/install/wheel.py
 +++ b/pip/_internal/operations/install/wheel.py
-@@ -587,6 +587,9 @@ def _install_wheel(
+@@ -591,6 +591,9 @@ def _install_wheel(
          file.save()
          record_installed(file.src_record_path, file.dest_path, file.changed)
  
@@ -373,10 +373,10 @@ index 9a3d25a..e0e7b31 100644
  
  def generic_tags(
 diff --git a/pip/_vendor/platformdirs/api.py b/pip/_vendor/platformdirs/api.py
-index 6f6e2c2..7760125 100644
+index d64ebb9..3655f3d 100644
 --- a/pip/_vendor/platformdirs/api.py
 +++ b/pip/_vendor/platformdirs/api.py
-@@ -60,7 +60,7 @@ class PlatformDirsABC(ABC):
+@@ -71,7 +71,7 @@ class PlatformDirsABC(ABC):
      def _append_app_name_and_version(self, *base: str) -> str:
          params = list(base[1:])
          if self.appname:
@@ -384,4 +384,4 @@ index 6f6e2c2..7760125 100644
 +            params.append(f'{self.appname}-graalpy')
              if self.version:
                  params.append(self.version)
-         return os.path.join(base[0], *params)
+         path = os.path.join(base[0], *params)  # noqa: PTH118
