@@ -306,7 +306,7 @@ abstract class GraalHPyLLVMNodes {
                 throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
             }
 
-            Object[] elements = new Object[(int) n];
+            Object[] elements = new Object[n];
             try {
                 for (int i = 0; i < elements.length; i++) {
                     /*
