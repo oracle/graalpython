@@ -108,15 +108,6 @@ suite = {
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         },
-        "XZ-1.9": {
-            "digest": "sha512:a4362db234d4e83683e90f5baf90c82107450cc4404acab96e3fab14b8a3d4588a19722171d32f27d18463682a6994cad9af0b1065c954e3a77ea7bdcf586bac",
-            "maven": {
-                "groupId": "org.tukaani",
-                "artifactId": "xz",
-                "version": "1.9",
-            },
-            "moduleName": "org.tukaani.xz",
-        },
         "XZ-5.2.6": {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.6.tar.gz",
@@ -398,7 +389,7 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "sdk:POLYGLOT",
                 "sulong:SULONG_API",
-                "XZ-1.9",
+                "truffle:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
                 "BOUNCYCASTLE-PROVIDER",
@@ -1003,6 +994,7 @@ suite = {
                 "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
                 "truffle:TRUFFLE_ICU4J",
+                "truffle:TRUFFLE_XZ",
             ],
             "requires": [
                 "java.base",
@@ -1016,7 +1008,6 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
-                "XZ-1.9",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"

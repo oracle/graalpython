@@ -1647,10 +1647,10 @@ def graalpython_gate_runner(args, tasks):
 
                     java.util.zip.Adler32
 
-                    org.tukaani.xz.XZ
-                    org.tukaani.xz.XZOutputStream
-                    org.tukaani.xz.LZMA2Options
-                    org.tukaani.xz.FilterOptions
+                    org.graalvm.shadowed.org.tukaani.xz.XZ
+                    org.graalvm.shadowed.org.tukaani.xz.XZOutputStream
+                    org.graalvm.shadowed.org.tukaani.xz.LZMA2Options
+                    org.graalvm.shadowed.org.tukaani.xz.FilterOptions
 
                     java.util.zip.ZipInputStream
 
@@ -2180,6 +2180,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'LLVM.org toolchain',
         'TRegex',
         'ICU4J',
+        'XZ',
     ],
     standalone_dependencies={**standalone_dependencies_common, **{
         'GraalVM Python license files': ('', []),
@@ -2200,7 +2201,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
-        'graalpython:XZ-1.9',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
