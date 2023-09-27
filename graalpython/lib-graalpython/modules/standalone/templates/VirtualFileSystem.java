@@ -198,7 +198,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     public String resourcePathToPlatformPath(String path) {
         assert path.startsWith(VFS_PREFIX);
-	path = path.substring(VFS_PREFIX.length() + 1);
+        path = path.substring(VFS_PREFIX.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
@@ -503,7 +503,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                 @Override
                 public SeekableByteChannel position(long newPosition) throws IOException {
-                    newPosition = Math.max(0, newPosition);
+                    if (newPosition < 0) {
+                        position = 0;
+                    } else if (newPosition > Integer.MAX_VALUE) {
+                        position = Integer.MAX_VALUE;
+                    } else {
+                        position = (int) newPosition;
+                    }
                     return this;
                 }
 
