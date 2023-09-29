@@ -199,8 +199,6 @@ import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
@@ -1764,7 +1762,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
-    @SuppressWarnings("try")
     public int ctxSetItems(long receiverHandle, String name, long valueHandle) {
         increment(HPyJNIUpcall.HPySetItems);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
@@ -1774,7 +1771,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return -1;
         }
         TruffleString tsName = toTruffleStringUncached(name);
-        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
+        try {
             PyObjectSetItem.executeUncached(receiver, tsName, value);
             return 0;
         } catch (PException e) {
@@ -1784,13 +1781,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
-    @SuppressWarnings("try")
-    public final long ctxGetItems(long receiverHandle, String name) {
+    public long ctxGetItems(long receiverHandle, String name) {
         increment(HPyJNIUpcall.HPyGetItems);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
         TruffleString tsName = toTruffleStringUncached(name);
         Object result;
-        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
+        try {
             result = PyObjectGetItem.executeUncached(receiver, tsName);
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
