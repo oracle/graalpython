@@ -1257,6 +1257,50 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return coerceToPointer(name);
     }
 
+    private long createHPyObject(long typeHandle, long dataOutVar) {
+        Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
+        PythonObject pythonObject;
+
+        /*
+         * Check if argument is actually a type. We will only accept PythonClass because that's the
+         * only one that makes sense here.
+         */
+        if (type instanceof PythonClass clazz) {
+            // allocate native space
+            long basicSize = clazz.getBasicSize();
+            if (basicSize == -1) {
+                // create the managed Python object
+                pythonObject = slowPathFactory.createPythonObject(clazz, clazz.getInstanceShape());
+            } else {
+                /*
+                 * Since this is a JNI upcall method, we know that (1) we are not running in some
+                 * managed mode, and (2) the data will be used in real native code. Hence, we can
+                 * immediately allocate native memory via Unsafe.
+                 */
+                long dataPtr = UNSAFE.allocateMemory(basicSize);
+                UNSAFE.setMemory(dataPtr, basicSize, (byte) 0);
+                if (dataOutVar != 0) {
+                    UNSAFE.putAddress(dataOutVar, dataPtr);
+                }
+                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
+                Object destroyFunc = clazz.getHPyDestroyFunc();
+                context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+            }
+            Object defaultCallFunc = clazz.getHPyDefaultCallFunc();
+            if (defaultCallFunc != null) {
+                GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunc);
+            }
+        } else {
+            // check if argument is still a type (e.g. a built-in type, ...)
+            if (!IsTypeNode.executeUncached(type)) {
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
+            }
+            // TODO(fa): this should actually call __new__
+            pythonObject = slowPathFactory.createPythonObject(type);
+        }
+        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(pythonObject));
+    }
+
     // {{start ctx funcs}}
     public int ctxTypeCheck(long bits, long typeBits) {
         increment(HPyJNIUpcall.HPyTypeCheck);
@@ -1757,69 +1801,13 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxNew(long typeHandle, long dataOutVar) {
         increment(HPyJNIUpcall.HPyNew);
-
-        Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
-        PythonObject pythonObject;
-
-        /*
-         * Check if argument is actually a type. We will only accept PythonClass because that's the
-         * only one that makes sense here.
-         */
-        if (type instanceof PythonClass clazz) {
-            // allocate native space
-            long basicSize = clazz.getBasicSize();
-            if (basicSize == -1) {
-                // create the managed Python object
-                pythonObject = slowPathFactory.createPythonObject(clazz, clazz.getInstanceShape());
-            } else {
-                /*
-                 * Since this is a JNI upcall method, we know that (1) we are not running in some
-                 * managed mode, and (2) the data will be used in real native code. Hence, we can
-                 * immediately allocate native memory via Unsafe.
-                 */
-                long dataPtr = UNSAFE.allocateMemory(basicSize);
-                UNSAFE.setMemory(dataPtr, basicSize, (byte) 0);
-                UNSAFE.putLong(dataOutVar, dataPtr);
-                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
-                Object destroyFunc = clazz.getHPyDestroyFunc();
-                context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
-            }
-            Object defaultCallFunc = clazz.getHPyDefaultCallFunc();
-            if (defaultCallFunc != null) {
-                GraalHPyData.setHPyCallFunction(pythonObject, defaultCallFunc);
-            }
-        } else {
-            // check if argument is still a type (e.g. a built-in type, ...)
-            if (!IsTypeNode.executeUncached(type)) {
-                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
-            }
-            // TODO(fa): this should actually call __new__
-            pythonObject = slowPathFactory.createPythonObject(type);
-        }
-        return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(pythonObject));
+        return createHPyObject(typeHandle, dataOutVar);
     }
 
     @SuppressWarnings("unused")
     public long ctxTypeGenericNew(long typeHandle, long args, long nargs, long kw) {
         increment(HPyJNIUpcall.HPyTypeGenericNew);
-
-        Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
-
-        if (type instanceof PythonClass clazz) {
-
-            PythonObject pythonObject;
-            long basicSize = clazz.getBasicSize();
-            if (basicSize != -1) {
-                // allocate native space
-                long dataPtr = UNSAFE.allocateMemory(basicSize);
-                UNSAFE.setMemory(dataPtr, basicSize, (byte) 0);
-                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
-            } else {
-                pythonObject = slowPathFactory.createPythonObject(clazz);
-            }
-            return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(pythonObject));
-        }
-        throw CompilerDirectives.shouldNotReachHere("not implemented");
+        return createHPyObject(typeHandle, 0);
     }
 
     /**
