@@ -2555,15 +2555,23 @@ class MavenProject(mx.AbstractDistribution):
                                    maven={"groupId": gid, "artifactId": aid, "version": ver})
                     excludedLibs.append(d)
         args['maven'] = maven
-        self._output = os.path.join(self._sourceDir, 'target', f"{maven['artifactId']}-{maven['version']}.{self.extension}")
-        self.sourcesPath = os.path.join(self._sourceDir, 'target', f"{maven['artifactId']}-{maven['version']}-sources.{self.extension}")
+        build_dir = os.path.join(suite.get_output_root(platformDependent=False, jdkDependent=False), name)
+        self._output = os.path.join(build_dir, f"{maven['artifactId']}-{maven['version']}.{self.extension}")
+        self.sourcesPath = os.path.join(build_dir, f"{maven['artifactId']}-{maven['version']}-sources.{self.extension}")
         super().__init__(suite, name=name, deps=deps, excludedLibs=excludedLibs, platformDependent=platformDependent,
                          theLicense=theLicense, testDistribution=testDistribution, layout=layout, path=path, output=self._output, **args)
+        self.definedAnnotationProcessors = []
 
     def _pomGetText(self, pom, path):
         e = pom.find(path)
         if e is not None:
             return e.text
+
+    def get_ide_project_dir(self):
+        pass
+
+    def classpath_repr(self, resolve=True):
+        return self._output
 
     def isJARDistribution(self):
         return self.extension == "jar"
@@ -2608,7 +2616,7 @@ class MavenArchiveTask(mx.DefaultArchiveTask):
         if not os.path.exists(self.subject.sourcesPath):
             return True, "Maven sources do not exist"
         newestSource = 0
-        for root, dirs, files in os.walk(self.subject._sourceDir):
+        for root, _, files in os.walk(self.subject._sourceDir):
             if files:
                 newestSource = max(newestSource, max(mx.getmtime(os.path.join(root, f)) for f in files))
         if mx.getmtime(self.subject._output) < newestSource:
