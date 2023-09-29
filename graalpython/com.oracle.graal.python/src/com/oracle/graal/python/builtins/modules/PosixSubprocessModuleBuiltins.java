@@ -190,10 +190,10 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
+    @Builtin(name = "fork_exec", parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
-                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "gid_object", "groups_list",
-                    "uid_object", "child_umask", "preexec_fn"})
+                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "pgid_to_set", "gid_object", "groups_list",
+                    "uid_object", "child_umask", "preexec_fn", "allow_vfork"})
     @ArgumentClinic(name = "args", conversionClass = ProcessArgsConversionNode.class)
     @ArgumentClinic(name = "close_fds", conversion = ClinicConversion.Boolean)
     @ArgumentClinic(name = "env", conversionClass = EnvConversionNode.class)
@@ -207,7 +207,9 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "errpipe_write", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "restore_signals", conversion = ClinicConversion.IntToBoolean)
     @ArgumentClinic(name = "call_setsid", conversion = ClinicConversion.IntToBoolean)
+    @ArgumentClinic(name = "pgid_to_set", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "child_umask", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "allow_vfork", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
     abstract static class NewForkExecNode extends PythonClinicBuiltinNode {
 
@@ -241,8 +243,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         Object fdsToKeepObj, Object cwdObj, Object env,
                         int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
                         int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
-                        boolean restoreSignals, boolean callSetsid, Object gidObject, Object groupsList,
-                        Object uidObject, int childUmask, Object preexecFn,
+                        boolean restoreSignals, boolean callSetsid, int pgidToSet, Object gidObject, Object groupsList,
+                        Object uidObject, int childUmask, Object preexecFn, boolean allowVFork,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
