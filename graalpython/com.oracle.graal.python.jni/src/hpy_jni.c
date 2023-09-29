@@ -498,15 +498,15 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNITraceModule)(JNIEnv *env, jclass clazz
 }
 
 JNIEXPORT void JNICALL JNI_HELPER(bulkFreeNativeSpace)(JNIEnv *env, jclass clazz, jlongArray nativeSpacePtrs, jlongArray destroyFuncPtrs, jint n) {
-    jlong *native_space_ptrs_data = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, nativeSpacePtrs, 0);
-    jlong *destroy_func_ptrs_data = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, destroyFuncPtrs, 0);
+    jlong *native_space_ptrs_data = (*env)->GetLongArrayElements(env, nativeSpacePtrs, 0);
+    jlong *destroy_func_ptrs_data = (*env)->GetLongArrayElements(env, destroyFuncPtrs, 0);
     for (jint i=0; i < n; i++)
     {
         HPyFunc_destroyfunc destroy_func = (HPyFunc_destroyfunc) destroy_func_ptrs_data[i];
         destroy_func((void *)native_space_ptrs_data[i]);
     }
-    (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, nativeSpacePtrs, native_space_ptrs_data, 0);
-    (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, destroyFuncPtrs, destroy_func_ptrs_data, 0);
+    (*jniEnv)->ReleaseLongArrayElements(env, nativeSpacePtrs, native_space_ptrs_data, JNI_ABORT);
+    (*jniEnv)->ReleaseLongArrayElements(env, destroyFuncPtrs, destroy_func_ptrs_data, JNI_ABORT);
 }
 
 JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
