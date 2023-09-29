@@ -141,6 +141,9 @@ class EnvBuilder:
         context.executable = executable
         context.python_dir = dirname
         context.python_exe = exename
+        binpath = self._venv_path(env_dir, 'scripts')
+        incpath = self._venv_path(env_dir, 'include')
+        libpath = self._venv_path(env_dir, 'purelib')
 
         # Truffle change:
         # The original CPython code assumes that one level up from the executable (not resolving
@@ -155,19 +158,8 @@ class EnvBuilder:
             self.symlinks = True
         # End of Truffle change
 
-        if sys.platform == 'win32':
-            binname = 'Scripts'
-            incpath = 'Include'
-            libpath = os.path.join(env_dir, 'Lib', 'site-packages')
-        else:
-            binname = 'bin'
-            incpath = 'include'
-            libpath = os.path.join(env_dir, 'lib',
-                                   'python%d.%d' % sys.version_info[:2],
-                                   'site-packages')
-
-        context.inc_path = path = os.path.join(env_dir, incpath)
-        create_if_needed(path)
+        context.inc_path = incpath
+        create_if_needed(incpath)
         create_if_needed(libpath)
         # Issue 21197: create lib64 as a symlink to lib on 64-bit non-OS X POSIX
         if ((sys.maxsize > 2**32) and (os.name == 'posix') and
