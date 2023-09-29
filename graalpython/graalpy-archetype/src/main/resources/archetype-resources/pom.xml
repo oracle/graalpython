@@ -48,7 +48,7 @@
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>0.1</version>
+        <version>${symbol_dollar}{graalpy.version}</version>
         <executions>
           <execution>
             <configuration>
