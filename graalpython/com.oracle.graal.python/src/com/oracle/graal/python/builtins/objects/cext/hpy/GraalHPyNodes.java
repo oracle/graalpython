@@ -531,19 +531,7 @@ public abstract class GraalHPyNodes {
         }
 
         /**
-         * <pre>
-         *     uint64_t graal_hpy_module_init_globals(HPyModuleDef *moduleDef, intptr_t startID) {
-         *     uint64_t len=0;
-         *     if (moduleDef->globals) {
-         *         while (moduleDef->globals[len] != NULL) {
-         *             moduleDef->globals[len]->_i = startID++;
-         *             len++;
-         *         }
-         *         return len;
-         *     }
-         *     return 0;
-         * }
-         * </pre>
+         * Initializes all HPy globals of the currently created module.
          */
         private static int initModuleGlobals(GraalHPyContext hpyContext, Object moduleDefPtr, int startID,
                         GraalHPyCAccess.IsNullNode isNullNode,
