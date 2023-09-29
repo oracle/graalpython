@@ -63,8 +63,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -100,6 +99,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -113,8 +114,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CExtCommonNodes {
@@ -149,45 +150,47 @@ public abstract class CExtCommonNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
+        public abstract Object execute(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
-        static Object doSymbolCached(@SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
+        static Object doSymbolCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
                         @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
-                        @Cached("importCAPISymbolUncached(nativeContext, symbol)") Object llvmSymbol) {
+                        @Cached("importCAPISymbolUncached(inliningTarget, nativeContext, symbol)") Object llvmSymbol) {
             return llvmSymbol;
         }
 
         // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
         @Specialization(guards = {"isSingleContext()", "nativeContext == cachedNativeContext"}, limit = "1", //
                         replaces = "doSymbolCached")
-        Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
+        static Object doWithSymbolCacheSingleContext(Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
                         @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
-            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
+            return doWithSymbolCache(inliningTarget, cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
+        static Object doWithSymbolCache(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
                         @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib);
+                nativeSymbol = importCAPISymbolUncached(inliningTarget, nativeContext, symbol, symbolCache, dynamicObjectLib);
             }
             return nativeSymbol;
         }
 
-        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol) {
+        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol) {
             CompilerAsserts.neverPartOfCompilation();
-            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
+            return importCAPISymbolUncached(location, nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
         }
 
         @TruffleBoundary
-        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
+        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
             Object llvmLibrary = nativeContext.getLLVMLibrary();
             String name = symbol.getName();
             try {
@@ -196,25 +199,27 @@ public abstract class CExtCommonNodes {
                 dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
                 return nativeSymbol;
             } catch (UnknownIdentifierException e) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
             } catch (UnsupportedMessageException e) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class EnsureTruffleStringNode extends Node {
-        public abstract Object execute(Object obj);
+        public abstract Object execute(Node inliningTarget, Object obj);
 
         @Specialization
-        protected TruffleString doString(String s,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        static TruffleString doString(String s,
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(s, TS_ENCODING);
         }
 
         @Fallback
-        protected Object doObj(Object o) {
+        static Object doObj(Object o) {
             return o;
         }
     }
@@ -925,6 +930,11 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
+        static Boolean doBoolean(Boolean b) {
+            return b;
+        }
+
+        @Specialization
         static Object doByte(byte b) {
             return b != 0;
         }
@@ -937,11 +947,11 @@ public abstract class CExtCommonNodes {
         @Specialization
         static Object doLong(long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // sematics as we should just read a single byte.
+            // semantics as we should just read a single byte.
             return l != 0;
         }
 
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        @Specialization(replaces = {"doBoolean", "doByte", "doShort", "doLong"}, limit = "1")
         static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
@@ -1096,26 +1106,6 @@ public abstract class CExtCommonNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             return encoded[0];
-        }
-    }
-
-    /**
-     * Converts a Python Boolean into a C Boolean {@code char} (see also:
-     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
-     */
-    @GenerateUncached
-    public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
-
-        @Specialization
-        static byte doGeneric(Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return (byte) PInt.intValue(castToJavaBooleanNode.execute(inliningTarget, value));
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
-            }
         }
     }
 

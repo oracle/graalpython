@@ -70,10 +70,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.GraalHPyModuleExecNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -116,8 +114,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GraalHPyContext extends CExtContext {
@@ -615,7 +612,9 @@ public final class GraalHPyContext extends CExtContext {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("refs"), EMPTY_TRUFFLESTRING_ARRAY);
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(HPyNativeSpaceCleanerRootNode.class);
 
-        @Child private PCallHPyFunction callBulkFree;
+        @Child private GraalHPyCAccess.BulkFreeHandleReferencesNode callBulkFree;
+
+        private final LoopConditionProfile loopProfile = LoopConditionProfile.create();
 
         HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
@@ -643,12 +642,9 @@ public final class GraalHPyContext extends CExtContext {
 
             GraalHPyContext context = PythonContext.get(this).getHPyContext();
 
-            if (CompilerDirectives.inInterpreter()) {
-                com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, n);
-            }
-
             // mark queued references as cleaned
-            for (int i = 0; i < n; i++) {
+            loopProfile.profileCounted(n);
+            for (int i = 0; loopProfile.inject(i < n); i++) {
                 handleReferences[i].cleaned = true;
             }
 
@@ -682,12 +678,11 @@ public final class GraalHPyContext extends CExtContext {
                 middleTime = System.currentTimeMillis();
             }
 
-            NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
             if (callBulkFree == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callBulkFree = insert(PCallHPyFunctionNodeGen.create());
+                callBulkFree = insert(GraalHPyCAccess.BulkFreeHandleReferencesNode.create(context));
             }
-            callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
+            callBulkFree.execute(context, handleReferences);
 
             if (loggable) {
                 final long countDuration = middleTime - startTime;
@@ -718,10 +713,6 @@ public final class GraalHPyContext extends CExtContext {
         public boolean isPythonInternal() {
             return true;
         }
-    }
-
-    public long getWcharSize() {
-        return backend.getWcharSize();
     }
 
     public void initHPyDebugContext() throws ApiInitException {
@@ -781,6 +772,7 @@ public final class GraalHPyContext extends CExtContext {
         return hpyGlobalsTable.length;
     }
 
+    @TruffleBoundary
     void initBatchGlobals(int startIdx, int nModuleGlobals) {
         if (nModuleGlobals == 0) {
             return;
@@ -789,7 +781,7 @@ public final class GraalHPyContext extends CExtContext {
         int endIdx = startIdx + nModuleGlobals;
         if (endIdx >= gtLen) {
             int newSize = endIdx + 1;
-            LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
+            LOGGER.fine(() -> PythonUtils.formatJString("resizing HPy globals table to %d", newSize));
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
             if (useNativeFastPaths) {
                 reallocateNativeSpacePointersMirror(hpyHandleTable.length, gtLen);
@@ -1076,7 +1068,7 @@ public final class GraalHPyContext extends CExtContext {
      * A weak reference to an object that has an associated HPy native space (
      * {@link PythonHPyObject}).
      */
-    static final class GraalHPyHandleReference extends WeakReference<Object> {
+    public static final class GraalHPyHandleReference extends WeakReference<Object> {
 
         private final Object nativeSpace;
         private final Object destroyFunc;
@@ -1183,18 +1175,26 @@ public final class GraalHPyContext extends CExtContext {
         return referenceQueue;
     }
 
-    @TruffleBoundary
     @Override
     protected Store initializeSymbolCache() {
-        PythonLanguage language = getContext().getLanguage();
-        Shape symbolCacheShape = language.getHPySymbolCacheShape();
-        // We will always get an empty shape from the language and we do always add same key-value
-        // pairs (in the same order). So, in the end, each context should get the same shape.
-        Store s = new Store(symbolCacheShape);
-        for (GraalHPyNativeSymbol sym : GraalHPyNativeSymbol.getValues()) {
-            DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
-        }
-        return s;
+
+        return null;
+    }
+
+    public int getCTypeSize(HPyContextSignatureType ctype) {
+        return backend.getCTypeSize(ctype);
+    }
+
+    public int getCFieldOffset(GraalHPyCField ctype) {
+        return backend.getCFieldOffset(ctype);
+    }
+
+    public Object nativeToInteropPointer(Object object) {
+        return backend.nativeToInteropPointer(object);
+    }
+
+    public Object getNativeNull() {
+        return backend.getNativeNull();
     }
 
     /**

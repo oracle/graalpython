@@ -55,6 +55,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -63,6 +64,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -356,8 +358,9 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        void toNative() {
-            if (!PythonContext.get(null).isNativeAccessAllowed()) {
+        void toNative(
+                        @Bind("$node") Node node) {
+            if (!PythonContext.get(node).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
@@ -417,8 +420,9 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        void toNative() {
-            if (!PythonContext.get(null).isNativeAccessAllowed()) {
+        void toNative(
+                        @Bind("$node") Node node) {
+            if (!PythonContext.get(node).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }

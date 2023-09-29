@@ -128,6 +128,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_MARSHAL_DATA_EOF = tsLiteral("marshal data too short");
     public static final TruffleString BAD_MARSHAL_DATA_NULL = tsLiteral("bad NULL object in marshal data");
     public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_P = tsLiteral("bad memberdescr type for %p");
+    public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_S = tsLiteral("bad memberdescr type for %s");
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
@@ -1386,7 +1387,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
     public static final TruffleString FIELD_S_DID_NOT_RETURN_AN_ARRAY = tsLiteral("field '%s' did not return an array");
     public static final TruffleString SIG_OF_S_IS_NOT_INT = tsLiteral("signature of %s is not an integer");
-    public static final TruffleString CANNOT_READ_FIELD_NAME_FROM_MEMBER_DEF = tsLiteral("Cannot read field 'name' from member definition");
     public static final TruffleString FIELD_SLOT_S_ISNT_INT = tsLiteral("field 'slot' of %s is not an integer");
     public static final TruffleString INVALID_SLOT_VALUE = tsLiteral("invalid slot value %d");
     public static final TruffleString ERR_WHEN_READING_LEGACY_MEYHOD_FOR_TYPE = tsLiteral("error when reading legacy method definition for type %s");

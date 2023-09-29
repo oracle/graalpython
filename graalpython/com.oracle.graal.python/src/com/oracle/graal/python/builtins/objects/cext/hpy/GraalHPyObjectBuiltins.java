@@ -49,8 +49,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -101,7 +99,7 @@ public abstract class GraalHPyObjectBuiltins {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
-        @Child private PCallHPyFunction callHPyFunctionNode;
+        @Child private GraalHPyCAccess.AllocateNode allocateNode;
         @Child private CallVarargsMethodNode callNewNode;
 
         private final int builtinShape;
@@ -150,7 +148,8 @@ public abstract class GraalHPyObjectBuiltins {
                      * can take any HPy context and don't need to attach a context to this __new__
                      * function for that since the helper function won't deal with handles.
                      */
-                    dataPtr = ensureCallHPyFunctionNode().call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    GraalHPyContext hpyContext = context.getHPyContext();
+                    dataPtr = ensureAllocateNode(hpyContext).calloc(hpyContext, 1L, basicSize);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
                         LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
@@ -248,12 +247,12 @@ public abstract class GraalHPyObjectBuiltins {
             return context.lookupType(PythonBuiltinClassType.PythonObject).getAttribute(SpecialMethodNames.T___NEW__);
         }
 
-        private PCallHPyFunction ensureCallHPyFunctionNode() {
-            if (callHPyFunctionNode == null) {
+        private GraalHPyCAccess.AllocateNode ensureAllocateNode(GraalHPyContext ctx) {
+            if (allocateNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callHPyFunctionNode = insert(PCallHPyFunctionNodeGen.create());
+                allocateNode = insert(GraalHPyCAccess.AllocateNode.create(ctx));
             }
-            return callHPyFunctionNode;
+            return allocateNode;
         }
 
         private CallVarargsMethodNode ensureCallNewNode() {

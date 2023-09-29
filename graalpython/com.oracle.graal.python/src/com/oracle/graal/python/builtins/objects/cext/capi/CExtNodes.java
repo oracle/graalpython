@@ -172,6 +172,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -195,25 +197,12 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 
 public abstract class CExtNodes {
 
     private static final String J_UNICODE = "unicode";
     private static final String J_SUBTYPE_NEW = "_subtype_new";
-
-    @GenerateUncached
-    public abstract static class ImportCAPISymbolNode extends PNodeWithContext {
-
-        public abstract Object execute(NativeCAPISymbol symbol);
-
-        @Specialization
-        static Object doGeneric(NativeCAPISymbol name,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode) {
-            return importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name);
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * For some builtin classes, the CPython approach to creating a subclass instance is to just
@@ -243,13 +232,15 @@ public abstract class CExtNodes {
 
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Cached ImportCExtSymbolNode importCAPISymbolNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
-                Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
+                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
+                Object result = interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw CompilerDirectives.shouldNotReachHere("C subtype_new function failed", e);
@@ -582,9 +573,10 @@ public abstract class CExtNodes {
     public abstract static class PointerCompareNode extends Node {
         public abstract boolean execute(TruffleString opName, Object a, Object b);
 
-        private static boolean executeCFunction(int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
+        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCExtSymbolNode importCAPISymbolNode) {
             try {
-                return (int) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PTR_COMPARE), a, b, op) != 0;
+                Object sym = importCAPISymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), FUN_PTR_COMPARE);
+                return (int) interopLibrary.execute(sym, a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(FUN_PTR_COMPARE + " didn't work!");
@@ -609,32 +601,35 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)")
         static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
-                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
+                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+            return executeCFunction(inliningTarget, op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
         static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
@@ -1032,38 +1027,26 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends Node {
 
-        public final Object call(CApiContext context, NativeCAPISymbol symbol, Object... args) {
-            return execute(context, symbol, args);
+        public static Object callUncached(NativeCAPISymbol symbol, Object... args) {
+            return PCallCapiFunction.getUncached().execute(symbol, args);
         }
 
         public final Object call(NativeCAPISymbol symbol, Object... args) {
-            return execute(null, symbol, args);
+            return execute(symbol, args);
         }
 
-        protected abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
+        protected abstract Object execute(NativeCAPISymbol symbol, Object[] args);
 
-        @Specialization(guards = "capiContext != null")
-        static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
+        @Specialization
+        static Object doWithoutContext(NativeCAPISymbol name, Object[] args,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
+                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
                 // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args));
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                // consider these exceptions to be fatal internal errors
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = "capiContext == null")
-        static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
-            try {
-                // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args));
+                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -2209,6 +2192,104 @@ public abstract class CExtNodes {
         @Fallback
         static void doOther(@SuppressWarnings("unused") Object other) {
             // do nothing
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({CApiGuards.class, PGuards.class})
+    public abstract static class CreateFunctionNode extends Node {
+
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(CreateFunctionNode.class);
+
+        public static Object executeUncached(TruffleString name, Object callable, Object wrapper, Object type, Object flags) {
+            return CreateFunctionNodeGen.getUncached().execute(null, name, callable, wrapper, type, flags);
+        }
+
+        public abstract Object execute(Node inliningTarget, TruffleString name, Object callable, Object wrapper, Object type, Object flags);
+
+        @Specialization(guards = {"!isNoValue(type)", "isNoValue(wrapper)"})
+        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
+                        @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object flags) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            return callable.getDelegate();
+        }
+
+        @Specialization(guards = "!isNoValue(type)")
+        @TruffleBoundary
+        static Object doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            Object managedCallable = callable.getDelegate();
+            PythonContext context = PythonContext.get(null);
+            PythonLanguage language = context.getLanguage();
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, context.factory(), false);
+            return function != null ? function : managedCallable;
+        }
+
+        @Specialization(guards = {"!isNativeWrapper(callable)"})
+        @TruffleBoundary
+        static Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+            /*
+             * This can happen if a native type inherits slots from a managed type. For example, if
+             * a native type inherits 'base->tp_richcompare' and this is '__truffle_richcompare__'
+             * and we are going to install it as '__eq__', we still need to have a wrapper around
+             * the managed callable since we need to bind the 3rd argument.
+             */
+            PythonContext context = PythonContext.get(null);
+            Object resolvedCallable = resolveClosurePointer(context, callable, lib);
+            boolean doArgAndResultConversion;
+            if (resolvedCallable != null) {
+                doArgAndResultConversion = false;
+            } else {
+                doArgAndResultConversion = true;
+                resolvedCallable = callable;
+            }
+            PythonLanguage language = context.getLanguage();
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
+            return function != null ? function : resolvedCallable;
+        }
+
+        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
+        static PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper, @SuppressWarnings("unused") Object flags,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+            /*
+             * This can happen if a native type inherits slots from a managed type. Therefore,
+             * something like 'base->tp_new' will be a wrapper of the managed '__new__'. In this
+             * case, we can just return the managed callable since we do also not have a wrapper
+             * that could shuffle or bind arguments.
+             */
+            PythonContext context = PythonContext.get(null);
+            PBuiltinFunction managedCallable = resolveClosurePointer(context, callable, lib);
+            if (managedCallable != null) {
+                return managedCallable;
+            }
+            PythonLanguage language = context.getLanguage();
+            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, language, context.factory(), true);
+        }
+
+        @TruffleBoundary
+        public static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+            if (lib.isPointer(callable)) {
+                long pointer;
+                try {
+                    pointer = lib.asPointer(callable);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                Object delegate = context.getCApiContext().getClosureDelegate(pointer);
+                if (delegate instanceof PBuiltinFunction function) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
+                    return function;
+                }
+            }
+            return null;
         }
     }
 }

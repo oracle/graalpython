@@ -97,13 +97,13 @@ public abstract class PySequenceGetItemNode extends Node {
     }
 
     @Specialization
-    Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
+    static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                     @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached(parameters = "GETITEM") ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
         NativeCAPISymbol symbol = NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_GET_ITEM;
-        Object executable = importCExtSymbolNode.execute(PythonContext.get(inliningTarget).getCApiContext(), symbol);
+        Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), symbol);
         return invokeNode.execute(frame, symbol.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
     }
 }

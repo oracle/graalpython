@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -74,18 +74,17 @@ import com.oracle.truffle.api.strings.TruffleString;
  *     typedef struct {
  *         void *buf;
  *         HPy obj;
- *         Py_ssize_t len;
- *         Py_ssize_t itemsize;
+ *         HPy_ssize_t len;
+ *         HPy_ssize_t itemsize;
  *         int readonly;
  *         int ndim;
  *         char *format;
- *         Py_ssize_t *shape;
- *         Py_ssize_t *strides;
- *         Py_ssize_t *suboffsets;
+ *         HPy_ssize_t *shape;
+ *         HPy_ssize_t *strides;
+ *         HPy_ssize_t *suboffsets;
  *         void *internal;
  * } HPy_buffer;
  * </pre>
- *
  */
 @ExportLibrary(InteropLibrary.class)
 @SuppressWarnings("static-method")
@@ -105,7 +104,7 @@ public final class GraalHPyBuffer implements TruffleObject {
     @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = new String[]{J_MEMBER_BUF, J_MEMBER_OBJ, J_MEMBER_LEN, J_MEMBER_ITEMSIZE, J_MEMBER_READONLY, J_MEMBER_NDIM,
                     J_MEMBER_FORMAT, J_MEMBER_SHAPE, J_MEMBER_STRIDES, J_MEMBER_SUBOFFSETS, J_MEMBER_INTERNAL};
 
-    private final GraalHPyContext context;
+    final GraalHPyContext context;
     private final CExtPyBuffer buffer;
 
     private GraalHPyHandle ownerHandle;
@@ -139,7 +138,7 @@ public final class GraalHPyBuffer implements TruffleObject {
 
     @ExportMessage
     Object readMember(String member,
-                    @Shared("toNativeNode") @Cached HPyAsHandleNode toNativeNode) throws UnknownIdentifierException {
+                    @Cached HPyAsHandleNode toNativeNode) throws UnknownIdentifierException {
         switch (member) {
             case J_MEMBER_BUF:
                 return buffer.getBuf();
@@ -184,58 +183,69 @@ public final class GraalHPyBuffer implements TruffleObject {
         return nativePointer != null;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     long asPointer(
-                    @CachedLibrary("this.nativePointer") InteropLibrary lib) throws UnsupportedMessageException {
-        return lib.asPointer(nativePointer);
+                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        return PythonUtils.coerceToLong(nativePointer, lib);
     }
 
     @ExportMessage
     void toNative(
-                    @Cached PCallHPyFunction callBufferToNativeNode,
-                    @Shared("toNativeNode") @Cached HPyAsHandleNode toNativeNode,
-                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+                    @Cached(parameters = "this.context") GraalHPyCAccess.AllocateNode allocateNode,
+                    @Cached(parameters = "this.context") GraalHPyCAccess.WritePointerNode writePointerNode,
+                    @Cached(parameters = "this.context") GraalHPyCAccess.WriteHPyNode writeHPyNode,
+                    @Cached(parameters = "this.context") GraalHPyCAccess.WriteSizeTNode writeSizeTNode,
+                    @Cached(parameters = "this.context") GraalHPyCAccess.WriteI32Node writeI32Node,
+                    @Cached TruffleString.AsNativeNode asNativeNode,
+                    @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
         if (nativePointer == null) {
-            /*
-             * This is basically the same as reading the members one-by-one via 'readMember' but
-             * it's doing some shortcuts since we know that each value is going to receive
-             * 'toNative'. So, we eagerly convert them to native.
-             */
-            if (ownerHandle == null) {
-                Object obj = buffer.getObj();
-                ownerHandle = toNativeNode.execute(obj != null ? obj : PNone.NO_VALUE);
-            }
-            Object[] args = new Object[]{
-                            buffer.getBuf(), // buf
-                            ownerHandle, // obj
-                            buffer.getLen(), // len
-                            buffer.getItemSize(), // itemsize
-                            PInt.intValue(buffer.isReadOnly()), // readonly
-                            buffer.getDims(), // ndim
-                            CArrayWrappers.stringToNativeUtf8Bytes(buffer.getFormat(), switchEncodingNode, copyToByteArrayNode), // format
-                            intArrayToNativeInt64(buffer.getShape()), // shape
-                            intArrayToNativeInt64(buffer.getStrides()), // strides
-                            intArrayToNativeInt64(buffer.getSuboffsets()), // suboffsets
-                            buffer.getInternal()  // internal
-            };
-            nativePointer = callBufferToNativeNode.execute(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_TO_NATIVE, args);
+            Object nativePointer = allocateNode.malloc(context, HPyContextSignatureType.HPy_buffer);
+            TruffleString formatUtf8 = switchEncodingNode.execute(buffer.getFormat(), UTF_8);
+            TruffleString formatNative = asNativeNode.execute(formatUtf8, byteSize -> context.nativeToInteropPointer(allocateNode.malloc(context, byteSize)), UTF_8, true, true);
+            Object formatPtr = getInternalNativePointerNode.execute(formatNative, UTF_8);
+
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__buf, buffer.getBuf());
+            writeHPyNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__obj, buffer.getObj());
+            writeSizeTNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__len, buffer.getLen());
+            writeSizeTNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__itemsize, buffer.getItemSize());
+            writeI32Node.write(context, nativePointer, GraalHPyCField.HPy_buffer__readonly, PInt.intValue(buffer.isReadOnly()));
+            writeI32Node.write(context, nativePointer, GraalHPyCField.HPy_buffer__ndim, buffer.getDims());
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__format, formatPtr);
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__shape, intArrayToNativeInt64(context, buffer.getShape(), allocateNode, writeSizeTNode));
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__strides, intArrayToNativeInt64(context, buffer.getStrides(), allocateNode, writeSizeTNode));
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__suboffsets, intArrayToNativeInt64(context, buffer.getSuboffsets(), allocateNode, writeSizeTNode));
+            writePointerNode.write(context, nativePointer, GraalHPyCField.HPy_buffer__internal, buffer.getInternal());
+            this.nativePointer = nativePointer;
         }
     }
 
-    private static long intArrayToNativeInt64(int[] data) {
+    private static Object intArrayToNativeInt64(GraalHPyContext ctx, int[] data, GraalHPyCAccess.AllocateNode allocateNode, GraalHPyCAccess.WriteSizeTNode writeSizeTNode) {
         if (data != null) {
-            return CArrayWrappers.intArrayToNativeInt64(data);
+            long elemSize = ctx.getCTypeSize(HPyContextSignatureType.HPy_ssize_t);
+            Object ptr = allocateNode.calloc(ctx, data.length, elemSize);
+            for (int i = 0; i < data.length; i++) {
+                writeSizeTNode.execute(ctx, ptr, i * elemSize, data[i]);
+            }
+            return ptr;
         }
-        return 0;
+        return ctx.getNativeNull();
     }
 
-    void free(PCallHPyFunction callBufferFreeNode) {
+    void free(GraalHPyContext ctx, GraalHPyCAccess.FreeNode freeNode, GraalHPyCAccess.ReadPointerNode readPointerNode, GraalHPyCAccess.ReadHPyNode readHPyNode) {
         if (ownerHandle != null) {
             ownerHandle.closeAndInvalidate(context);
         }
         if (nativePointer != null) {
-            callBufferFreeNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_FREE, nativePointer);
+            Object owner = readHPyNode.readAndClose(ctx, nativePointer, GraalHPyCField.HPy_buffer__obj);
+            assert owner == buffer.getObj();
+            Object format = readPointerNode.read(ctx, nativePointer, GraalHPyCField.HPy_buffer__format);
+            Object shape = readPointerNode.read(ctx, nativePointer, GraalHPyCField.HPy_buffer__shape);
+            Object suboffsets = readPointerNode.read(ctx, nativePointer, GraalHPyCField.HPy_buffer__suboffsets);
+            freeNode.free(ctx, format);
+            freeNode.free(ctx, shape);
+            freeNode.free(ctx, suboffsets);
+            freeNode.free(ctx, nativePointer);
         }
     }
 }
