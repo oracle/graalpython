@@ -2540,8 +2540,10 @@ class MavenProject(mx.AbstractDistribution):
         maven["version"] = pom.find(f"{url}version").text
         self.description = self._pomGetText(pom, f"{url}description")
         self.packaging = self.extension = self._pomGetText(pom, f"{url}packaging") or "jar"
-        if self.extension in ["maven-plugin", "maven-archetype"]:
+        if self.extension in ["maven-plugin"]:
             self.extension = "jar"
+        elif self.extension in ["maven-archetype"]:
+            self.packaging = self.extension = "jar"
         if mvnDeps := pom.find(f"{url}dependencies"):
             excludedLibs = excludedLibs or []
             for dependency in mvnDeps.findall(f"{url}dependency"):

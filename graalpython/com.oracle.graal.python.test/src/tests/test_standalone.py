@@ -38,9 +38,11 @@
 # SOFTWARE.
 
 import os
+import glob
 import subprocess
 import tempfile
 import unittest
+import urllib.parse
 import shutil
 import sys
 
@@ -98,18 +100,74 @@ def get_gp():
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_polyglot_app():
-
-    graalpy = get_gp()
     env = os.environ.copy()
     env["PYLAUNCHER_DEBUG"] = "1"
-
     with tempfile.TemporaryDirectory() as tmpdir:
+        target_name = "polyglot_app_test"
+        target_dir = os.path.join(tmpdir, target_name)
 
-        target_dir = os.path.join(tmpdir, "polyglot_app_test")
+        archetypeGroupId = "org.graalvm.python"
+        archetypeArtifactId = "graalpy-archetype"
+        pluginArtifactId = "graalpy-maven-plugin"
+        graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], env)
 
-        cmd = [graalpy, "-m", "standalone", "--verbose", "polyglot_app", "-o", target_dir]
-        out, return_code = run_cmd(cmd, env)
-        assert "Creating polyglot java python application in directory " + target_dir in out
+        for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
+            url = urllib.parse.urlparse(custom_repo)
+            if url.scheme == "file":
+                jar = os.path.join(
+                    url.path,
+                    archetypeGroupId.replace(".", os.path.sep),
+                    archetypeArtifactId,
+                    graalvmVersion,
+                    f"{archetypeArtifactId}-{graalvmVersion}.jar",
+                )
+                cmd = MVN_CMD + [
+                    "install:install-file",
+                    f"-Dfile={jar}",
+                    f"-DgroupId={archetypeGroupId}",
+                    f"-DartifactId={archetypeArtifactId}",
+                    f"-Dversion={graalvmVersion}",
+                    "-Dpackaging=jar",
+                    "-DgeneratePom=true",
+                    "-DcreateChecksum=true",
+                ]
+                out, return_code = run_cmd(cmd, env)
+                assert return_code == 0
+
+                jar = os.path.join(
+                    url.path,
+                    archetypeGroupId.replace(".", os.path.sep),
+                    pluginArtifactId,
+                    graalvmVersion,
+                    f"{pluginArtifactId}-{graalvmVersion}.jar",
+                )
+                cmd = MVN_CMD + [
+                    "install:install-file",
+                    f"-Dfile={jar}",
+                    f"-DgroupId={archetypeGroupId}",
+                    f"-DartifactId={pluginArtifactId}",
+                    f"-Dversion={graalvmVersion}",
+                    "-Dpackaging=jar",
+                    "-DgeneratePom=true",
+                    "-DcreateChecksum=true",
+                ]
+                out, return_code = run_cmd(cmd, env)
+                assert return_code == 0
+                break
+
+        cmd = MVN_CMD + [
+            "archetype:generate",
+            "-B",
+            f"-DarchetypeGroupId={archetypeGroupId}",
+            f"-DarchetypeArtifactId={archetypeArtifactId}",
+            f"-DarchetypeVersion={graalvmVersion}",
+            f"-DartifactId={target_name}",
+            "-DgroupId=archetype.it",
+            "-Dpackage=it.pkg",
+            "-Dversion=0.1-SNAPSHOT",
+        ]
+        out, return_code = run_cmd(cmd, env, cwd=tmpdir)
+        assert "BUILD SUCCESS" in out
 
         if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
             repos = []
@@ -136,18 +194,20 @@ def test_polyglot_app():
                 </project>
                 """))
 
-        cmd = MVN_CMD + ["dependency:purge-local-repository"]
+        env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"])
+        cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
         run_cmd(cmd, env, cwd=target_dir)
         try:
-            cmd = MVN_CMD + ["package", "-Pnative"]
+            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
             assert "BUILD SUCCESS" in out
 
-            cmd = [os.path.join(target_dir, "target", "polyglot_app")]
+            cmd = [os.path.join(target_dir, "target", "polyglot_app_test")]
             out, return_code = run_cmd(cmd, env, cwd=target_dir)
-            assert "hello java" in out
+            assert "/graalpy_vfs/home/lib/python3.10" in out
+            assert "/graalpy_vfs/venv/lib/python3.10/site-packages" in out
         finally:
-            cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false"]
+            cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={graalvmVersion}", "-Dgraalpy.edition=python-community"]
             run_cmd(cmd, env, cwd=target_dir)
 
 
