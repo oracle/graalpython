@@ -2538,6 +2538,7 @@ class MavenProject(mx.AbstractDistribution):
         maven["groupId"] = pom.find(f"{url}groupId").text
         maven["artifactId"] = pom.find(f"{url}artifactId").text
         maven["version"] = pom.find(f"{url}version").text
+        self._target_version = SUITE.release_version()
         self.description = self._pomGetText(pom, f"{url}description")
         self.packaging = self.extension = self._pomGetText(pom, f"{url}packaging") or "jar"
         if self.extension in ["maven-plugin"]:
@@ -2558,8 +2559,8 @@ class MavenProject(mx.AbstractDistribution):
                     excludedLibs.append(d)
         args['maven'] = maven
         build_dir = os.path.join(suite.get_output_root(platformDependent=False, jdkDependent=False), name)
-        self._output = os.path.join(build_dir, f"{maven['artifactId']}-{maven['version']}.{self.extension}")
-        self.sourcesPath = os.path.join(build_dir, f"{maven['artifactId']}-{maven['version']}-sources.{self.extension}")
+        self._output = os.path.join(build_dir, f"{maven['artifactId']}-{self._target_version}.{self.extension}")
+        self.sourcesPath = os.path.join(build_dir, f"{maven['artifactId']}-{self._target_version}-sources.{self.extension}")
         super().__init__(suite, name=name, deps=deps, excludedLibs=excludedLibs, platformDependent=platformDependent,
                          theLicense=theLicense, testDistribution=testDistribution, layout=layout, path=path, output=self._output, **args)
         self.definedAnnotationProcessors = []
@@ -2637,8 +2638,19 @@ class MavenArchiveTask(mx.DefaultArchiveTask):
 
     def build(self):
         if self.needsMavenBuild():
-            mx.run_maven(["package"], cwd=self.subject._sourceDir)
-            mx.run_maven(["source:jar"], cwd=self.subject._sourceDir)
+            pomfile = os.path.join(self.subject._sourceDir, "pom.xml")
+            atime, mtime = os.stat(pomfile).st_atime_ns, os.stat(pomfile).st_mtime_ns
+            with open(pomfile, 'r') as f:
+                content = f.read()
+            try:
+                with open(pomfile, 'w') as f:
+                    f.write(content.replace(self.subject.maven['version'], self.subject._target_version))
+                mx.run_maven(["package"], cwd=self.subject._sourceDir)
+                mx.run_maven(["source:jar"], cwd=self.subject._sourceDir)
+            finally:
+                with open(pomfile, 'w') as f:
+                    f.write(content)
+                os.utime(pomfile, ns=(atime, mtime))
         path = self.get_output()
         os.makedirs(os.path.dirname(path), exist_ok=True)
         shutil.copy(self.subject._output, path)

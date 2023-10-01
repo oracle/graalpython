@@ -44,7 +44,7 @@ SOFTWARE.
 
   <groupId>org.graalvm.python</groupId>
   <artifactId>graalpy-archetype</artifactId>
-  <version>24.0.0-dev</version>
+  <version>0.0.0</version>
   <packaging>maven-archetype</packaging>
 
   <name>graalpy-archetype</name>
