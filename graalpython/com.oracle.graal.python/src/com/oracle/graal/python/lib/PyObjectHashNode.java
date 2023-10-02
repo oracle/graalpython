@@ -87,7 +87,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     public abstract long execute(Frame frame, Node inliningTarget, TruffleString object);
 
-    private static long avoidNegative1(long hash) {
+    public static long avoidNegative1(long hash) {
         // CPython uses -1 to signify error status
         return hash == -1 ? -2 : hash;
     }
