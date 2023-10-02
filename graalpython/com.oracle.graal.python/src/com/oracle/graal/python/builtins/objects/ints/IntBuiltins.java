@@ -1039,8 +1039,9 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "left == 1")
-        PInt doPIntLongOne(@SuppressWarnings("unused") long left, PInt right) {
-            return factory().createInt(right.getValue());
+        PInt doPIntLongOne(@SuppressWarnings("unused") long left, PInt right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(right.getValue());
         }
 
         @Specialization(guards = {"right != 0", "right != 1"})
@@ -1050,8 +1051,9 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"left != 0", "left != 1"})
-        PInt doPIntLong(long left, PInt right) {
-            return factory().createInt(mul(PInt.longToBigInteger(left), right.getValue()));
+        PInt doPIntLong(long left, PInt right,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createInt(mul(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
